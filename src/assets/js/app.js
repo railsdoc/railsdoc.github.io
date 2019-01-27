@@ -3,4 +3,6 @@ $(() => {
     $(this).siblings("ul").toggle();
     this.classList.toggle("icon-opened");
   });
+
+  hljs.initHighlightingOnLoad();
 });
