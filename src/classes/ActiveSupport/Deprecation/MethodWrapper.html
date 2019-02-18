@@ -1,0 +1,183 @@
+---
+title: ActiveSupport::Deprecation::MethodWrapper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Deprecation::MethodWrapper
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/deprecation/method_wrappers_rb.html">activesupport/lib/active_support/deprecation/method_wrappers.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <!-- Method ref -->
+    <h2>Methods</h2>
+    <dl class="methods">
+      
+        <dt>D</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-deprecate_methods">deprecate_methods</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+    </dl>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2>Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-deprecate_methods">
+            
+              deprecate_methods(target_module, *method_names)
+            
+            <a href="../../../classes/ActiveSupport/Deprecation/MethodWrapper.html#method-i-deprecate_methods" name="method-i-deprecate_methods" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Declare that a method has been deprecated.</p>
+
+<pre><code>class Fred
+  def aaa; end
+  def bbb; end
+  def ccc; end
+  def ddd; end
+  def eee; end
+end
+</code></pre>
+
+<p>Using the default deprecator:</p>
+
+<pre><code>ActiveSupport::Deprecation.deprecate_methods(Fred, :aaa, bbb: :zzz, ccc: &#39;use Bar#ccc instead&#39;)
+# =&gt; Fred
+
+Fred.new.aaa
+# DEPRECATION WARNING: aaa is deprecated and will be removed from Rails 5.1. (called from irb_binding at (irb):10)
+# =&gt; nil
+
+Fred.new.bbb
+# DEPRECATION WARNING: bbb is deprecated and will be removed from Rails 5.1 (use zzz instead). (called from irb_binding at (irb):11)
+# =&gt; nil
+
+Fred.new.ccc
+# DEPRECATION WARNING: ccc is deprecated and will be removed from Rails 5.1 (use Bar#ccc instead). (called from irb_binding at (irb):12)
+# =&gt; nil
+</code></pre>
+
+<p>Passing in a custom deprecator:</p>
+
+<pre><code>custom_deprecator = ActiveSupport::Deprecation.new(&#39;next-release&#39;, &#39;MyGem&#39;)
+ActiveSupport::Deprecation.deprecate_methods(Fred, ddd: :zzz, deprecator: custom_deprecator)
+# =&gt; [:ddd]
+
+Fred.new.ddd
+DEPRECATION WARNING: ddd is deprecated and will be removed from MyGem next-release (use zzz instead). (called from irb_binding at (irb):15)
+# =&gt; nil
+</code></pre>
+
+<p>Using a custom deprecator directly:</p>
+
+<pre><code>custom_deprecator = ActiveSupport::Deprecation.new(&#39;next-release&#39;, &#39;MyGem&#39;)
+custom_deprecator.deprecate_methods(Fred, eee: :zzz)
+# =&gt; [:eee]
+
+Fred.new.eee
+DEPRECATION WARNING: eee is deprecated and will be removed from MyGem next-release (use zzz instead). (called from irb_binding at (irb):18)
+# =&gt; nil
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-deprecate_methods_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activesupport/lib/active_support/deprecation/method_wrappers.rb, line 52</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deprecate_methods</span>(<span class="ruby-identifier">target_module</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">method_names</span>)
+  <span class="ruby-identifier">options</span> = <span class="ruby-identifier">method_names</span>.<span class="ruby-identifier">extract_options!</span>
+  <span class="ruby-identifier">deprecator</span> = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-value">:deprecator</span>) <span class="ruby-operator">||</span> <span class="ruby-keyword">self</span>
+  <span class="ruby-identifier">method_names</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">options</span>.<span class="ruby-identifier">keys</span>
+
+  <span class="ruby-identifier">method_names</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">method_name</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">aliased_method</span>, <span class="ruby-identifier">punctuation</span> = <span class="ruby-identifier">method_name</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">sub</span>(<span class="ruby-regexp">/([?!=])$/</span>, <span class="ruby-string">&quot;&quot;</span>), <span class="ruby-node">$1</span>
+    <span class="ruby-identifier">with_method</span> = <span class="ruby-node">&quot;#{aliased_method}_with_deprecation#{punctuation}&quot;</span>
+    <span class="ruby-identifier">without_method</span> = <span class="ruby-node">&quot;#{aliased_method}_without_deprecation#{punctuation}&quot;</span>
+
+    <span class="ruby-identifier">target_module</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:define_method</span>, <span class="ruby-identifier">with_method</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">deprecation_warning</span>(<span class="ruby-identifier">method_name</span>, <span class="ruby-identifier">options</span>[<span class="ruby-identifier">method_name</span>])
+      <span class="ruby-identifier">send</span>(<span class="ruby-identifier">without_method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-identifier">target_module</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:alias_method</span>, <span class="ruby-identifier">without_method</span>, <span class="ruby-identifier">method_name</span>)
+    <span class="ruby-identifier">target_module</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:alias_method</span>, <span class="ruby-identifier">method_name</span>, <span class="ruby-identifier">with_method</span>)
+
+    <span class="ruby-keyword">case</span>
+    <span class="ruby-keyword">when</span> <span class="ruby-identifier">target_module</span>.<span class="ruby-identifier">protected_method_defined?</span>(<span class="ruby-identifier">without_method</span>)
+      <span class="ruby-identifier">target_module</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:protected</span>, <span class="ruby-identifier">method_name</span>)
+    <span class="ruby-keyword">when</span> <span class="ruby-identifier">target_module</span>.<span class="ruby-identifier">private_method_defined?</span>(<span class="ruby-identifier">without_method</span>)
+      <span class="ruby-identifier">target_module</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:private</span>, <span class="ruby-identifier">method_name</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

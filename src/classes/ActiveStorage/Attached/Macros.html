@@ -1,0 +1,333 @@
+---
+title: ActiveStorage::Attached::Macros
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveStorage::Attached::Macros
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activestorage/lib/active_storage/attached/macros_rb.html">activestorage/lib/active_storage/attached/macros.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Provides the class-level DSL for declaring that an Active Record model has attached blobs.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <!-- Method ref -->
+    <h2>Methods</h2>
+    <dl class="methods">
+      
+        <dt>H</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-has_many_attached">has_many_attached</a>,
+              </li>
+            
+              
+              <li>
+                <a href="#method-i-has_one_attached">has_one_attached</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+        <dt>P</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-purge">purge</a>,
+              </li>
+            
+              
+              <li>
+                <a href="#method-i-purge_later">purge_later</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+    </dl>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2>Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-has_many_attached">
+            
+              has_many_attached(name, dependent: :purge_later)
+            
+            <a href="../../../classes/ActiveStorage/Attached/Macros.html#method-i-has_many_attached" name="method-i-has_many_attached" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Specifies the relation between multiple attachments and the model.</p>
+
+<pre><code>class Gallery &lt; ActiveRecord::Base
+  has_many_attached :photos
+end
+</code></pre>
+
+<p>There are no columns defined on the model side, Active Storage takes care of the mapping between your records and the attachments.</p>
+
+<p>To avoid N+1 queries, you can include the attached blobs in your query like so:</p>
+
+<pre><code>Gallery.where(user: Current.user).with_attached_photos
+</code></pre>
+
+<p>Under the covers, this relationship is implemented as a <code>has_many</code> association to a <a href="../Attachment.html"><code>ActiveStorage::Attachment</code></a> record and a <code>has_many-through</code> association to a <a href="../Blob.html"><code>ActiveStorage::Blob</code></a> record. These associations are available as <code>photos_attachments</code> and <code>photos_blobs</code>. But you shouldn&#39;t need to work with these associations directly in most circumstances.</p>
+
+<p>The system has been designed to having you go through the <a href="Many.html"><code>ActiveStorage::Attached::Many</code></a> proxy that provides the dynamic proxy to the associations and factory methods, like <code>#attach</code>.</p>
+
+<p>If the <code>:dependent</code> option isn&#39;t set, all the attachments will be purged (i.e. destroyed) whenever the record is destroyed.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-has_many_attached_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activestorage/lib/active_storage/attached/macros.rb, line 77</span>
+    <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_many_attached</span>(<span class="ruby-identifier">name</span>, <span class="ruby-value">dependent:</span> <span class="ruby-value">:purge_later</span>)
+      <span class="ruby-identifier">class_eval</span> <span class="ruby-identifier">&lt;&lt;-CODE</span>, <span class="ruby-keyword">__FILE__</span>, <span class="ruby-keyword">__LINE__</span> <span class="ruby-operator">+</span> <span class="ruby-value">1</span>
+<span class="ruby-value">        def #{name}
+          @active_storage_attached_#{name} ||= ActiveStorage::Attached::Many.new(&quot;#{name}&quot;, self, dependent: #{dependent == :purge_later ? &quot;:purge_later&quot; : &quot;false&quot;})
+        end
+
+        def #{name}=(attachables)
+          #{name}.attach(attachables)
+        end
+</span><span class="ruby-identifier">      CODE</span>
+
+      <span class="ruby-identifier">has_many</span> <span class="ruby-value">:&quot;#{name}_attachments&quot;</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">where</span>(<span class="ruby-value">name:</span> <span class="ruby-identifier">name</span>) }, <span class="ruby-value">as:</span> <span class="ruby-value">:record</span>, <span class="ruby-value">class_name:</span> <span class="ruby-string">&quot;ActiveStorage::Attachment&quot;</span>, <span class="ruby-value">inverse_of:</span> <span class="ruby-value">:record</span>, <span class="ruby-value">dependent:</span> <span class="ruby-keyword">false</span> <span class="ruby-keyword">do</span>
+        <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge</span>
+          <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge</span>)
+          <span class="ruby-identifier">reset</span>
+        <span class="ruby-keyword">end</span>
+
+        <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge_later</span>
+          <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge_later</span>)
+          <span class="ruby-identifier">reset</span>
+        <span class="ruby-keyword">end</span>
+      <span class="ruby-keyword">end</span>
+      <span class="ruby-identifier">has_many</span> <span class="ruby-value">:&quot;#{name}_blobs&quot;</span>, <span class="ruby-value">through:</span> <span class="ruby-value">:&quot;#{name}_attachments&quot;</span>, <span class="ruby-value">class_name:</span> <span class="ruby-string">&quot;ActiveStorage::Blob&quot;</span>, <span class="ruby-value">source:</span> <span class="ruby-value">:blob</span>
+
+      <span class="ruby-identifier">scope</span> <span class="ruby-value">:&quot;with_attached_#{name}&quot;</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">includes</span>(<span class="ruby-value">&quot;#{name}_attachments&quot;:</span> <span class="ruby-value">:blob</span>) }
+
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">dependent</span> <span class="ruby-operator">==</span> <span class="ruby-value">:purge_later</span>
+        <span class="ruby-identifier">after_destroy_commit</span> { <span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">name</span>).<span class="ruby-identifier">purge_later</span> }
+      <span class="ruby-keyword">else</span>
+        <span class="ruby-identifier">before_destroy</span> { <span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">name</span>).<span class="ruby-identifier">detach</span> }
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-has_one_attached">
+            
+              has_one_attached(name, dependent: :purge_later)
+            
+            <a href="../../../classes/ActiveStorage/Attached/Macros.html#method-i-has_one_attached" name="method-i-has_one_attached" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Specifies the relation between a single attachment and the model.</p>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  has_one_attached :avatar
+end
+</code></pre>
+
+<p>There is no column defined on the model side, Active Storage takes care of the mapping between your records and the attachment.</p>
+
+<p>To avoid N+1 queries, you can include the attached blobs in your query like so:</p>
+
+<pre><code>User.with_attached_avatar
+</code></pre>
+
+<p>Under the covers, this relationship is implemented as a <code>has_one</code> association to a <a href="../Attachment.html"><code>ActiveStorage::Attachment</code></a> record and a <code>has_one-through</code> association to a <a href="../Blob.html"><code>ActiveStorage::Blob</code></a> record. These associations are available as <code>avatar_attachment</code> and <code>avatar_blob</code>. But you shouldn&#39;t need to work with these associations directly in most circumstances.</p>
+
+<p>The system has been designed to having you go through the <a href="One.html"><code>ActiveStorage::Attached::One</code></a> proxy that provides the dynamic proxy to the associations and factory methods, like <code>attach</code>.</p>
+
+<p>If the <code>:dependent</code> option isn&#39;t set, the attachment will be purged (i.e. destroyed) whenever the record is destroyed.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-has_one_attached_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activestorage/lib/active_storage/attached/macros.rb, line 30</span>
+    <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_one_attached</span>(<span class="ruby-identifier">name</span>, <span class="ruby-value">dependent:</span> <span class="ruby-value">:purge_later</span>)
+      <span class="ruby-identifier">class_eval</span> <span class="ruby-identifier">&lt;&lt;-CODE</span>, <span class="ruby-keyword">__FILE__</span>, <span class="ruby-keyword">__LINE__</span> <span class="ruby-operator">+</span> <span class="ruby-value">1</span>
+<span class="ruby-value">        def #{name}
+          @active_storage_attached_#{name} ||= ActiveStorage::Attached::One.new(&quot;#{name}&quot;, self, dependent: #{dependent == :purge_later ? &quot;:purge_later&quot; : &quot;false&quot;})
+        end
+
+        def #{name}=(attachable)
+          #{name}.attach(attachable)
+        end
+</span><span class="ruby-identifier">      CODE</span>
+
+      <span class="ruby-identifier">has_one</span> <span class="ruby-value">:&quot;#{name}_attachment&quot;</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">where</span>(<span class="ruby-value">name:</span> <span class="ruby-identifier">name</span>) }, <span class="ruby-value">class_name:</span> <span class="ruby-string">&quot;ActiveStorage::Attachment&quot;</span>, <span class="ruby-value">as:</span> <span class="ruby-value">:record</span>, <span class="ruby-value">inverse_of:</span> <span class="ruby-value">:record</span>, <span class="ruby-value">dependent:</span> <span class="ruby-keyword">false</span>
+      <span class="ruby-identifier">has_one</span> <span class="ruby-value">:&quot;#{name}_blob&quot;</span>, <span class="ruby-value">through:</span> <span class="ruby-value">:&quot;#{name}_attachment&quot;</span>, <span class="ruby-value">class_name:</span> <span class="ruby-string">&quot;ActiveStorage::Blob&quot;</span>, <span class="ruby-value">source:</span> <span class="ruby-value">:blob</span>
+
+      <span class="ruby-identifier">scope</span> <span class="ruby-value">:&quot;with_attached_#{name}&quot;</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">includes</span>(<span class="ruby-value">&quot;#{name}_attachment&quot;:</span> <span class="ruby-value">:blob</span>) }
+
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">dependent</span> <span class="ruby-operator">==</span> <span class="ruby-value">:purge_later</span>
+        <span class="ruby-identifier">after_destroy_commit</span> { <span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">name</span>).<span class="ruby-identifier">purge_later</span> }
+      <span class="ruby-keyword">else</span>
+        <span class="ruby-identifier">before_destroy</span> { <span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">name</span>).<span class="ruby-identifier">detach</span> }
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-purge">
+            
+              purge()
+            
+            <a href="../../../classes/ActiveStorage/Attached/Macros.html#method-i-purge" name="method-i-purge" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-purge_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activestorage/lib/active_storage/attached/macros.rb, line 89</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge</span>
+  <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge</span>)
+  <span class="ruby-identifier">reset</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-purge_later">
+            
+              purge_later()
+            
+            <a href="../../../classes/ActiveStorage/Attached/Macros.html#method-i-purge_later" name="method-i-purge_later" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-purge_later_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activestorage/lib/active_storage/attached/macros.rb, line 94</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge_later</span>
+  <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge_later</span>)
+  <span class="ruby-identifier">reset</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

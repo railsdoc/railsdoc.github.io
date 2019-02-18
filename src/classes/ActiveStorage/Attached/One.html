@@ -1,0 +1,375 @@
+---
+title: ActiveStorage::Attached::One
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveStorage::Attached::One
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Attached.html">ActiveStorage::Attached</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activestorage/lib/active_storage/attached/one_rb.html">activestorage/lib/active_storage/attached/one.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Representation of a single attachment to a model.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <!-- Method ref -->
+    <h2>Methods</h2>
+    <dl class="methods">
+      
+        <dt>A</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-attach">attach</a>,
+              </li>
+            
+              
+              <li>
+                <a href="#method-i-attached-3F">attached?</a>,
+              </li>
+            
+              
+              <li>
+                <a href="#method-i-attachment">attachment</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+        <dt>D</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-detach">detach</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+        <dt>P</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-purge">purge</a>,
+              </li>
+            
+              
+              <li>
+                <a href="#method-i-purge_later">purge_later</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+    </dl>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2>Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-attach">
+            
+              attach(attachable)
+            
+            <a href="../../../classes/ActiveStorage/Attached/One.html#method-i-attach" name="method-i-attach" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Associates a given attachment with the current record, saving it to the database.</p>
+
+<pre><code>person.avatar.attach(params[:avatar]) # ActionDispatch::Http::UploadedFile object
+person.avatar.attach(params[:signed_blob_id]) # Signed reference to blob from direct upload
+person.avatar.attach(io: File.open(&quot;/path/to/face.jpg&quot;), filename: &quot;face.jpg&quot;, content_type: &quot;image/jpg&quot;)
+person.avatar.attach(avatar_blob) # ActiveStorage::Blob object
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-attach_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 22</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attach</span>(<span class="ruby-identifier">attachable</span>)
+  <span class="ruby-identifier">blob_was</span> = <span class="ruby-identifier">blob</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">attached?</span>
+  <span class="ruby-identifier">blob</span> = <span class="ruby-identifier">create_blob_from</span>(<span class="ruby-identifier">attachable</span>)
+
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">blob</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">blob_was</span>
+    <span class="ruby-identifier">transaction</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">detach</span>
+      <span class="ruby-identifier">write_attachment</span> <span class="ruby-identifier">build_attachment</span>(<span class="ruby-value">blob:</span> <span class="ruby-identifier">blob</span>)
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-identifier">blob_was</span>.<span class="ruby-identifier">purge_later</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">blob_was</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">dependent</span> <span class="ruby-operator">==</span> <span class="ruby-value">:purge_later</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-attached-3F">
+            
+              attached?()
+            
+            <a href="../../../classes/ActiveStorage/Attached/One.html#method-i-attached-3F" name="method-i-attached-3F" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns <code>true</code> if an attachment has been made.</p>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  has_one_attached :avatar
+end
+
+User.new.avatar.attached? # =&gt; false
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-attached-3F_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 43</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attached?</span>
+  <span class="ruby-identifier">attachment</span>.<span class="ruby-identifier">present?</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-attachment">
+            
+              attachment()
+            
+            <a href="../../../classes/ActiveStorage/Attached/One.html#method-i-attachment" name="method-i-attachment" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the associated attachment record.</p>
+
+<p>You don&#39;t have to call this method to access the attachment&#39;s methods as they are all available at the model level.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-attachment_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 12</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attachment</span>
+  <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{name}_attachment&quot;</span>)
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-detach">
+            
+              detach()
+            
+            <a href="../../../classes/ActiveStorage/Attached/One.html#method-i-detach" name="method-i-detach" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Deletes the attachment without purging it, leaving its blob in place.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-detach_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 48</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">detach</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">attached?</span>
+    <span class="ruby-identifier">attachment</span>.<span class="ruby-identifier">destroy</span>
+    <span class="ruby-identifier">write_attachment</span> <span class="ruby-keyword">nil</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-purge">
+            
+              purge()
+            
+            <a href="../../../classes/ActiveStorage/Attached/One.html#method-i-purge" name="method-i-purge" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Directly purges the attachment (i.e. destroys the blob and attachment and deletes the file on the service).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-purge_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 57</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">attached?</span>
+    <span class="ruby-identifier">attachment</span>.<span class="ruby-identifier">purge</span>
+    <span class="ruby-identifier">write_attachment</span> <span class="ruby-keyword">nil</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-purge_later">
+            
+              purge_later()
+            
+            <a href="../../../classes/ActiveStorage/Attached/One.html#method-i-purge_later" name="method-i-purge_later" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Purges the attachment through the queuing system.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-purge_later_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 65</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge_later</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">attached?</span>
+    <span class="ruby-identifier">attachment</span>.<span class="ruby-identifier">purge_later</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

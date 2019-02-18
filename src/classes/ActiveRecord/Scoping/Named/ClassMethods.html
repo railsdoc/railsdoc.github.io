@@ -1,0 +1,292 @@
+---
+title: ActiveRecord::Scoping::Named::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Scoping::Named::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/activerecord/lib/active_record/scoping/named_rb.html">activerecord/lib/active_record/scoping/named.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <!-- Method ref -->
+    <h2>Methods</h2>
+    <dl class="methods">
+      
+        <dt>A</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-all">all</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+        <dt>S</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-scope">scope</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+    </dl>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2>Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-all">
+            
+              all()
+            
+            <a href="../../../../classes/ActiveRecord/Scoping/Named/ClassMethods.html#method-i-all" name="method-i-all" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns an <a href="../../Relation.html"><code>ActiveRecord::Relation</code></a> scope object.</p>
+
+<pre><code>posts = Post.all
+posts.size # Fires &quot;select count(*) from  posts&quot; and returns the count
+posts.each {|p| puts p.name } # Fires &quot;select * from posts&quot; and loads post objects
+
+fruits = Fruit.all
+fruits = fruits.where(color: &#39;red&#39;) if options[:red_only]
+fruits = fruits.limit(10) if limited?
+</code></pre>
+
+<p>You can define a scope that applies to all finders using <a href="../Default/ClassMethods.html#method-i-default_scope">default_scope</a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-all_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activerecord/lib/active_record/scoping/named.rb, line 26</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">all</span>
+  <span class="ruby-identifier">current_scope</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">current_scope</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">current_scope</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">current_scope</span>.<span class="ruby-identifier">klass</span>
+      <span class="ruby-identifier">current_scope</span>.<span class="ruby-identifier">clone</span>
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">current_scope</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">default_scoped</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-scope">
+            
+              scope(name, body, &amp;block)
+            
+            <a href="../../../../classes/ActiveRecord/Scoping/Named/ClassMethods.html#method-i-scope" name="method-i-scope" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Adds a class method for retrieving and querying objects. The method is intended to return an <a href="../../Relation.html"><code>ActiveRecord::Relation</code></a> object, which is composable with other scopes. If it returns <code>nil</code> or <code>false</code>, an <a href="ClassMethods.html#method-i-all">all</a> scope is returned instead.</p>
+
+<p>A scope represents a narrowing of a database query, such as <code>where(color: :red).select(&#39;shirts.*&#39;).includes(:washing_instructions)</code>.</p>
+
+<pre><code>class Shirt &lt; ActiveRecord::Base
+  scope :red, -&gt; { where(color: &#39;red&#39;) }
+  scope :dry_clean_only, -&gt; { joins(:washing_instructions).where(&#39;washing_instructions.dry_clean_only = ?&#39;, true) }
+end
+</code></pre>
+
+<p>The above calls to <a href="ClassMethods.html#method-i-scope"><code>scope</code></a> define class methods <code>Shirt.red</code> and <code>Shirt.dry_clean_only</code>. <code>Shirt.red</code>, in effect, represents the query <code>Shirt.where(color: &#39;red&#39;)</code>.</p>
+
+<p>You should always pass a callable object to the scopes defined with <a href="ClassMethods.html#method-i-scope"><code>scope</code></a>. This ensures that the scope is re-evaluated each time it is called.</p>
+
+<p>Note that this is simply &#39;syntactic sugar&#39; for defining an actual class method:</p>
+
+<pre><code>class Shirt &lt; ActiveRecord::Base
+  def self.red
+    where(color: &#39;red&#39;)
+  end
+end
+</code></pre>
+
+<p>Unlike <code>Shirt.find(...)</code>, however, the object returned by <code>Shirt.red</code> is not an <a href="../../../Array.html"><code>Array</code></a> but an <a href="../../Relation.html"><code>ActiveRecord::Relation</code></a>, which is composable with other scopes; it resembles the association object constructed by a <a href="../../Associations/ClassMethods.html#method-i-has_many">has_many</a> declaration. For instance, you can invoke <code>Shirt.red.first</code>, <code>Shirt.red.count</code>, <code>Shirt.red.where(size: &#39;small&#39;)</code>. Also, just as with the association objects, named scopes act like an <a href="../../../Array.html"><code>Array</code></a>, implementing <a href="../../../Enumerable.html"><code>Enumerable</code></a>; <code>Shirt.red.each(&amp;block)</code>, <code>Shirt.red.first</code>, and <code>Shirt.red.inject(memo, &amp;block)</code> all behave as if <code>Shirt.red</code> really was an array.</p>
+
+<p>These named scopes are composable. For instance, <code>Shirt.red.dry_clean_only</code> will produce all shirts that are both red and dry clean only. Nested finds and calculations also work with these compositions: <code>Shirt.red.dry_clean_only.count</code> returns the number of garments for which these criteria obtain. Similarly with <code>Shirt.red.dry_clean_only.average(:thread_count)</code>.</p>
+
+<p>All scopes are available as class methods on the <a href="../../Base.html"><code>ActiveRecord::Base</code></a> descendant upon which the scopes were defined. But they are also available to <a href="../../Associations/ClassMethods.html#method-i-has_many">has_many</a> associations. If,</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+  has_many :shirts
+end
+</code></pre>
+
+<p>then <code>elton.shirts.red.dry_clean_only</code> will return all of Elton&#39;s red, dry clean only shirts.</p>
+
+<p>Named scopes can also have extensions, just as with <a href="../../Associations/ClassMethods.html#method-i-has_many">has_many</a> declarations:</p>
+
+<pre><code>class Shirt &lt; ActiveRecord::Base
+  scope :red, -&gt; { where(color: &#39;red&#39;) } do
+    def dom_id
+      &#39;red_shirts&#39;
+    end
+  end
+end
+</code></pre>
+
+<p>Scopes can also be used while creating/building a record.</p>
+
+<pre><code>class Article &lt; ActiveRecord::Base
+  scope :published, -&gt; { where(published: true) }
+end
+
+Article.published.new.published    # =&gt; true
+Article.published.create.published # =&gt; true
+</code></pre>
+
+<p>Class methods on your model are automatically available on scopes. Assuming the following setup:</p>
+
+<pre><code>class Article &lt; ActiveRecord::Base
+  scope :published, -&gt; { where(published: true) }
+  scope :featured, -&gt; { where(featured: true) }
+
+  def self.latest_article
+    order(&#39;published_at desc&#39;).first
+  end
+
+  def self.titles
+    pluck(:title)
+  end
+end
+</code></pre>
+
+<p>We are able to call the methods like this:</p>
+
+<pre><code>Article.published.featured.latest_article
+Article.featured.titles
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-scope_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activerecord/lib/active_record/scoping/named.rb, line 163</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">scope</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">body</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">body</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:call</span>)
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;The scope body needs to be callable.&quot;</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">dangerous_class_method?</span>(<span class="ruby-identifier">name</span>)
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;You tried to define a scope named \&quot;#{name}\&quot; &quot;</span> \
+      <span class="ruby-node">&quot;on the model \&quot;#{self.name}\&quot;, but Active Record already defined &quot;</span> \
+      <span class="ruby-string">&quot;a class method with the same name.&quot;</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">method_defined_within?</span>(<span class="ruby-identifier">name</span>, <span class="ruby-constant">Relation</span>)
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;You tried to define a scope named \&quot;#{name}\&quot; &quot;</span> \
+      <span class="ruby-node">&quot;on the model \&quot;#{self.name}\&quot;, but ActiveRecord::Relation already defined &quot;</span> \
+      <span class="ruby-string">&quot;an instance method with the same name.&quot;</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">valid_scope_name?</span>(<span class="ruby-identifier">name</span>)
+  <span class="ruby-identifier">extension</span> = <span class="ruby-constant">Module</span>.<span class="ruby-identifier">new</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">block</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">body</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:to_proc</span>)
+    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:define_method</span>, <span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-operator">*</span><span class="ruby-identifier">args</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">all</span>
+      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">_exec_scope</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">body</span>)
+      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">extending</span>(<span class="ruby-identifier">extension</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">extension</span>
+      <span class="ruby-identifier">scope</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:define_method</span>, <span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-operator">*</span><span class="ruby-identifier">args</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">all</span>
+      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">scoping</span> { <span class="ruby-identifier">body</span>.<span class="ruby-identifier">call</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">scope</span> }
+      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">extending</span>(<span class="ruby-identifier">extension</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">extension</span>
+      <span class="ruby-identifier">scope</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">generate_relation_method</span>(<span class="ruby-identifier">name</span>)
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

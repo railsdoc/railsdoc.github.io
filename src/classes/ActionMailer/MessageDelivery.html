@@ -1,0 +1,400 @@
+---
+title: ActionMailer::MessageDelivery
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionMailer::MessageDelivery
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Delegator.html">Delegator</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionmailer/lib/action_mailer/message_delivery_rb.html">actionmailer/lib/action_mailer/message_delivery.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>The <code>ActionMailer::MessageDelivery</code> class is used by <a href="Base.html"><code>ActionMailer::Base</code></a> when creating a new mailer. <code>MessageDelivery</code> is a wrapper (<code>Delegator</code> subclass) around a lazy created <code>Mail::Message</code>. You can get direct access to the <code>Mail::Message</code>, deliver the email or schedule the email to be sent through Active Job.</p>
+
+<pre><code>Notifier.welcome(User.first)               # an ActionMailer::MessageDelivery object
+Notifier.welcome(User.first).deliver_now   # sends the email
+Notifier.welcome(User.first).deliver_later # enqueue email delivery as a job through Active Job
+Notifier.welcome(User.first).message       # a Mail::Message object
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <!-- Method ref -->
+    <h2>Methods</h2>
+    <dl class="methods">
+      
+        <dt>D</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-deliver_later">deliver_later</a>,
+              </li>
+            
+              
+              <li>
+                <a href="#method-i-deliver_later-21">deliver_later!</a>,
+              </li>
+            
+              
+              <li>
+                <a href="#method-i-deliver_now">deliver_now</a>,
+              </li>
+            
+              
+              <li>
+                <a href="#method-i-deliver_now-21">deliver_now!</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+        <dt>M</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-message">message</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+        <dt>P</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-processed-3F">processed?</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+    </dl>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2>Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-deliver_later">
+            
+              deliver_later(options = {})
+            
+            <a href="../../classes/ActionMailer/MessageDelivery.html#method-i-deliver_later" name="method-i-deliver_later" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Enqueues the email to be delivered through Active Job. When the job runs it will send the email using <code>deliver_now</code>.</p>
+
+<pre><code>Notifier.welcome(User.first).deliver_later
+Notifier.welcome(User.first).deliver_later(wait: 1.hour)
+Notifier.welcome(User.first).deliver_later(wait_until: 10.hours.from_now)
+</code></pre>
+
+<p>Options:</p>
+<ul><li>
+<p><code>:wait</code> - Enqueue the email to be delivered with a delay.</p>
+</li><li>
+<p><code>:wait_until</code> - Enqueue the email to be delivered at (after) a specific date / time.</p>
+</li><li>
+<p><code>:queue</code> - Enqueue the email on the specified queue.</p>
+</li></ul>
+
+<p>By default, the email will be enqueued using <code>ActionMailer::DeliveryJob</code>. Each <code>ActionMailer::Base</code> class can specify the job to use by setting the class variable <code>delivery_job</code>.</p>
+
+<pre><code>class AccountRegistrationMailer &lt; ApplicationMailer
+  self.delivery_job = RegistrationDeliveryJob
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-deliver_later_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File actionmailer/lib/action_mailer/message_delivery.rb, line 93</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deliver_later</span>(<span class="ruby-identifier">options</span> = {})
+  <span class="ruby-identifier">enqueue_delivery</span> <span class="ruby-value">:deliver_now</span>, <span class="ruby-identifier">options</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-deliver_later-21">
+            
+              deliver_later!(options = {})
+            
+            <a href="../../classes/ActionMailer/MessageDelivery.html#method-i-deliver_later-21" name="method-i-deliver_later-21" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Enqueues the email to be delivered through Active Job. When the job runs it will send the email using <code>deliver_now!</code>. That means that the message will be sent bypassing checking <code>perform_deliveries</code> and <code>raise_delivery_errors</code>, so use with caution.</p>
+
+<pre><code>Notifier.welcome(User.first).deliver_later!
+Notifier.welcome(User.first).deliver_later!(wait: 1.hour)
+Notifier.welcome(User.first).deliver_later!(wait_until: 10.hours.from_now)
+</code></pre>
+
+<p>Options:</p>
+<ul><li>
+<p><code>:wait</code> - Enqueue the email to be delivered with a delay</p>
+</li><li>
+<p><code>:wait_until</code> - Enqueue the email to be delivered at (after) a specific date / time</p>
+</li><li>
+<p><code>:queue</code> - Enqueue the email on the specified queue</p>
+</li></ul>
+
+<p>By default, the email will be enqueued using <code>ActionMailer::DeliveryJob</code>. Each <code>ActionMailer::Base</code> class can specify the job to use by setting the class variable <code>delivery_job</code>.</p>
+
+<pre><code>class AccountRegistrationMailer &lt; ApplicationMailer
+  self.delivery_job = RegistrationDeliveryJob
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-deliver_later-21_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File actionmailer/lib/action_mailer/message_delivery.rb, line 69</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deliver_later!</span>(<span class="ruby-identifier">options</span> = {})
+  <span class="ruby-identifier">enqueue_delivery</span> <span class="ruby-value">:deliver_now!</span>, <span class="ruby-identifier">options</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-deliver_now">
+            
+              deliver_now()
+            
+            <a href="../../classes/ActionMailer/MessageDelivery.html#method-i-deliver_now" name="method-i-deliver_now" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Delivers an email:</p>
+
+<pre><code>Notifier.welcome(User.first).deliver_now
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-deliver_now_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File actionmailer/lib/action_mailer/message_delivery.rb, line 112</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deliver_now</span>
+  <span class="ruby-identifier">processed_mailer</span>.<span class="ruby-identifier">handle_exceptions</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">message</span>.<span class="ruby-identifier">deliver</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-deliver_now-21">
+            
+              deliver_now!()
+            
+            <a href="../../classes/ActionMailer/MessageDelivery.html#method-i-deliver_now-21" name="method-i-deliver_now-21" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Delivers an email without checking <code>perform_deliveries</code> and <code>raise_delivery_errors</code>, so use with caution.</p>
+
+<pre><code>Notifier.welcome(User.first).deliver_now!
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-deliver_now-21_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File actionmailer/lib/action_mailer/message_delivery.rb, line 102</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deliver_now!</span>
+  <span class="ruby-identifier">processed_mailer</span>.<span class="ruby-identifier">handle_exceptions</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">message</span>.<span class="ruby-identifier">deliver!</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-message">
+            
+              message()
+            
+            <a href="../../classes/ActionMailer/MessageDelivery.html#method-i-message" name="method-i-message" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the resulting Mail::Message</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-message_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File actionmailer/lib/action_mailer/message_delivery.rb, line 38</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">message</span>
+  <span class="ruby-identifier">__getobj__</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-processed-3F">
+            
+              processed?()
+            
+            <a href="../../classes/ActionMailer/MessageDelivery.html#method-i-processed-3F" name="method-i-processed-3F" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Was the delegate loaded, causing the mailer action to be processed?</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-processed-3F_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File actionmailer/lib/action_mailer/message_delivery.rb, line 43</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">processed?</span>
+  <span class="ruby-ivar">@processed_mailer</span> <span class="ruby-operator">||</span> <span class="ruby-ivar">@mail_message</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

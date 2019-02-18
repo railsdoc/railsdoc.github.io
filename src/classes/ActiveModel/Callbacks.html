@@ -1,0 +1,230 @@
+---
+title: ActiveModel::Callbacks
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveModel::Callbacks
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activemodel/lib/active_model/callbacks_rb.html">activemodel/lib/active_model/callbacks.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h2 id="module-ActiveModel::Callbacks-label-Active+Model+Callbacks">Active Model Callbacks</h2>
+
+<p>Provides an interface for any class to have Active Record like callbacks.</p>
+
+<p>Like the Active Record methods, the callback chain is aborted as soon as one of the methods throws <code>:abort</code>.</p>
+
+<p>First, extend <a href="Callbacks.html"><code>ActiveModel::Callbacks</code></a> from the class you are creating:</p>
+
+<pre><code>class MyModel
+  extend ActiveModel::Callbacks
+end
+</code></pre>
+
+<p>Then define a list of methods that you want callbacks attached to:</p>
+
+<pre><code>define_model_callbacks :create, :update
+</code></pre>
+
+<p>This will provide all three standard callbacks (before, around and after) for both the <code>:create</code> and <code>:update</code> methods. To implement, you need to wrap the methods you want callbacks on in a block so that the callbacks get a chance to fire:</p>
+
+<pre><code>def create
+  run_callbacks :create do
+    # Your create action methods here
+  end
+end
+</code></pre>
+
+<p>Then in your class, you can use the <code>before_create</code>, <code>after_create</code> and <code>around_create</code> methods, just as you would in an Active Record model.</p>
+
+<pre><code>before_create :action_before_create
+
+def action_before_create
+  # Your code here
+end
+</code></pre>
+
+<p>When defining an around callback remember to yield to the block, otherwise it won&#39;t be executed:</p>
+
+<pre><code>around_create :log_status
+
+def log_status
+  puts &#39;going to call the block...&#39;
+  yield
+  puts &#39;block successfully called.&#39;
+end
+</code></pre>
+
+<p>You can choose to have only specific callbacks by passing a hash to the <code>define_model_callbacks</code> method.</p>
+
+<pre><code>define_model_callbacks :create, only: [:after, :before]
+</code></pre>
+
+<p>Would only create the <code>after_create</code> and <code>before_create</code> callback methods in your class.</p>
+
+<p>NOTE: Calling the same callback multiple times will overwrite previous callback definitions.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <!-- Method ref -->
+    <h2>Methods</h2>
+    <dl class="methods">
+      
+        <dt>D</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-define_model_callbacks">define_model_callbacks</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+    </dl>
+  
+
+  
+    <!-- Includes -->
+    <h2>Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="../ActiveSupport/Callbacks.html">
+              ActiveSupport::Callbacks
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2>Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-define_model_callbacks">
+            
+              define_model_callbacks(*callbacks)
+            
+            <a href="../../classes/ActiveModel/Callbacks.html#method-i-define_model_callbacks" name="method-i-define_model_callbacks" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p><a href="Callbacks.html#method-i-define_model_callbacks"><code>define_model_callbacks</code></a> accepts the same options <code>define_callbacks</code> does, in case you want to overwrite a default. Besides that, it also accepts an <code>:only</code> option, where you can choose if you want all types (before, around or after) or just some.</p>
+
+<pre><code>define_model_callbacks :initializer, only: :after
+</code></pre>
+
+<p>Note, the <code>only: &lt;type&gt;</code> hash will apply to all callbacks defined on that method call. To get around this you can call the <a href="Callbacks.html#method-i-define_model_callbacks"><code>define_model_callbacks</code></a> method as many times as you need.</p>
+
+<pre><code>define_model_callbacks :create,  only: :after
+define_model_callbacks :update,  only: :before
+define_model_callbacks :destroy, only: :around
+</code></pre>
+
+<p>Would create <code>after_create</code>, <code>before_update</code> and <code>around_destroy</code> methods only.</p>
+
+<p>You can pass in a class to before_&lt;type&gt;, after_&lt;type&gt; and around_&lt;type&gt;, in which case the callback will call that class&#39;s &lt;action&gt;_&lt;type&gt; method passing the object that the callback is being called on.</p>
+
+<pre><code>class MyModel
+  extend ActiveModel::Callbacks
+  define_model_callbacks :create
+
+  before_create AnotherClass
+end
+
+class AnotherClass
+  def self.before_create( obj )
+    # obj is the MyModel instance that the callback is being called on
+  end
+end
+</code></pre>
+
+<p>NOTE: <code>method_name</code> passed to <a href="Callbacks.html#method-i-define_model_callbacks"><code>define_model_callbacks</code></a> must not end with <code>!</code>, <code>?</code> or <code>=</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-define_model_callbacks_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activemodel/lib/active_model/callbacks.rb, line 108</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">define_model_callbacks</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">callbacks</span>)
+  <span class="ruby-identifier">options</span> = <span class="ruby-identifier">callbacks</span>.<span class="ruby-identifier">extract_options!</span>
+  <span class="ruby-identifier">options</span> = {
+    <span class="ruby-value">skip_after_callbacks_if_terminated:</span> <span class="ruby-keyword">true</span>,
+    <span class="ruby-value">scope:</span> [<span class="ruby-value">:kind</span>, <span class="ruby-value">:name</span>],
+    <span class="ruby-value">only:</span> [<span class="ruby-value">:before</span>, <span class="ruby-value">:around</span>, <span class="ruby-value">:after</span>]
+  }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>)
+
+  <span class="ruby-identifier">types</span> = <span class="ruby-constant">Array</span>(<span class="ruby-identifier">options</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-value">:only</span>))
+
+  <span class="ruby-identifier">callbacks</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">callback</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">define_callbacks</span>(<span class="ruby-identifier">callback</span>, <span class="ruby-identifier">options</span>)
+
+    <span class="ruby-identifier">types</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">type</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">send</span>(<span class="ruby-node">&quot;_define_#{type}_model_callback&quot;</span>, <span class="ruby-keyword">self</span>, <span class="ruby-identifier">callback</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

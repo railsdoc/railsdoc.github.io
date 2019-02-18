@@ -1,0 +1,254 @@
+---
+title: ActionDispatch::RemoteIp
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionDispatch::RemoteIp
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/middleware/remote_ip_rb.html">actionpack/lib/action_dispatch/middleware/remote_ip.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>This middleware calculates the IP address of the remote client that is making the request. It does this by checking various headers that could contain the address, and then picking the last-set address that is not on the list of trusted IPs. This follows the precedent set by e.g. <a href="https://issues.apache.org/bugzilla/show_bug.cgi?id=50453">the Tomcat server</a>, with <a href="http://blog.gingerlime.com/2012/rails-ip-spoofing-vulnerabilities-and-protection">reasoning explained at length</a> by @gingerlime. A more detailed explanation of the algorithm is given at <a href="RemoteIp/GetIp.html#method-i-calculate_ip"><code>GetIp#calculate_ip</code></a>.</p>
+
+<p>Some Rack servers concatenate repeated headers, like <a href="https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.2">HTTP RFC 2616</a> requires. Some Rack servers simply drop preceding headers, and only report the value that was <a href="http://andre.arko.net/2011/12/26/repeated-headers-and-ruby-web-servers">given in the last header</a>. If you are behind multiple proxy servers (like NGINX to HAProxy to Unicorn) then you should test your Rack server to make sure your data is good.</p>
+
+<p>IF YOU DON&#39;T USE A PROXY, THIS MAKES YOU VULNERABLE TO IP SPOOFING. This middleware assumes that there is at least one proxy sitting around and setting headers with the client&#39;s remote IP address. If you don&#39;t use a proxy, because you are hosted on e.g. Heroku without <a href="SSL.html"><code>SSL</code></a>, any client can claim to have any IP address by setting the X-Forwarded-For header. If you care about that, then you need to explicitly drop or ignore those headers sometime before this middleware runs.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2>Namespace</h2>
+    
+    
+    
+    
+      <h3>Class</h3>
+      <ul>
+      
+        <li><a href="RemoteIp/GetIp.html">ActionDispatch::RemoteIp::GetIp</a></li>
+      
+        <li><a href="RemoteIp/IpSpoofAttackError.html">ActionDispatch::RemoteIp::IpSpoofAttackError</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <!-- Method ref -->
+    <h2>Methods</h2>
+    <dl class="methods">
+      
+        <dt>C</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-call">call</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+        <dt>N</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-c-new">new</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+    </dl>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2>Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">TRUSTED_PROXIES</td>
+            <td>=</td>
+            <td class="attr-value">[
+&quot;127.0.0.1&quot;,      # localhost IPv4
+&quot;::1&quot;,            # localhost IPv6
+&quot;fc00::/7&quot;,       # private IPv6 range fc00::/7
+&quot;10.0.0.0/8&quot;,     # private IPv4 range 10.x.x.x
+&quot;172.16.0.0/12&quot;,  # private IPv4 range 172.16.0.0 .. 172.31.255.255
+&quot;192.168.0.0/16&quot;, # private IPv4 range 192.168.x.x
+].map { |proxy| IPAddr.new(proxy) }</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>The default trusted IPs list simply includes IP addresses that are guaranteed by the IP specification to be private addresses. Those will not be the ultimate client IP in production, and so are discarded. See <a href="https://en.wikipedia.org/wiki/Private_network">en.wikipedia.org/wiki/Private_network</a> for details.</p></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+      <!-- Section attributes -->
+      <h2>Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>check_ip</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>proxies</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2>Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(app, ip_spoofing_check = true, custom_proxies = nil)
+            
+            <a href="../../classes/ActionDispatch/RemoteIp.html#method-c-new" name="method-c-new" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Create a new <code>RemoteIp</code> middleware instance.</p>
+
+<p>The <code>ip_spoofing_check</code> option is on by default. When on, an exception is raised if it looks like the client is trying to lie about its own IP address. It makes sense to turn off this check on sites aimed at non-IP clients (like WAP devices), or behind proxies that set headers in an incorrect or confusing way (like AWS ELB).</p>
+
+<p>The <code>custom_proxies</code> argument can take an <a href="../Array.html"><code>Array</code></a> of string, IPAddr, or Regexp objects which will be used instead of <code>TRUSTED_PROXIES</code>. If a single string, IPAddr, or Regexp object is provided, it will be used in addition to <code>TRUSTED_PROXIES</code>. Any proxy setup will put the value you want in the middle (or at the beginning) of the X-Forwarded-For list, with your proxy servers after it. If your proxies aren&#39;t removed, pass them in via the <code>custom_proxies</code> parameter. That way, the middleware will ignore those IP addresses, and return the one that you want.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 62</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">app</span>, <span class="ruby-identifier">ip_spoofing_check</span> = <span class="ruby-keyword">true</span>, <span class="ruby-identifier">custom_proxies</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-ivar">@app</span> = <span class="ruby-identifier">app</span>
+  <span class="ruby-ivar">@check_ip</span> = <span class="ruby-identifier">ip_spoofing_check</span>
+  <span class="ruby-ivar">@proxies</span> = <span class="ruby-keyword">if</span> <span class="ruby-identifier">custom_proxies</span>.<span class="ruby-identifier">blank?</span>
+    <span class="ruby-constant">TRUSTED_PROXIES</span>
+  <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">custom_proxies</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:any?</span>)
+    <span class="ruby-identifier">custom_proxies</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-constant">Array</span>(<span class="ruby-identifier">custom_proxies</span>) <span class="ruby-operator">+</span> <span class="ruby-constant">TRUSTED_PROXIES</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2>Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-call">
+            
+              call(env)
+            
+            <a href="../../classes/ActionDispatch/RemoteIp.html#method-i-call" name="method-i-call" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Since the IP address may not be needed, we store the object here without calculating the IP to keep from slowing down the majority of requests. For those requests that do need to know the IP, the <a href="RemoteIp/GetIp.html#method-i-calculate_ip"><code>GetIp#calculate_ip</code></a> method will calculate the memoized client IP address.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-call_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 78</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">call</span>(<span class="ruby-identifier">env</span>)
+  <span class="ruby-identifier">req</span> = <span class="ruby-constant">ActionDispatch</span><span class="ruby-operator">::</span><span class="ruby-constant">Request</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">env</span>
+  <span class="ruby-identifier">req</span>.<span class="ruby-identifier">remote_ip</span> = <span class="ruby-constant">GetIp</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">req</span>, <span class="ruby-identifier">check_ip</span>, <span class="ruby-identifier">proxies</span>)
+  <span class="ruby-ivar">@app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">req</span>.<span class="ruby-identifier">env</span>)
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,328 @@
+---
+title: ActiveSupport::Concern
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Concern
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/concern_rb.html">activesupport/lib/active_support/concern.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>A typical module looks like this:</p>
+
+<pre><code>module M
+  def self.included(base)
+    base.extend ClassMethods
+    base.class_eval do
+      scope :disabled, -&gt; { where(disabled: true) }
+    end
+  end
+
+  module ClassMethods
+    ...
+  end
+end
+</code></pre>
+
+<p>By using <code>ActiveSupport::Concern</code> the above module could instead be written as:</p>
+
+<pre><code>require &#39;active_support/concern&#39;
+
+module M
+  extend ActiveSupport::Concern
+
+  included do
+    scope :disabled, -&gt; { where(disabled: true) }
+  end
+
+  class_methods do
+    ...
+  end
+end
+</code></pre>
+
+<p>Moreover, it gracefully handles module dependencies. Given a <code>Foo</code> module and a <code>Bar</code> module which depends on the former, we would typically write the following:</p>
+
+<pre><code>module Foo
+  def self.included(base)
+    base.class_eval do
+      def self.method_injected_by_foo
+        ...
+      end
+    end
+  end
+end
+
+module Bar
+  def self.included(base)
+    base.method_injected_by_foo
+  end
+end
+
+class Host
+  include Foo # We need to include this dependency for Bar
+  include Bar # Bar is the module that Host really needs
+end
+</code></pre>
+
+<p>But why should <code>Host</code> care about <code>Bar</code>&#39;s dependencies, namely <code>Foo</code>? We could try to hide these from <code>Host</code> directly including <code>Foo</code> in <code>Bar</code>:</p>
+
+<pre><code>module Bar
+  include Foo
+  def self.included(base)
+    base.method_injected_by_foo
+  end
+end
+
+class Host
+  include Bar
+end
+</code></pre>
+
+<p>Unfortunately this won&#39;t work, since when <code>Foo</code> is included, its <code>base</code> is the <code>Bar</code> module, not the <code>Host</code> class. With <code>ActiveSupport::Concern</code>, module dependencies are properly resolved:</p>
+
+<pre><code>require &#39;active_support/concern&#39;
+
+module Foo
+  extend ActiveSupport::Concern
+  included do
+    def self.method_injected_by_foo
+      ...
+    end
+  end
+end
+
+module Bar
+  extend ActiveSupport::Concern
+  include Foo
+
+  included do
+    self.method_injected_by_foo
+  end
+end
+
+class Host
+  include Bar # It works, now Bar takes care of its dependencies
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <!-- Method ref -->
+    <h2>Methods</h2>
+    <dl class="methods">
+      
+        <dt>A</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-append_features">append_features</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+        <dt>C</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-class_methods">class_methods</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+        <dt>I</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-included">included</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+    </dl>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2>Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-append_features">
+            
+              append_features(base)
+            
+            <a href="../../classes/ActiveSupport/Concern.html#method-i-append_features" name="method-i-append_features" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-append_features_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activesupport/lib/active_support/concern.rb, line 113</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">append_features</span>(<span class="ruby-identifier">base</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">base</span>.<span class="ruby-identifier">instance_variable_defined?</span>(<span class="ruby-value">:@_dependencies</span>)
+    <span class="ruby-identifier">base</span>.<span class="ruby-identifier">instance_variable_get</span>(<span class="ruby-value">:@_dependencies</span>) <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-keyword">self</span>
+    <span class="ruby-keyword">false</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-keyword">return</span> <span class="ruby-keyword">false</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">base</span> <span class="ruby-operator">&lt;</span> <span class="ruby-keyword">self</span>
+    <span class="ruby-ivar">@_dependencies</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">dep</span><span class="ruby-operator">|</span> <span class="ruby-identifier">base</span>.<span class="ruby-identifier">include</span>(<span class="ruby-identifier">dep</span>) }
+    <span class="ruby-keyword">super</span>
+    <span class="ruby-identifier">base</span>.<span class="ruby-identifier">extend</span> <span class="ruby-identifier">const_get</span>(<span class="ruby-value">:ClassMethods</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">const_defined?</span>(<span class="ruby-value">:ClassMethods</span>)
+    <span class="ruby-identifier">base</span>.<span class="ruby-identifier">class_eval</span>(<span class="ruby-operator">&amp;</span><span class="ruby-ivar">@_included_block</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">instance_variable_defined?</span>(<span class="ruby-value">:@_included_block</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-class_methods">
+            
+              class_methods(&amp;class_methods_module_definition)
+            
+            <a href="../../classes/ActiveSupport/Concern.html#method-i-class_methods" name="method-i-class_methods" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-class_methods_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activesupport/lib/active_support/concern.rb, line 136</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">class_methods</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">class_methods_module_definition</span>)
+  <span class="ruby-identifier">mod</span> = <span class="ruby-identifier">const_defined?</span>(<span class="ruby-value">:ClassMethods</span>, <span class="ruby-keyword">false</span>) <span class="ruby-operator">?</span>
+    <span class="ruby-identifier">const_get</span>(<span class="ruby-value">:ClassMethods</span>) <span class="ruby-operator">:</span>
+    <span class="ruby-identifier">const_set</span>(<span class="ruby-value">:ClassMethods</span>, <span class="ruby-constant">Module</span>.<span class="ruby-identifier">new</span>)
+
+  <span class="ruby-identifier">mod</span>.<span class="ruby-identifier">module_eval</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">class_methods_module_definition</span>)
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-included">
+            
+              included(base = nil, &amp;block)
+            
+            <a href="../../classes/ActiveSupport/Concern.html#method-i-included" name="method-i-included" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-included_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activesupport/lib/active_support/concern.rb, line 126</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">included</span>(<span class="ruby-identifier">base</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">base</span>.<span class="ruby-identifier">nil?</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">MultipleIncludedBlocks</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">instance_variable_defined?</span>(<span class="ruby-value">:@_included_block</span>)
+
+    <span class="ruby-ivar">@_included_block</span> = <span class="ruby-identifier">block</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-keyword">super</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,232 @@
+---
+title: ActiveRecord::Locking::Pessimistic
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Locking::Pessimistic
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/locking/pessimistic_rb.html">activerecord/lib/active_record/locking/pessimistic.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p><a href="Pessimistic.html"><code>Locking::Pessimistic</code></a> provides support for row-level locking using SELECT … FOR UPDATE and other lock types.</p>
+
+<p>Chain <code>ActiveRecord::Base#find</code> to <code>ActiveRecord::QueryMethods#lock</code> to obtain an exclusive lock on the selected rows:</p>
+
+<pre><code># select * from accounts where id=1 for update
+Account.lock.find(1)
+</code></pre>
+
+<p>Call <code>lock(&#39;some locking clause&#39;)</code> to use a database-specific locking clause of your own such as &#39;LOCK IN SHARE MODE&#39; or &#39;FOR UPDATE NOWAIT&#39;. Example:</p>
+
+<pre><code>Account.transaction do
+  # select * from accounts where name = &#39;shugo&#39; limit 1 for update
+  shugo = Account.where(&quot;name = &#39;shugo&#39;&quot;).lock(true).first
+  yuko = Account.where(&quot;name = &#39;yuko&#39;&quot;).lock(true).first
+  shugo.balance -= 100
+  shugo.save!
+  yuko.balance += 100
+  yuko.save!
+end
+</code></pre>
+
+<p>You can also use <code>ActiveRecord::Base#lock!</code> method to lock one record by id. This may be better if you don&#39;t need to lock every row. Example:</p>
+
+<pre><code>Account.transaction do
+  # select * from accounts where ...
+  accounts = Account.where(...)
+  account1 = accounts.detect { |account| ... }
+  account2 = accounts.detect { |account| ... }
+  # select * from accounts where id=? for update
+  account1.lock!
+  account2.lock!
+  account1.balance -= 100
+  account1.save!
+  account2.balance += 100
+  account2.save!
+end
+</code></pre>
+
+<p>You can start a transaction and acquire the lock in one go by calling <code>with_lock</code> with a block. The block is called from within a transaction, the object is already locked. Example:</p>
+
+<pre><code>account = Account.first
+account.with_lock do
+  # This block is called within a transaction,
+  # account is already locked.
+  account.balance -= 100
+  account.save!
+end
+</code></pre>
+
+<p>Database-specific information on row locking:</p>
+
+<pre><code>MySQL: https://dev.mysql.com/doc/refman/5.7/en/innodb-locking-reads.html
+PostgreSQL: https://www.postgresql.org/docs/current/interactive/sql-select.html#SQL-FOR-UPDATE-SHARE
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <!-- Method ref -->
+    <h2>Methods</h2>
+    <dl class="methods">
+      
+        <dt>L</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-lock-21">lock!</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+        <dt>W</dt>
+        <dd>
+          <ul>
+            
+              
+              <li>
+                <a href="#method-i-with_lock">with_lock</a>
+              </li>
+            
+          </ul>
+        </dd>
+      
+    </dl>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2>Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-lock-21">
+            
+              lock!(lock = true)
+            
+            <a href="../../../classes/ActiveRecord/Locking/Pessimistic.html#method-i-lock-21" name="method-i-lock-21" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Obtain a row lock on this record. Reloads the record to obtain the requested lock. Pass an SQL locking clause to append the end of the SELECT statement or pass true for “FOR UPDATE” (the default, an exclusive row lock). Returns the locked record.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-lock-21_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activerecord/lib/active_record/locking/pessimistic.rb, line 63</span>
+      <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">lock!</span>(<span class="ruby-identifier">lock</span> = <span class="ruby-keyword">true</span>)
+        <span class="ruby-keyword">if</span> <span class="ruby-identifier">persisted?</span>
+          <span class="ruby-keyword">if</span> <span class="ruby-identifier">has_changes_to_save?</span>
+            <span class="ruby-identifier">raise</span>(<span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">              Locking a record with unpersisted changes is not supported. Use
+              `save` to persist the changes, or `reload` to discard them
+              explicitly.
+</span><span class="ruby-identifier">            MSG</span>
+          <span class="ruby-keyword">end</span>
+
+          <span class="ruby-identifier">reload</span>(<span class="ruby-value">lock:</span> <span class="ruby-identifier">lock</span>)
+        <span class="ruby-keyword">end</span>
+        <span class="ruby-keyword">self</span>
+      <span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-with_lock">
+            
+              with_lock(lock = true)
+            
+            <a href="../../../classes/ActiveRecord/Locking/Pessimistic.html#method-i-with_lock" name="method-i-with_lock" class="permalink">Link</a>
+          </h3>
+
+          
+            <div class="description">
+              <p>Wraps the passed block in a transaction, locking the object before yielding. You can pass the SQL locking clause as argument (see <code>lock!</code>).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-with_lock_source" class="dyn-source">
+                <pre><span class="ruby-comment"># File activerecord/lib/active_record/locking/pessimistic.rb, line 81</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">with_lock</span>(<span class="ruby-identifier">lock</span> = <span class="ruby-keyword">true</span>)
+  <span class="ruby-identifier">transaction</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">lock!</span>(<span class="ruby-identifier">lock</span>)
+    <span class="ruby-keyword">yield</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
