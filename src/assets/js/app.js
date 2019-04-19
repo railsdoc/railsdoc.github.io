@@ -5,4 +5,6 @@ $(() => {
   });
 
   hljs.initHighlightingOnLoad();
+
+  anchors.add();
 });
