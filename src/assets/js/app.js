@@ -5,4 +5,7 @@ $(() => {
   });
 
   hljs.initHighlightingOnLoad();
+
+  anchors.options.visible = 'always';
+  anchors.add();
 });
