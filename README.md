@@ -12,12 +12,13 @@ The project goal is **making [api.rubyonrails.org](https://api.rubyonrails.org/)
 
 Thare are some enhancements in addition to SEO.
 
-- [ ] Powered by [Jekyll](TODO:link)
-- [ ] Styled by [bootstrap](TODO:link)
-- [ ] No iframe
-- [ ] Mobile-friendly webpage
-- [ ] Table of Contents
-- [ ] Google Custom Search
+- [x] Built by [Jekyll](https://github.com/jekyll/jekyll)
+- [x] Styled by [bootstrap(v4)](https://github.com/twbs/bootstrap)
+- [x] No iframe layout
+- [x] Table of Contents
+- [x] Google Custom Search
+- [ ] Mobile-friendly design
+- [ ] Multiple version documentation
 - [ ] etc. (see. https://github.com/railsdoc/railsdoc.github.io/issues)
 
 ## Feature Request  
