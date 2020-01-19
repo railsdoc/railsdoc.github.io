@@ -15,3 +15,14 @@ task :build do
 
   sh 'bundle exec jekyll build'
 end
+
+task :switch_rails do
+  require 'yaml'
+
+  config = YAML.load_file('./_config.yml')
+  target_rails_version = config["target_rails_version"]
+
+  cd 'rails' do
+    sh "git switch v#{target_rails_version} -c v#{target_rails_version}"
+  end
+end

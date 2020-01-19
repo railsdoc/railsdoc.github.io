@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.3</span><br />
+            <span>Ruby on Rails 5.2.4</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -1208,7 +1208,13 @@ config.railties_order = [Blog::Engine, :main_app, :all]
                 <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/engine.rb, line 549</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">load_seed</span>
   <span class="ruby-identifier">seed_file</span> = <span class="ruby-identifier">paths</span>[<span class="ruby-string">&quot;db/seeds.rb&quot;</span>].<span class="ruby-identifier">existent</span>.<span class="ruby-identifier">first</span>
-  <span class="ruby-identifier">with_inline_jobs</span> { <span class="ruby-identifier">load</span>(<span class="ruby-identifier">seed_file</span>) } <span class="ruby-keyword">if</span> <span class="ruby-identifier">seed_file</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">seed_file</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">try</span>(<span class="ruby-value">:active_job</span>).<span class="ruby-identifier">try!</span>(<span class="ruby-value">:queue_adapter</span>) <span class="ruby-operator">==</span> <span class="ruby-value">:async</span>
+    <span class="ruby-identifier">with_inline_jobs</span> { <span class="ruby-identifier">load</span>(<span class="ruby-identifier">seed_file</span>) }
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">load</span>(<span class="ruby-identifier">seed_file</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -1290,7 +1296,7 @@ config.railties_order = [Blog::Engine, :main_app, :all]
         <div class="method">
           <h3 id="method-i-routes">
             
-              routes()
+              routes(&amp;block)
             
           </h3>
 
@@ -1314,9 +1320,9 @@ config.railties_order = [Blog::Engine, :main_app, :all]
               </p>
               <div id="method-i-routes_source">
                 <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/engine.rb, line 534</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">routes</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">routes</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-ivar">@routes</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">ActionDispatch</span><span class="ruby-operator">::</span><span class="ruby-constant">Routing</span><span class="ruby-operator">::</span><span class="ruby-constant">RouteSet</span>.<span class="ruby-identifier">new_with_config</span>(<span class="ruby-identifier">config</span>)
-  <span class="ruby-ivar">@routes</span>.<span class="ruby-identifier">append</span>(<span class="ruby-operator">&amp;</span><span class="ruby-constant">Proc</span>.<span class="ruby-identifier">new</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+  <span class="ruby-ivar">@routes</span>.<span class="ruby-identifier">append</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
   <span class="ruby-ivar">@routes</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -1353,7 +1359,7 @@ config.railties_order = [Blog::Engine, :main_app, :all]
                 
               </p>
               <div id="method-i-load_config_initializer_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/engine.rb, line 655</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/engine.rb, line 661</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">load_config_initializer</span>(<span class="ruby-identifier">initializer</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Notifications</span>.<span class="ruby-identifier">instrument</span>(<span class="ruby-string">&quot;load_config_initializer.railties&quot;</span>, <span class="ruby-value">initializer:</span> <span class="ruby-identifier">initializer</span>) <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">load</span>(<span class="ruby-identifier">initializer</span>)
