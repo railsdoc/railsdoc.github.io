@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.3</span><br />
+            <span>Ruby on Rails 5.2.4</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -185,11 +185,12 @@ end
     <span class="ruby-identifier">relation</span> = <span class="ruby-identifier">apply_join_dependency</span>
 
     <span class="ruby-keyword">if</span> <span class="ruby-identifier">operation</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">downcase</span> <span class="ruby-operator">==</span> <span class="ruby-string">&quot;count&quot;</span>
-      <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">distinct!</span>
-      <span class="ruby-comment"># PostgreSQL: ORDER BY expressions must appear in SELECT list when using DISTINCT</span>
-      <span class="ruby-keyword">if</span> (<span class="ruby-identifier">column_name</span> <span class="ruby-operator">==</span> <span class="ruby-value">:all</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">column_name</span>.<span class="ruby-identifier">nil?</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">select_values</span>.<span class="ruby-identifier">empty?</span>
-        <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">order_values</span> = []
+      <span class="ruby-keyword">unless</span> <span class="ruby-identifier">distinct_value</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">distinct_select?</span>(<span class="ruby-identifier">column_name</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">select_for_count</span>)
+        <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">distinct!</span>
+        <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">select_values</span> = [ <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">primary_key</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">table</span>[<span class="ruby-constant">Arel</span>.<span class="ruby-identifier">star</span>] ]
       <span class="ruby-keyword">end</span>
+      <span class="ruby-comment"># PostgreSQL: ORDER BY expressions must appear in SELECT list when using DISTINCT</span>
+      <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">order_values</span> = []
     <span class="ruby-keyword">end</span>
 
     <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">calculate</span>(<span class="ruby-identifier">operation</span>, <span class="ruby-identifier">column_name</span>)
@@ -311,7 +312,7 @@ Person.joins(:companies).ids # SELECT people.id FROM people INNER JOIN companies
                 
               </p>
               <div id="method-i-ids_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 205</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 206</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">ids</span>
   <span class="ruby-identifier">pluck</span> <span class="ruby-identifier">primary_key</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -455,7 +456,7 @@ Person.pluck(&#39;DATEDIFF(updated_at, created_at)&#39;)
                 
               </p>
               <div id="method-i-pluck_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 184</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 185</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">pluck</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">column_names</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">loaded?</span> <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-identifier">column_names</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:to_s</span>) <span class="ruby-operator">-</span> <span class="ruby-ivar">@klass</span>.<span class="ruby-identifier">attribute_names</span> <span class="ruby-operator">-</span> <span class="ruby-ivar">@klass</span>.<span class="ruby-identifier">attribute_aliases</span>.<span class="ruby-identifier">keys</span>).<span class="ruby-identifier">empty?</span>
     <span class="ruby-keyword">return</span> <span class="ruby-identifier">records</span>.<span class="ruby-identifier">pluck</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">column_names</span>)
