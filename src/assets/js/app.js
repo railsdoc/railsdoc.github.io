@@ -8,4 +8,8 @@ $(() => {
 
   anchors.options.visible = 'always';
   anchors.add();
+
+  $(`.sidebar-content a[href='${window.location.pathname}']`)
+    .attr("class", "active-link")
+    .parents('ul').show();
 });
