@@ -1,9 +1,11 @@
 task :build do
   cd 'rails' do
-    sh %(sed -i '' -e 's/sdoc.*$/sdoc", github: "toshimaru\\/sdoc", branch: "railsdoc"/g' ./Gemfile)
-    sh 'bundle install && bundle update sdoc'
-    rm_rf 'doc'
-    sh 'bundle exec rake rdoc'
+    Bundler.with_unbundled_env do
+      sh %(sed -i '' -e 's/sdoc.*$/sdoc", github: "toshimaru\\/sdoc", branch: "railsdoc"/g' ./Gemfile)
+      sh 'bundle install && bundle update sdoc'
+      rm_rf 'doc'
+      sh 'bundle exec rake rdoc'
+    end
   end
 
   cp_r Dir.glob('rails/doc/rdoc/*'), 'src/'
