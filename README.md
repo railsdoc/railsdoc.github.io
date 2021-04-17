@@ -1,6 +1,7 @@
 # [railsdoc.github.io](https://railsdoc.github.io/) 
 
 [![Build Status](https://travis-ci.com/railsdoc/railsdoc.github.io.svg?branch=main)](https://travis-ci.com/railsdoc/railsdoc.github.io)
+[![Netlify Status](https://api.netlify.com/api/v1/badges/c964029a-6d5a-4f3a-95e9-d35830a2fe83/deploy-status)](https://app.netlify.com/sites/railsdoc-preview/deploys)
 
 railsdoc.github.io is yet another Rails API documentation website.
 
