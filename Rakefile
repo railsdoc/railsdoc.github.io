@@ -8,7 +8,8 @@ task :build do
     end
   end
 
-  cp_r Dir.glob('rails/doc/rdoc/*'), 'src/'
+  copy_sources = Dir.glob('rails/doc/rdoc/*').reject { |path| path.end_with?("panel", "js", "created.rid") }
+  cp_r copy_sources, 'src/'
 
   cd 'src' do
     cp 'files/railties/RDOC_MAIN_rdoc.html', 'index.html'
