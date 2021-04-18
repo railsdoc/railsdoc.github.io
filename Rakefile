@@ -13,7 +13,7 @@ task :build do
 
   cd 'src' do
     cp 'files/railties/RDOC_MAIN_rdoc.html', 'index.html'
-    mv 'navigation.html', '_includes/navigation.html', force: true
+    # mv 'navigation.html', '_includes/navigation.html', force: true
   end
 
   sh 'bundle exec jekyll build'
