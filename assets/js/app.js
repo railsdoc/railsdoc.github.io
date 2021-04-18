@@ -4,7 +4,7 @@ $(() => {
   anchors.add();
 
   // highlight.js
-  hljs.initHighlighting();
+  hljs.highlightAll();
 
   $(".sidebar-sticky .icon").on("click", function (e) {
     $(this).siblings("ul").toggle();
