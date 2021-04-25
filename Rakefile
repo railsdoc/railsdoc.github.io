@@ -20,12 +20,19 @@ task :build do
 end
 
 task :switch_rails do
-  require 'yaml'
-
-  config = YAML.load_file('./_config.yml')
   target_rails_version = config["target_rails_version"]
-
   cd 'rails' do
     sh "git switch v#{target_rails_version} -c v#{target_rails_version}"
   end
+end
+
+task :mkdir do
+  config["collections"].each do |version|
+    mkdir version.to_s
+  end
+end
+
+def config
+  require 'yaml'
+  YAML.load_file('./_config.yml')
 end
