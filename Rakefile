@@ -21,9 +21,7 @@ end
 
 task :switch_rails do
   target_rails_version = config["target_rails_version"]
-  cd 'rails' do
-    sh "git switch v#{target_rails_version} -c v#{target_rails_version}"
-  end
+  switch_rails(target_rails_version)
 end
 
 task :mkdir do
@@ -35,4 +33,10 @@ end
 def config
   require 'yaml'
   YAML.load_file('./_config.yml')
+end
+
+def switch_rails(version)
+  cd 'rails' do
+    sh "git switch v#{version} -C v#{version}"
+  end
 end
