@@ -37,6 +37,7 @@ end
 
 def switch_rails(version)
   cd 'rails' do
-    sh "git switch v#{version} -C v#{version}"
+    sh "git reset --hard"
+    sh "git switch refs/tags/v#{version} -C v#{version}"
   end
 end
