@@ -27,7 +27,7 @@ task :switch_rails do
 end
 
 task :mkdir do
-  config["collections"].map(&:first).each do |version, detail|
+  config["collections"].each do |version, detail|
     mkdir version.to_s unless Dir.exist?(version.to_s)
     switch_rails(detail["specific_version"])
   end
