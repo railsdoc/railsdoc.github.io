@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 SOURCE_DIR = "src"
+INDEX_HTML = 'files/railties/RDOC_MAIN_rdoc.html'
 
 task :build do
   generate_rails_rdoc
@@ -45,13 +46,13 @@ def generate_rails_rdoc
   end
 end
 
-def generate_src(target_version: '')
+def generate_src(target_version: nil)
   copy_sources = Dir.glob('rails/doc/rdoc/*').reject { |path| path.end_with?("panel", "js", "created.rid") }
   target_dir = "#{SOURCE_DIR}/#{target_version}"
   cp_r copy_sources, target_dir
 
   cd target_dir do
-    cp 'files/railties/RDOC_MAIN_rdoc.html', 'index.html'
+    cp INDEX_HTML, 'index.html'
     mv 'navigation.html', '_includes/navigation.html', force: true
   end
 end
