@@ -45,11 +45,12 @@ def generate_rails_rdoc
   end
 end
 
-def generate_src
+def generate_src(target_version: '')
   copy_sources = Dir.glob('rails/doc/rdoc/*').reject { |path| path.end_with?("panel", "js", "created.rid") }
-  cp_r copy_sources, "#{SOURCE_DIR}/"
+  target_dir = "#{SOURCE_DIR}/#{target_version}"
+  cp_r copy_sources, target_dir
 
-  cd SOURCE_DIR do
+  cd target_dir do
     cp 'files/railties/RDOC_MAIN_rdoc.html', 'index.html'
     mv 'navigation.html', '_includes/navigation.html', force: true
   end
