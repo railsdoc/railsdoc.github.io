@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 task :build do
   cd 'rails' do
     Bundler.with_unbundled_env do
