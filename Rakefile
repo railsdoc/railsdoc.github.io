@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+SOURCE_DIR = "src"
+
 task :build do
   cd 'rails' do
     Bundler.with_unbundled_env do
@@ -11,9 +13,9 @@ task :build do
   end
 
   copy_sources = Dir.glob('rails/doc/rdoc/*').reject { |path| path.end_with?("panel", "js", "created.rid") }
-  cp_r copy_sources, 'src/'
+  cp_r copy_sources, "#{SOURCE_DIR}/"
 
-  cd 'src' do
+  cd SOURCE_DIR do
     cp 'files/railties/RDOC_MAIN_rdoc.html', 'index.html'
     mv 'navigation.html', '_includes/navigation.html', force: true
   end
@@ -28,7 +30,8 @@ end
 
 task :mkdir do
   config["collections"].each do |version, detail|
-    mkdir version.to_s unless Dir.exist?(version.to_s)
+    dir = "#{SOURCE_DIR}/#{version}"
+    mkdir dir unless Dir.exist?(dir)
     switch_rails(detail["specific_version"])
   end
 end
