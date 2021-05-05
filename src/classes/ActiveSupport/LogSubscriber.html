@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -31,14 +31,14 @@ layout: default
   
     <div class="description">
       
-<p><a href="LogSubscriber.html"><code>ActiveSupport::LogSubscriber</code></a> is an object set to consume <a href="Notifications.html"><code>ActiveSupport::Notifications</code></a> with the sole purpose of logging them. The log subscriber dispatches notifications to a registered object based on its given namespace.</p>
+<p><code>ActiveSupport::LogSubscriber</code> is an object set to consume <code>ActiveSupport::Notifications</code> with the sole purpose of logging them. The log subscriber dispatches notifications to a registered object based on its given namespace.</p>
 
 <p>An example would be Active Record log subscriber responsible for logging queries:</p>
 
 <pre><code>module ActiveRecord
   class LogSubscriber &lt; ActiveSupport::LogSubscriber
     def sql(event)
-      &quot;#{event.payload[:name]} (#{event.duration}) #{event.payload[:sql]}&quot;
+      info &quot;#{event.payload[:name]} (#{event.duration}) #{event.payload[:sql]}&quot;
     end
   end
 end
@@ -51,9 +51,29 @@ end
 
 <p>Since we need to know all instance methods before attaching the log subscriber, the line above should be called after your <code>ActiveRecord::LogSubscriber</code> definition.</p>
 
-<p>After configured, whenever a “sql.active_record” notification is published, it will properly dispatch the event (<a href="Notifications/Event.html"><code>ActiveSupport::Notifications::Event</code></a>) to the sql method.</p>
+<p>After configured, whenever a <code>&quot;sql.active_record&quot;</code> notification is published, it will properly dispatch the event (<code>ActiveSupport::Notifications::Event</code>) to the sql method.</p>
 
-<p>Log subscriber also has some helpers to deal with logging and automatically flushes all logs when the request finishes (via action_dispatch.callback notification) in a Rails environment.</p>
+<p>Being an <code>ActiveSupport::Notifications</code> consumer, <code>ActiveSupport::LogSubscriber</code> exposes a simple interface to check if instrumented code raises an exception. It is common to log a different message in case of an error, and this can be achieved by extending the previous example:</p>
+
+<pre><code>module ActiveRecord
+  class LogSubscriber &lt; ActiveSupport::LogSubscriber
+    def sql(event)
+      exception = event.payload[:exception]
+
+      if exception
+        exception_object = event.payload[:exception_object]
+
+        error &quot;[ERROR] #{event.payload[:name]}: #{exception.join(&#39;, &#39;)} &quot; \
+              &quot;(#{exception_object.backtrace.first})&quot;
+      else
+        # standard logger code
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>Log subscriber also has some helpers to deal with logging and automatically flushes all logs when the request finishes (via <code>action_dispatch.callback</code> notification) in a Rails environment.</p>
 
     </div>
   
@@ -295,7 +315,7 @@ end
                 
               </p>
               <div id="method-c-flush_all-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 70</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 93</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">flush_all!</span>
   <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">flush</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:flush</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -330,7 +350,7 @@ end
                 
               </p>
               <div id="method-c-log_subscribers_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 65</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 88</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">log_subscribers</span>
   <span class="ruby-identifier">subscribers</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -365,7 +385,7 @@ end
                 
               </p>
               <div id="method-c-logger_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 57</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 80</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">logger</span>
   <span class="ruby-ivar">@logger</span> <span class="ruby-operator">||=</span> <span class="ruby-keyword">if</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-constant">Rails</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:logger</span>)
     <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">logger</span>
@@ -406,7 +426,7 @@ end
                 
               </p>
               <div id="method-i-finish_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 83</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 106</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">finish</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">id</span>, <span class="ruby-identifier">payload</span>)
   <span class="ruby-keyword">super</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">logger</span>
 <span class="ruby-keyword">rescue</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">e</span>
@@ -445,7 +465,7 @@ end
                 
               </p>
               <div id="method-i-logger_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 75</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 98</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">logger</span>
   <span class="ruby-constant">LogSubscriber</span>.<span class="ruby-identifier">logger</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -480,7 +500,7 @@ end
                 
               </p>
               <div id="method-i-start_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 79</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 102</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">start</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">id</span>, <span class="ruby-identifier">payload</span>)
   <span class="ruby-keyword">super</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">logger</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -518,7 +538,7 @@ end
                 
               </p>
               <div id="method-i-color_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 105</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 127</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">color</span>(<span class="ruby-identifier">text</span>, <span class="ruby-identifier">color</span>, <span class="ruby-identifier">bold</span> = <span class="ruby-keyword">false</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-keyword">return</span> <span class="ruby-identifier">text</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">colorize_logging</span>
   <span class="ruby-identifier">color</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">const_get</span>(<span class="ruby-identifier">color</span>.<span class="ruby-identifier">upcase</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">color</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Symbol</span>)

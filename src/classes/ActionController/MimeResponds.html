@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -86,7 +86,7 @@ layout: default
 end
 </code></pre>
 
-<p>That action implicitly responds to all formats, but formats can also be whitelisted:</p>
+<p>That action implicitly responds to all formats, but formats can also be explicitly enumerated:</p>
 
 <pre><code>def index
   @people = Person.all
@@ -177,7 +177,7 @@ end
 <pre><code>Mime::Type.register &quot;image/jpg&quot;, :jpg
 </code></pre>
 
-<p>Respond to also allows you to specify a common block for different formats by using <code>any</code>:</p>
+<p><code>respond_to</code> also allows you to specify a common block for different formats by using <code>any</code>:</p>
 
 <pre><code>def index
   @people = Person.all
@@ -197,6 +197,14 @@ end
 <p>Or if the format is json:</p>
 
 <pre><code>render json: @people
+</code></pre>
+
+<p><code>any</code> can also be used with no arguments, in which case it will be used for any format requested by the user:</p>
+
+<pre><code>respond_to do |format|
+  format.html
+  format.any { redirect_to support_path }
+end
 </code></pre>
 
 <p>Formats can have different variants.</p>
@@ -285,7 +293,7 @@ end
                 
               </p>
               <div id="method-i-respond_to_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/mime_responds.rb, line 193</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/mime_responds.rb, line 201</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">respond_to</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">mimes</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;respond_to takes either types or a block, never both&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">mimes</span>.<span class="ruby-identifier">any?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">block_given?</span>
 
@@ -293,6 +301,9 @@ end
   <span class="ruby-keyword">yield</span> <span class="ruby-identifier">collector</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
 
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">format</span> = <span class="ruby-identifier">collector</span>.<span class="ruby-identifier">negotiate_format</span>(<span class="ruby-identifier">request</span>)
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">media_type</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">media_type</span> <span class="ruby-operator">!=</span> <span class="ruby-identifier">format</span>
+      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActionController</span><span class="ruby-operator">::</span><span class="ruby-constant">RespondToMismatchError</span>
+    <span class="ruby-keyword">end</span>
     <span class="ruby-identifier">_process_format</span>(<span class="ruby-identifier">format</span>)
     <span class="ruby-identifier">_set_rendered_content_type</span> <span class="ruby-identifier">format</span>
     <span class="ruby-identifier">response</span> = <span class="ruby-identifier">collector</span>.<span class="ruby-identifier">response</span>

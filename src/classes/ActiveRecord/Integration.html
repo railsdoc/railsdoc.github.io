@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -85,7 +85,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-cache_key">
             
-              cache_key(*timestamp_names)
+              cache_key()
             
           </h3>
 
@@ -100,7 +100,7 @@ Product.find(5).cache_key # =&gt; &quot;products/5&quot;
 <p>If ActiveRecord::Base.cache_versioning is turned off, as it was in Rails 5.1 and earlier, the cache key will also include a version.</p>
 
 <pre><code>Product.cache_versioning = false
-Person.find(5).cache_key  # =&gt; &quot;people/5-20071224150000&quot; (updated_at available)
+Product.find(5).cache_key  # =&gt; &quot;products/5-20071224150000&quot; (updated_at available)
 </code></pre>
             </div>
           
@@ -118,34 +118,25 @@ Person.find(5).cache_key  # =&gt; &quot;people/5-20071224150000&quot; (updated_a
                 
               </p>
               <div id="method-i-cache_key_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 64</span>
-    <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">cache_key</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">timestamp_names</span>)
-      <span class="ruby-keyword">if</span> <span class="ruby-identifier">new_record?</span>
-        <span class="ruby-node">&quot;#{model_name.cache_key}/new&quot;</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 72</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">cache_key</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">new_record?</span>
+    <span class="ruby-node">&quot;#{model_name.cache_key}/new&quot;</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">cache_version</span>
+      <span class="ruby-node">&quot;#{model_name.cache_key}/#{id}&quot;</span>
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-identifier">timestamp</span> = <span class="ruby-identifier">max_updated_column_timestamp</span>
+
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">timestamp</span>
+        <span class="ruby-identifier">timestamp</span> = <span class="ruby-identifier">timestamp</span>.<span class="ruby-identifier">utc</span>.<span class="ruby-identifier">to_s</span>(<span class="ruby-identifier">cache_timestamp_format</span>)
+        <span class="ruby-node">&quot;#{model_name.cache_key}/#{id}-#{timestamp}&quot;</span>
       <span class="ruby-keyword">else</span>
-        <span class="ruby-keyword">if</span> <span class="ruby-identifier">cache_version</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">timestamp_names</span>.<span class="ruby-identifier">none?</span>
-          <span class="ruby-node">&quot;#{model_name.cache_key}/#{id}&quot;</span>
-        <span class="ruby-keyword">else</span>
-          <span class="ruby-identifier">timestamp</span> = <span class="ruby-keyword">if</span> <span class="ruby-identifier">timestamp_names</span>.<span class="ruby-identifier">any?</span>
-            <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>)
-<span class="ruby-value">              Specifying a timestamp name for #cache_key has been deprecated in favor of
-              the explicit #cache_version method that can be overwritten.
-</span><span class="ruby-identifier">            MSG</span>
-
-            <span class="ruby-identifier">max_updated_column_timestamp</span>(<span class="ruby-identifier">timestamp_names</span>)
-          <span class="ruby-keyword">else</span>
-            <span class="ruby-identifier">max_updated_column_timestamp</span>
-          <span class="ruby-keyword">end</span>
-
-          <span class="ruby-keyword">if</span> <span class="ruby-identifier">timestamp</span>
-            <span class="ruby-identifier">timestamp</span> = <span class="ruby-identifier">timestamp</span>.<span class="ruby-identifier">utc</span>.<span class="ruby-identifier">to_s</span>(<span class="ruby-identifier">cache_timestamp_format</span>)
-            <span class="ruby-node">&quot;#{model_name.cache_key}/#{id}-#{timestamp}&quot;</span>
-          <span class="ruby-keyword">else</span>
-            <span class="ruby-node">&quot;#{model_name.cache_key}/#{id}&quot;</span>
-          <span class="ruby-keyword">end</span>
-        <span class="ruby-keyword">end</span>
+        <span class="ruby-node">&quot;#{model_name.cache_key}/#{id}&quot;</span>
       <span class="ruby-keyword">end</span>
-    <span class="ruby-keyword">end</span></code></pre>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
@@ -177,7 +168,7 @@ Person.find(5).cache_key  # =&gt; &quot;people/5-20071224150000&quot; (updated_a
                 
               </p>
               <div id="method-i-cache_key_with_version_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 105</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 115</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">cache_key_with_version</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">version</span> = <span class="ruby-identifier">cache_version</span>
     <span class="ruby-node">&quot;#{cache_key}-#{version}&quot;</span>
@@ -218,10 +209,21 @@ Person.find(5).cache_key  # =&gt; &quot;people/5-20071224150000&quot; (updated_a
                 
               </p>
               <div id="method-i-cache_version_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 98</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 97</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">cache_version</span>
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">cache_versioning</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">timestamp</span> = <span class="ruby-identifier">try</span>(<span class="ruby-value">:updated_at</span>)
-    <span class="ruby-identifier">timestamp</span>.<span class="ruby-identifier">utc</span>.<span class="ruby-identifier">to_s</span>(<span class="ruby-value">:usec</span>)
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">cache_versioning</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">has_attribute?</span>(<span class="ruby-string">&quot;updated_at&quot;</span>)
+    <span class="ruby-identifier">timestamp</span> = <span class="ruby-identifier">updated_at_before_type_cast</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">can_use_fast_cache_version?</span>(<span class="ruby-identifier">timestamp</span>)
+      <span class="ruby-identifier">raw_timestamp_to_cache_version</span>(<span class="ruby-identifier">timestamp</span>)
+    <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">timestamp</span> = <span class="ruby-identifier">updated_at</span>
+      <span class="ruby-identifier">timestamp</span>.<span class="ruby-identifier">utc</span>.<span class="ruby-identifier">to_s</span>(<span class="ruby-identifier">cache_timestamp_format</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">has_attribute?</span>(<span class="ruby-string">&quot;updated_at&quot;</span>)
+      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveModel</span><span class="ruby-operator">::</span><span class="ruby-constant">MissingAttributeError</span>, <span class="ruby-string">&quot;missing attribute: updated_at&quot;</span>
+    <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -273,7 +275,7 @@ user_path(user)  # =&gt; &quot;/users/Phusion&quot;
                 
               </p>
               <div id="method-i-to_param_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 49</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 57</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_param</span>
   <span class="ruby-comment"># We can&#39;t use alias_method here, because method &#39;id&#39; optimizes itself on the fly.</span>
   <span class="ruby-identifier">id</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">id</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-comment"># Be sure to stringify the id for routes</span>

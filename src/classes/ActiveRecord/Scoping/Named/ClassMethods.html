@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -36,6 +36,10 @@ layout: default
       
         <li>
           <a href="#method-i-all">all</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-default_scoped">default_scoped</a>
         </li>
       
         <li>
@@ -99,18 +103,61 @@ fruits = fruits.limit(10) if limited?
               </p>
               <div id="method-i-all_source">
                 <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/named.rb, line 26</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">all</span>
-  <span class="ruby-identifier">current_scope</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">current_scope</span>
+        <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">all</span>
+          <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">current_scope</span>
 
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">current_scope</span>
-    <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">current_scope</span>.<span class="ruby-identifier">klass</span>
-      <span class="ruby-identifier">current_scope</span>.<span class="ruby-identifier">clone</span>
-    <span class="ruby-keyword">else</span>
-      <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">current_scope</span>)
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">default_scoped</span>
-  <span class="ruby-keyword">end</span>
+          <span class="ruby-keyword">if</span> <span class="ruby-identifier">scope</span>
+            <span class="ruby-keyword">if</span> <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">_deprecated_scope_source</span>
+              <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;~MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">                Class level methods will no longer inherit scoping from `#{scope._deprecated_scope_source}`
+                in Rails 6.1. To continue using the scoped relation, pass it into the block directly.
+                To instead access the full set of models, as Rails 6.1 will, use `#{name}.default_scoped`.
+</span><span class="ruby-identifier">              MSG</span>
+            <span class="ruby-keyword">end</span>
+
+            <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">klass</span>
+              <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">clone</span>
+            <span class="ruby-keyword">else</span>
+              <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">scope</span>)
+            <span class="ruby-keyword">end</span>
+          <span class="ruby-keyword">else</span>
+            <span class="ruby-identifier">default_scoped</span>
+          <span class="ruby-keyword">end</span>
+        <span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-default_scoped">
+            
+              default_scoped(scope = relation)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a scope for the model with default scopes.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-default_scoped_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/named.rb, line 57</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">default_scoped</span>(<span class="ruby-identifier">scope</span> = <span class="ruby-identifier">relation</span>)
+  <span class="ruby-identifier">build_default_scope</span>(<span class="ruby-identifier">scope</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">scope</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -220,7 +267,7 @@ Article.featured.titles
                 
               </p>
               <div id="method-i-scope_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/named.rb, line 163</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/named.rb, line 170</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">scope</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">body</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">unless</span> <span class="ruby-identifier">body</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:call</span>)
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;The scope body needs to be callable.&quot;</span>
@@ -242,16 +289,14 @@ Article.featured.titles
   <span class="ruby-identifier">extension</span> = <span class="ruby-constant">Module</span>.<span class="ruby-identifier">new</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">block</span>
 
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">body</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:to_proc</span>)
-    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:define_method</span>, <span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-operator">*</span><span class="ruby-identifier">args</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">all</span>
-      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">_exec_scope</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">body</span>)
+    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">define_method</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-operator">*</span><span class="ruby-identifier">args</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">all</span>.<span class="ruby-identifier">_exec_scope</span>(<span class="ruby-identifier">name</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">body</span>)
       <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">extending</span>(<span class="ruby-identifier">extension</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">extension</span>
       <span class="ruby-identifier">scope</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:define_method</span>, <span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-operator">*</span><span class="ruby-identifier">args</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">all</span>
-      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">scoping</span> { <span class="ruby-identifier">body</span>.<span class="ruby-identifier">call</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">scope</span> }
+    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">define_method</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-operator">*</span><span class="ruby-identifier">args</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">body</span>.<span class="ruby-identifier">call</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">all</span>
       <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">extending</span>(<span class="ruby-identifier">extension</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">extension</span>
       <span class="ruby-identifier">scope</span>
     <span class="ruby-keyword">end</span>

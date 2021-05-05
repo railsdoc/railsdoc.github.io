@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -13,7 +13,7 @@ layout: default
             
                 <span class="parent">&lt;
                     
-                    ActionView::AbstractRenderer
+                    <a href="AbstractRenderer.html">ActionView::AbstractRenderer</a>
                     
                 </span>
             
@@ -93,8 +93,6 @@ layout: default
 
 <pre><code>&lt;%= render(partial: &quot;ad&quot;, collection: @advertisements) || &quot;There&#39;s no ad to be displayed&quot; %&gt;
 </code></pre>
-
-<p>NOTE: Due to backwards compatibility concerns, the collection can&#39;t be one of hashes. Normally you&#39;d also just keep domain objects, like Active Records, in there.</p>
 
 <h2 id="class-ActionView::PartialRenderer-label-Rendering+shared+partials">Rendering shared partials</h2>
 
@@ -388,7 +386,7 @@ end</td>
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/renderer/partial_renderer.rb, line 292</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/renderer/partial_renderer.rb, line 289</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-operator">*</span>)
   <span class="ruby-keyword">super</span>
   <span class="ruby-ivar">@context_prefix</span> = <span class="ruby-ivar">@lookup_context</span>.<span class="ruby-identifier">prefixes</span>.<span class="ruby-identifier">first</span>
@@ -428,23 +426,31 @@ end</td>
                 
               </p>
               <div id="method-i-render_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/renderer/partial_renderer.rb, line 297</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/renderer/partial_renderer.rb, line 294</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">render</span>(<span class="ruby-identifier">context</span>, <span class="ruby-identifier">options</span>, <span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">setup</span>(<span class="ruby-identifier">context</span>, <span class="ruby-identifier">options</span>, <span class="ruby-identifier">block</span>)
-  <span class="ruby-ivar">@template</span> = <span class="ruby-identifier">find_partial</span>
+  <span class="ruby-identifier">as</span> = <span class="ruby-identifier">as_variable</span>(<span class="ruby-identifier">options</span>)
+  <span class="ruby-identifier">setup</span>(<span class="ruby-identifier">context</span>, <span class="ruby-identifier">options</span>, <span class="ruby-identifier">as</span>, <span class="ruby-identifier">block</span>)
 
-  <span class="ruby-ivar">@lookup_context</span>.<span class="ruby-identifier">rendered_format</span> <span class="ruby-operator">||=</span> <span class="ruby-keyword">begin</span>
-    <span class="ruby-keyword">if</span> <span class="ruby-ivar">@template</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">formats</span>.<span class="ruby-identifier">present?</span>
-      <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">formats</span>.<span class="ruby-identifier">first</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-ivar">@path</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-ivar">@has_object</span> <span class="ruby-operator">||</span> <span class="ruby-ivar">@collection</span>
+      <span class="ruby-ivar">@variable</span>, <span class="ruby-ivar">@variable_counter</span>, <span class="ruby-ivar">@variable_iteration</span> = <span class="ruby-identifier">retrieve_variable</span>(<span class="ruby-ivar">@path</span>, <span class="ruby-identifier">as</span>)
+      <span class="ruby-ivar">@template_keys</span> = <span class="ruby-identifier">retrieve_template_keys</span>(<span class="ruby-ivar">@variable</span>)
     <span class="ruby-keyword">else</span>
-      <span class="ruby-identifier">formats</span>.<span class="ruby-identifier">first</span>
+      <span class="ruby-ivar">@template_keys</span> = <span class="ruby-ivar">@locals</span>.<span class="ruby-identifier">keys</span>
     <span class="ruby-keyword">end</span>
+    <span class="ruby-identifier">template</span> = <span class="ruby-identifier">find_partial</span>(<span class="ruby-ivar">@path</span>, <span class="ruby-ivar">@template_keys</span>)
+    <span class="ruby-ivar">@variable</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">template</span>.<span class="ruby-identifier">variable</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:cached</span>]
+      <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>, <span class="ruby-string">&quot;render caching requires a template. Please specify a partial when rendering&quot;</span>
+    <span class="ruby-keyword">end</span>
+    <span class="ruby-identifier">template</span> = <span class="ruby-keyword">nil</span>
   <span class="ruby-keyword">end</span>
 
   <span class="ruby-keyword">if</span> <span class="ruby-ivar">@collection</span>
-    <span class="ruby-identifier">render_collection</span>
+    <span class="ruby-identifier">render_collection</span>(<span class="ruby-identifier">context</span>, <span class="ruby-identifier">template</span>)
   <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">render_partial</span>
+    <span class="ruby-identifier">render_partial</span>(<span class="ruby-identifier">context</span>, <span class="ruby-identifier">template</span>)
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>

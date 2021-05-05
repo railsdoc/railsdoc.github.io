@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -31,11 +31,15 @@ layout: default
 
 <p>You can then declare accessors to this store that are then accessible just like any other attribute of the model. This is very helpful for easily exposing store keys to a form or elsewhere that&#39;s already built around just accessing attributes on the model.</p>
 
+<p>Every accessor comes with dirty tracking methods (<code>key_changed?</code>, <code>key_was</code> and <code>key_change</code>) and methods to access the changes made during the last save (<code>saved_change_to_key?</code>, <code>saved_change_to_key</code> and <code>key_before_last_save</code>).</p>
+
+<p>NOTE: There is no <code>key_will_change!</code> method for accessors, use <code>store_will_change!</code> instead.</p>
+
 <p>Make sure that you declare the database column used for the serialized store as a text, so there&#39;s plenty of room.</p>
 
 <p>You can set custom coder to encode/decode your serialized attributes to/from different formats. JSON, YAML, Marshal are supported out of the box. Generally it can be any wrapper that provides <code>load</code> and <code>dump</code>.</p>
 
-<p>NOTE: If you are using PostgreSQL specific columns like <code>hstore</code> or <code>json</code> there is no need for the serialization provided by <a href="Store/ClassMethods.html#method-i-store">.store</a>. Simply use <a href="Store/ClassMethods.html#method-i-store_accessor">.store_accessor</a> instead to generate the accessor methods. Be aware that these columns use a string keyed hash and do not allow access using a symbol.</p>
+<p>NOTE: If you are using structured database data types (eg. PostgreSQL <code>hstore</code>/<code>json</code>, or MySQL 5.7+ <code>json</code>) there is no need for the serialization provided by <a href="Store/ClassMethods.html#method-i-store">.store</a>. Simply use <a href="Store/ClassMethods.html#method-i-store_accessor">.store_accessor</a> instead to generate the accessor methods. Be aware that these columns use a string keyed hash and do not allow access using a symbol.</p>
 
 <p>NOTE: The default validations with the exception of <code>uniqueness</code> will work. For example, if you want to check for <code>uniqueness</code> with <code>hstore</code> you will need to use a custom validation to handle it.</p>
 
@@ -43,25 +47,41 @@ layout: default
 
 <pre><code>class User &lt; ActiveRecord::Base
   store :settings, accessors: [ :color, :homepage ], coder: JSON
+  store :parent, accessors: [ :name ], coder: JSON, prefix: true
+  store :spouse, accessors: [ :name ], coder: JSON, prefix: :partner
+  store :settings, accessors: [ :two_factor_auth ], suffix: true
+  store :settings, accessors: [ :login_retry ], suffix: :config
 end
 
-u = User.new(color: &#39;black&#39;, homepage: &#39;37signals.com&#39;)
+u = User.new(color: &#39;black&#39;, homepage: &#39;37signals.com&#39;, parent_name: &#39;Mary&#39;, partner_name: &#39;Lily&#39;)
 u.color                          # Accessor stored attribute
+u.parent_name                    # Accessor stored attribute with prefix
+u.partner_name                   # Accessor stored attribute with custom prefix
+u.two_factor_auth_settings       # Accessor stored attribute with suffix
+u.login_retry_config             # Accessor stored attribute with custom suffix
 u.settings[:country] = &#39;Denmark&#39; # Any attribute, even if not specified with an accessor
 
 # There is no difference between strings and symbols for accessing custom attributes
 u.settings[:country]  # =&gt; &#39;Denmark&#39;
 u.settings[&#39;country&#39;] # =&gt; &#39;Denmark&#39;
 
+# Dirty tracking
+u.color = &#39;green&#39;
+u.color_changed? # =&gt; true
+u.color_was # =&gt; &#39;black&#39;
+u.color_change # =&gt; [&#39;black&#39;, &#39;red&#39;]
+
 # Add additional accessors to an existing store through store_accessor
 class SuperUser &lt; User
   store_accessor :settings, :privileges, :servants
+  store_accessor :parent, :birthday, prefix: true
+  store_accessor :settings, :secret_question, suffix: :config
 end
 </code></pre>
 
 <p>The stored attribute names can be retrieved using <a href="Store/ClassMethods.html#method-i-stored_attributes">.stored_attributes</a>.</p>
 
-<pre><code>User.stored_attributes[:settings] # [:color, :homepage]
+<pre><code>User.stored_attributes[:settings] # [:color, :homepage, :two_factor_auth, :login_retry]
 </code></pre>
 
 <h2 id="module-ActiveRecord::Store-label-Overwriting+default+accessors">Overwriting default accessors</h2>
@@ -177,7 +197,7 @@ end
                 
               </p>
               <div id="method-i-read_store_attribute_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/store.rb, line 127</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/store.rb, line 206</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">read_store_attribute</span>(<span class="ruby-identifier">store_attribute</span>, <span class="ruby-identifier">key</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">accessor</span> = <span class="ruby-identifier">store_accessor_for</span>(<span class="ruby-identifier">store_attribute</span>)
   <span class="ruby-identifier">accessor</span>.<span class="ruby-identifier">read</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">store_attribute</span>, <span class="ruby-identifier">key</span>)
@@ -213,7 +233,7 @@ end
                 
               </p>
               <div id="method-i-write_store_attribute_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/store.rb, line 132</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/store.rb, line 211</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">write_store_attribute</span>(<span class="ruby-identifier">store_attribute</span>, <span class="ruby-identifier">key</span>, <span class="ruby-identifier">value</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">accessor</span> = <span class="ruby-identifier">store_accessor_for</span>(<span class="ruby-identifier">store_attribute</span>)
   <span class="ruby-identifier">accessor</span>.<span class="ruby-identifier">write</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">store_attribute</span>, <span class="ruby-identifier">key</span>, <span class="ruby-identifier">value</span>)

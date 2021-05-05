@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -138,9 +138,6 @@ User.where.not(name: nil)
 
 User.where.not(name: %w(Ko1 Nobu))
 # SELECT * FROM users WHERE name NOT IN (&#39;Ko1&#39;, &#39;Nobu&#39;)
-
-User.where.not(name: &quot;Jon&quot;, role: &quot;admin&quot;)
-# SELECT * FROM users WHERE name != &#39;Jon&#39; AND role != &#39;admin&#39;
 </code></pre>
             </div>
           
@@ -158,16 +155,35 @@ User.where.not(name: &quot;Jon&quot;, role: &quot;admin&quot;)
                 
               </p>
               <div id="method-i-not_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 47</span>
-<span class="ruby-keyword">def</span> <span class="ruby-keyword">not</span>(<span class="ruby-identifier ruby-title">opts</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">rest</span>)
-  <span class="ruby-identifier">opts</span> = <span class="ruby-identifier">sanitize_forbidden_attributes</span>(<span class="ruby-identifier">opts</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 44</span>
+      <span class="ruby-keyword">def</span> <span class="ruby-keyword">not</span>(<span class="ruby-identifier ruby-title">opts</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">rest</span>)
+        <span class="ruby-identifier">opts</span> = <span class="ruby-identifier">sanitize_forbidden_attributes</span>(<span class="ruby-identifier">opts</span>)
 
-  <span class="ruby-identifier">where_clause</span> = <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:where_clause_factory</span>).<span class="ruby-identifier">build</span>(<span class="ruby-identifier">opts</span>, <span class="ruby-identifier">rest</span>)
+        <span class="ruby-identifier">where_clause</span> = <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:where_clause_factory</span>).<span class="ruby-identifier">build</span>(<span class="ruby-identifier">opts</span>, <span class="ruby-identifier">rest</span>)
 
-  <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">references!</span>(<span class="ruby-constant">PredicateBuilder</span>.<span class="ruby-identifier">references</span>(<span class="ruby-identifier">opts</span>)) <span class="ruby-keyword">if</span> <span class="ruby-constant">Hash</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">opts</span>
-  <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">where_clause</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">where_clause</span>.<span class="ruby-identifier">invert</span>
-  <span class="ruby-ivar">@scope</span>
-<span class="ruby-keyword">end</span></code></pre>
+        <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">references!</span>(<span class="ruby-constant">PredicateBuilder</span>.<span class="ruby-identifier">references</span>(<span class="ruby-identifier">opts</span>)) <span class="ruby-keyword">if</span> <span class="ruby-constant">Hash</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">opts</span>
+
+        <span class="ruby-keyword">if</span> <span class="ruby-identifier">not_behaves_as_nor?</span>(<span class="ruby-identifier">opts</span>)
+          <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;~MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">            NOT conditions will no longer behave as NOR in Rails 6.1.
+            To continue using NOR conditions, NOT each condition individually
+            (`#{
+              opts.flat_map { |key, value|
+                if value.is_a?(Hash) &amp;&amp; value.size &gt; 1
+                  value.map { |k, v| &quot;.where.not(#{key.inspect} =&gt; { #{k.inspect} =&gt; ... })&quot; }
+                else
+                  &quot;.where.not(#{key.inspect} =&gt; ...)&quot;
+                end
+              }.join
+            }`).
+</span><span class="ruby-identifier">          MSG</span>
+          <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">where_clause</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">where_clause</span>.<span class="ruby-identifier">invert</span>(<span class="ruby-value">:nor</span>)
+        <span class="ruby-keyword">else</span>
+          <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">where_clause</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">where_clause</span>.<span class="ruby-identifier">invert</span>
+        <span class="ruby-keyword">end</span>
+
+        <span class="ruby-ivar">@scope</span>
+      <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             

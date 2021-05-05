@@ -1,0 +1,600 @@
+---
+title: ActiveModel::Dirty
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.5</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveModel::Dirty
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activemodel/lib/active_model/dirty_rb.html">activemodel/lib/active_model/dirty.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h2 id="module-ActiveModel::Dirty-label-Active+Model+Dirty">Active Model Dirty</h2>
+
+<p>Provides a way to track changes in your object in the same way as Active Record does.</p>
+
+<p>The requirements for implementing <a href="Dirty.html"><code>ActiveModel::Dirty</code></a> are:</p>
+<ul><li>
+<p><code>include ActiveModel::Dirty</code> in your object.</p>
+</li><li>
+<p>Call <code>define_attribute_methods</code> passing each method you want to track.</p>
+</li><li>
+<p>Call <code>[attr_name]_will_change!</code> before each change to the tracked attribute.</p>
+</li><li>
+<p>Call <code>changes_applied</code> after the changes are persisted.</p>
+</li><li>
+<p>Call <code>clear_changes_information</code> when you want to reset the changes information.</p>
+</li><li>
+<p>Call <code>restore_attributes</code> when you want to restore previous data.</p>
+</li></ul>
+
+<p>A minimal implementation could be:</p>
+
+<pre><code>class Person
+  include ActiveModel::Dirty
+
+  define_attribute_methods :name
+
+  def initialize
+    @name = nil
+  end
+
+  def name
+    @name
+  end
+
+  def name=(val)
+    name_will_change! unless val == @name
+    @name = val
+  end
+
+  def save
+    # do persistence work
+
+    changes_applied
+  end
+
+  def reload!
+    # get the values from the persistence layer
+
+    clear_changes_information
+  end
+
+  def rollback!
+    restore_attributes
+  end
+end
+</code></pre>
+
+<p>A newly instantiated <code>Person</code> object is unchanged:</p>
+
+<pre><code>person = Person.new
+person.changed? # =&gt; false
+</code></pre>
+
+<p>Change the name:</p>
+
+<pre><code>person.name = &#39;Bob&#39;
+person.changed?       # =&gt; true
+person.name_changed?  # =&gt; true
+person.name_changed?(from: nil, to: &quot;Bob&quot;) # =&gt; true
+person.name_was       # =&gt; nil
+person.name_change    # =&gt; [nil, &quot;Bob&quot;]
+person.name = &#39;Bill&#39;
+person.name_change    # =&gt; [nil, &quot;Bill&quot;]
+</code></pre>
+
+<p>Save the changes:</p>
+
+<pre><code>person.save
+person.changed?      # =&gt; false
+person.name_changed? # =&gt; false
+</code></pre>
+
+<p>Reset the changes:</p>
+
+<pre><code>person.previous_changes         # =&gt; {&quot;name&quot; =&gt; [nil, &quot;Bill&quot;]}
+person.name_previously_changed? # =&gt; true
+person.name_previous_change     # =&gt; [nil, &quot;Bill&quot;]
+person.reload!
+person.previous_changes         # =&gt; {}
+</code></pre>
+
+<p>Rollback the changes:</p>
+
+<pre><code>person.name = &quot;Uncle Bob&quot;
+person.rollback!
+person.name          # =&gt; &quot;Bill&quot;
+person.name_changed? # =&gt; false
+</code></pre>
+
+<p>Assigning the same value leaves the attribute unchanged:</p>
+
+<pre><code>person.name = &#39;Bill&#39;
+person.name_changed? # =&gt; false
+person.name_change   # =&gt; nil
+</code></pre>
+
+<p>Which attributes have changed?</p>
+
+<pre><code>person.name = &#39;Bob&#39;
+person.changed # =&gt; [&quot;name&quot;]
+person.changes # =&gt; {&quot;name&quot; =&gt; [&quot;Bill&quot;, &quot;Bob&quot;]}
+</code></pre>
+
+<p>If an attribute is modified in-place then make use of <code>[attribute_name]_will_change!</code> to mark that the attribute is changing. Otherwise Active Model can&#39;t track changes to in-place attributes. Note that Active Record can detect in-place modifications automatically. You do not need to call <code>[attribute_name]_will_change!</code> on Active Record models.</p>
+
+<pre><code>person.name_will_change!
+person.name_change # =&gt; [&quot;Bill&quot;, &quot;Bill&quot;]
+person.name &lt;&lt; &#39;y&#39;
+person.name_change # =&gt; [&quot;Bill&quot;, &quot;Billy&quot;]
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-changed">changed</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-changed-3F">changed?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-changed_attributes">changed_attributes</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-changes">changes</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-changes_applied">changes_applied</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clear_attribute_changes">clear_attribute_changes</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clear_changes_information">clear_changes_information</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-previous_changes">previous_changes</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-restore_attributes">restore_attributes</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="AttributeMethods.html">
+              ActiveModel::AttributeMethods
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-changed">
+            
+              changed()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns an array with the name of the attributes with unsaved changes.</p>
+
+<pre><code>person.changed # =&gt; []
+person.name = &#39;bob&#39;
+person.changed # =&gt; [&quot;name&quot;]
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-changed_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/dirty.rb, line 170</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">changed</span>
+  <span class="ruby-identifier">changed_attributes</span>.<span class="ruby-identifier">keys</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-changed-3F">
+            
+              changed?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns <code>true</code> if any of the attributes have unsaved changes, <code>false</code> otherwise.</p>
+
+<pre><code>person.changed? # =&gt; false
+person.name = &#39;bob&#39;
+person.changed? # =&gt; true
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-changed-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/dirty.rb, line 161</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">changed?</span>
+  <span class="ruby-identifier">changed_attributes</span>.<span class="ruby-identifier">present?</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-changed_attributes">
+            
+              changed_attributes()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a hash of the attributes with unsaved changes indicating their original values like <code>attr =&gt; original value</code>.</p>
+
+<pre><code>person.name # =&gt; &quot;bob&quot;
+person.name = &#39;robert&#39;
+person.changed_attributes # =&gt; {&quot;name&quot; =&gt; &quot;bob&quot;}
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-changed_attributes_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/dirty.rb, line 218</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">changed_attributes</span>
+  <span class="ruby-comment"># This should only be set by methods which will call changed_attributes</span>
+  <span class="ruby-comment"># multiple times when it is known that the computed value cannot change.</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-ivar">@cached_changed_attributes</span>)
+    <span class="ruby-ivar">@cached_changed_attributes</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">attributes_changed_by_setter</span>.<span class="ruby-identifier">reverse_merge</span>(<span class="ruby-identifier">mutations_from_database</span>.<span class="ruby-identifier">changed_values</span>).<span class="ruby-identifier">freeze</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-changes">
+            
+              changes()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a hash of changed attributes indicating their original and new values like <code>attr =&gt; [original value, new value]</code>.</p>
+
+<pre><code>person.changes # =&gt; {}
+person.name = &#39;bob&#39;
+person.changes # =&gt; { &quot;name&quot; =&gt; [&quot;bill&quot;, &quot;bob&quot;] }
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-changes_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/dirty.rb, line 234</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">changes</span>
+  <span class="ruby-identifier">cache_changed_attributes</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">HashWithIndifferentAccess</span>[<span class="ruby-identifier">changed</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">attr</span><span class="ruby-operator">|</span> [<span class="ruby-identifier">attr</span>, <span class="ruby-identifier">attribute_change</span>(<span class="ruby-identifier">attr</span>)] }]
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-changes_applied">
+            
+              changes_applied()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Clears dirty data and moves <code>changes</code> to <code>previously_changed</code> and <code>mutations_from_database</code> to <code>mutations_before_last_save</code> respectively.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-changes_applied_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/dirty.rb, line 146</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">changes_applied</span>
+  <span class="ruby-keyword">unless</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-ivar">@attributes</span>)
+    <span class="ruby-ivar">@previously_changed</span> = <span class="ruby-identifier">changes</span>
+  <span class="ruby-keyword">end</span>
+  <span class="ruby-ivar">@mutations_before_last_save</span> = <span class="ruby-identifier">mutations_from_database</span>
+  <span class="ruby-ivar">@attributes_changed_by_setter</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">HashWithIndifferentAccess</span>.<span class="ruby-identifier">new</span>
+  <span class="ruby-identifier">forget_attribute_assignments</span>
+  <span class="ruby-ivar">@mutations_from_database</span> = <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-clear_attribute_changes">
+            
+              clear_attribute_changes(attr_names)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-clear_attribute_changes_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/dirty.rb, line 205</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear_attribute_changes</span>(<span class="ruby-identifier">attr_names</span>)
+  <span class="ruby-identifier">attributes_changed_by_setter</span>.<span class="ruby-identifier">except!</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">attr_names</span>)
+  <span class="ruby-identifier">attr_names</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">attr_name</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">clear_attribute_change</span>(<span class="ruby-identifier">attr_name</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-clear_changes_information">
+            
+              clear_changes_information()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Clears all dirty data: current changes and previous changes.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-clear_changes_information_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/dirty.rb, line 197</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear_changes_information</span>
+  <span class="ruby-ivar">@previously_changed</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">HashWithIndifferentAccess</span>.<span class="ruby-identifier">new</span>
+  <span class="ruby-ivar">@mutations_before_last_save</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-ivar">@attributes_changed_by_setter</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">HashWithIndifferentAccess</span>.<span class="ruby-identifier">new</span>
+  <span class="ruby-identifier">forget_attribute_assignments</span>
+  <span class="ruby-ivar">@mutations_from_database</span> = <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-previous_changes">
+            
+              previous_changes()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a hash of attributes that were changed before the model was saved.</p>
+
+<pre><code>person.name # =&gt; &quot;bob&quot;
+person.name = &#39;robert&#39;
+person.save
+person.previous_changes # =&gt; {&quot;name&quot; =&gt; [&quot;bob&quot;, &quot;robert&quot;]}
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-previous_changes_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/dirty.rb, line 246</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">previous_changes</span>
+  <span class="ruby-ivar">@previously_changed</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">HashWithIndifferentAccess</span>.<span class="ruby-identifier">new</span>
+  <span class="ruby-ivar">@previously_changed</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">mutations_before_last_save</span>.<span class="ruby-identifier">changes</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-restore_attributes">
+            
+              restore_attributes(attributes = changed)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Restore all previous data of the provided attributes.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-restore_attributes_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/dirty.rb, line 192</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">restore_attributes</span>(<span class="ruby-identifier">attributes</span> = <span class="ruby-identifier">changed</span>)
+  <span class="ruby-identifier">attributes</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">attr</span><span class="ruby-operator">|</span> <span class="ruby-identifier">restore_attribute!</span> <span class="ruby-identifier">attr</span> }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

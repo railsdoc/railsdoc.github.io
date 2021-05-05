@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -33,19 +33,10 @@ layout: default
 
 <p>In case you do need to use this directly, it&#39;s instantiated using a hash of transformations where the key is the command and the value is the arguments. Example:</p>
 
-<pre><code>ActiveStorage::Variation.new(resize: &quot;100x100&quot;, monochrome: true, trim: true, rotate: &quot;-90&quot;)
+<pre><code>ActiveStorage::Variation.new(resize_to_limit: [100, 100], monochrome: true, trim: true, rotate: &quot;-90&quot;)
 </code></pre>
 
-<p>You can also combine multiple transformations in one step, e.g. for center-weighted cropping:</p>
-
-<pre><code>ActiveStorage::Variation.new(combine_options: {
-  resize: &quot;100x100^&quot;,
-  gravity: &quot;center&quot;,
-  crop: &quot;100x100+0+0&quot;,
-})
-</code></pre>
-
-<p>A list of all possible transformations is available at <a href="https://www.imagemagick.org/script/mogrify.php">www.imagemagick.org/script/mogrify.php</a>.</p>
+<p>The options map directly to <a href="https://github.com/janko-m/image_processing">ImageProcessing</a> commands.</p>
 
     </div>
   
@@ -144,7 +135,7 @@ layout: default
                 
               </p>
               <div id="method-c-decode_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 39</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 31</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">decode</span>(<span class="ruby-identifier">key</span>)
   <span class="ruby-identifier">new</span> <span class="ruby-constant">ActiveStorage</span>.<span class="ruby-identifier">verifier</span>.<span class="ruby-identifier">verify</span>(<span class="ruby-identifier">key</span>, <span class="ruby-value">purpose:</span> <span class="ruby-value">:variation</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -179,7 +170,7 @@ layout: default
                 
               </p>
               <div id="method-c-encode_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 45</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 37</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">encode</span>(<span class="ruby-identifier">transformations</span>)
   <span class="ruby-constant">ActiveStorage</span>.<span class="ruby-identifier">verifier</span>.<span class="ruby-identifier">generate</span>(<span class="ruby-identifier">transformations</span>, <span class="ruby-value">purpose:</span> <span class="ruby-value">:variation</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -214,9 +205,9 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 50</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 42</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">transformations</span>)
-  <span class="ruby-ivar">@transformations</span> = <span class="ruby-identifier">transformations</span>
+  <span class="ruby-ivar">@transformations</span> = <span class="ruby-identifier">transformations</span>.<span class="ruby-identifier">deep_symbolize_keys</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -249,7 +240,7 @@ layout: default
                 
               </p>
               <div id="method-c-wrap_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 27</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 19</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">wrap</span>(<span class="ruby-identifier">variator</span>)
   <span class="ruby-keyword">case</span> <span class="ruby-identifier">variator</span>
   <span class="ruby-keyword">when</span> <span class="ruby-keyword">self</span>
@@ -295,7 +286,7 @@ layout: default
                 
               </p>
               <div id="method-i-key_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 73</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 57</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">key</span>
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">encode</span>(<span class="ruby-identifier">transformations</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -307,13 +298,13 @@ layout: default
         <div class="method">
           <h3 id="method-i-transform">
             
-              transform(image)
+              transform(file, format: nil, &amp;block)
             
           </h3>
 
           
             <div class="description">
-              <p>Accepts an open MiniMagick image instance, like what&#39;s returned by <code>MiniMagick::Image.read(io)</code>, and performs the <code>transformations</code> against it. The transformed image instance is then returned.</p>
+              <p>Accepts a <a href="../File.html"><code>File</code></a> object, performs the <code>transformations</code> against it, and saves the transformed image into a temporary file. If <code>format</code> is specified it will be the format of the result image, otherwise the result image retains the source format.</p>
             </div>
           
 
@@ -330,20 +321,10 @@ layout: default
                 
               </p>
               <div id="method-i-transform_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 56</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">transform</span>(<span class="ruby-identifier">image</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variation.rb, line 50</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">transform</span>(<span class="ruby-identifier">file</span>, <span class="ruby-value">format:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Notifications</span>.<span class="ruby-identifier">instrument</span>(<span class="ruby-string">&quot;transform.active_storage&quot;</span>) <span class="ruby-keyword">do</span>
-    <span class="ruby-identifier">transformations</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span>, <span class="ruby-identifier">argument_or_subtransformations</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">image</span>.<span class="ruby-identifier">mogrify</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">command</span><span class="ruby-operator">|</span>
-        <span class="ruby-keyword">if</span> <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">==</span> <span class="ruby-string">&quot;combine_options&quot;</span>
-          <span class="ruby-identifier">argument_or_subtransformations</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">subtransformation_name</span>, <span class="ruby-identifier">subtransformation_argument</span><span class="ruby-operator">|</span>
-            <span class="ruby-identifier">pass_transform_argument</span>(<span class="ruby-identifier">command</span>, <span class="ruby-identifier">subtransformation_name</span>, <span class="ruby-identifier">subtransformation_argument</span>)
-          <span class="ruby-keyword">end</span>
-        <span class="ruby-keyword">else</span>
-          <span class="ruby-identifier">pass_transform_argument</span>(<span class="ruby-identifier">command</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">argument_or_subtransformations</span>)
-        <span class="ruby-keyword">end</span>
-      <span class="ruby-keyword">end</span>
-    <span class="ruby-keyword">end</span>
+    <span class="ruby-identifier">transformer</span>.<span class="ruby-identifier">transform</span>(<span class="ruby-identifier">file</span>, <span class="ruby-value">format:</span> <span class="ruby-identifier">format</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -22,8 +22,6 @@ layout: default
             
             <li><a href="../../files/actionview/lib/action_view/digestor_rb.html">actionview/lib/action_view/digestor.rb</a></li>
             
-            <li><a href="../../files/actionview/lib/action_view/railtie_rb.html">actionview/lib/action_view/railtie.rb</a></li>
-            
         </ul>
     </div>
     <div id="bodyContent">
@@ -39,13 +37,6 @@ layout: default
   
     <h2 id="namespace">Namespace</h2>
 
-    
-      <h3 id="module">Module</h3>
-      <ul>
-      
-        <li><a href="Digestor/PerExecutionDigestCacheExpiry.html">ActionView::Digestor::PerExecutionDigestCacheExpiry</a></li>
-      
-      </ul>
     
 
     
@@ -103,7 +94,7 @@ layout: default
         <div class="method">
           <h3 id="method-c-digest">
             
-              digest(name:, finder:, dependencies: [])
+              digest(name:, format: nil, finder:, dependencies: nil)
             
           </h3>
 
@@ -111,11 +102,13 @@ layout: default
             <div class="description">
               <p>Supported options:</p>
 <ul><li>
-<p><code>name</code>   - <a href="Template.html"><code>Template</code></a> name</p>
+<p><code>name</code>         - <a href="Template.html"><code>Template</code></a> name</p>
 </li><li>
-<p><code>finder</code>  - An instance of <code>ActionView::LookupContext</code></p>
+<p><code>format</code>       - <a href="Template.html"><code>Template</code></a> format</p>
 </li><li>
-<p><code>dependencies</code>  - An array of dependent views</p>
+<p><code>finder</code>       - An instance of <code>ActionView::LookupContext</code></p>
+</li><li>
+<p><code>dependencies</code> - An array of dependent views</p>
 </li></ul>
             </div>
           
@@ -133,10 +126,13 @@ layout: default
                 
               </p>
               <div id="method-c-digest_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/digestor.rb, line 23</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">digest</span>(<span class="ruby-value">name:</span>, <span class="ruby-value">finder:</span>, <span class="ruby-value">dependencies:</span> [])
-  <span class="ruby-identifier">dependencies</span> <span class="ruby-operator">||=</span> []
-  <span class="ruby-identifier">cache_key</span> = [ <span class="ruby-identifier">name</span>, <span class="ruby-identifier">finder</span>.<span class="ruby-identifier">rendered_format</span>, <span class="ruby-identifier">dependencies</span> ].<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">compact</span>.<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;.&quot;</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/digestor.rb, line 16</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">digest</span>(<span class="ruby-value">name:</span>, <span class="ruby-value">format:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">finder:</span>, <span class="ruby-value">dependencies:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">dependencies</span>.<span class="ruby-identifier">nil?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">dependencies</span>.<span class="ruby-identifier">empty?</span>
+    <span class="ruby-identifier">cache_key</span> = <span class="ruby-node">&quot;#{name}.#{format}&quot;</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">cache_key</span> = [ <span class="ruby-identifier">name</span>, <span class="ruby-identifier">format</span>, <span class="ruby-identifier">dependencies</span> ].<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">compact</span>.<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;.&quot;</span>)
+  <span class="ruby-keyword">end</span>
 
   <span class="ruby-comment"># this is a correctly done double-checked locking idiom</span>
   <span class="ruby-comment"># (Concurrent::Map&#39;s lookups have volatile semantics)</span>
@@ -146,7 +142,7 @@ layout: default
       <span class="ruby-identifier">root</span> = <span class="ruby-identifier">tree</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">finder</span>, <span class="ruby-identifier">partial</span>)
       <span class="ruby-identifier">dependencies</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">injected_dep</span><span class="ruby-operator">|</span>
         <span class="ruby-identifier">root</span>.<span class="ruby-identifier">children</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-constant">Injected</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">injected_dep</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-keyword">nil</span>)
-      <span class="ruby-keyword">end</span>
+      <span class="ruby-keyword">end</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">dependencies</span>
       <span class="ruby-identifier">finder</span>.<span class="ruby-identifier">digest_cache</span>[<span class="ruby-identifier">cache_key</span>] = <span class="ruby-identifier">root</span>.<span class="ruby-identifier">digest</span>(<span class="ruby-identifier">finder</span>)
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
@@ -182,7 +178,7 @@ layout: default
                 
               </p>
               <div id="method-c-logger_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/digestor.rb, line 41</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/digestor.rb, line 37</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">logger</span>
   <span class="ruby-constant">ActionView</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">logger</span> <span class="ruby-operator">||</span> <span class="ruby-constant">NullLogger</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -217,13 +213,11 @@ layout: default
                 
               </p>
               <div id="method-c-tree_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/digestor.rb, line 46</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/digestor.rb, line 42</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">tree</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">finder</span>, <span class="ruby-identifier">partial</span> = <span class="ruby-keyword">false</span>, <span class="ruby-identifier">seen</span> = {})
   <span class="ruby-identifier">logical_name</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">gsub</span>(<span class="ruby-regexp">%r|/_|</span>, <span class="ruby-string">&quot;/&quot;</span>)
 
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">template</span> = <span class="ruby-identifier">find_template</span>(<span class="ruby-identifier">finder</span>, <span class="ruby-identifier">logical_name</span>, [], <span class="ruby-identifier">partial</span>, [])
-    <span class="ruby-identifier">finder</span>.<span class="ruby-identifier">rendered_format</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">template</span>.<span class="ruby-identifier">formats</span>.<span class="ruby-identifier">first</span>
-
     <span class="ruby-keyword">if</span> <span class="ruby-identifier">node</span> = <span class="ruby-identifier">seen</span>[<span class="ruby-identifier">template</span>.<span class="ruby-identifier">identifier</span>] <span class="ruby-comment"># handle cycles in the tree</span>
       <span class="ruby-identifier">node</span>
     <span class="ruby-keyword">else</span>

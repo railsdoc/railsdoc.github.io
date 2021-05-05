@@ -1,0 +1,375 @@
+---
+title: ActiveRecord::ConnectionAdapters::ConnectionPool::Queue
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.5</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::ConnectionAdapters::ConnectionPool::Queue
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/activerecord/lib/active_record/connection_adapters/abstract/connection_pool_rb.html">activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Threadsafe, fair, LIFO queue.  Meant to be used by <a href="../ConnectionPool.html"><code>ConnectionPool</code></a> with which it shares a Monitor.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-add">add</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-any_waiting-3F">any_waiting?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clear">clear</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete">delete</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-num_waiting">num_waiting</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-poll">poll</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(lock = Monitor.new)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 86</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">lock</span> = <span class="ruby-constant">Monitor</span>.<span class="ruby-identifier">new</span>)
+  <span class="ruby-ivar">@lock</span> = <span class="ruby-identifier">lock</span>
+  <span class="ruby-ivar">@cond</span> = <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">new_cond</span>
+  <span class="ruby-ivar">@num_waiting</span> = <span class="ruby-value">0</span>
+  <span class="ruby-ivar">@queue</span> = []
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-add">
+            
+              add(element)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Add <code>element</code> to the queue.  Never blocks.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-add_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 109</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add</span>(<span class="ruby-identifier">element</span>)
+  <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-ivar">@queue</span>.<span class="ruby-identifier">push</span> <span class="ruby-identifier">element</span>
+    <span class="ruby-ivar">@cond</span>.<span class="ruby-identifier">signal</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-any_waiting-3F">
+            
+              any_waiting?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Test if any threads are currently waiting on the queue.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-any_waiting-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 94</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">any_waiting?</span>
+  <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-ivar">@num_waiting</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">0</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-clear">
+            
+              clear()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Remove all elements from the queue.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-clear_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 124</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear</span>
+  <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-ivar">@queue</span>.<span class="ruby-identifier">clear</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete">
+            
+              delete(element)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>If <code>element</code> is in the queue, remove and return it, or <code>nil</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-delete_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 117</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete</span>(<span class="ruby-identifier">element</span>)
+  <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-ivar">@queue</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">element</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-num_waiting">
+            
+              num_waiting()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the number of threads currently waiting on this queue.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-num_waiting_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 102</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">num_waiting</span>
+  <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-ivar">@num_waiting</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-poll">
+            
+              poll(timeout = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Remove the head of the queue.</p>
+
+<p>If <code>timeout</code> is not given, remove and return the head the queue if the number of available elements is strictly greater than the number of threads currently waiting (that is, don&#39;t jump ahead in line).  Otherwise, return <code>nil</code>.</p>
+
+<p>If <code>timeout</code> is given, block if there is no element available, waiting up to <code>timeout</code> seconds for an element to become available.</p>
+
+<p>Raises:</p>
+<ul><li>
+<p><a href="../../ConnectionTimeoutError.html"><code>ActiveRecord::ConnectionTimeoutError</code></a> if <code>timeout</code> is given and no element</p>
+</li></ul>
+
+<p>becomes available within <code>timeout</code> seconds,</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-poll_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 144</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">poll</span>(<span class="ruby-identifier">timeout</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">synchronize</span> { <span class="ruby-identifier">internal_poll</span>(<span class="ruby-identifier">timeout</span>) }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,702 @@
+---
+title: ActionController::Metal
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.5</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionController::Metal
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../AbstractController/Base.html">AbstractController::Base</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_controller/metal_rb.html">actionpack/lib/action_controller/metal.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_controller/test_case_rb.html">actionpack/lib/action_controller/test_case.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p><code>ActionController::Metal</code> is the simplest possible controller, providing a valid Rack interface without the additional niceties provided by <code>ActionController::Base</code>.</p>
+
+<p>A sample metal controller might look like this:</p>
+
+<pre><code>class HelloController &lt; ActionController::Metal
+  def index
+    self.response_body = &quot;Hello World!&quot;
+  end
+end
+</code></pre>
+
+<p>And then to route requests to your metal controller, you would add something like this to <code>config/routes.rb</code>:</p>
+
+<pre><code>get &#39;hello&#39;, to: HelloController.action(:index)
+</code></pre>
+
+<p>The <code>action</code> method returns a valid Rack application for the Rails router to dispatch to.</p>
+
+<h2 id="class-ActionController::Metal-label-Rendering+Helpers"><a href="Rendering.html"><code>Rendering</code></a> <a href="Helpers.html"><code>Helpers</code></a></h2>
+
+<p><code>ActionController::Metal</code> by default provides no utilities for rendering views, partials, or other responses aside from explicitly calling of <code>response_body=</code>, <code>content_type=</code>, and <code>status=</code>. To add the render helpers you&#39;re used to having in a normal controller, you can do the following:</p>
+
+<pre><code>class HelloController &lt; ActionController::Metal
+  include AbstractController::Rendering
+  include ActionView::Layouts
+  append_view_path &quot;#{Rails.root}/app/views&quot;
+
+  def index
+    render &quot;hello/index&quot;
+  end
+end
+</code></pre>
+
+<h2 id="class-ActionController::Metal-label-Redirection+Helpers">Redirection <a href="Helpers.html"><code>Helpers</code></a></h2>
+
+<p>To add redirection helpers to your metal controller, do the following:</p>
+
+<pre><code>class HelloController &lt; ActionController::Metal
+  include ActionController::Redirecting
+  include Rails.application.routes.url_helpers
+
+  def index
+    redirect_to root_url
+  end
+end
+</code></pre>
+
+<h2 id="class-ActionController::Metal-label-Other+Helpers">Other <a href="Helpers.html"><code>Helpers</code></a></h2>
+
+<p>You can refer to the modules included in <code>ActionController::Base</code> to see other features you can bring into your metal controller.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-action">action</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-controller_name">controller_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-controller_name">controller_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-dispatch">dispatch</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-make_response-21">make_response!</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-middleware">middleware</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-params">params</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-params-3D">params=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-performed-3F">performed?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-reset_session">reset_session</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-response_body-3D">response_body=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-url_for">url_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-use">use</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-action">
+            
+              action(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a Rack endpoint for the given action name.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-action_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 232</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">action</span>(<span class="ruby-identifier">name</span>)
+  <span class="ruby-identifier">app</span> = <span class="ruby-identifier">lambda</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">env</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">req</span> = <span class="ruby-constant">ActionDispatch</span><span class="ruby-operator">::</span><span class="ruby-constant">Request</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">env</span>)
+    <span class="ruby-identifier">res</span> = <span class="ruby-identifier">make_response!</span> <span class="ruby-identifier">req</span>
+    <span class="ruby-identifier">new</span>.<span class="ruby-identifier">dispatch</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">req</span>, <span class="ruby-identifier">res</span>)
+  }
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">middleware_stack</span>.<span class="ruby-identifier">any?</span>
+    <span class="ruby-identifier">middleware_stack</span>.<span class="ruby-identifier">build</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">app</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">app</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-controller_name">
+            
+              controller_name()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the last part of the controller&#39;s name, underscored, without the ending <code>Controller</code>. For instance, PostsController returns <code>posts</code>. Namespaces are left out, so Admin::PostsController returns <code>posts</code> as well.</p>
+
+<h4 id="method-c-controller_name-label-Returns">Returns</h4>
+<ul><li>
+<p><code>string</code></p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-controller_name_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 129</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">controller_name</span>
+  <span class="ruby-ivar">@controller_name</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">name</span>.<span class="ruby-identifier">demodulize</span>.<span class="ruby-identifier">sub</span>(<span class="ruby-regexp">/Controller$/</span>, <span class="ruby-string">&quot;&quot;</span>).<span class="ruby-identifier">underscore</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-dispatch">
+            
+              dispatch(name, req, res)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Direct dispatch to the controller. Instantiates the controller, then executes the action named <code>name</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-dispatch_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 248</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">dispatch</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">req</span>, <span class="ruby-identifier">res</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">middleware_stack</span>.<span class="ruby-identifier">any?</span>
+    <span class="ruby-identifier">middleware_stack</span>.<span class="ruby-identifier">build</span>(<span class="ruby-identifier">name</span>) { <span class="ruby-operator">|</span><span class="ruby-identifier">env</span><span class="ruby-operator">|</span> <span class="ruby-identifier">new</span>.<span class="ruby-identifier">dispatch</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">req</span>, <span class="ruby-identifier">res</span>) }.<span class="ruby-identifier">call</span> <span class="ruby-identifier">req</span>.<span class="ruby-identifier">env</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">new</span>.<span class="ruby-identifier">dispatch</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">req</span>, <span class="ruby-identifier">res</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-make_response-21">
+            
+              make_response!(request)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-make_response-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 133</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">make_response!</span>(<span class="ruby-identifier">request</span>)
+  <span class="ruby-constant">ActionDispatch</span><span class="ruby-operator">::</span><span class="ruby-constant">Response</span>.<span class="ruby-identifier">new</span>.<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">res</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">res</span>.<span class="ruby-identifier">request</span> = <span class="ruby-identifier">request</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-middleware">
+            
+              middleware()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Alias for <code>middleware_stack</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-middleware_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 227</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">middleware</span>
+  <span class="ruby-identifier">middleware_stack</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 153</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>
+  <span class="ruby-ivar">@_request</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-ivar">@_response</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-ivar">@_routes</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-keyword">super</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-use">
+            
+              use(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Pushes the given Rack middleware and its arguments to the bottom of the middleware stack.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-use_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 222</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">use</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">middleware_stack</span>.<span class="ruby-identifier">use</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-controller_name">
+            
+              controller_name()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Delegates to the class&#39; <code>controller_name</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-controller_name_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 144</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">controller_name</span>
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">controller_name</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-params">
+            
+              params()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-params_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 160</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">params</span>
+  <span class="ruby-ivar">@_params</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">request</span>.<span class="ruby-identifier">parameters</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-params-3D">
+            
+              params=(val)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-params-3D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 164</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">params=</span>(<span class="ruby-identifier">val</span>)
+  <span class="ruby-ivar">@_params</span> = <span class="ruby-identifier">val</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-performed-3F">
+            
+              performed?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Tests if render or redirect has already happened.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-performed-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 184</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">performed?</span>
+  <span class="ruby-identifier">response_body</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">response</span>.<span class="ruby-identifier">committed?</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-reset_session">
+            
+              reset_session()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-reset_session_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 209</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reset_session</span>
+  <span class="ruby-ivar">@_request</span>.<span class="ruby-identifier">reset_session</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-response_body-3D">
+            
+              response_body=(body)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-response_body-3D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 175</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">response_body=</span>(<span class="ruby-identifier">body</span>)
+  <span class="ruby-identifier">body</span> = [<span class="ruby-identifier">body</span>] <span class="ruby-keyword">unless</span> <span class="ruby-identifier">body</span>.<span class="ruby-identifier">nil?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">body</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:each</span>)
+  <span class="ruby-identifier">response</span>.<span class="ruby-identifier">reset_body!</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">body</span>
+  <span class="ruby-identifier">response</span>.<span class="ruby-identifier">body</span> = <span class="ruby-identifier">body</span>
+  <span class="ruby-keyword">super</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-url_for">
+            
+              url_for(string)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Basic <a href="Metal.html#method-i-url_for"><code>url_for</code></a> that can be overridden for more robust functionality.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-url_for_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal.rb, line 171</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">url_for</span>(<span class="ruby-identifier">string</span>)
+  <span class="ruby-identifier">string</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
