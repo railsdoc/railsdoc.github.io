@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -64,7 +64,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-discard_on">
             
-              discard_on(exception)
+              discard_on(*exceptions)
             
           </h3>
 
@@ -104,13 +104,11 @@ end
                 
               </p>
               <div id="method-i-discard_on_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 79</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">discard_on</span>(<span class="ruby-identifier">exception</span>)
-  <span class="ruby-identifier">rescue_from</span> <span class="ruby-identifier">exception</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">error</span><span class="ruby-operator">|</span>
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
-      <span class="ruby-keyword">yield</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">error</span>
-    <span class="ruby-keyword">else</span>
-      <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-node">&quot;Discarded #{self.class} due to a #{exception}. The original exception was #{error.cause.inspect}.&quot;</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 87</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">discard_on</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>)
+  <span class="ruby-identifier">rescue_from</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">error</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">instrument</span> <span class="ruby-value">:discard</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-keyword">yield</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">error</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -122,7 +120,7 @@ end
         <div class="method">
           <h3 id="method-i-retry_on">
             
-              retry_on(exception, wait: 3.seconds, attempts: 5, queue: nil, priority: nil)
+              retry_on(*exceptions, wait: 3.seconds, attempts: 5, queue: nil, priority: nil)
             
           </h3>
 
@@ -148,16 +146,21 @@ end
 <pre><code>class RemoteServiceJob &lt; ActiveJob::Base
   retry_on CustomAppException # defaults to 3s wait, 5 attempts
   retry_on AnotherCustomAppException, wait: -&gt;(executions) { executions * 2 }
+
+  retry_on ActiveRecord::Deadlocked, wait: 5.seconds, attempts: 3
+  retry_on Net::OpenTimeout, Timeout::Error, wait: :exponentially_longer, attempts: 10 # retries at most 10 times for Net::OpenTimeout and Timeout::Error combined
+  # To retry at most 10 times for each individual exception:
+  # retry_on Net::OpenTimeout, wait: :exponentially_longer, attempts: 10
+  # retry_on Timeout::Error, wait: :exponentially_longer, attempts: 10
+
   retry_on(YetAnotherCustomAppException) do |job, error|
     ExceptionNotifier.caught(error)
   end
-  retry_on ActiveRecord::Deadlocked, wait: 5.seconds, attempts: 3
-  retry_on Net::OpenTimeout, wait: :exponentially_longer, attempts: 10
 
   def perform(*args)
     # Might raise CustomAppException, AnotherCustomAppException, or YetAnotherCustomAppException for something domain specific
     # Might raise ActiveRecord::Deadlocked when a local db deadlock is detected
-    # Might raise Net::OpenTimeout when the remote service is down
+    # Might raise Net::OpenTimeout or Timeout::Error when the remote service is down
   end
 end
 </code></pre>
@@ -177,17 +180,20 @@ end
                 
               </p>
               <div id="method-i-retry_on_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 45</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retry_on</span>(<span class="ruby-identifier">exception</span>, <span class="ruby-value">wait:</span> <span class="ruby-value">3</span>.<span class="ruby-identifier">seconds</span>, <span class="ruby-value">attempts:</span> <span class="ruby-value">5</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">priority:</span> <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">rescue_from</span> <span class="ruby-identifier">exception</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">error</span><span class="ruby-operator">|</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 50</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retry_on</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>, <span class="ruby-value">wait:</span> <span class="ruby-value">3</span>.<span class="ruby-identifier">seconds</span>, <span class="ruby-value">attempts:</span> <span class="ruby-value">5</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">priority:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">rescue_from</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">error</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">executions</span> = <span class="ruby-identifier">executions_for</span>(<span class="ruby-identifier">exceptions</span>)
+
     <span class="ruby-keyword">if</span> <span class="ruby-identifier">executions</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">attempts</span>
-      <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-node">&quot;Retrying #{self.class} in #{wait} seconds, due to a #{exception}. The original exception was #{error.cause.inspect}.&quot;</span>
-      <span class="ruby-identifier">retry_job</span> <span class="ruby-value">wait:</span> <span class="ruby-identifier">determine_delay</span>(<span class="ruby-identifier">wait</span>), <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-value">priority:</span> <span class="ruby-identifier">priority</span>
+      <span class="ruby-identifier">retry_job</span> <span class="ruby-value">wait:</span> <span class="ruby-identifier">determine_delay</span>(<span class="ruby-value">seconds_or_duration_or_algorithm:</span> <span class="ruby-identifier">wait</span>, <span class="ruby-value">executions:</span> <span class="ruby-identifier">executions</span>), <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-value">priority:</span> <span class="ruby-identifier">priority</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span>
     <span class="ruby-keyword">else</span>
       <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
-        <span class="ruby-keyword">yield</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">error</span>
+        <span class="ruby-identifier">instrument</span> <span class="ruby-value">:retry_stopped</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span> <span class="ruby-keyword">do</span>
+          <span class="ruby-keyword">yield</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">error</span>
+        <span class="ruby-keyword">end</span>
       <span class="ruby-keyword">else</span>
-        <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-node">&quot;Stopped retrying #{self.class} due to a #{exception}, which reoccurred on #{executions} attempts. The original exception was #{error.cause.inspect}.&quot;</span>
+        <span class="ruby-identifier">instrument</span> <span class="ruby-value">:retry_stopped</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span>
         <span class="ruby-identifier">raise</span> <span class="ruby-identifier">error</span>
       <span class="ruby-keyword">end</span>
     <span class="ruby-keyword">end</span>

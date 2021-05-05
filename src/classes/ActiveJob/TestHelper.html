@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -128,7 +128,7 @@ layout: default
 end
 </code></pre>
 
-<p>If a block is passed, that block will cause the specified number of jobs to be enqueued.</p>
+<p>If a block is passed, asserts that the block will cause the specified number of jobs to be enqueued.</p>
 
 <pre><code>def test_jobs_again
   assert_enqueued_jobs 1 do
@@ -142,7 +142,7 @@ end
 end
 </code></pre>
 
-<p>The number of times a specific job was enqueued can be asserted.</p>
+<p>Asserts the number of times a specific job was enqueued by passing <code>:only</code> option.</p>
 
 <pre><code>def test_logging_job
   assert_enqueued_jobs 1, only: LoggingJob do
@@ -152,7 +152,7 @@ end
 end
 </code></pre>
 
-<p>The number of times a job except specific class was enqueued can be asserted.</p>
+<p>Asserts the number of times a job except specific class was enqueued by passing <code>:except</code> option.</p>
 
 <pre><code>def test_logging_job
   assert_enqueued_jobs 1, except: HelloJob do
@@ -162,7 +162,9 @@ end
 end
 </code></pre>
 
-<p>The number of times a job is enqueued to a specific queue can also be asserted.</p>
+<p><code>:only</code> and <code>:except</code> options accepts <a href="../Class.html"><code>Class</code></a>, <a href="../Array.html"><code>Array</code></a> of <a href="../Class.html"><code>Class</code></a> or Proc. When passed a Proc, a hash containing the job&#39;s class and it&#39;s argument are passed as argument.</p>
+
+<p>Asserts the number of times a job is enqueued to a specific queue by passing <code>:queue</code> option.</p>
 
 <pre><code>def test_logging_job
   assert_enqueued_jobs 2, queue: &#39;default&#39; do
@@ -187,17 +189,21 @@ end
                 
               </p>
               <div id="method-i-assert_enqueued_jobs_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 118</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 120</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_enqueued_jobs</span>(<span class="ruby-identifier">number</span>, <span class="ruby-value">only:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">except:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
-    <span class="ruby-identifier">original_count</span> = <span class="ruby-identifier">enqueued_jobs_size</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>)
+    <span class="ruby-identifier">original_count</span> = <span class="ruby-identifier">enqueued_jobs_with</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>)
+
     <span class="ruby-keyword">yield</span>
-    <span class="ruby-identifier">new_count</span> = <span class="ruby-identifier">enqueued_jobs_size</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>)
-    <span class="ruby-identifier">assert_equal</span> <span class="ruby-identifier">number</span>, <span class="ruby-identifier">new_count</span> <span class="ruby-operator">-</span> <span class="ruby-identifier">original_count</span>, <span class="ruby-node">&quot;#{number} jobs expected, but #{new_count - original_count} were enqueued&quot;</span>
+
+    <span class="ruby-identifier">new_count</span> = <span class="ruby-identifier">enqueued_jobs_with</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>)
+
+    <span class="ruby-identifier">actual_count</span> = <span class="ruby-identifier">new_count</span> <span class="ruby-operator">-</span> <span class="ruby-identifier">original_count</span>
   <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">actual_count</span> = <span class="ruby-identifier">enqueued_jobs_size</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>)
-    <span class="ruby-identifier">assert_equal</span> <span class="ruby-identifier">number</span>, <span class="ruby-identifier">actual_count</span>, <span class="ruby-node">&quot;#{number} jobs expected, but #{actual_count} were enqueued&quot;</span>
+    <span class="ruby-identifier">actual_count</span> = <span class="ruby-identifier">enqueued_jobs_with</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>)
   <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">assert_equal</span> <span class="ruby-identifier">number</span>, <span class="ruby-identifier">actual_count</span>, <span class="ruby-node">&quot;#{number} jobs expected, but #{actual_count} were enqueued&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -213,7 +219,44 @@ end
 
           
             <div class="description">
-              <p>Asserts that the job passed in the block has been enqueued with the given arguments.</p>
+              <p>Asserts that the job has been enqueued with the given arguments.</p>
+
+<pre><code>def test_assert_enqueued_with
+  MyJob.perform_later(1,2,3)
+  assert_enqueued_with(job: MyJob, args: [1,2,3], queue: &#39;low&#39;)
+
+  MyJob.set(wait_until: Date.tomorrow.noon).perform_later
+  assert_enqueued_with(job: MyJob, at: Date.tomorrow.noon)
+end
+</code></pre>
+
+<p>The <code>at</code> and <code>args</code> arguments also accept a proc.</p>
+
+<p>To the <code>at</code> proc, it will get passed the actual job&#39;s at argument.</p>
+
+<pre><code>def test_assert_enqueued_with
+  expected_time = -&gt;(at) do
+    (Date.yesterday..Date.tomorrow).cover?(at)
+  end
+
+  MyJob.set(at: Date.today.noon).perform_later
+  assert_enqueued_with(job: MyJob, at: expected_time)
+end
+</code></pre>
+
+<p>To the <code>args</code> proc, it will get passed the actual job&#39;s arguments Your proc needs to return a boolean value determining if the job&#39;s arguments matches your expectation. This is useful to check only for a subset of arguments.</p>
+
+<pre><code>def test_assert_enqueued_with
+  expected_args = -&gt;(job_args) do
+    assert job_args.first.key?(:foo)
+  end
+
+  MyJob.perform_later(foo: &#39;bar&#39;, other_arg: &#39;No need to check in the test&#39;)
+  assert_enqueued_with(job: MyJob, args: expected_args, queue: &#39;low&#39;)
+end
+</code></pre>
+
+<p>If a block is passed, asserts that the block will cause the job to be enqueued with the given arguments.</p>
 
 <pre><code>def test_assert_enqueued_with
   assert_enqueued_with(job: MyJob, args: [1,2,3], queue: &#39;low&#39;) do
@@ -241,17 +284,33 @@ end
                 
               </p>
               <div id="method-i-assert_enqueued_with_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 300</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 393</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_enqueued_with</span>(<span class="ruby-value">job:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">args:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">at:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">original_enqueued_jobs_count</span> = <span class="ruby-identifier">enqueued_jobs</span>.<span class="ruby-identifier">count</span>
   <span class="ruby-identifier">expected</span> = { <span class="ruby-value">job:</span> <span class="ruby-identifier">job</span>, <span class="ruby-value">args:</span> <span class="ruby-identifier">args</span>, <span class="ruby-value">at:</span> <span class="ruby-identifier">at</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span> }.<span class="ruby-identifier">compact</span>
   <span class="ruby-identifier">expected_args</span> = <span class="ruby-identifier">prepare_args_for_assertion</span>(<span class="ruby-identifier">expected</span>)
-  <span class="ruby-keyword">yield</span>
-  <span class="ruby-identifier">in_block_jobs</span> = <span class="ruby-identifier">enqueued_jobs</span>.<span class="ruby-identifier">drop</span>(<span class="ruby-identifier">original_enqueued_jobs_count</span>)
-  <span class="ruby-identifier">matching_job</span> = <span class="ruby-identifier">in_block_jobs</span>.<span class="ruby-identifier">find</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">in_block_job</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">deserialized_job</span> = <span class="ruby-identifier">deserialize_args_for_assertion</span>(<span class="ruby-identifier">in_block_job</span>)
-    <span class="ruby-identifier">expected_args</span>.<span class="ruby-identifier">all?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">key</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span> <span class="ruby-identifier">value</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">deserialized_job</span>[<span class="ruby-identifier">key</span>] }
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+    <span class="ruby-identifier">original_enqueued_jobs_count</span> = <span class="ruby-identifier">enqueued_jobs</span>.<span class="ruby-identifier">count</span>
+
+    <span class="ruby-keyword">yield</span>
+
+    <span class="ruby-identifier">jobs</span> = <span class="ruby-identifier">enqueued_jobs</span>.<span class="ruby-identifier">drop</span>(<span class="ruby-identifier">original_enqueued_jobs_count</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">jobs</span> = <span class="ruby-identifier">enqueued_jobs</span>
   <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">matching_job</span> = <span class="ruby-identifier">jobs</span>.<span class="ruby-identifier">find</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">enqueued_job</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">deserialized_job</span> = <span class="ruby-identifier">deserialize_args_for_assertion</span>(<span class="ruby-identifier">enqueued_job</span>)
+
+    <span class="ruby-identifier">expected_args</span>.<span class="ruby-identifier">all?</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">key</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span>
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:call</span>)
+        <span class="ruby-identifier">value</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">deserialized_job</span>[<span class="ruby-identifier">key</span>])
+      <span class="ruby-keyword">else</span>
+        <span class="ruby-identifier">value</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">deserialized_job</span>[<span class="ruby-identifier">key</span>]
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
   <span class="ruby-identifier">assert</span> <span class="ruby-identifier">matching_job</span>, <span class="ruby-node">&quot;No enqueued job found with #{expected}&quot;</span>
   <span class="ruby-identifier">instantiate_job</span>(<span class="ruby-identifier">matching_job</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -263,7 +322,7 @@ end
         <div class="method">
           <h3 id="method-i-assert_no_enqueued_jobs">
             
-              assert_no_enqueued_jobs(only: nil, except: nil, &amp;block)
+              assert_no_enqueued_jobs(only: nil, except: nil, queue: nil, &amp;block)
             
           </h3>
 
@@ -278,7 +337,7 @@ end
 end
 </code></pre>
 
-<p>If a block is passed, that block should not cause any job to be enqueued.</p>
+<p>If a block is passed, asserts that the block will not cause any job to be enqueued.</p>
 
 <pre><code>def test_jobs_again
   assert_no_enqueued_jobs do
@@ -287,7 +346,7 @@ end
 end
 </code></pre>
 
-<p>It can be asserted that no jobs of a specific kind are enqueued:</p>
+<p>Asserts that no jobs of a specific kind are enqueued by passing <code>:only</code> option.</p>
 
 <pre><code>def test_no_logging
   assert_no_enqueued_jobs only: LoggingJob do
@@ -296,11 +355,22 @@ end
 end
 </code></pre>
 
-<p>It can be asserted that no jobs except specific class are enqueued:</p>
+<p>Asserts that no jobs except specific class are enqueued by passing <code>:except</code> option.</p>
 
 <pre><code>def test_no_logging
   assert_no_enqueued_jobs except: HelloJob do
     HelloJob.perform_later(&#39;jeremy&#39;)
+  end
+end
+</code></pre>
+
+<p><code>:only</code> and <code>:except</code> options accepts <a href="../Class.html"><code>Class</code></a>, <a href="../Array.html"><code>Array</code></a> of <a href="../Class.html"><code>Class</code></a> or Proc. When passed a Proc, a hash containing the job&#39;s class and it&#39;s argument are passed as argument.</p>
+
+<p>Asserts that no jobs are enqueued to a specific queue by passing <code>:queue</code> option</p>
+
+<pre><code>def test_no_logging
+  assert_no_enqueued_jobs queue: &#39;default&#39; do
+    LoggingJob.set(queue: :some_queue).perform_later
   end
 end
 </code></pre>
@@ -325,9 +395,9 @@ end
                 
               </p>
               <div id="method-i-assert_no_enqueued_jobs_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 165</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_no_enqueued_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">except:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">assert_enqueued_jobs</span> <span class="ruby-value">0</span>, <span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 182</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_no_enqueued_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">except:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">assert_enqueued_jobs</span> <span class="ruby-value">0</span>, <span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -337,7 +407,7 @@ end
         <div class="method">
           <h3 id="method-i-assert_no_performed_jobs">
             
-              assert_no_performed_jobs(only: nil, except: nil, &amp;block)
+              assert_no_performed_jobs(only: nil, except: nil, queue: nil, &amp;block)
             
           </h3>
 
@@ -355,7 +425,7 @@ end
 end
 </code></pre>
 
-<p>If a block is passed, that block should not cause any job to be performed.</p>
+<p>If a block is passed, asserts that the block will not cause any job to be performed.</p>
 
 <pre><code>def test_jobs_again
   assert_no_performed_jobs do
@@ -364,7 +434,7 @@ end
 end
 </code></pre>
 
-<p>The block form supports filtering. If the :only option is specified, then only the listed job(s) will not be performed.</p>
+<p>The block form supports filtering. If the <code>:only</code> option is specified, then only the listed job(s) will not be performed.</p>
 
 <pre><code>def test_no_logging
   assert_no_performed_jobs only: LoggingJob do
@@ -373,11 +443,22 @@ end
 end
 </code></pre>
 
-<p>Also if the :except option is specified, then the job(s) except specific class will not be performed.</p>
+<p>Also if the <code>:except</code> option is specified, then the job(s) except specific class will not be performed.</p>
 
 <pre><code>def test_no_logging
   assert_no_performed_jobs except: HelloJob do
     HelloJob.perform_later(&#39;jeremy&#39;)
+  end
+end
+</code></pre>
+
+<p><code>:only</code> and <code>:except</code> options accepts <a href="../Class.html"><code>Class</code></a>, <a href="../Array.html"><code>Array</code></a> of <a href="../Class.html"><code>Class</code></a> or Proc. When passed a Proc, an instance of the job will be passed as argument.</p>
+
+<p>If the <code>:queue</code> option is specified, then only the job(s) enqueued to a specific queue will not be performed.</p>
+
+<pre><code>def test_assert_no_performed_jobs_with_queue_option
+  assert_no_performed_jobs queue: :some_queue do
+    HelloJob.set(queue: :other_queue).perform_later(&quot;jeremy&quot;)
   end
 end
 </code></pre>
@@ -402,9 +483,9 @@ end
                 
               </p>
               <div id="method-i-assert_no_performed_jobs_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 285</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_no_performed_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">except:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">assert_performed_jobs</span> <span class="ruby-value">0</span>, <span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 340</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_no_performed_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">except:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">assert_performed_jobs</span> <span class="ruby-value">0</span>, <span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -414,13 +495,13 @@ end
         <div class="method">
           <h3 id="method-i-assert_performed_jobs">
             
-              assert_performed_jobs(number, only: nil, except: nil)
+              assert_performed_jobs(number, only: nil, except: nil, queue: nil, &amp;block)
             
           </h3>
 
           
             <div class="description">
-              <p>Asserts that the number of performed jobs matches the given number. If no block is passed, <code>perform_enqueued_jobs</code> must be called around the job call.</p>
+              <p>Asserts that the number of performed jobs matches the given number. If no block is passed, <code>perform_enqueued_jobs</code> must be called around or after the job call.</p>
 
 <pre><code>def test_jobs
   assert_performed_jobs 0
@@ -430,14 +511,15 @@ end
   end
   assert_performed_jobs 1
 
-  perform_enqueued_jobs do
-    HelloJob.perform_later(&#39;yves&#39;)
-    assert_performed_jobs 2
-  end
+  HelloJob.perform_later(&#39;yves&#39;)
+
+  perform_enqueued_jobs
+
+  assert_performed_jobs 2
 end
 </code></pre>
 
-<p>If a block is passed, that block should cause the specified number of jobs to be performed.</p>
+<p>If a block is passed, asserts that the block will cause the specified number of jobs to be performed.</p>
 
 <pre><code>def test_jobs_again
   assert_performed_jobs 1 do
@@ -451,7 +533,7 @@ end
 end
 </code></pre>
 
-<p>The block form supports filtering. If the :only option is specified, then only the listed job(s) will be performed.</p>
+<p>This method also supports filtering. If the <code>:only</code> option is specified, then only the listed job(s) will be performed.</p>
 
 <pre><code>def test_hello_job
   assert_performed_jobs 1, only: HelloJob do
@@ -461,7 +543,7 @@ end
 end
 </code></pre>
 
-<p>Also if the :except option is specified, then the job(s) except specific class will be performed.</p>
+<p>Also if the <code>:except</code> option is specified, then the job(s) except specific class will be performed.</p>
 
 <pre><code>def test_hello_job
   assert_performed_jobs 1, except: LoggingJob do
@@ -483,6 +565,29 @@ end
   end
 end
 </code></pre>
+
+<p>A proc may also be specified. When passed a Proc, the job&#39;s instance will be passed as argument.</p>
+
+<pre><code>def test_hello_and_logging_jobs
+  assert_nothing_raised do
+    assert_performed_jobs(1, only: -&gt;(job) { job.is_a?(HelloJob) }) do
+      HelloJob.perform_later(&#39;jeremy&#39;)
+      LoggingJob.perform_later(&#39;stewie&#39;)
+      RescueJob.perform_later(&#39;david&#39;)
+    end
+  end
+end
+</code></pre>
+
+<p>If the <code>:queue</code> option is specified, then only the job(s) enqueued to a specific queue will be performed.</p>
+
+<pre><code>def test_assert_performed_jobs_with_queue_option
+  assert_performed_jobs 1, queue: :some_queue do
+    HelloJob.set(queue: :some_queue).perform_later(&quot;jeremy&quot;)
+    HelloJob.set(queue: :other_queue).perform_later(&quot;bogdan&quot;)
+  end
+end
+</code></pre>
             </div>
           
 
@@ -499,18 +604,21 @@ end
                 
               </p>
               <div id="method-i-assert_performed_jobs_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 232</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_performed_jobs</span>(<span class="ruby-identifier">number</span>, <span class="ruby-value">only:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">except:</span> <span class="ruby-keyword">nil</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 272</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_performed_jobs</span>(<span class="ruby-identifier">number</span>, <span class="ruby-value">only:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">except:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
     <span class="ruby-identifier">original_count</span> = <span class="ruby-identifier">performed_jobs</span>.<span class="ruby-identifier">size</span>
-    <span class="ruby-identifier">perform_enqueued_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>) { <span class="ruby-keyword">yield</span> }
+
+    <span class="ruby-identifier">perform_enqueued_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+
     <span class="ruby-identifier">new_count</span> = <span class="ruby-identifier">performed_jobs</span>.<span class="ruby-identifier">size</span>
-    <span class="ruby-identifier">assert_equal</span> <span class="ruby-identifier">number</span>, <span class="ruby-identifier">new_count</span> <span class="ruby-operator">-</span> <span class="ruby-identifier">original_count</span>,
-      <span class="ruby-node">&quot;#{number} jobs expected, but #{new_count - original_count} were performed&quot;</span>
+
+    <span class="ruby-identifier">performed_jobs_size</span> = <span class="ruby-identifier">new_count</span> <span class="ruby-operator">-</span> <span class="ruby-identifier">original_count</span>
   <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">performed_jobs_size</span> = <span class="ruby-identifier">performed_jobs</span>.<span class="ruby-identifier">size</span>
-    <span class="ruby-identifier">assert_equal</span> <span class="ruby-identifier">number</span>, <span class="ruby-identifier">performed_jobs_size</span>, <span class="ruby-node">&quot;#{number} jobs expected, but #{performed_jobs_size} were performed&quot;</span>
+    <span class="ruby-identifier">performed_jobs_size</span> = <span class="ruby-identifier">performed_jobs_with</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>)
   <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">assert_equal</span> <span class="ruby-identifier">number</span>, <span class="ruby-identifier">performed_jobs_size</span>, <span class="ruby-node">&quot;#{number} jobs expected, but #{performed_jobs_size} were performed&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -520,13 +628,58 @@ end
         <div class="method">
           <h3 id="method-i-assert_performed_with">
             
-              assert_performed_with(job: nil, args: nil, at: nil, queue: nil)
+              assert_performed_with(job: nil, args: nil, at: nil, queue: nil, &amp;block)
             
           </h3>
 
           
             <div class="description">
-              <p>Asserts that the job passed in the block has been performed with the given arguments.</p>
+              <p>Asserts that the job has been performed with the given arguments.</p>
+
+<pre><code>def test_assert_performed_with
+  MyJob.perform_later(1,2,3)
+
+  perform_enqueued_jobs
+
+  assert_performed_with(job: MyJob, args: [1,2,3], queue: &#39;high&#39;)
+
+  MyJob.set(wait_until: Date.tomorrow.noon).perform_later
+
+  perform_enqueued_jobs
+
+  assert_performed_with(job: MyJob, at: Date.tomorrow.noon)
+end
+</code></pre>
+
+<p>The <code>at</code> and <code>args</code> arguments also accept a proc.</p>
+
+<p>To the <code>at</code> proc, it will get passed the actual job&#39;s at argument.</p>
+
+<pre><code>def test_assert_enqueued_with
+  expected_time = -&gt;(at) do
+    (Date.yesterday..Date.tomorrow).cover?(at)
+  end
+
+  MyJob.set(at: Date.today.noon).perform_later
+  assert_enqueued_with(job: MyJob, at: expected_time)
+end
+</code></pre>
+
+<p>To the <code>args</code> proc, it will get passed the actual job&#39;s arguments Your proc needs to return a boolean value determining if the job&#39;s arguments matches your expectation. This is useful to check only for a subset of arguments.</p>
+
+<pre><code>def test_assert_performed_with
+  expected_args = -&gt;(job_args) do
+    assert job_args.first.key?(:foo)
+  end
+  MyJob.perform_later(foo: &#39;bar&#39;, other_arg: &#39;No need to check in the test&#39;)
+
+  perform_enqueued_jobs
+
+  assert_performed_with(job: MyJob, args: expected_args, queue: &#39;high&#39;)
+end
+</code></pre>
+
+<p>If a block is passed, that block performs all of the jobs that were enqueued throughout the duration of the block and asserts that the job has been performed with the given arguments in the block.</p>
 
 <pre><code>def test_assert_performed_with
   assert_performed_with(job: MyJob, args: [1,2,3], queue: &#39;high&#39;) do
@@ -554,17 +707,33 @@ end
                 
               </p>
               <div id="method-i-assert_performed_with_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 325</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_performed_with</span>(<span class="ruby-value">job:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">args:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">at:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">original_performed_jobs_count</span> = <span class="ruby-identifier">performed_jobs</span>.<span class="ruby-identifier">count</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 481</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_performed_with</span>(<span class="ruby-value">job:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">args:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">at:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">expected</span> = { <span class="ruby-value">job:</span> <span class="ruby-identifier">job</span>, <span class="ruby-value">args:</span> <span class="ruby-identifier">args</span>, <span class="ruby-value">at:</span> <span class="ruby-identifier">at</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span> }.<span class="ruby-identifier">compact</span>
   <span class="ruby-identifier">expected_args</span> = <span class="ruby-identifier">prepare_args_for_assertion</span>(<span class="ruby-identifier">expected</span>)
-  <span class="ruby-identifier">perform_enqueued_jobs</span> { <span class="ruby-keyword">yield</span> }
-  <span class="ruby-identifier">in_block_jobs</span> = <span class="ruby-identifier">performed_jobs</span>.<span class="ruby-identifier">drop</span>(<span class="ruby-identifier">original_performed_jobs_count</span>)
-  <span class="ruby-identifier">matching_job</span> = <span class="ruby-identifier">in_block_jobs</span>.<span class="ruby-identifier">find</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">in_block_job</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">deserialized_job</span> = <span class="ruby-identifier">deserialize_args_for_assertion</span>(<span class="ruby-identifier">in_block_job</span>)
-    <span class="ruby-identifier">expected_args</span>.<span class="ruby-identifier">all?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">key</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span> <span class="ruby-identifier">value</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">deserialized_job</span>[<span class="ruby-identifier">key</span>] }
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+    <span class="ruby-identifier">original_performed_jobs_count</span> = <span class="ruby-identifier">performed_jobs</span>.<span class="ruby-identifier">count</span>
+
+    <span class="ruby-identifier">perform_enqueued_jobs</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+
+    <span class="ruby-identifier">jobs</span> = <span class="ruby-identifier">performed_jobs</span>.<span class="ruby-identifier">drop</span>(<span class="ruby-identifier">original_performed_jobs_count</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">jobs</span> = <span class="ruby-identifier">performed_jobs</span>
   <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">matching_job</span> = <span class="ruby-identifier">jobs</span>.<span class="ruby-identifier">find</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">enqueued_job</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">deserialized_job</span> = <span class="ruby-identifier">deserialize_args_for_assertion</span>(<span class="ruby-identifier">enqueued_job</span>)
+
+    <span class="ruby-identifier">expected_args</span>.<span class="ruby-identifier">all?</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">key</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span>
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:call</span>)
+        <span class="ruby-identifier">value</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">deserialized_job</span>[<span class="ruby-identifier">key</span>])
+      <span class="ruby-keyword">else</span>
+        <span class="ruby-identifier">value</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">deserialized_job</span>[<span class="ruby-identifier">key</span>]
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
   <span class="ruby-identifier">assert</span> <span class="ruby-identifier">matching_job</span>, <span class="ruby-node">&quot;No performed job found with #{expected}&quot;</span>
   <span class="ruby-identifier">instantiate_job</span>(<span class="ruby-identifier">matching_job</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -576,18 +745,26 @@ end
         <div class="method">
           <h3 id="method-i-perform_enqueued_jobs">
             
-              perform_enqueued_jobs(only: nil, except: nil)
+              perform_enqueued_jobs(only: nil, except: nil, queue: nil)
             
           </h3>
 
           
             <div class="description">
-              <p>Performs all enqueued jobs in the duration of the block.</p>
+              <p>Performs all enqueued jobs. If a block is given, performs all of the jobs that were enqueued throughout the duration of the block. If a block is not given, performs all of the enqueued jobs up to this point in the test.</p>
 
 <pre><code>def test_perform_enqueued_jobs
   perform_enqueued_jobs do
     MyJob.perform_later(1, 2, 3)
   end
+  assert_performed_jobs 1
+end
+
+def test_perform_enqueued_jobs_without_block
+  MyJob.perform_later(1, 2, 3)
+
+  perform_enqueued_jobs
+
   assert_performed_jobs 1
 end
 </code></pre>
@@ -613,6 +790,19 @@ end
   assert_performed_jobs 1
 end
 </code></pre>
+
+<p><code>:only</code> and <code>:except</code> options accepts <a href="../Class.html"><code>Class</code></a>, <a href="../Array.html"><code>Array</code></a> of <a href="../Class.html"><code>Class</code></a> or Proc. When passed a Proc, an instance of the job will be passed as argument.</p>
+
+<p>If the <code>:queue</code> option is specified, then only the job(s) enqueued to a specific queue will be performed.</p>
+
+<pre><code>def test_perform_enqueued_jobs_with_queue
+  perform_enqueued_jobs queue: :some_queue do
+    MyJob.set(queue: :some_queue).perform_later(1, 2, 3) # will be performed
+    HelloJob.set(queue: :other_queue).perform_later(1, 2, 3) # will not be performed
+  end
+  assert_performed_jobs 1
+end
+</code></pre>
             </div>
           
 
@@ -629,25 +819,32 @@ end
                 
               </p>
               <div id="method-i-perform_enqueued_jobs_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 370</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">perform_enqueued_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">except:</span> <span class="ruby-keyword">nil</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 566</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">perform_enqueued_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">except:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-keyword">return</span> <span class="ruby-identifier">flush_enqueued_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">block_given?</span>
+
   <span class="ruby-identifier">validate_option</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>)
+
   <span class="ruby-identifier">old_perform_enqueued_jobs</span> = <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">perform_enqueued_jobs</span>
   <span class="ruby-identifier">old_perform_enqueued_at_jobs</span> = <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">perform_enqueued_at_jobs</span>
   <span class="ruby-identifier">old_filter</span> = <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">filter</span>
   <span class="ruby-identifier">old_reject</span> = <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">reject</span>
+  <span class="ruby-identifier">old_queue</span> = <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">queue</span>
 
   <span class="ruby-keyword">begin</span>
     <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">perform_enqueued_jobs</span> = <span class="ruby-keyword">true</span>
     <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">perform_enqueued_at_jobs</span> = <span class="ruby-keyword">true</span>
     <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">filter</span> = <span class="ruby-identifier">only</span>
     <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">reject</span> = <span class="ruby-identifier">except</span>
+    <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">queue</span> = <span class="ruby-identifier">queue</span>
+
     <span class="ruby-keyword">yield</span>
   <span class="ruby-keyword">ensure</span>
     <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">perform_enqueued_jobs</span> = <span class="ruby-identifier">old_perform_enqueued_jobs</span>
     <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">perform_enqueued_at_jobs</span> = <span class="ruby-identifier">old_perform_enqueued_at_jobs</span>
     <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">filter</span> = <span class="ruby-identifier">old_filter</span>
     <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">reject</span> = <span class="ruby-identifier">old_reject</span>
+    <span class="ruby-identifier">queue_adapter</span>.<span class="ruby-identifier">queue</span> = <span class="ruby-identifier">old_queue</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -686,7 +883,7 @@ end
                 
               </p>
               <div id="method-i-queue_adapter_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 396</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 599</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">queue_adapter</span>
   <span class="ruby-constant">ActiveJob</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">queue_adapter</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -704,7 +901,7 @@ end
 
           
             <div class="description">
-              <p>Specifies the queue adapter to use with all active job test helpers.</p>
+              <p>Specifies the queue adapter to use with all Active Job test helpers.</p>
 
 <p>Returns an instance of the queue adapter and defaults to <code>ActiveJob::QueueAdapters::TestAdapter</code>.</p>
 
@@ -725,7 +922,7 @@ end
                 
               </p>
               <div id="method-i-queue_adapter_for_test_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 64</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 63</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">queue_adapter_for_test</span>
   <span class="ruby-constant">ActiveJob</span><span class="ruby-operator">::</span><span class="ruby-constant">QueueAdapters</span><span class="ruby-operator">::</span><span class="ruby-constant">TestAdapter</span>.<span class="ruby-identifier">new</span>
 <span class="ruby-keyword">end</span></code></pre>

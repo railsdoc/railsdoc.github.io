@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -31,28 +31,46 @@ layout: default
       
 <p>Image blobs can have variants that are the result of a set of transformations applied to the original. These variants are used to create thumbnails, fixed-size avatars, or any other derivative image from the original.</p>
 
-<p>Variants rely on <a href="https://github.com/minimagick/minimagick">MiniMagick</a> for the actual transformations of the file, so you must add <code>gem &quot;mini_magick&quot;</code> to your Gemfile if you wish to use variants.</p>
+<p>Variants rely on <a href="https://github.com/janko-m/image_processing">ImageProcessing</a> gem for the actual transformations of the file, so you must add <code>gem &quot;image_processing&quot;</code> to your Gemfile if you wish to use variants. By default, images will be processed with <a href="http://imagemagick.org">ImageMagick</a> using the <a href="https://github.com/minimagick/minimagick">MiniMagick</a> gem, but you can also switch to the <a href="http://jcupitt.github.io/libvips/">libvips</a> processor operated by the <a href="https://github.com/jcupitt/ruby-vips">ruby-vips</a> gem).</p>
 
-<p>Note that to create a variant it&#39;s necessary to download the entire blob file from the service and load it into memory. The larger the image, the more memory is used. Because of this process, you also want to be considerate about when the variant is actually processed. You shouldn&#39;t be processing variants inline in a template, for example. Delay the processing to an on-demand controller, like the one provided in <a href="RepresentationsController.html"><code>ActiveStorage::RepresentationsController</code></a>.</p>
+<pre><code>Rails.application.config.active_storage.variant_processor
+# =&gt; :mini_magick
+
+Rails.application.config.active_storage.variant_processor = :vips
+# =&gt; :vips
+</code></pre>
+
+<p>Note that to create a variant it&#39;s necessary to download the entire blob file from the service. Because of this process, you also want to be considerate about when the variant is actually processed. You shouldn&#39;t be processing variants inline in a template, for example. Delay the processing to an on-demand controller, like the one provided in <a href="RepresentationsController.html"><code>ActiveStorage::RepresentationsController</code></a>.</p>
 
 <p>To refer to such a delayed on-demand variant, simply link to the variant through the resolved route provided by Active Storage like so:</p>
 
-<pre><code>&lt;%= image_tag Current.user.avatar.variant(resize: &quot;100x100&quot;) %&gt;
+<pre><code>&lt;%= image_tag Current.user.avatar.variant(resize_to_limit: [100, 100]) %&gt;
 </code></pre>
 
 <p>This will create a URL for that specific blob with that specific variant, which the <a href="RepresentationsController.html"><code>ActiveStorage::RepresentationsController</code></a> can then produce on-demand.</p>
 
 <p>When you do want to actually produce the variant needed, call <code>processed</code>. This will check that the variant has already been processed and uploaded to the service, and, if so, just return that. Otherwise it will perform the transformations, upload the variant to the service, and return itself again. Example:</p>
 
-<pre><code>avatar.variant(resize: &quot;100x100&quot;).processed.service_url
+<pre><code>avatar.variant(resize_to_limit: [100, 100]).processed.service_url
 </code></pre>
 
 <p>This will create and process a variant of the avatar blob that&#39;s constrained to a height and width of 100. Then it&#39;ll upload said variant to the service according to a derivative key of the blob and the transformations.</p>
 
-<p>A list of all possible transformations is available at <a href="https://www.imagemagick.org/script/mogrify.php">www.imagemagick.org/script/mogrify.php</a>. You can combine as many as you like freely:</p>
+<p>You can combine any number of ImageMagick/libvips operations into a variant, as well as any macros provided by the ImageProcessing gem (such as <code>resize_to_limit</code>):</p>
 
-<pre><code>avatar.variant(resize: &quot;100x100&quot;, monochrome: true, rotate: &quot;-90&quot;)
+<pre><code>avatar.variant(resize_to_limit: [800, 800], monochrome: true, rotate: &quot;-90&quot;)
 </code></pre>
+
+<p>Visit the following links for a list of available ImageProcessing commands and ImageMagick/libvips operations:</p>
+<ul><li>
+<p><a href="https://github.com/janko-m/image_processing/blob/master/doc/minimagick.md#methods">ImageProcessing::MiniMagick</a></p>
+</li><li>
+<p><a href="https://www.imagemagick.org/script/mogrify.php">ImageMagick reference</a></p>
+</li><li>
+<p><a href="https://github.com/janko-m/image_processing/blob/master/doc/vips.md#methods">ImageProcessing::Vips</a></p>
+</li><li>
+<p><a href="http://www.rubydoc.info/gems/ruby-vips/Vips/Image">ruby-vips reference</a></p>
+</li></ul>
 
     </div>
   
@@ -63,6 +81,19 @@ layout: default
   
 
 
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Variant/Specification.html">ActiveStorage::Variant::Specification</a></li>
+      
+      </ul>
+    
   
 
   
@@ -93,20 +124,6 @@ layout: default
   
 
   
-    <!-- Includes -->
-    <h2 id="included-modules">Included Modules</h2>
-    <ul>
-      
-        <li>
-          
-            <a href="Downloading.html">
-              ActiveStorage::Downloading
-            </a>
-          
-        </li>
-      
-    </ul>
-  
 
   
     
@@ -121,7 +138,7 @@ layout: default
           <tr valign='top'>
             <td class="attr-name">WEB_IMAGE_CONTENT_TYPES</td>
             <td>=</td>
-            <td class="attr-value">%w( image/png image/jpeg image/jpg image/gif )</td>
+            <td class="attr-value">%w[ image/png image/jpeg image/jpg image/gif ]</td>
           </tr>
           
             <tr valign='top'>
@@ -187,7 +204,7 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variant.rb, line 47</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variant.rb, line 61</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">blob</span>, <span class="ruby-identifier">variation_or_variation_key</span>)
   <span class="ruby-ivar">@blob</span>, <span class="ruby-ivar">@variation</span> = <span class="ruby-identifier">blob</span>, <span class="ruby-constant">ActiveStorage</span><span class="ruby-operator">::</span><span class="ruby-constant">Variation</span>.<span class="ruby-identifier">wrap</span>(<span class="ruby-identifier">variation_or_variation_key</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -226,7 +243,7 @@ layout: default
                 
               </p>
               <div id="method-i-image_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variant.rb, line 75</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variant.rb, line 89</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">image</span>
   <span class="ruby-keyword">self</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -261,7 +278,7 @@ layout: default
                 
               </p>
               <div id="method-i-key_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variant.rb, line 58</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variant.rb, line 72</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">key</span>
   <span class="ruby-node">&quot;variants/#{blob.key}/#{Digest::SHA256.hexdigest(variation.key)}&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -296,7 +313,7 @@ layout: default
                 
               </p>
               <div id="method-i-processed_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variant.rb, line 52</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variant.rb, line 66</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">processed</span>
   <span class="ruby-identifier">process</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">processed?</span>
   <span class="ruby-keyword">self</span>
@@ -309,7 +326,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-service_url">
             
-              service_url(expires_in: service.url_expires_in, disposition: :inline)
+              service_url(expires_in: ActiveStorage.service_urls_expire_in, disposition: :inline)
             
           </h3>
 
@@ -334,8 +351,8 @@ layout: default
                 
               </p>
               <div id="method-i-service_url_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variant.rb, line 70</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">service_url</span>(<span class="ruby-value">expires_in:</span> <span class="ruby-identifier">service</span>.<span class="ruby-identifier">url_expires_in</span>, <span class="ruby-value">disposition:</span> <span class="ruby-value">:inline</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/variant.rb, line 84</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">service_url</span>(<span class="ruby-value">expires_in:</span> <span class="ruby-constant">ActiveStorage</span>.<span class="ruby-identifier">service_urls_expire_in</span>, <span class="ruby-value">disposition:</span> <span class="ruby-value">:inline</span>)
   <span class="ruby-identifier">service</span>.<span class="ruby-identifier">url</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">expires_in:</span> <span class="ruby-identifier">expires_in</span>, <span class="ruby-value">disposition:</span> <span class="ruby-identifier">disposition</span>, <span class="ruby-value">filename:</span> <span class="ruby-identifier">filename</span>, <span class="ruby-value">content_type:</span> <span class="ruby-identifier">content_type</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>

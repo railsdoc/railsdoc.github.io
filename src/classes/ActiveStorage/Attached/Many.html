@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -59,6 +59,10 @@ layout: default
         </li>
       
         <li>
+          <a href="#method-i-blobs">blobs</a>
+        </li>
+      
+        <li>
           <a href="#method-i-detach">detach</a>
         </li>
       
@@ -98,7 +102,9 @@ layout: default
 
           
             <div class="description">
-              <p>Associates one or several attachments with the current record, saving them to the database.</p>
+              <p>Attaches one or more <code>attachables</code> to the record.</p>
+
+<p>If the record is persisted and unchanged, the attachments are saved to the database immediately. Otherwise, they&#39;ll be saved to the DB when the record is next saved.</p>
 
 <pre><code>document.images.attach(params[:images]) # Array of ActionDispatch::Http::UploadedFile objects
 document.images.attach(params[:signed_blob_id]) # Signed reference to blob from direct upload
@@ -121,14 +127,12 @@ document.images.attach([ first_blob, second_blob ])
                 
               </p>
               <div id="method-i-attach_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 21</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 30</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attach</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">attachables</span>)
-  <span class="ruby-identifier">attachables</span>.<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">collect</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">attachable</span><span class="ruby-operator">|</span>
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">new_record?</span>
-      <span class="ruby-identifier">attachments</span>.<span class="ruby-identifier">build</span>(<span class="ruby-value">record:</span> <span class="ruby-identifier">record</span>, <span class="ruby-value">blob:</span> <span class="ruby-identifier">create_blob_from</span>(<span class="ruby-identifier">attachable</span>))
-    <span class="ruby-keyword">else</span>
-      <span class="ruby-identifier">attachments</span>.<span class="ruby-identifier">create!</span>(<span class="ruby-value">record:</span> <span class="ruby-identifier">record</span>, <span class="ruby-value">blob:</span> <span class="ruby-identifier">create_blob_from</span>(<span class="ruby-identifier">attachable</span>))
-    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">persisted?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">record</span>.<span class="ruby-identifier">changed?</span>
+    <span class="ruby-identifier">record</span>.<span class="ruby-identifier">update</span>(<span class="ruby-identifier">name</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">blobs</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">attachables</span>.<span class="ruby-identifier">flatten</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{name}=&quot;</span>, (<span class="ruby-identifier">change</span>&amp;.<span class="ruby-identifier">attachables</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">blobs</span>) <span class="ruby-operator">+</span> <span class="ruby-identifier">attachables</span>.<span class="ruby-identifier">flatten</span>)
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -169,7 +173,7 @@ Gallery.new.photos.attached? # =&gt; false
                 
               </p>
               <div id="method-i-attached-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 38</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 45</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attached?</span>
   <span class="ruby-identifier">attachments</span>.<span class="ruby-identifier">any?</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -208,7 +212,42 @@ Gallery.new.photos.attached? # =&gt; false
               <div id="method-i-attachments_source">
                 <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 11</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attachments</span>
-  <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{name}_attachments&quot;</span>)
+  <span class="ruby-identifier">change</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">change</span>.<span class="ruby-identifier">attachments</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{name}_attachments&quot;</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-blobs">
+            
+              blobs()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns all attached blobs.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-blobs_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 16</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">blobs</span>
+  <span class="ruby-identifier">change</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">change</span>.<span class="ruby-identifier">blobs</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{name}_blobs&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -241,9 +280,9 @@ Gallery.new.photos.attached? # =&gt; false
                 
               </p>
               <div id="method-i-detach_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 43</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 50</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">detach</span>
-  <span class="ruby-identifier">attachments</span>.<span class="ruby-identifier">destroy_all</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">attached?</span>
+  <span class="ruby-identifier">attachments</span>.<span class="ruby-identifier">delete_all</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">attached?</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -276,7 +315,7 @@ Gallery.new.photos.attached? # =&gt; false
                 
               </p>
               <div id="method-i-purge_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 48</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 55</span>
     </code></pre>
               </div>
             </div>
@@ -309,7 +348,7 @@ Gallery.new.photos.attached? # =&gt; false
                 
               </p>
               <div id="method-i-purge_later_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 55</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/many.rb, line 61</span>
   </code></pre>
               </div>
             </div>

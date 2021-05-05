@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -37,8 +37,6 @@ layout: default
             <li><a href="../files/activesupport/lib/active_support/core_ext/module/deprecation_rb.html">activesupport/lib/active_support/core_ext/module/deprecation.rb</a></li>
             
             <li><a href="../files/activesupport/lib/active_support/core_ext/module/introspection_rb.html">activesupport/lib/active_support/core_ext/module/introspection.rb</a></li>
-            
-            <li><a href="../files/activesupport/lib/active_support/core_ext/module/reachable_rb.html">activesupport/lib/active_support/core_ext/module/reachable.rb</a></li>
             
             <li><a href="../files/activesupport/lib/active_support/core_ext/module/redefine_method_rb.html">activesupport/lib/active_support/core_ext/module/redefine_method.rb</a></li>
             
@@ -150,6 +148,18 @@ layout: default
       
         <li>
           <a href="#method-i-mattr_writer">mattr_writer</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-module_parent">module_parent</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-module_parent_name">module_parent_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-module_parents">module_parents</a>
         </li>
       
         <li>
@@ -611,7 +621,7 @@ m.anonymous?   # =&gt; false
         <div class="method">
           <h3 id="method-i-delegate">
             
-              delegate(*methods, to: nil, prefix: nil, allow_nil: nil)
+              delegate(*methods, to: nil, prefix: nil, allow_nil: nil, private: nil)
             
           </h3>
 
@@ -621,11 +631,13 @@ m.anonymous?   # =&gt; false
 
 <h4 id="method-i-delegate-label-Options">Options</h4>
 <ul><li>
-<p><code>:to</code> - Specifies the target object</p>
+<p><code>:to</code> - Specifies the target object name as a symbol or string</p>
 </li><li>
 <p><code>:prefix</code> - Prefixes the new method with the target name or a custom prefix</p>
 </li><li>
-<p><code>:allow_nil</code> - if set to true, prevents a <code>Module::DelegationError</code> from being raised</p>
+<p><code>:allow_nil</code> - If set to true, prevents a <code>Module::DelegationError</code> from being raised</p>
+</li><li>
+<p><code>:private</code> - If set to true, changes method visibility to private</p>
 </li></ul>
 
 <p>The macro receives one or more method names (specified as symbols or strings) and the name of the target object via the <code>:to</code> option (also a symbol or string).</p>
@@ -718,6 +730,23 @@ invoice.customer_name    # =&gt; &#39;John Doe&#39;
 invoice.customer_address # =&gt; &#39;Vimmersvej 13&#39;
 </code></pre>
 
+<p>The delegated methods are public by default. Pass <code>private: true</code> to change that.</p>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  has_one :profile
+  delegate :first_name, to: :profile
+  delegate :date_of_birth, to: :profile, private: true
+
+  def age
+    Date.today.year - date_of_birth.year
+  end
+end
+
+User.new.first_name # =&gt; &quot;Tomas&quot;
+User.new.date_of_birth # =&gt; NoMethodError: private method `date_of_birth&#39; called for #&lt;User:0x00000008221340&gt;
+User.new.age # =&gt; 2
+</code></pre>
+
 <p>If the target is <code>nil</code> and does not respond to the delegated method a <code>Module::DelegationError</code> is raised. If you wish to instead return <code>nil</code>, use the <code>:allow_nil</code> option.</p>
 
 <pre><code>class User &lt; ActiveRecord::Base
@@ -769,8 +798,8 @@ Foo.new(&quot;Bar&quot;).name # raises NoMethodError: undefined method `name&#39
                 
               </p>
               <div id="method-i-delegate_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/delegation.rb, line 154</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delegate</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">methods</span>, <span class="ruby-value">to:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">prefix:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">allow_nil:</span> <span class="ruby-keyword">nil</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/delegation.rb, line 171</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delegate</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">methods</span>, <span class="ruby-value">to:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">prefix:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">allow_nil:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">private:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">unless</span> <span class="ruby-identifier">to</span>
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;Delegation needs a target. Supply an options hash with a :to key as the last argument (e.g. delegate :hello, to: :greeter).&quot;</span>
   <span class="ruby-keyword">end</span>
@@ -792,10 +821,16 @@ Foo.new(&quot;Bar&quot;).name # raises NoMethodError: undefined method `name&#39
   <span class="ruby-identifier">to</span> = <span class="ruby-identifier">to</span>.<span class="ruby-identifier">to_s</span>
   <span class="ruby-identifier">to</span> = <span class="ruby-node">&quot;self.#{to}&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DELEGATION_RESERVED_METHOD_NAMES</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">to</span>)
 
-  <span class="ruby-identifier">methods</span>.<span class="ruby-identifier">map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">method</span><span class="ruby-operator">|</span>
+  <span class="ruby-identifier">method_names</span> = <span class="ruby-identifier">methods</span>.<span class="ruby-identifier">map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">method</span><span class="ruby-operator">|</span>
     <span class="ruby-comment"># Attribute writer methods only accept one argument. Makes sure []=</span>
     <span class="ruby-comment"># methods still accept two arguments.</span>
-    <span class="ruby-identifier">definition</span> = <span class="ruby-regexp">/[^\]]=$/</span>.<span class="ruby-identifier">match?</span>(<span class="ruby-identifier">method</span>) <span class="ruby-operator">?</span> <span class="ruby-string">&quot;arg&quot;</span> <span class="ruby-operator">:</span> <span class="ruby-string">&quot;*args, &amp;block&quot;</span>
+    <span class="ruby-identifier">definition</span> = <span class="ruby-keyword">if</span> <span class="ruby-regexp">/[^\]]=$/</span>.<span class="ruby-identifier">match?</span>(<span class="ruby-identifier">method</span>)
+      <span class="ruby-string">&quot;arg&quot;</span>
+    <span class="ruby-keyword">elsif</span> <span class="ruby-constant">RUBY_VERSION</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-string">&quot;2.7&quot;</span>
+      <span class="ruby-string">&quot;...&quot;</span>
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-string">&quot;*args, &amp;block&quot;</span>
+    <span class="ruby-keyword">end</span>
 
     <span class="ruby-comment"># The following generated method calls the target exactly once, storing</span>
     <span class="ruby-comment"># the returned value in a dummy variable.</span>
@@ -832,6 +867,9 @@ Foo.new(&quot;Bar&quot;).name # raises NoMethodError: undefined method `name&#39
 
     <span class="ruby-identifier">module_eval</span>(<span class="ruby-identifier">method_def</span>, <span class="ruby-identifier">file</span>, <span class="ruby-identifier">line</span>)
   <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">private</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">method_names</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">private</span>
+  <span class="ruby-identifier">method_names</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -855,7 +893,7 @@ Foo.new(&quot;Bar&quot;).name # raises NoMethodError: undefined method `name&#39
   end
 
   def person
-    @event.detail.person || @event.creator
+    detail.person || creator
   end
 
   private
@@ -879,7 +917,7 @@ end
   end
 
   def person
-    @event.detail.person || @event.creator
+    detail.person || creator
   end
 end
 </code></pre>
@@ -887,6 +925,8 @@ end
 <p>The target can be anything callable within the object, e.g. instance variables, methods, constants, etc.</p>
 
 <p>The delegated method must be public on the target, otherwise it will raise <code>NoMethodError</code>.</p>
+
+<p>The <code>marshal_dump</code> and <code>_dump</code> methods are exempt from delegation due to possible interference when calling <code>Marshal.dump(object)</code>, should the delegation target method of <code>object</code> add or remove instance variables.</p>
             </div>
           
 
@@ -903,7 +943,7 @@ end
                 
               </p>
               <div id="method-i-delegate_missing_to_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/delegation.rb, line 258</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/delegation.rb, line 289</span>
   <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delegate_missing_to</span>(<span class="ruby-identifier">target</span>)
     <span class="ruby-identifier">target</span> = <span class="ruby-identifier">target</span>.<span class="ruby-identifier">to_s</span>
     <span class="ruby-identifier">target</span> = <span class="ruby-node">&quot;self.#{target}&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DELEGATION_RESERVED_METHOD_NAMES</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">target</span>)
@@ -913,6 +953,7 @@ end
         # It may look like an oversight, but we deliberately do not pass
         # +include_private+, because they do not get delegated.
 
+        return false if name == :marshal_dump || name == :_dump
         #{target}.respond_to?(name) || super
       end
 
@@ -931,6 +972,7 @@ end
           end
         end
       end
+      ruby2_keywords(:method_missing) if respond_to?(:ruby2_keywords, true)
 </span><span class="ruby-identifier">    RUBY</span>
   <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -1018,14 +1060,14 @@ Person.new.hair_colors # =&gt; [:brown, :black, :blonde, :red]
 
 <p>If a subclass changes the value then that would also change the value for parent class. Similarly if parent class changes the value then that would change the value of subclasses too.</p>
 
-<pre><code>class Male &lt; Person
+<pre><code>class Citizen &lt; Person
 end
 
-Male.new.hair_colors &lt;&lt; :blue
+Citizen.new.hair_colors &lt;&lt; :blue
 Person.new.hair_colors # =&gt; [:brown, :black, :blonde, :red, :blue]
 </code></pre>
 
-<p>To opt out of the instance writer method, pass <code>instance_writer: false</code>. To opt out of the instance reader method, pass <code>instance_reader: false</code>.</p>
+<p>To omit the instance writer method, pass <code>instance_writer: false</code>. To omit the instance reader method, pass <code>instance_reader: false</code>.</p>
 
 <pre><code>module HairColors
   mattr_accessor :hair_colors, instance_writer: false, instance_reader: false
@@ -1039,7 +1081,7 @@ Person.new.hair_colors = [:brown]  # =&gt; NoMethodError
 Person.new.hair_colors             # =&gt; NoMethodError
 </code></pre>
 
-<p>Or pass <code>instance_accessor: false</code>, to opt out both instance methods.</p>
+<p>Or pass <code>instance_accessor: false</code>, to omit both instance methods.</p>
 
 <pre><code>module HairColors
   mattr_accessor :hair_colors, instance_accessor: false
@@ -1085,7 +1127,7 @@ Person.class_variable_get(&quot;@@hair_colors&quot;) # =&gt; [:brown, :black, :b
                 
               </p>
               <div id="method-i-mattr_accessor_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/attribute_accessors.rb, line 210</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/attribute_accessors.rb, line 207</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">mattr_accessor</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">syms</span>, <span class="ruby-value">instance_reader:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">instance_writer:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">instance_accessor:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">default:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
   <span class="ruby-identifier">mattr_reader</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">syms</span>, <span class="ruby-value">instance_reader:</span> <span class="ruby-identifier">instance_reader</span>, <span class="ruby-value">instance_accessor:</span> <span class="ruby-identifier">instance_accessor</span>, <span class="ruby-value">default:</span> <span class="ruby-identifier">default</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
   <span class="ruby-identifier">mattr_writer</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">syms</span>, <span class="ruby-value">instance_writer:</span> <span class="ruby-identifier">instance_writer</span>, <span class="ruby-value">instance_accessor:</span> <span class="ruby-identifier">instance_accessor</span>, <span class="ruby-value">default:</span> <span class="ruby-identifier">default</span>)
@@ -1123,7 +1165,7 @@ end
 # =&gt; NameError: invalid attribute name: 1_Badname
 </code></pre>
 
-<p>If you want to opt out the creation on the instance reader method, pass <code>instance_reader: false</code> or <code>instance_accessor: false</code>.</p>
+<p>To omit the instance reader method, pass <code>instance_reader: false</code> or <code>instance_accessor: false</code>.</p>
 
 <pre><code>module HairColors
   mattr_reader :hair_colors, instance_reader: false
@@ -1168,7 +1210,7 @@ Person.new.hair_colors # =&gt; [:brown, :black, :blonde, :red]
                 
               </p>
               <div id="method-i-mattr_reader_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/attribute_accessors.rb, line 54</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/attribute_accessors.rb, line 51</span>
   <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">mattr_reader</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">syms</span>, <span class="ruby-value">instance_reader:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">instance_accessor:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">default:</span> <span class="ruby-keyword">nil</span>)
     <span class="ruby-identifier">syms</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">sym</span><span class="ruby-operator">|</span>
       <span class="ruby-identifier">raise</span> <span class="ruby-constant">NameError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;invalid attribute name: #{sym}&quot;</span>) <span class="ruby-keyword">unless</span> <span class="ruby-regexp">/\A[_A-Za-z]\w*\z/</span>.<span class="ruby-identifier">match?</span>(<span class="ruby-identifier">sym</span>)
@@ -1222,7 +1264,7 @@ Person.new.hair_colors = [:blonde, :red]
 HairColors.class_variable_get(&quot;@@hair_colors&quot;) # =&gt; [:blonde, :red]
 </code></pre>
 
-<p>If you want to opt out the instance writer method, pass <code>instance_writer: false</code> or <code>instance_accessor: false</code>.</p>
+<p>To omit the instance writer method, pass <code>instance_writer: false</code> or <code>instance_accessor: false</code>.</p>
 
 <pre><code>module HairColors
   mattr_writer :hair_colors, instance_writer: false
@@ -1267,7 +1309,7 @@ Person.class_variable_get(&quot;@@hair_colors&quot;) # =&gt; [:brown, :black, :b
                 
               </p>
               <div id="method-i-mattr_writer_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/attribute_accessors.rb, line 121</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/attribute_accessors.rb, line 118</span>
   <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">mattr_writer</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">syms</span>, <span class="ruby-value">instance_writer:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">instance_accessor:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">default:</span> <span class="ruby-keyword">nil</span>)
     <span class="ruby-identifier">syms</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">sym</span><span class="ruby-operator">|</span>
       <span class="ruby-identifier">raise</span> <span class="ruby-constant">NameError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;invalid attribute name: #{sym}&quot;</span>) <span class="ruby-keyword">unless</span> <span class="ruby-regexp">/\A[_A-Za-z]\w*\z/</span>.<span class="ruby-identifier">match?</span>(<span class="ruby-identifier">sym</span>)
@@ -1297,9 +1339,9 @@ Person.class_variable_get(&quot;@@hair_colors&quot;) # =&gt; [:brown, :black, :b
           </div>
         
         <div class="method">
-          <h3 id="method-i-parent">
+          <h3 id="method-i-module_parent">
             
-              parent()
+              module_parent()
             
           </h3>
 
@@ -1313,15 +1355,149 @@ Person.class_variable_get(&quot;@@hair_colors&quot;) # =&gt; [:brown, :black, :b
 end
 X = M::N
 
-M::N.parent # =&gt; M
-X.parent    # =&gt; M
+M::N.module_parent # =&gt; M
+X.module_parent    # =&gt; M
 </code></pre>
 
 <p>The parent of top-level and anonymous modules is <a href="Object.html"><code>Object</code></a>.</p>
 
-<pre><code>M.parent          # =&gt; Object
-Module.new.parent # =&gt; Object
+<pre><code>M.module_parent          # =&gt; Object
+Module.new.module_parent # =&gt; Object
 </code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-module_parent_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/introspection.rb, line 43</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">module_parent</span>
+  <span class="ruby-identifier">module_parent_name</span> <span class="ruby-operator">?</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">constantize</span>(<span class="ruby-identifier">module_parent_name</span>) <span class="ruby-operator">:</span> <span class="ruby-constant">Object</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-module_parent_name">
+            
+              module_parent_name()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the name of the module containing this one.</p>
+
+<pre><code>M::N.module_parent_name # =&gt; &quot;M&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-module_parent_name_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/introspection.rb, line 10</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">module_parent_name</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-ivar">@parent_name</span>)
+    <span class="ruby-ivar">@parent_name</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">parent_name</span> = <span class="ruby-identifier">name</span> <span class="ruby-operator">=~</span> <span class="ruby-regexp">/::[^:]+\Z/</span> <span class="ruby-operator">?</span> <span class="ruby-node">$`</span>.<span class="ruby-identifier">freeze</span> <span class="ruby-operator">:</span> <span class="ruby-keyword">nil</span>
+    <span class="ruby-ivar">@parent_name</span> = <span class="ruby-identifier">parent_name</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">frozen?</span>
+    <span class="ruby-identifier">parent_name</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-module_parents">
+            
+              module_parents()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns all the parents of this module according to its name, ordered from nested outwards. The receiver is not contained within the result.</p>
+
+<pre><code>module M
+  module N
+  end
+end
+X = M::N
+
+M.module_parents    # =&gt; [Object]
+M::N.module_parents # =&gt; [M, Object]
+X.module_parents    # =&gt; [M, Object]
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-module_parents_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/introspection.rb, line 67</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">module_parents</span>
+  <span class="ruby-identifier">parents</span> = []
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">module_parent_name</span>
+    <span class="ruby-identifier">parts</span> = <span class="ruby-identifier">module_parent_name</span>.<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;::&quot;</span>)
+    <span class="ruby-keyword">until</span> <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">empty?</span>
+      <span class="ruby-identifier">parents</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">constantize</span>(<span class="ruby-identifier">parts</span> <span class="ruby-operator">*</span> <span class="ruby-string">&quot;::&quot;</span>)
+      <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">pop</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+  <span class="ruby-identifier">parents</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-constant">Object</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">parents</span>.<span class="ruby-identifier">include?</span> <span class="ruby-constant">Object</span>
+  <span class="ruby-identifier">parents</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-parent">
+            
+              parent()
+            
+          </h3>
+
+          
+            <div class="description">
+              
             </div>
           
 
@@ -1338,10 +1514,14 @@ Module.new.parent # =&gt; Object
                 
               </p>
               <div id="method-i-parent_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/introspection.rb, line 34</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parent</span>
-  <span class="ruby-identifier">parent_name</span> <span class="ruby-operator">?</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">constantize</span>(<span class="ruby-identifier">parent_name</span>) <span class="ruby-operator">:</span> <span class="ruby-constant">Object</span>
-<span class="ruby-keyword">end</span></code></pre>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/introspection.rb, line 47</span>
+  <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parent</span>
+    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">      `Module#parent` has been renamed to `module_parent`.
+      `parent` is deprecated and will be removed in Rails 6.1.
+</span><span class="ruby-identifier">    MSG</span>
+    <span class="ruby-identifier">module_parent</span>
+  <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
@@ -1356,10 +1536,7 @@ Module.new.parent # =&gt; Object
 
           
             <div class="description">
-              <p>Returns the name of the module containing this one.</p>
-
-<pre><code>M::N.parent_name # =&gt; &quot;M&quot;
-</code></pre>
+              
             </div>
           
 
@@ -1376,16 +1553,14 @@ Module.new.parent # =&gt; Object
                 
               </p>
               <div id="method-i-parent_name_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/introspection.rb, line 9</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parent_name</span>
-  <span class="ruby-keyword">if</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-ivar">@parent_name</span>)
-    <span class="ruby-ivar">@parent_name</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">parent_name</span> = <span class="ruby-identifier">name</span> <span class="ruby-operator">=~</span> <span class="ruby-regexp">/::[^:]+\Z/</span> <span class="ruby-operator">?</span> <span class="ruby-node">$`</span>.<span class="ruby-identifier">freeze</span> <span class="ruby-operator">:</span> <span class="ruby-keyword">nil</span>
-    <span class="ruby-ivar">@parent_name</span> = <span class="ruby-identifier">parent_name</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">frozen?</span>
-    <span class="ruby-identifier">parent_name</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/introspection.rb, line 20</span>
+  <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parent_name</span>
+    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">      `Module#parent_name` has been renamed to `module_parent_name`.
+      `parent_name` is deprecated and will be removed in Rails 6.1.
+</span><span class="ruby-identifier">    MSG</span>
+    <span class="ruby-identifier">module_parent_name</span>
+  <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
@@ -1400,18 +1575,7 @@ Module.new.parent # =&gt; Object
 
           
             <div class="description">
-              <p>Returns all the parents of this module according to its name, ordered from nested outwards. The receiver is not contained within the result.</p>
-
-<pre><code>module M
-  module N
-  end
-end
-X = M::N
-
-M.parents    # =&gt; [Object]
-M::N.parents # =&gt; [M, Object]
-X.parents    # =&gt; [M, Object]
-</code></pre>
+              
             </div>
           
 
@@ -1428,19 +1592,14 @@ X.parents    # =&gt; [M, Object]
                 
               </p>
               <div id="method-i-parents_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/introspection.rb, line 50</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parents</span>
-  <span class="ruby-identifier">parents</span> = []
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">parent_name</span>
-    <span class="ruby-identifier">parts</span> = <span class="ruby-identifier">parent_name</span>.<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;::&quot;</span>)
-    <span class="ruby-keyword">until</span> <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">empty?</span>
-      <span class="ruby-identifier">parents</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">constantize</span>(<span class="ruby-identifier">parts</span> <span class="ruby-operator">*</span> <span class="ruby-string">&quot;::&quot;</span>)
-      <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">pop</span>
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">end</span>
-  <span class="ruby-identifier">parents</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-constant">Object</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">parents</span>.<span class="ruby-identifier">include?</span> <span class="ruby-constant">Object</span>
-  <span class="ruby-identifier">parents</span>
-<span class="ruby-keyword">end</span></code></pre>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/introspection.rb, line 80</span>
+  <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parents</span>
+    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">      `Module#parents` has been renamed to `module_parents`.
+      `parents` is deprecated and will be removed in Rails 6.1.
+</span><span class="ruby-identifier">    MSG</span>
+    <span class="ruby-identifier">module_parents</span>
+  <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
@@ -1472,7 +1631,7 @@ X.parents    # =&gt; [M, Object]
                 
               </p>
               <div id="method-i-redefine_method_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/redefine_method.rb, line 26</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/redefine_method.rb, line 17</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">redefine_method</span>(<span class="ruby-identifier">method</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">visibility</span> = <span class="ruby-identifier">method_visibility</span>(<span class="ruby-identifier">method</span>)
   <span class="ruby-identifier">silence_redefinition_of_method</span>(<span class="ruby-identifier">method</span>)
@@ -1510,7 +1669,7 @@ X.parents    # =&gt; [M, Object]
                 
               </p>
               <div id="method-i-redefine_singleton_method_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/redefine_method.rb, line 35</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/redefine_method.rb, line 26</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">redefine_singleton_method</span>(<span class="ruby-identifier">method</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">redefine_method</span>(<span class="ruby-identifier">method</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1617,7 +1776,7 @@ X.parents    # =&gt; [M, Object]
                 
               </p>
               <div id="method-i-silence_redefinition_of_method_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/redefine_method.rb, line 8</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/redefine_method.rb, line 7</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">silence_redefinition_of_method</span>(<span class="ruby-identifier">method</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">method_defined?</span>(<span class="ruby-identifier">method</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">private_method_defined?</span>(<span class="ruby-identifier">method</span>)
     <span class="ruby-comment"># This suppresses the &quot;method redefined&quot; warning; the self-alias</span>
@@ -1633,7 +1792,7 @@ X.parents    # =&gt; [M, Object]
         <div class="method">
           <h3 id="method-i-thread_cattr_accessor">
             
-              thread_cattr_accessor(*syms)
+              thread_cattr_accessor(*syms, instance_reader: true, instance_writer: true, instance_accessor: true)
             
           </h3>
 
@@ -1657,7 +1816,7 @@ X.parents    # =&gt; [M, Object]
         <div class="method">
           <h3 id="method-i-thread_mattr_accessor">
             
-              thread_mattr_accessor(*syms)
+              thread_mattr_accessor(*syms, instance_reader: true, instance_writer: true, instance_accessor: true)
             
           </h3>
 
@@ -1684,7 +1843,7 @@ Customer.user # =&gt; &quot;Rafael&quot;
 Account.user  # =&gt; &quot;DHH&quot;
 </code></pre>
 
-<p>To opt out of the instance writer method, pass <code>instance_writer: false</code>. To opt out of the instance reader method, pass <code>instance_reader: false</code>.</p>
+<p>To omit the instance writer method, pass <code>instance_writer: false</code>. To omit the instance reader method, pass <code>instance_reader: false</code>.</p>
 
 <pre><code>class Current
   thread_mattr_accessor :user, instance_writer: false, instance_reader: false
@@ -1694,10 +1853,10 @@ Current.new.user = &quot;DHH&quot;  # =&gt; NoMethodError
 Current.new.user          # =&gt; NoMethodError
 </code></pre>
 
-<p>Or pass <code>instance_accessor: false</code>, to opt out both instance methods.</p>
+<p>Or pass <code>instance_accessor: false</code>, to omit both instance methods.</p>
 
 <pre><code>class Current
-  mattr_accessor :user, instance_accessor: false
+  thread_mattr_accessor :user, instance_accessor: false
 end
 
 Current.new.user = &quot;DHH&quot;  # =&gt; NoMethodError
@@ -1723,10 +1882,10 @@ Current.new.user          # =&gt; NoMethodError
                 
               </p>
               <div id="method-i-thread_mattr_accessor_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/attribute_accessors_per_thread.rb, line 145</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">thread_mattr_accessor</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">syms</span>)
-  <span class="ruby-identifier">thread_mattr_reader</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">syms</span>)
-  <span class="ruby-identifier">thread_mattr_writer</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">syms</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/module/attribute_accessors_per_thread.rb, line 139</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">thread_mattr_accessor</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">syms</span>, <span class="ruby-value">instance_reader:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">instance_writer:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">instance_accessor:</span> <span class="ruby-keyword">true</span>)
+  <span class="ruby-identifier">thread_mattr_reader</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">syms</span>, <span class="ruby-value">instance_reader:</span> <span class="ruby-identifier">instance_reader</span>, <span class="ruby-value">instance_accessor:</span> <span class="ruby-identifier">instance_accessor</span>)
+  <span class="ruby-identifier">thread_mattr_writer</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">syms</span>, <span class="ruby-value">instance_writer:</span> <span class="ruby-identifier">instance_writer</span>, <span class="ruby-value">instance_accessor:</span> <span class="ruby-identifier">instance_accessor</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -210,14 +210,13 @@ layout: default
                 
               </p>
               <div id="method-i-delete_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 50</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 52</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete</span>(<span class="ruby-identifier">key</span>)
   <span class="ruby-identifier">instrument</span> <span class="ruby-value">:delete</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-keyword">begin</span>
-      <span class="ruby-identifier">blobs</span>.<span class="ruby-identifier">delete_blob</span>(<span class="ruby-identifier">container</span>, <span class="ruby-identifier">key</span>)
-    <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Azure</span><span class="ruby-operator">::</span><span class="ruby-constant">Core</span><span class="ruby-operator">::</span><span class="ruby-constant">Http</span><span class="ruby-operator">::</span><span class="ruby-constant">HTTPError</span>
-      <span class="ruby-comment"># Ignore files already deleted</span>
-    <span class="ruby-keyword">end</span>
+    <span class="ruby-identifier">blobs</span>.<span class="ruby-identifier">delete_blob</span>(<span class="ruby-identifier">container</span>, <span class="ruby-identifier">key</span>)
+  <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Azure</span><span class="ruby-operator">::</span><span class="ruby-constant">Core</span><span class="ruby-operator">::</span><span class="ruby-constant">Http</span><span class="ruby-operator">::</span><span class="ruby-constant">HTTPError</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">e</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">e</span>.<span class="ruby-identifier">type</span> <span class="ruby-operator">==</span> <span class="ruby-string">&quot;BlobNotFound&quot;</span>
+    <span class="ruby-comment"># Ignore files already deleted</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -251,7 +250,7 @@ layout: default
                 
               </p>
               <div id="method-i-delete_prefixed_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 60</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 61</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete_prefixed</span>(<span class="ruby-identifier">prefix</span>)
   <span class="ruby-identifier">instrument</span> <span class="ruby-value">:delete_prefixed</span>, <span class="ruby-value">prefix:</span> <span class="ruby-identifier">prefix</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">marker</span> = <span class="ruby-keyword">nil</span>
@@ -298,7 +297,7 @@ layout: default
                 
               </p>
               <div id="method-i-download_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 30</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 28</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">download</span>(<span class="ruby-identifier">key</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
     <span class="ruby-identifier">instrument</span> <span class="ruby-value">:streaming_download</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span>
@@ -306,8 +305,10 @@ layout: default
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">instrument</span> <span class="ruby-value">:download</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span>
-      <span class="ruby-identifier">_</span>, <span class="ruby-identifier">io</span> = <span class="ruby-identifier">blobs</span>.<span class="ruby-identifier">get_blob</span>(<span class="ruby-identifier">container</span>, <span class="ruby-identifier">key</span>)
-      <span class="ruby-identifier">io</span>.<span class="ruby-identifier">force_encoding</span>(<span class="ruby-constant">Encoding</span><span class="ruby-operator">::</span><span class="ruby-constant">BINARY</span>)
+      <span class="ruby-identifier">handle_errors</span> <span class="ruby-keyword">do</span>
+        <span class="ruby-identifier">_</span>, <span class="ruby-identifier">io</span> = <span class="ruby-identifier">blobs</span>.<span class="ruby-identifier">get_blob</span>(<span class="ruby-identifier">container</span>, <span class="ruby-identifier">key</span>)
+        <span class="ruby-identifier">io</span>.<span class="ruby-identifier">force_encoding</span>(<span class="ruby-constant">Encoding</span><span class="ruby-operator">::</span><span class="ruby-constant">BINARY</span>)
+      <span class="ruby-keyword">end</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -345,8 +346,10 @@ layout: default
                 <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 43</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">download_chunk</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">range</span>)
   <span class="ruby-identifier">instrument</span> <span class="ruby-value">:download_chunk</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">range:</span> <span class="ruby-identifier">range</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-identifier">_</span>, <span class="ruby-identifier">io</span> = <span class="ruby-identifier">blobs</span>.<span class="ruby-identifier">get_blob</span>(<span class="ruby-identifier">container</span>, <span class="ruby-identifier">key</span>, <span class="ruby-value">start_range:</span> <span class="ruby-identifier">range</span>.<span class="ruby-identifier">begin</span>, <span class="ruby-value">end_range:</span> <span class="ruby-identifier">range</span>.<span class="ruby-identifier">exclude_end?</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">range</span>.<span class="ruby-identifier">end</span> <span class="ruby-operator">-</span> <span class="ruby-value">1</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">range</span>.<span class="ruby-identifier">end</span>)
-    <span class="ruby-identifier">io</span>.<span class="ruby-identifier">force_encoding</span>(<span class="ruby-constant">Encoding</span><span class="ruby-operator">::</span><span class="ruby-constant">BINARY</span>)
+    <span class="ruby-identifier">handle_errors</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">_</span>, <span class="ruby-identifier">io</span> = <span class="ruby-identifier">blobs</span>.<span class="ruby-identifier">get_blob</span>(<span class="ruby-identifier">container</span>, <span class="ruby-identifier">key</span>, <span class="ruby-value">start_range:</span> <span class="ruby-identifier">range</span>.<span class="ruby-identifier">begin</span>, <span class="ruby-value">end_range:</span> <span class="ruby-identifier">range</span>.<span class="ruby-identifier">exclude_end?</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">range</span>.<span class="ruby-identifier">end</span> <span class="ruby-operator">-</span> <span class="ruby-value">1</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">range</span>.<span class="ruby-identifier">end</span>)
+      <span class="ruby-identifier">io</span>.<span class="ruby-identifier">force_encoding</span>(<span class="ruby-constant">Encoding</span><span class="ruby-operator">::</span><span class="ruby-constant">BINARY</span>)
+    <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -380,7 +383,7 @@ layout: default
                 
               </p>
               <div id="method-i-exist-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 76</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 77</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">exist?</span>(<span class="ruby-identifier">key</span>)
   <span class="ruby-identifier">instrument</span> <span class="ruby-value">:exist</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">payload</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">answer</span> = <span class="ruby-identifier">blob_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">present?</span>
@@ -419,7 +422,7 @@ layout: default
                 
               </p>
               <div id="method-i-headers_for_direct_upload_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 116</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 117</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">headers_for_direct_upload</span>(<span class="ruby-identifier">key</span>, <span class="ruby-value">content_type:</span>, <span class="ruby-value">checksum:</span>, <span class="ruby-operator">**</span>)
   { <span class="ruby-string">&quot;Content-Type&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">content_type</span>, <span class="ruby-string">&quot;Content-MD5&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">checksum</span>, <span class="ruby-string">&quot;x-ms-blob-type&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;BlockBlob&quot;</span> }
 <span class="ruby-keyword">end</span></code></pre>
@@ -457,10 +460,8 @@ layout: default
                 <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 20</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">upload</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">io</span>, <span class="ruby-value">checksum:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span>)
   <span class="ruby-identifier">instrument</span> <span class="ruby-value">:upload</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">checksum:</span> <span class="ruby-identifier">checksum</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-keyword">begin</span>
+    <span class="ruby-identifier">handle_errors</span> <span class="ruby-keyword">do</span>
       <span class="ruby-identifier">blobs</span>.<span class="ruby-identifier">create_block_blob</span>(<span class="ruby-identifier">container</span>, <span class="ruby-identifier">key</span>, <span class="ruby-constant">IO</span>.<span class="ruby-identifier">try_convert</span>(<span class="ruby-identifier">io</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">io</span>, <span class="ruby-value">content_md5:</span> <span class="ruby-identifier">checksum</span>)
-    <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Azure</span><span class="ruby-operator">::</span><span class="ruby-constant">Core</span><span class="ruby-operator">::</span><span class="ruby-constant">Http</span><span class="ruby-operator">::</span><span class="ruby-constant">HTTPError</span>
-      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveStorage</span><span class="ruby-operator">::</span><span class="ruby-constant">IntegrityError</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -495,7 +496,7 @@ layout: default
                 
               </p>
               <div id="method-i-url_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 84</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 85</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">url</span>(<span class="ruby-identifier">key</span>, <span class="ruby-value">expires_in:</span>, <span class="ruby-value">filename:</span>, <span class="ruby-value">disposition:</span>, <span class="ruby-value">content_type:</span>)
   <span class="ruby-identifier">instrument</span> <span class="ruby-value">:url</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">payload</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">generated_url</span> = <span class="ruby-identifier">signer</span>.<span class="ruby-identifier">signed_uri</span>(
@@ -543,7 +544,7 @@ layout: default
                 
               </p>
               <div id="method-i-url_for_direct_upload_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 101</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/azure_storage_service.rb, line 102</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">url_for_direct_upload</span>(<span class="ruby-identifier">key</span>, <span class="ruby-value">expires_in:</span>, <span class="ruby-value">content_type:</span>, <span class="ruby-value">content_length:</span>, <span class="ruby-value">checksum:</span>)
   <span class="ruby-identifier">instrument</span> <span class="ruby-value">:url</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">payload</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">generated_url</span> = <span class="ruby-identifier">signer</span>.<span class="ruby-identifier">signed_uri</span>(

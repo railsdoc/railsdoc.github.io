@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -13,7 +13,7 @@ layout: default
             
                 <span class="parent">&lt;
                     
-                    IntegrationTest
+                    <a href="../ActiveSupport/TestCase.html">ActiveSupport::TestCase</a>
                     
                 </span>
             
@@ -87,6 +87,20 @@ class ApplicationSystemTestCase &lt; ActionDispatch::SystemTestCase
 end
 </code></pre>
 
+<p>Some drivers require browser capabilities to be passed as a block instead of through the <code>options</code> hash.</p>
+
+<p>As an example, if you want to add mobile emulation on chrome, you&#39;ll have to create an instance of selenium&#39;s <code>Chrome::Options</code> object and add capabilities with a block.</p>
+
+<p>The block will be passed an instance of <code>&lt;Driver&gt;::Options</code> where you can define the capabilities you want. Please refer to your driver documentation to learn about supported options.</p>
+
+<pre><code>class ApplicationSystemTestCase &lt; ActionDispatch::SystemTestCase
+  driven_by :selenium, using: :chrome, screen_size: [1024, 768] do |driver_option|
+    driver_option.add_emulation(device_name: &#39;iPhone 6&#39;)
+    driver_option.add_extension(&#39;path/to/chrome_extension.crx&#39;)
+  end
+end
+</code></pre>
+
 <p>Because <code>ActionDispatch::SystemTestCase</code> is a shim between Capybara and Rails, any driver that is supported by Capybara is supported by system tests as long as you include the required gems and files.</p>
 
     </div>
@@ -106,6 +120,14 @@ end
       
         <li>
           <a href="#method-c-driven_by">driven_by</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-method_missing">method_missing</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-url_options">url_options</a>
         </li>
       
     </ul>
@@ -155,7 +177,7 @@ end
         <div class="method">
           <h3 id="method-c-driven_by">
             
-              driven_by(driver, using: :chrome, screen_size: [1400, 1400], options: {})
+              driven_by(driver, using: :chrome, screen_size: [1400, 1400], options: {}, &amp;capabilities)
             
           </h3>
 
@@ -195,9 +217,11 @@ driven_by :selenium, using: :headless_firefox
                 
               </p>
               <div id="method-c-driven_by_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/system_test_case.rb, line 137</span>
-<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">driven_by</span>(<span class="ruby-identifier">driver</span>, <span class="ruby-value">using:</span> <span class="ruby-value">:chrome</span>, <span class="ruby-value">screen_size:</span> [<span class="ruby-value">1400</span>, <span class="ruby-value">1400</span>], <span class="ruby-value">options:</span> {})
-  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">driver</span> = <span class="ruby-constant">SystemTesting</span><span class="ruby-operator">::</span><span class="ruby-constant">Driver</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">driver</span>, <span class="ruby-value">using:</span> <span class="ruby-identifier">using</span>, <span class="ruby-value">screen_size:</span> <span class="ruby-identifier">screen_size</span>, <span class="ruby-value">options:</span> <span class="ruby-identifier">options</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/system_test_case.rb, line 167</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">driven_by</span>(<span class="ruby-identifier">driver</span>, <span class="ruby-value">using:</span> <span class="ruby-value">:chrome</span>, <span class="ruby-value">screen_size:</span> [<span class="ruby-value">1400</span>, <span class="ruby-value">1400</span>], <span class="ruby-value">options:</span> {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">capabilities</span>)
+  <span class="ruby-identifier">driver_options</span> = { <span class="ruby-value">using:</span> <span class="ruby-identifier">using</span>, <span class="ruby-value">screen_size:</span> <span class="ruby-identifier">screen_size</span>, <span class="ruby-value">options:</span> <span class="ruby-identifier">options</span> }
+
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">driver</span> = <span class="ruby-constant">SystemTesting</span><span class="ruby-operator">::</span><span class="ruby-constant">Driver</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">driver</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">driver_options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">capabilities</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -206,6 +230,83 @@ driven_by :selenium, using: :headless_firefox
         
       
     
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-method_missing">
+            
+              method_missing(method, *args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-method_missing_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/system_test_case.rb, line 173</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">method_missing</span>(<span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-ivar">@proxy_route</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-identifier">method</span>)
+    <span class="ruby-ivar">@proxy_route</span>.<span class="ruby-identifier">send</span>(<span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-keyword">super</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-url_options">
+            
+              url_options()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-url_options_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/system_test_case.rb, line 128</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">url_options</span>
+  <span class="ruby-identifier">default_url_options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-value">host:</span> <span class="ruby-constant">Capybara</span>.<span class="ruby-identifier">app_host</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
     
   
 </div>

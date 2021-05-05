@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -160,7 +160,7 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 14</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 12</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-value">bucket:</span>, <span class="ruby-value">upload:</span> {}, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-ivar">@client</span> = <span class="ruby-constant">Aws</span><span class="ruby-operator">::</span><span class="ruby-constant">S3</span><span class="ruby-operator">::</span><span class="ruby-constant">Resource</span>.<span class="ruby-identifier">new</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-ivar">@bucket</span> = <span class="ruby-ivar">@client</span>.<span class="ruby-identifier">bucket</span>(<span class="ruby-identifier">bucket</span>)
@@ -276,7 +276,7 @@ layout: default
                 
               </p>
               <div id="method-i-download_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 31</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 27</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">download</span>(<span class="ruby-identifier">key</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
     <span class="ruby-identifier">instrument</span> <span class="ruby-value">:streaming_download</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span>
@@ -285,6 +285,8 @@ layout: default
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">instrument</span> <span class="ruby-value">:download</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span>
       <span class="ruby-identifier">object_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">get</span>.<span class="ruby-identifier">body</span>.<span class="ruby-identifier">string</span>.<span class="ruby-identifier">force_encoding</span>(<span class="ruby-constant">Encoding</span><span class="ruby-operator">::</span><span class="ruby-constant">BINARY</span>)
+    <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Aws</span><span class="ruby-operator">::</span><span class="ruby-constant">S3</span><span class="ruby-operator">::</span><span class="ruby-constant">Errors</span><span class="ruby-operator">::</span><span class="ruby-constant">NoSuchKey</span>
+      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveStorage</span><span class="ruby-operator">::</span><span class="ruby-constant">FileNotFoundError</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -319,10 +321,12 @@ layout: default
                 
               </p>
               <div id="method-i-download_chunk_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 43</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 41</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">download_chunk</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">range</span>)
   <span class="ruby-identifier">instrument</span> <span class="ruby-value">:download_chunk</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">range:</span> <span class="ruby-identifier">range</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">object_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">get</span>(<span class="ruby-value">range:</span> <span class="ruby-node">&quot;bytes=#{range.begin}-#{range.exclude_end? ? range.end - 1 : range.end}&quot;</span>).<span class="ruby-identifier">body</span>.<span class="ruby-identifier">read</span>.<span class="ruby-identifier">force_encoding</span>(<span class="ruby-constant">Encoding</span><span class="ruby-operator">::</span><span class="ruby-constant">BINARY</span>)
+  <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Aws</span><span class="ruby-operator">::</span><span class="ruby-constant">S3</span><span class="ruby-operator">::</span><span class="ruby-constant">Errors</span><span class="ruby-operator">::</span><span class="ruby-constant">NoSuchKey</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveStorage</span><span class="ruby-operator">::</span><span class="ruby-constant">FileNotFoundError</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -407,7 +411,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-upload">
             
-              upload(key, io, checksum: nil, **)
+              upload(key, io, checksum: nil, content_type: nil, **)
             
           </h3>
 
@@ -430,14 +434,12 @@ layout: default
                 
               </p>
               <div id="method-i-upload_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 21</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">upload</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">io</span>, <span class="ruby-value">checksum:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 19</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">upload</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">io</span>, <span class="ruby-value">checksum:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">content_type:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span>)
   <span class="ruby-identifier">instrument</span> <span class="ruby-value">:upload</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">checksum:</span> <span class="ruby-identifier">checksum</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-keyword">begin</span>
-      <span class="ruby-identifier">object_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">put</span>(<span class="ruby-identifier">upload_options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-value">body:</span> <span class="ruby-identifier">io</span>, <span class="ruby-value">content_md5:</span> <span class="ruby-identifier">checksum</span>))
-    <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Aws</span><span class="ruby-operator">::</span><span class="ruby-constant">S3</span><span class="ruby-operator">::</span><span class="ruby-constant">Errors</span><span class="ruby-operator">::</span><span class="ruby-constant">BadDigest</span>
-      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveStorage</span><span class="ruby-operator">::</span><span class="ruby-constant">IntegrityError</span>
-    <span class="ruby-keyword">end</span>
+    <span class="ruby-identifier">object_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">put</span>(<span class="ruby-identifier">upload_options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-value">body:</span> <span class="ruby-identifier">io</span>, <span class="ruby-value">content_md5:</span> <span class="ruby-identifier">checksum</span>, <span class="ruby-value">content_type:</span> <span class="ruby-identifier">content_type</span>))
+  <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Aws</span><span class="ruby-operator">::</span><span class="ruby-constant">S3</span><span class="ruby-operator">::</span><span class="ruby-constant">Errors</span><span class="ruby-operator">::</span><span class="ruby-constant">BadDigest</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveStorage</span><span class="ruby-operator">::</span><span class="ruby-constant">IntegrityError</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -67,10 +67,6 @@ layout: default
         </li>
       
         <li>
-          <a href="#method-i-fragment_cache_key">fragment_cache_key</a>
-        </li>
-      
-        <li>
           <a href="#method-i-fragment_exist-3F">fragment_exist?</a>
         </li>
       
@@ -110,7 +106,7 @@ layout: default
 
           
             <div class="description">
-              <p>Given a key (as described in <code>expire_fragment</code>), returns a key array suitable for use in reading, writing, or expiring a cached fragment. All keys begin with <code>:views</code>, followed by <a href=""RAILS_CACHE_ID"">ENV</a> or <a href=""RAILS_APP_VERSION"">ENV</a> if set, followed by any controller-wide key prefix values, ending with the specified <code>key</code> value.</p>
+              <p>Given a key (as described in <code>expire_fragment</code>), returns a key array suitable for use in reading, writing, or expiring a cached fragment. All keys begin with <code>:views</code>, followed by <code>ENV[&quot;RAILS_CACHE_ID&quot;]</code> or <code>ENV[&quot;RAILS_APP_VERSION&quot;]</code> if set, followed by any controller-wide key prefix values, ending with the specified <code>key</code> value.</p>
             </div>
           
 
@@ -127,11 +123,15 @@ layout: default
                 
               </p>
               <div id="method-i-combined_fragment_cache_key_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 88</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 68</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">combined_fragment_cache_key</span>(<span class="ruby-identifier">key</span>)
   <span class="ruby-identifier">head</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">fragment_cache_keys</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">k</span><span class="ruby-operator">|</span> <span class="ruby-identifier">instance_exec</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">k</span>) }
   <span class="ruby-identifier">tail</span> = <span class="ruby-identifier">key</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">url_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;://&quot;</span>).<span class="ruby-identifier">last</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">key</span>
-  [ <span class="ruby-value">:views</span>, (<span class="ruby-constant">ENV</span>[<span class="ruby-string">&quot;RAILS_CACHE_ID&quot;</span>] <span class="ruby-operator">||</span> <span class="ruby-constant">ENV</span>[<span class="ruby-string">&quot;RAILS_APP_VERSION&quot;</span>]), <span class="ruby-operator">*</span><span class="ruby-identifier">head</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">tail</span> ].<span class="ruby-identifier">compact</span>
+
+  <span class="ruby-identifier">cache_key</span> = [<span class="ruby-value">:views</span>, <span class="ruby-constant">ENV</span>[<span class="ruby-string">&quot;RAILS_CACHE_ID&quot;</span>] <span class="ruby-operator">||</span> <span class="ruby-constant">ENV</span>[<span class="ruby-string">&quot;RAILS_APP_VERSION&quot;</span>], <span class="ruby-identifier">head</span>, <span class="ruby-identifier">tail</span>]
+  <span class="ruby-identifier">cache_key</span>.<span class="ruby-identifier">flatten!</span>(<span class="ruby-value">1</span>)
+  <span class="ruby-identifier">cache_key</span>.<span class="ruby-identifier">compact!</span>
+  <span class="ruby-identifier">cache_key</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -175,7 +175,7 @@ layout: default
                 
               </p>
               <div id="method-i-expire_fragment_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 148</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 132</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">expire_fragment</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">cache_configured?</span>
   <span class="ruby-identifier">key</span> = <span class="ruby-identifier">combined_fragment_cache_key</span>(<span class="ruby-identifier">key</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">key</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Regexp</span>)
@@ -188,50 +188,6 @@ layout: default
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
-        
-        <div class="method">
-          <h3 id="method-i-fragment_cache_key">
-            
-              fragment_cache_key(key)
-            
-          </h3>
-
-          
-            <div class="description">
-              <p>Given a key (as described in <code>expire_fragment</code>), returns a key suitable for use in reading, writing, or expiring a cached fragment. All keys begin with <code>views/</code>, followed by any controller-wide key prefix values, ending with the specified <code>key</code> value. The key is expanded using <a href="../../ActiveSupport/Cache.html#method-c-expand_cache_key"><code>ActiveSupport::Cache.expand_cache_key</code></a>.</p>
-            </div>
-          
-
-          
-
-          
-
-          
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-fragment_cache_key_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 69</span>
-      <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">fragment_cache_key</span>(<span class="ruby-identifier">key</span>)
-        <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>)
-<span class="ruby-value">          Calling fragment_cache_key directly is deprecated and will be removed in Rails 6.0.
-          All fragment accessors now use the combined_fragment_cache_key method that retains the key as an array,
-          such that the caching stores can interrogate the parts for cache versions used in
-          recyclable cache keys.
-</span><span class="ruby-identifier">        MSG</span>
-
-        <span class="ruby-identifier">head</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">fragment_cache_keys</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">k</span><span class="ruby-operator">|</span> <span class="ruby-identifier">instance_exec</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">k</span>) }
-        <span class="ruby-identifier">tail</span> = <span class="ruby-identifier">key</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">url_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;://&quot;</span>).<span class="ruby-identifier">last</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">key</span>
-        <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Cache</span>.<span class="ruby-identifier">expand_cache_key</span>([<span class="ruby-operator">*</span><span class="ruby-identifier">head</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">tail</span>], <span class="ruby-value">:views</span>)
-      <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
@@ -263,7 +219,7 @@ layout: default
                 
               </p>
               <div id="method-i-fragment_exist-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 121</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 105</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">fragment_exist?</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">cache_configured?</span>
   <span class="ruby-identifier">key</span> = <span class="ruby-identifier">combined_fragment_cache_key</span>(<span class="ruby-identifier">key</span>)
@@ -303,7 +259,7 @@ layout: default
                 
               </p>
               <div id="method-i-read_fragment_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 109</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 93</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">read_fragment</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">cache_configured?</span>
 
@@ -344,7 +300,7 @@ layout: default
                 
               </p>
               <div id="method-i-write_fragment_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 96</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 80</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">write_fragment</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">content</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-identifier">content</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">cache_configured?</span>
 

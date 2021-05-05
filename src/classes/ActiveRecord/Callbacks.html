@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -97,18 +97,7 @@ class Reply &lt; Topic
 end
 </code></pre>
 
-<p>Now, when <code>Topic#destroy</code> is run only <code>destroy_author</code> is called. When <code>Reply#destroy</code> is run, both <code>destroy_author</code> and <code>destroy_readers</code> are called. Contrast this to the following situation where the <code>before_destroy</code> method is overridden:</p>
-
-<pre><code>class Topic &lt; ActiveRecord::Base
-  def before_destroy() destroy_author end
-end
-
-class Reply &lt; Topic
-  def before_destroy() destroy_readers end
-end
-</code></pre>
-
-<p>In that case, <code>Reply#destroy</code> would only run <code>destroy_readers</code> and <em>not</em> <code>destroy_author</code>. So, use the callback macros when you want to ensure that a certain callback is called for the entire hierarchy, and use the regular overwritable methods when you want to leave it up to each descendant to decide whether they want to call <code>super</code> and trigger the inherited callbacks.</p>
+<p>Now, when <code>Topic#destroy</code> is run only <code>destroy_author</code> is called. When <code>Reply#destroy</code> is run, both <code>destroy_author</code> and <code>destroy_readers</code> are called.</p>
 
 <p><strong>IMPORTANT:</strong> In order for inheritance to work for the callback queues, you must specify the callbacks before specifying the associations. Otherwise, you might trigger the loading of a child before the parent has registered the callbacks and they won&#39;t be inherited.</p>
 
@@ -123,7 +112,7 @@ end
 
   private
     def delete_parents
-      self.class.delete_all &quot;parent_id = #{id}&quot;
+      self.class.delete_by(parent_id: id)
     end
 end
 </code></pre>
@@ -158,7 +147,7 @@ class EncryptionWrapper
 end
 </code></pre>
 
-<p>So you specify the object you want messaged on a given callback. When that callback is triggered, the object has a method by the name of the callback messaged. You can make these callbacks more flexible by passing in other initialization data such as the name of the attribute to work with:</p>
+<p>So you specify the object you want to be messaged on a given callback. When that callback is triggered, the object has a method by the name of the callback messaged. You can make these callbacks more flexible by passing in other initialization data such as the name of the attribute to work with:</p>
 
 <pre><code>class BankAccount &lt; ActiveRecord::Base
   before_save      EncryptionWrapper.new(&quot;credit_card_number&quot;)

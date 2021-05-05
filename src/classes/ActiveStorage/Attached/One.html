@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -59,6 +59,10 @@ layout: default
         </li>
       
         <li>
+          <a href="#method-i-blank-3F">blank?</a>
+        </li>
+      
+        <li>
           <a href="#method-i-detach">detach</a>
         </li>
       
@@ -98,7 +102,9 @@ layout: default
 
           
             <div class="description">
-              <p>Associates a given attachment with the current record, saving it to the database.</p>
+              <p>Attaches an <code>attachable</code> to the record.</p>
+
+<p>If the record is persisted and unchanged, the attachment is saved to the database immediately. Otherwise, it&#39;ll be saved to the DB when the record is next saved.</p>
 
 <pre><code>person.avatar.attach(params[:avatar]) # ActionDispatch::Http::UploadedFile object
 person.avatar.attach(params[:signed_blob_id]) # Signed reference to blob from direct upload
@@ -121,18 +127,12 @@ person.avatar.attach(avatar_blob) # ActiveStorage::Blob object
                 
               </p>
               <div id="method-i-attach_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 22</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 30</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attach</span>(<span class="ruby-identifier">attachable</span>)
-  <span class="ruby-identifier">blob_was</span> = <span class="ruby-identifier">blob</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">attached?</span>
-  <span class="ruby-identifier">blob</span> = <span class="ruby-identifier">create_blob_from</span>(<span class="ruby-identifier">attachable</span>)
-
-  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">blob</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">blob_was</span>
-    <span class="ruby-identifier">transaction</span> <span class="ruby-keyword">do</span>
-      <span class="ruby-identifier">detach</span>
-      <span class="ruby-identifier">write_attachment</span> <span class="ruby-identifier">build_attachment</span>(<span class="ruby-value">blob:</span> <span class="ruby-identifier">blob</span>)
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-identifier">blob_was</span>.<span class="ruby-identifier">purge_later</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">blob_was</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">dependent</span> <span class="ruby-operator">==</span> <span class="ruby-value">:purge_later</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">persisted?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">record</span>.<span class="ruby-identifier">changed?</span>
+    <span class="ruby-identifier">record</span>.<span class="ruby-identifier">update</span>(<span class="ruby-identifier">name</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">attachable</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{name}=&quot;</span>, <span class="ruby-identifier">attachable</span>)
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -173,7 +173,7 @@ User.new.avatar.attached? # =&gt; false
                 
               </p>
               <div id="method-i-attached-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 43</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 45</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attached?</span>
   <span class="ruby-identifier">attachment</span>.<span class="ruby-identifier">present?</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -212,7 +212,42 @@ User.new.avatar.attached? # =&gt; false
               <div id="method-i-attachment_source">
                 <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 12</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attachment</span>
-  <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{name}_attachment&quot;</span>)
+  <span class="ruby-identifier">change</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">change</span>.<span class="ruby-identifier">attachment</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{name}_attachment&quot;</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-blank-3F">
+            
+              blank?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-blank-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 16</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">blank?</span>
+  <span class="ruby-operator">!</span><span class="ruby-identifier">attached?</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -245,10 +280,10 @@ User.new.avatar.attached? # =&gt; false
                 
               </p>
               <div id="method-i-detach_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 48</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 50</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">detach</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">attached?</span>
-    <span class="ruby-identifier">attachment</span>.<span class="ruby-identifier">destroy</span>
+    <span class="ruby-identifier">attachment</span>.<span class="ruby-identifier">delete</span>
     <span class="ruby-identifier">write_attachment</span> <span class="ruby-keyword">nil</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -283,7 +318,7 @@ User.new.avatar.attached? # =&gt; false
                 
               </p>
               <div id="method-i-purge_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 57</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 59</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">attached?</span>
     <span class="ruby-identifier">attachment</span>.<span class="ruby-identifier">purge</span>
@@ -321,10 +356,11 @@ User.new.avatar.attached? # =&gt; false
                 
               </p>
               <div id="method-i-purge_later_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 65</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/one.rb, line 67</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge_later</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">attached?</span>
     <span class="ruby-identifier">attachment</span>.<span class="ruby-identifier">purge_later</span>
+    <span class="ruby-identifier">write_attachment</span> <span class="ruby-keyword">nil</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>

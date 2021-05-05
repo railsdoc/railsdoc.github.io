@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 5.2.5</span><br />
+            <span>Ruby on Rails 6.0.3.6</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -56,6 +56,10 @@ layout: default
       
         <li>
           <a href="#method-i-minimum">minimum</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-pick">pick</a>
         </li>
       
         <li>
@@ -114,7 +118,7 @@ layout: default
                 
               </p>
               <div id="method-i-average_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 59</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 57</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">average</span>(<span class="ruby-identifier">column_name</span>)
   <span class="ruby-identifier">calculate</span>(<span class="ruby-value">:average</span>, <span class="ruby-identifier">column_name</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -179,7 +183,7 @@ end
                 
               </p>
               <div id="method-i-calculate_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 131</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 127</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">calculate</span>(<span class="ruby-identifier">operation</span>, <span class="ruby-identifier">column_name</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">has_include?</span>(<span class="ruby-identifier">column_name</span>)
     <span class="ruby-identifier">relation</span> = <span class="ruby-identifier">apply_join_dependency</span>
@@ -267,15 +271,13 @@ Person.distinct.count(:age)
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">count</span>(<span class="ruby-identifier">column_name</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
     <span class="ruby-keyword">unless</span> <span class="ruby-identifier">column_name</span>.<span class="ruby-identifier">nil?</span>
-      <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span> \
-        <span class="ruby-string">&quot;When `count&#39; is called with a block, it ignores other arguments. &quot;</span> \
-        <span class="ruby-string">&quot;This behavior is now deprecated and will result in an ArgumentError in Rails 6.0.&quot;</span>
+      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;Column name argument is not supported when a block is passed.&quot;</span>
     <span class="ruby-keyword">end</span>
 
-    <span class="ruby-keyword">return</span> <span class="ruby-keyword">super</span>()
+    <span class="ruby-keyword">super</span>()
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">calculate</span>(<span class="ruby-value">:count</span>, <span class="ruby-identifier">column_name</span>)
   <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">calculate</span>(<span class="ruby-value">:count</span>, <span class="ruby-identifier">column_name</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -312,7 +314,7 @@ Person.joins(:companies).ids # SELECT people.id FROM people INNER JOIN companies
                 
               </p>
               <div id="method-i-ids_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 206</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 220</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">ids</span>
   <span class="ruby-identifier">pluck</span> <span class="ruby-identifier">primary_key</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -350,7 +352,7 @@ Person.joins(:companies).ids # SELECT people.id FROM people INNER JOIN companies
                 
               </p>
               <div id="method-i-maximum_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 77</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 75</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">maximum</span>(<span class="ruby-identifier">column_name</span>)
   <span class="ruby-identifier">calculate</span>(<span class="ruby-value">:maximum</span>, <span class="ruby-identifier">column_name</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -388,9 +390,55 @@ Person.joins(:companies).ids # SELECT people.id FROM people INNER JOIN companies
                 
               </p>
               <div id="method-i-minimum_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 68</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 66</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">minimum</span>(<span class="ruby-identifier">column_name</span>)
   <span class="ruby-identifier">calculate</span>(<span class="ruby-value">:minimum</span>, <span class="ruby-identifier">column_name</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-pick">
+            
+              pick(*column_names)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Pick the value(s) from the named column(s) in the current relation. This is short-hand for <code>relation.limit(1).pluck(*column_names).first</code>, and is primarily useful when you have a relation that&#39;s already narrowed down to a single row.</p>
+
+<p>Just like <a href="Calculations.html#method-i-pluck"><code>pluck</code></a>, <a href="Calculations.html#method-i-pick"><code>pick</code></a> will only load the actual value, not the entire record object, so it&#39;s also more efficient. The value is, again like with pluck, typecast by the column type.</p>
+
+<pre><code>Person.where(id: 1).pick(:name)
+# SELECT people.name FROM people WHERE id = 1 LIMIT 1
+# =&gt; &#39;David&#39;
+
+Person.where(id: 1).pick(:name, :email_address)
+# SELECT people.name, people.email_address FROM people WHERE id = 1 LIMIT 1
+# =&gt; [ &#39;David&#39;, &#39;david@loudthinking.com&#39; ]
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-pick_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 212</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">pick</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">column_names</span>)
+  <span class="ruby-identifier">limit</span>(<span class="ruby-value">1</span>).<span class="ruby-identifier">pluck</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">column_names</span>).<span class="ruby-identifier">first</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -434,7 +482,7 @@ Person.where(age: 21).limit(5).pluck(:id)
 # SELECT people.id FROM people WHERE people.age = 21 LIMIT 5
 # =&gt; [2, 3]
 
-Person.pluck(&#39;DATEDIFF(updated_at, created_at)&#39;)
+Person.pluck(Arel.sql(&#39;DATEDIFF(updated_at, created_at)&#39;))
 # SELECT DATEDIFF(updated_at, created_at) FROM people
 # =&gt; [&#39;0&#39;, &#39;27761&#39;, &#39;173&#39;]
 </code></pre>
@@ -456,7 +504,7 @@ Person.pluck(&#39;DATEDIFF(updated_at, created_at)&#39;)
                 
               </p>
               <div id="method-i-pluck_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 185</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 181</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">pluck</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">column_names</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">loaded?</span> <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-identifier">column_names</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:to_s</span>) <span class="ruby-operator">-</span> <span class="ruby-ivar">@klass</span>.<span class="ruby-identifier">attribute_names</span> <span class="ruby-operator">-</span> <span class="ruby-ivar">@klass</span>.<span class="ruby-identifier">attribute_aliases</span>.<span class="ruby-identifier">keys</span>).<span class="ruby-identifier">empty?</span>
     <span class="ruby-keyword">return</span> <span class="ruby-identifier">records</span>.<span class="ruby-identifier">pluck</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">column_names</span>)
@@ -466,7 +514,7 @@ Person.pluck(&#39;DATEDIFF(updated_at, created_at)&#39;)
     <span class="ruby-identifier">relation</span> = <span class="ruby-identifier">apply_join_dependency</span>
     <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">pluck</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">column_names</span>)
   <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">enforce_raw_sql_whitelist</span>(<span class="ruby-identifier">column_names</span>)
+    <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">disallow_raw_sql!</span>(<span class="ruby-identifier">column_names</span>)
     <span class="ruby-identifier">relation</span> = <span class="ruby-identifier">spawn</span>
     <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">select_values</span> = <span class="ruby-identifier">column_names</span>
     <span class="ruby-identifier">result</span> = <span class="ruby-identifier">skip_query_cache_if_necessary</span> { <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">connection</span>.<span class="ruby-identifier">select_all</span>(<span class="ruby-identifier">relation</span>.<span class="ruby-identifier">arel</span>, <span class="ruby-keyword">nil</span>) }
@@ -507,19 +555,17 @@ Person.pluck(&#39;DATEDIFF(updated_at, created_at)&#39;)
                 
               </p>
               <div id="method-i-sum_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 86</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/calculations.rb, line 84</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">sum</span>(<span class="ruby-identifier">column_name</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
     <span class="ruby-keyword">unless</span> <span class="ruby-identifier">column_name</span>.<span class="ruby-identifier">nil?</span>
-      <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span> \
-        <span class="ruby-string">&quot;When `sum&#39; is called with a block, it ignores other arguments. &quot;</span> \
-        <span class="ruby-string">&quot;This behavior is now deprecated and will result in an ArgumentError in Rails 6.0.&quot;</span>
+      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;Column name argument is not supported when a block is passed.&quot;</span>
     <span class="ruby-keyword">end</span>
 
-    <span class="ruby-keyword">return</span> <span class="ruby-keyword">super</span>()
+    <span class="ruby-keyword">super</span>()
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">calculate</span>(<span class="ruby-value">:sum</span>, <span class="ruby-identifier">column_name</span>)
   <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">calculate</span>(<span class="ruby-value">:sum</span>, <span class="ruby-identifier">column_name</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
