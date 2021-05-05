@@ -10,9 +10,8 @@ task :build do
   sh 'bundle exec jekyll build'
 end
 
-task :switch_rails do
-  target_rails_version = config["target_rails_version"]
-  switch_rails(target_rails_version)
+task :switch_default_rails do
+  switch_rails(config["default_rails_version"])
 end
 
 task :build_multi do
