@@ -61,6 +61,11 @@ def generate_src(target_version: nil)
     if target_version.nil?
       mv 'navigation.html', '_includes/navigation.html', force: true
     else
+      # Replace absolute path in navigation.html
+      content = File.read("navigation.html")
+      content.gsub!("<a href=\"/", "<a href=\"/#{target_version}/")
+      File.write("navigation.html", content)
+
       mv 'navigation.html', "../_includes/navigation#{target_version}.html", force: true
     end
   end
