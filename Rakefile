@@ -43,7 +43,11 @@ end
 def generate_rails_rdoc
   cd 'rails' do
     Bundler.with_unbundled_env do
-      sh %(sed -i '' -e 's/sdoc.*$/sdoc", github: "toshimaru\\/sdoc", branch: "railsdoc"/g' ./Gemfile)
+      # replace sdoc gem
+      gemfile = File.read("Gemfile")
+      gemfile.gsub!(/"sdoc.*$/, '"sdoc", github: "toshimaru/sdoc", branch: "railsdoc"')
+      File.write("Gemfile", gemfile)
+
       sh 'bundle install && bundle update sdoc'
       rm_rf 'doc'
       sh 'bundle exec rake rdoc'
