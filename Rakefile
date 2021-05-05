@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'yaml'
+require 'bundler'
+
 SOURCE_DIR = "src"
 INDEX_HTML = 'files/railties/RDOC_MAIN_rdoc.html'
 
@@ -27,7 +30,6 @@ task :build_multi do
 end
 
 def config
-  require 'yaml'
   YAML.load_file('./_config.yml')
 end
 
