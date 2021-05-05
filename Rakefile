@@ -15,11 +15,15 @@ task :switch_rails do
   switch_rails(target_rails_version)
 end
 
-task :mkdir do
-  config["collections"].each do |version, detail|
+task :build_multi do
+  config["rails_versions"].each do |version, detail|
     dir = "#{SOURCE_DIR}/#{version}"
     mkdir dir unless Dir.exist?(dir)
-    switch_rails(detail["specific_version"])
+
+    bulid_version = detail["specific_version"]
+    switch_rails(bulid_version)
+    generate_rails_rdoc
+    generate_src(target_version: version)
   end
 end
 
