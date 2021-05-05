@@ -1,0 +1,343 @@
+---
+title: ActiveSupport::Dependencies::WatchStack
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.5</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::Dependencies::WatchStack
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/dependencies_rb.html">activesupport/lib/active_support/dependencies.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>The <a href="WatchStack.html"><code>WatchStack</code></a> keeps a stack of the modules being watched as files are loaded. If a file in the process of being loaded (parent.rb) triggers the load of another file (child.rb) the stack will ensure that child.rb handles the new constants.</p>
+
+<p>If child.rb is being autoloaded, its constants will be added to autoloaded_constants. If it was being required, they will be discarded.</p>
+
+<p>This is handled by walking back up the watch stack and adding the constants found by child.rb to the list of original constants in parent.rb.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-each">each</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-new_constants">new_constants</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-watch_namespaces">watch_namespaces</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-watching-3F">watching?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="../../Enumerable.html">
+              Enumerable
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>watching</td>
+            <td class='attr-desc'><p>@watching is a stack of lists of constants being watched. For instance, if parent.rb is autoloaded, the stack will look like [[Object]]. If parent.rb then requires namespace/child.rb, the stack will look like [[Object], [Namespace]].</p></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/dependencies.rb, line 102</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>
+  <span class="ruby-ivar">@watching</span> = []
+  <span class="ruby-ivar">@stack</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">h</span>, <span class="ruby-identifier">k</span><span class="ruby-operator">|</span> <span class="ruby-identifier">h</span>[<span class="ruby-identifier">k</span>] = [] }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-each">
+            
+              each(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-each_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/dependencies.rb, line 107</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-ivar">@stack</span>.<span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-new_constants">
+            
+              new_constants()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a list of new constants found since the last call to <code>watch_namespaces</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-new_constants_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/dependencies.rb, line 117</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">new_constants</span>
+  <span class="ruby-identifier">constants</span> = []
+
+  <span class="ruby-comment"># Grab the list of namespaces that we&#39;re looking for new constants under</span>
+  <span class="ruby-ivar">@watching</span>.<span class="ruby-identifier">last</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">namespace</span><span class="ruby-operator">|</span>
+    <span class="ruby-comment"># Retrieve the constants that were present under the namespace when watch_namespaces</span>
+    <span class="ruby-comment"># was originally called</span>
+    <span class="ruby-identifier">original_constants</span> = <span class="ruby-ivar">@stack</span>[<span class="ruby-identifier">namespace</span>].<span class="ruby-identifier">last</span>
+
+    <span class="ruby-identifier">mod</span> = <span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">constantize</span>(<span class="ruby-identifier">namespace</span>) <span class="ruby-keyword">if</span> <span class="ruby-constant">Dependencies</span>.<span class="ruby-identifier">qualified_const_defined?</span>(<span class="ruby-identifier">namespace</span>)
+    <span class="ruby-keyword">next</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">mod</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Module</span>)
+
+    <span class="ruby-comment"># Get a list of the constants that were added</span>
+    <span class="ruby-identifier">new_constants</span> = <span class="ruby-identifier">mod</span>.<span class="ruby-identifier">constants</span>(<span class="ruby-keyword">false</span>) <span class="ruby-operator">-</span> <span class="ruby-identifier">original_constants</span>
+
+    <span class="ruby-comment"># @stack[namespace] returns an Array of the constants that are being evaluated</span>
+    <span class="ruby-comment"># for that namespace. For instance, if parent.rb requires child.rb, the first</span>
+    <span class="ruby-comment"># element of @stack[Object] will be an Array of the constants that were present</span>
+    <span class="ruby-comment"># before parent.rb was required. The second element will be an Array of the</span>
+    <span class="ruby-comment"># constants that were present before child.rb was required.</span>
+    <span class="ruby-ivar">@stack</span>[<span class="ruby-identifier">namespace</span>].<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">namespace_constants</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">namespace_constants</span>.<span class="ruby-identifier">concat</span>(<span class="ruby-identifier">new_constants</span>)
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-comment"># Normalize the list of new constants, and add them to the list we will return</span>
+    <span class="ruby-identifier">new_constants</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">suffix</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">constants</span> <span class="ruby-operator">&lt;&lt;</span> ([<span class="ruby-identifier">namespace</span>, <span class="ruby-identifier">suffix</span>] <span class="ruby-operator">-</span> [<span class="ruby-string">&quot;Object&quot;</span>]).<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;::&quot;</span>.<span class="ruby-identifier">freeze</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+  <span class="ruby-identifier">constants</span>
+<span class="ruby-keyword">ensure</span>
+  <span class="ruby-comment"># A call to new_constants is always called after a call to watch_namespaces</span>
+  <span class="ruby-identifier">pop_modules</span>(<span class="ruby-ivar">@watching</span>.<span class="ruby-identifier">pop</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-watch_namespaces">
+            
+              watch_namespaces(namespaces)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Add a set of modules to the watch stack, remembering the initial constants.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-watch_namespaces_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/dependencies.rb, line 154</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">watch_namespaces</span>(<span class="ruby-identifier">namespaces</span>)
+  <span class="ruby-ivar">@watching</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">namespaces</span>.<span class="ruby-identifier">map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">namespace</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">module_name</span> = <span class="ruby-constant">Dependencies</span>.<span class="ruby-identifier">to_constant_name</span>(<span class="ruby-identifier">namespace</span>)
+    <span class="ruby-identifier">original_constants</span> = <span class="ruby-constant">Dependencies</span>.<span class="ruby-identifier">qualified_const_defined?</span>(<span class="ruby-identifier">module_name</span>) <span class="ruby-operator">?</span>
+      <span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">constantize</span>(<span class="ruby-identifier">module_name</span>).<span class="ruby-identifier">constants</span>(<span class="ruby-keyword">false</span>) <span class="ruby-operator">:</span> []
+
+    <span class="ruby-ivar">@stack</span>[<span class="ruby-identifier">module_name</span>] <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">original_constants</span>
+    <span class="ruby-identifier">module_name</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-watching-3F">
+            
+              watching?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-watching-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/dependencies.rb, line 111</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">watching?</span>
+  <span class="ruby-operator">!</span><span class="ruby-ivar">@watching</span>.<span class="ruby-identifier">empty?</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

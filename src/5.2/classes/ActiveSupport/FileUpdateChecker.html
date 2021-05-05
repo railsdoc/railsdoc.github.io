@@ -1,0 +1,293 @@
+---
+title: ActiveSupport::FileUpdateChecker
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.5</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::FileUpdateChecker
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/file_update_checker_rb.html">activesupport/lib/active_support/file_update_checker.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p><a href="FileUpdateChecker.html"><code>FileUpdateChecker</code></a> specifies the API used by Rails to watch files and control reloading. The API depends on four methods:</p>
+<ul><li>
+<p><code>initialize</code> which expects two parameters and one block as described below.</p>
+</li><li>
+<p><code>updated?</code> which returns a boolean if there were updates in the filesystem or not.</p>
+</li><li>
+<p><code>execute</code> which executes the given block on initialization and updates the latest watched files and timestamp.</p>
+</li><li>
+<p><code>execute_if_updated</code> which just executes the block if it was updated.</p>
+</li></ul>
+
+<p>After initialization, a call to <code>execute_if_updated</code> must execute the block only if there was really a change in the filesystem.</p>
+
+<p>This class is used by Rails to reload the I18n framework whenever they are changed upon a new request.</p>
+
+<pre><code>i18n_reloader = ActiveSupport::FileUpdateChecker.new(paths) do
+  I18n.reload!
+end
+
+ActiveSupport::Reloader.to_prepare do
+  i18n_reloader.execute_if_updated
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-execute">execute</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-execute_if_updated">execute_if_updated</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-updated-3F">updated?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(files, dirs = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>It accepts two parameters on initialization. The first is an array of files and the second is an optional hash of directories. The hash must have directories as keys and the value is an array of extensions to be watched under that directory.</p>
+
+<p>This method must also receive a block that will be called once a path changes. The array of files and list of directories cannot be changed after <a href="FileUpdateChecker.html"><code>FileUpdateChecker</code></a> has been initialized.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/file_update_checker.rb, line 42</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">files</span>, <span class="ruby-identifier">dirs</span> = {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">block</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;A block is required to initialize a FileUpdateChecker&quot;</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-ivar">@files</span> = <span class="ruby-identifier">files</span>.<span class="ruby-identifier">freeze</span>
+  <span class="ruby-ivar">@glob</span>  = <span class="ruby-identifier">compile_glob</span>(<span class="ruby-identifier">dirs</span>)
+  <span class="ruby-ivar">@block</span> = <span class="ruby-identifier">block</span>
+
+  <span class="ruby-ivar">@watched</span>    = <span class="ruby-keyword">nil</span>
+  <span class="ruby-ivar">@updated_at</span> = <span class="ruby-keyword">nil</span>
+
+  <span class="ruby-ivar">@last_watched</span>   = <span class="ruby-identifier">watched</span>
+  <span class="ruby-ivar">@last_update_at</span> = <span class="ruby-identifier">updated_at</span>(<span class="ruby-ivar">@last_watched</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-execute">
+            
+              execute()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Executes the given block and updates the latest watched files and timestamp.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-execute_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/file_update_checker.rb, line 80</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">execute</span>
+  <span class="ruby-ivar">@last_watched</span>   = <span class="ruby-identifier">watched</span>
+  <span class="ruby-ivar">@last_update_at</span> = <span class="ruby-identifier">updated_at</span>(<span class="ruby-ivar">@last_watched</span>)
+  <span class="ruby-ivar">@block</span>.<span class="ruby-identifier">call</span>
+<span class="ruby-keyword">ensure</span>
+  <span class="ruby-ivar">@watched</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-ivar">@updated_at</span> = <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-execute_if_updated">
+            
+              execute_if_updated()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Execute the block given if updated.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-execute_if_updated_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/file_update_checker.rb, line 90</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">execute_if_updated</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">updated?</span>
+    <span class="ruby-keyword">yield</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+    <span class="ruby-identifier">execute</span>
+    <span class="ruby-keyword">true</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-keyword">false</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-updated-3F">
+            
+              updated?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Check if any of the entries were updated. If so, the watched and/or updated_at values are cached until the block is executed via <code>execute</code> or <code>execute_if_updated</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-updated-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/file_update_checker.rb, line 61</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">updated?</span>
+  <span class="ruby-identifier">current_watched</span> = <span class="ruby-identifier">watched</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-ivar">@last_watched</span>.<span class="ruby-identifier">size</span> <span class="ruby-operator">!=</span> <span class="ruby-identifier">current_watched</span>.<span class="ruby-identifier">size</span>
+    <span class="ruby-ivar">@watched</span> = <span class="ruby-identifier">current_watched</span>
+    <span class="ruby-keyword">true</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">current_updated_at</span> = <span class="ruby-identifier">updated_at</span>(<span class="ruby-identifier">current_watched</span>)
+    <span class="ruby-keyword">if</span> <span class="ruby-ivar">@last_update_at</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">current_updated_at</span>
+      <span class="ruby-ivar">@watched</span>    = <span class="ruby-identifier">current_watched</span>
+      <span class="ruby-ivar">@updated_at</span> = <span class="ruby-identifier">current_updated_at</span>
+      <span class="ruby-keyword">true</span>
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-keyword">false</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

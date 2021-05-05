@@ -1,0 +1,245 @@
+---
+title: ActiveJob::Core
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.5</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveJob::Core
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activejob/lib/active_job/core_rb.html">activejob/lib/active_job/core.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Provides general behavior that will be included into every Active Job object that inherits from <a href="Base.html"><code>ActiveJob::Base</code></a>.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Core/ClassMethods.html">ActiveJob::Core::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-deserialize">deserialize</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-serialize">serialize</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(*arguments)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Creates a new job instance. Takes the arguments that will be passed to the perform method.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 71</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">arguments</span>)
+  <span class="ruby-ivar">@arguments</span>  = <span class="ruby-identifier">arguments</span>
+  <span class="ruby-ivar">@job_id</span>     = <span class="ruby-constant">SecureRandom</span>.<span class="ruby-identifier">uuid</span>
+  <span class="ruby-ivar">@queue_name</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">queue_name</span>
+  <span class="ruby-ivar">@priority</span>   = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">priority</span>
+  <span class="ruby-ivar">@executions</span> = <span class="ruby-value">0</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-deserialize">
+            
+              deserialize(job_data)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Attaches the stored job data to the current instance. Receives a hash returned from <code>serialize</code></p>
+
+<h4 id="method-i-deserialize-label-Examples">Examples</h4>
+
+<pre><code>class DeliverWebhookJob &lt; ActiveJob::Base
+  attr_writer :attempt_number
+
+  def attempt_number
+    @attempt_number ||= 0
+  end
+
+  def serialize
+    super.merge(&#39;attempt_number&#39; =&gt; attempt_number + 1)
+  end
+
+  def deserialize(job_data)
+    super
+    self.attempt_number = job_data[&#39;attempt_number&#39;]
+  end
+
+  rescue_from(Timeout::Error) do |exception|
+    raise exception if attempt_number &gt; 5
+    retry_job(wait: 10)
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-deserialize_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 120</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deserialize</span>(<span class="ruby-identifier">job_data</span>)
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">job_id</span>               = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;job_id&quot;</span>]
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">provider_job_id</span>      = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;provider_job_id&quot;</span>]
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">queue_name</span>           = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;queue_name&quot;</span>]
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">priority</span>             = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;priority&quot;</span>]
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">serialized_arguments</span> = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;arguments&quot;</span>]
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">executions</span>           = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;executions&quot;</span>]
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">locale</span>               = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;locale&quot;</span>] <span class="ruby-operator">||</span> <span class="ruby-constant">I18n</span>.<span class="ruby-identifier">locale</span>.<span class="ruby-identifier">to_s</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-serialize">
+            
+              serialize()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a hash with the job data that can safely be passed to the queueing adapter.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-serialize_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 81</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">serialize</span>
+  {
+    <span class="ruby-string">&quot;job_class&quot;</span>  <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">name</span>,
+    <span class="ruby-string">&quot;job_id&quot;</span>     <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">job_id</span>,
+    <span class="ruby-string">&quot;provider_job_id&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">provider_job_id</span>,
+    <span class="ruby-string">&quot;queue_name&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">queue_name</span>,
+    <span class="ruby-string">&quot;priority&quot;</span>   <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">priority</span>,
+    <span class="ruby-string">&quot;arguments&quot;</span>  <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">serialize_arguments_if_needed</span>(<span class="ruby-identifier">arguments</span>),
+    <span class="ruby-string">&quot;executions&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">executions</span>,
+    <span class="ruby-string">&quot;locale&quot;</span>     <span class="ruby-operator">=&gt;</span> <span class="ruby-constant">I18n</span>.<span class="ruby-identifier">locale</span>.<span class="ruby-identifier">to_s</span>
+  }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

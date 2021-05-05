@@ -1,0 +1,189 @@
+---
+title: ActiveRecord::Batches::BatchEnumerator
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.5</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::Batches::BatchEnumerator
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/relation/batches/batch_enumerator_rb.html">activerecord/lib/active_record/relation/batches/batch_enumerator.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-each">each</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-each_record">each_record</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="../../Enumerable.html">
+              Enumerable
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-each">
+            
+              each()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Yields an <a href="../Relation.html"><code>ActiveRecord::Relation</code></a> object for each batch of records.</p>
+
+<pre><code>Person.in_batches.each do |relation|
+  relation.update_all(awesome: true)
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-each_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/batches/batch_enumerator.rb, line 62</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">each</span>
+  <span class="ruby-identifier">enum</span> = <span class="ruby-ivar">@relation</span>.<span class="ruby-identifier">to_enum</span>(<span class="ruby-value">:in_batches</span>, <span class="ruby-value">of:</span> <span class="ruby-ivar">@of</span>, <span class="ruby-value">start:</span> <span class="ruby-ivar">@start</span>, <span class="ruby-value">finish:</span> <span class="ruby-ivar">@finish</span>, <span class="ruby-value">load:</span> <span class="ruby-keyword">false</span>)
+  <span class="ruby-keyword">return</span> <span class="ruby-identifier">enum</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">relation</span><span class="ruby-operator">|</span> <span class="ruby-keyword">yield</span> <span class="ruby-identifier">relation</span> } <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+  <span class="ruby-identifier">enum</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-each_record">
+            
+              each_record()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Looping through a collection of records from the database (using the <code>all</code> method, for example) is very inefficient since it will try to instantiate all the objects at once.</p>
+
+<p>In that case, batch processing methods allow you to work with the records in batches, thereby greatly reducing memory consumption.</p>
+
+<pre><code>Person.in_batches.each_record do |person|
+  person.do_awesome_stuff
+end
+
+Person.where(&quot;age &gt; 21&quot;).in_batches(of: 10).each_record do |person|
+  person.party_all_night!
+end
+</code></pre>
+
+<p>If you do not provide a block to <a href="BatchEnumerator.html#method-i-each_record"><code>each_record</code></a>, it will return an Enumerator for chaining with other methods:</p>
+
+<pre><code>Person.in_batches.each_record.with_index do |person, index|
+  person.award_trophy(index + 1)
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-each_record_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/batches/batch_enumerator.rb, line 36</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">each_record</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-identifier">to_enum</span>(<span class="ruby-value">:each_record</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">block_given?</span>
+
+  <span class="ruby-ivar">@relation</span>.<span class="ruby-identifier">to_enum</span>(<span class="ruby-value">:in_batches</span>, <span class="ruby-value">of:</span> <span class="ruby-ivar">@of</span>, <span class="ruby-value">start:</span> <span class="ruby-ivar">@start</span>, <span class="ruby-value">finish:</span> <span class="ruby-ivar">@finish</span>, <span class="ruby-value">load:</span> <span class="ruby-keyword">true</span>).<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">relation</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">records</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">record</span><span class="ruby-operator">|</span> <span class="ruby-keyword">yield</span> <span class="ruby-identifier">record</span> }
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

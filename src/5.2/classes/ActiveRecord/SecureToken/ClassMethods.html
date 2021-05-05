@@ -1,0 +1,161 @@
+---
+title: ActiveRecord::SecureToken::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 5.2.5</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::SecureToken::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/secure_token_rb.html">activerecord/lib/active_record/secure_token.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-generate_unique_secure_token">generate_unique_secure_token</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-has_secure_token">has_secure_token</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-generate_unique_secure_token">
+            
+              generate_unique_secure_token()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-generate_unique_secure_token_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/secure_token.rb, line 35</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">generate_unique_secure_token</span>
+  <span class="ruby-constant">SecureRandom</span>.<span class="ruby-identifier">base58</span>(<span class="ruby-value">24</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-has_secure_token">
+            
+              has_secure_token(attribute = :token)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Example using <a href="ClassMethods.html#method-i-has_secure_token"><code>has_secure_token</code></a></p>
+
+<pre><code># Schema: User(token:string, auth_token:string)
+class User &lt; ActiveRecord::Base
+  has_secure_token
+  has_secure_token :auth_token
+end
+
+user = User.new
+user.save
+user.token # =&gt; &quot;pX27zsMN2ViQKta1bGfLmVJE&quot;
+user.auth_token # =&gt; &quot;77TMHrHJFvFDwodq8w7Ev2m7&quot;
+user.regenerate_token # =&gt; true
+user.regenerate_auth_token # =&gt; true
+</code></pre>
+
+<p><code>SecureRandom::base58</code> is used to generate the 24-character unique token, so collisions are highly unlikely.</p>
+
+<p>Note that it&#39;s still possible to generate a race condition in the database in the same way that <a href="../Validations/ClassMethods.html#method-i-validates_uniqueness_of">validates_uniqueness_of</a> can. You&#39;re encouraged to add a unique index in the database to deal with this even more unlikely scenario.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-has_secure_token_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/secure_token.rb, line 28</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_secure_token</span>(<span class="ruby-identifier">attribute</span> = <span class="ruby-value">:token</span>)
+  <span class="ruby-comment"># Load securerandom only when has_secure_token is used.</span>
+  <span class="ruby-identifier">require</span> <span class="ruby-string">&quot;active_support/core_ext/securerandom&quot;</span>
+  <span class="ruby-identifier">define_method</span>(<span class="ruby-node">&quot;regenerate_#{attribute}&quot;</span>) { <span class="ruby-identifier">update!</span> <span class="ruby-identifier">attribute</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">generate_unique_secure_token</span> }
+  <span class="ruby-identifier">before_create</span> { <span class="ruby-identifier">send</span>(<span class="ruby-node">&quot;#{attribute}=&quot;</span>, <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">generate_unique_secure_token</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">send</span>(<span class="ruby-node">&quot;#{attribute}?&quot;</span>) }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
