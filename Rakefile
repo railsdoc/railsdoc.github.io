@@ -61,7 +61,7 @@ def generate_src(target_version: nil)
     if target_version.nil?
       mv 'navigation.html', '_includes/navigation.html', force: true
     else
-      mv 'navigation.html', "../_includes/navigation_#{target_version}.html", force: true
+      mv 'navigation.html', "../_includes/navigation#{target_version}.html", force: true
     end
   end
 end
