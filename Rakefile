@@ -6,7 +6,7 @@ require 'bundler'
 SOURCE_DIR = "src"
 INDEX_HTML = 'files/railties/RDOC_MAIN_rdoc.html'
 
-task build: [:switch_default_rails] do
+task :build do
   generate_rails_rdoc
   generate_src
 
