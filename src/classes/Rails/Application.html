@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -63,7 +63,7 @@ layout: default
 
 <p>The application is also responsible for setting up and executing the booting process. From the moment you require “config/application.rb” in your app, the booting process goes like this:</p>
 
-<pre><code>1)  require &quot;config/boot.rb&quot; to setup load paths
+<pre><code>1)  require &quot;config/boot.rb&quot; to set up load paths
 2)  require railties and engines
 3)  Define Rails.application as &quot;class MyApp::Application &lt; Rails::Application&quot;
 4)  Run config.before_configuration callbacks
@@ -224,6 +224,10 @@ second_application = Application.new(config: first_application.config)
         </li>
       
         <li>
+          <a href="#method-i-server">server</a>
+        </li>
+      
+        <li>
           <a href="#method-i-validate_secret_key_base">validate_secret_key_base</a>
         </li>
       
@@ -257,6 +261,14 @@ second_application = Application.new(config: first_application.config)
               [W]
             </td>
             <td class='attr-name'>config</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [W]
+            </td>
+            <td class='attr-name'>credentials</td>
             <td class='attr-desc'></td>
           </tr>
         
@@ -524,12 +536,13 @@ second_application = Application.new(config: first_application.config)
             <div class="description">
               <p>Convenience for loading config/foo.yml for the current <a href="Rails.html"><code>Rails</code></a> env.</p>
 
-<p>Example:</p>
+<p>Examples:</p>
 
 <pre><code># config/exception_notification.yml:
 production:
   url: http://127.0.0.1:8080
   namespace: my_app_production
+
 development:
   url: http://localhost:3001
   namespace: my_app_development
@@ -538,6 +551,24 @@ development:
 Rails.application.configure do
   config.middleware.use ExceptionNotifier, config_for(:exception_notification)
 end
+
+# You can also store configurations in a shared section which will be
+# merged with the environment configuration
+
+# config/example.yml
+shared:
+  foo:
+    bar:
+      baz: 1
+
+development:
+  foo:
+    bar:
+      qux: 2
+
+# development environment
+Rails.application.config_for(:example)[:foo][:bar]
+# =&gt; { baz: 1, qux: 2 }
 </code></pre>
             </div>
           
@@ -555,29 +586,23 @@ end
                 
               </p>
               <div id="method-i-config_for_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 222</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 241</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">config_for</span>(<span class="ruby-identifier">name</span>, <span class="ruby-value">env:</span> <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">env</span>)
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">name</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Pathname</span>)
-    <span class="ruby-identifier">yaml</span> = <span class="ruby-identifier">name</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">yaml</span> = <span class="ruby-constant">Pathname</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;#{paths[&quot;config&quot;].existent.first}/#{name}.yml&quot;</span>)
-  <span class="ruby-keyword">end</span>
+  <span class="ruby-identifier">yaml</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Pathname</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">name</span> <span class="ruby-operator">:</span> <span class="ruby-constant">Pathname</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;#{paths[&quot;config&quot;].existent.first}/#{name}.yml&quot;</span>)
 
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">yaml</span>.<span class="ruby-identifier">exist?</span>
     <span class="ruby-identifier">require</span> <span class="ruby-string">&quot;erb&quot;</span>
-    <span class="ruby-identifier">config</span> = <span class="ruby-constant">YAML</span>.<span class="ruby-identifier">load</span>(<span class="ruby-constant">ERB</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">yaml</span>.<span class="ruby-identifier">read</span>).<span class="ruby-identifier">result</span>) <span class="ruby-operator">||</span> {}
-    <span class="ruby-identifier">config</span> = (<span class="ruby-identifier">config</span>[<span class="ruby-string">&quot;shared&quot;</span>] <span class="ruby-operator">||</span> {}).<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">config</span>[<span class="ruby-identifier">env</span>] <span class="ruby-operator">||</span> {})
+    <span class="ruby-identifier">all_configs</span>    = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">ConfigurationFile</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">yaml</span>).<span class="ruby-identifier">deep_symbolize_keys</span>
+    <span class="ruby-identifier">config</span>, <span class="ruby-identifier">shared</span> = <span class="ruby-identifier">all_configs</span>[<span class="ruby-identifier">env</span>.<span class="ruby-identifier">to_sym</span>], <span class="ruby-identifier">all_configs</span>[<span class="ruby-value">:shared</span>]
 
-    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">OrderedOptions</span>.<span class="ruby-identifier">new</span>.<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">options</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">options</span>.<span class="ruby-identifier">update</span>(<span class="ruby-constant">NonSymbolAccessDeprecatedHash</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">config</span>))
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>)
+      <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">OrderedOptions</span>.<span class="ruby-identifier">new</span>.<span class="ruby-identifier">update</span>(<span class="ruby-identifier">shared</span>&amp;.<span class="ruby-identifier">deep_merge</span>(<span class="ruby-identifier">config</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">config</span>)
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-identifier">config</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">shared</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">raise</span> <span class="ruby-node">&quot;Could not load configuration. No such file - #{yaml}&quot;</span>
   <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">rescue</span> <span class="ruby-constant">Psych</span><span class="ruby-operator">::</span><span class="ruby-constant">SyntaxError</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">e</span>
-  <span class="ruby-identifier">raise</span> <span class="ruby-node">&quot;YAML syntax error occurred while parsing #{yaml}. &quot;</span> \
-    <span class="ruby-string">&quot;Please note that YAML must be consistently indented using spaces. Tabs are not allowed. &quot;</span> \
-    <span class="ruby-node">&quot;Error: #{e.message}&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -610,7 +635,7 @@ end
                 
               </p>
               <div id="method-i-console_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 300</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 315</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">console</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">console</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -645,7 +670,7 @@ end
                 
               </p>
               <div id="method-i-credentials_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 436</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 443</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">credentials</span>
   <span class="ruby-ivar">@credentials</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">encrypted</span>(<span class="ruby-identifier">config</span>.<span class="ruby-identifier">credentials</span>.<span class="ruby-identifier">content_path</span>, <span class="ruby-value">key_path:</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">credentials</span>.<span class="ruby-identifier">key_path</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -680,7 +705,7 @@ end
                 
               </p>
               <div id="method-i-eager_load-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 505</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 508</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">eager_load!</span>
   <span class="ruby-keyword">if</span> <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">autoloaders</span>.<span class="ruby-identifier">zeitwerk_enabled?</span>
     <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">autoloaders</span>.<span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:eager_load</span>)
@@ -747,7 +772,7 @@ end
                 
               </p>
               <div id="method-i-encrypted_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 467</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 474</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">encrypted</span>(<span class="ruby-identifier">path</span>, <span class="ruby-value">key_path:</span> <span class="ruby-string">&quot;config/master.key&quot;</span>, <span class="ruby-value">env_key:</span> <span class="ruby-string">&quot;RAILS_MASTER_KEY&quot;</span>)
   <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">EncryptedConfiguration</span>.<span class="ruby-identifier">new</span>(
     <span class="ruby-value">config_path:</span> <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">root</span>.<span class="ruby-identifier">join</span>(<span class="ruby-identifier">path</span>),
@@ -787,7 +812,7 @@ end
                 
               </p>
               <div id="method-i-env_config_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 248</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 261</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">env_config</span>
   <span class="ruby-ivar">@app_env_config</span> <span class="ruby-operator">||=</span> <span class="ruby-keyword">begin</span>
     <span class="ruby-keyword">super</span>.<span class="ruby-identifier">merge</span>(
@@ -810,11 +835,13 @@ end
       <span class="ruby-string">&quot;action_dispatch.cookies_serializer&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">action_dispatch</span>.<span class="ruby-identifier">cookies_serializer</span>,
       <span class="ruby-string">&quot;action_dispatch.cookies_digest&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">action_dispatch</span>.<span class="ruby-identifier">cookies_digest</span>,
       <span class="ruby-string">&quot;action_dispatch.cookies_rotations&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">action_dispatch</span>.<span class="ruby-identifier">cookies_rotations</span>,
+      <span class="ruby-string">&quot;action_dispatch.cookies_same_site_protection&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">coerce_same_site_protection</span>(<span class="ruby-identifier">config</span>.<span class="ruby-identifier">action_dispatch</span>.<span class="ruby-identifier">cookies_same_site_protection</span>),
       <span class="ruby-string">&quot;action_dispatch.use_cookies_with_metadata&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">action_dispatch</span>.<span class="ruby-identifier">use_cookies_with_metadata</span>,
       <span class="ruby-string">&quot;action_dispatch.content_security_policy&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">content_security_policy</span>,
       <span class="ruby-string">&quot;action_dispatch.content_security_policy_report_only&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">content_security_policy_report_only</span>,
       <span class="ruby-string">&quot;action_dispatch.content_security_policy_nonce_generator&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">content_security_policy_nonce_generator</span>,
-      <span class="ruby-string">&quot;action_dispatch.content_security_policy_nonce_directives&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">content_security_policy_nonce_directives</span>
+      <span class="ruby-string">&quot;action_dispatch.content_security_policy_nonce_directives&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">content_security_policy_nonce_directives</span>,
+      <span class="ruby-string">&quot;action_dispatch.permissions_policy&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">permissions_policy</span>,
     )
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -849,7 +876,7 @@ end
                 
               </p>
               <div id="method-i-generators_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 306</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 321</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">generators</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">generators</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -919,7 +946,7 @@ end
                 
               </p>
               <div id="method-i-initializer_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 288</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 303</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initializer</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">opts</span> = {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">initializer</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">opts</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -954,7 +981,7 @@ end
                 
               </p>
               <div id="method-i-isolate_namespace_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 311</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 332</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">isolate_namespace</span>(<span class="ruby-identifier">mod</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">isolate_namespace</span>(<span class="ruby-identifier">mod</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1084,7 +1111,7 @@ Rails.application.message_verifier(&#39;sensitive_data&#39;).verify(message)
                 
               </p>
               <div id="method-i-rake_tasks_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 281</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 296</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">rake_tasks</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">rake_tasks</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1154,7 +1181,7 @@ Rails.application.message_verifier(&#39;sensitive_data&#39;).verify(message)
                 
               </p>
               <div id="method-i-runner_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 294</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 309</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">runner</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">runner</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1193,7 +1220,7 @@ Rails.application.message_verifier(&#39;sensitive_data&#39;).verify(message)
                 
               </p>
               <div id="method-i-secret_key_base_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 419</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 426</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">secret_key_base</span>
   <span class="ruby-keyword">if</span> <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">env</span>.<span class="ruby-identifier">development?</span> <span class="ruby-operator">||</span> <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">env</span>.<span class="ruby-identifier">test?</span>
     <span class="ruby-identifier">secrets</span>.<span class="ruby-identifier">secret_key_base</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">generate_development_secret</span>
@@ -1217,20 +1244,7 @@ Rails.application.message_verifier(&#39;sensitive_data&#39;).verify(message)
 
           
             <div class="description">
-              <p>Returns secrets added to config/secrets.yml.</p>
-
-<p>Example:</p>
-
-<pre><code>development:
-  secret_key_base: 836fa3665997a860728bcb9e9a1e704d427cfc920e79d847d79c8a9a907b9e965defa4154b2b86bdec6930adbe33f21364523a6f6ce363865724549fdfc08553
-test:
-  secret_key_base: 5a37811464e7d378488b0f073e2193b093682e4e21f5d6f3ae0a4e1781e61a351fdc878a843424e81c73fb484a40d23f92c8dafac4870e74ede6e5e174423010
-production:
-  secret_key_base: &lt;%= ENV[&quot;SECRET_KEY_BASE&quot;] %&gt;
-  namespace: my_app_production
-</code></pre>
-
-<p><code>Rails.application.secrets.namespace</code> returns <code>my_app_production</code> in the production environment.</p>
+              
             </div>
           
 
@@ -1247,7 +1261,7 @@ production:
                 
               </p>
               <div id="method-i-secrets_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 394</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 401</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">secrets</span>
   <span class="ruby-ivar">@secrets</span> <span class="ruby-operator">||=</span> <span class="ruby-keyword">begin</span>
     <span class="ruby-identifier">secrets</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">OrderedOptions</span>.<span class="ruby-identifier">new</span>
@@ -1260,6 +1274,41 @@ production:
 
     <span class="ruby-identifier">secrets</span>
   <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-server">
+            
+              server(&amp;blk)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sends any server called in the instance of a new application up to the <code>server</code> method defined in <a href="Railtie.html"><code>Rails::Railtie</code></a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-server_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 327</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">server</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">server</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -1295,14 +1344,14 @@ production:
                 
               </p>
               <div id="method-i-validate_secret_key_base_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 582</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 590</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">validate_secret_key_base</span>(<span class="ruby-identifier">secret_key_base</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">secret_key_base</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">String</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">secret_key_base</span>.<span class="ruby-identifier">present?</span>
     <span class="ruby-identifier">secret_key_base</span>
   <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">secret_key_base</span>
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;`secret_key_base` for #{Rails.env} environment must be a type of String`&quot;</span>
   <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;Missing `secret_key_base` for &#39;#{Rails.env}&#39; environment, set this string with `rails credentials:edit`&quot;</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;Missing `secret_key_base` for &#39;#{Rails.env}&#39; environment, set this string with `bin/rails credentials:edit`&quot;</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>

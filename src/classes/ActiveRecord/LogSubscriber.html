@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -54,6 +54,10 @@ layout: default
       
         <li>
           <a href="#method-i-sql">sql</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-strict_loading_violation">strict_loading_violation</a>
         </li>
       
     </ul>
@@ -228,7 +232,7 @@ layout: default
                 
               </p>
               <div id="method-i-sql_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/log_subscriber.rb, line 22</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/log_subscriber.rb, line 32</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">sql</span>(<span class="ruby-identifier">event</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">runtime</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">event</span>.<span class="ruby-identifier">duration</span>
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug?</span>
@@ -242,17 +246,62 @@ layout: default
   <span class="ruby-identifier">sql</span>   = <span class="ruby-identifier">payload</span>[<span class="ruby-value">:sql</span>]
   <span class="ruby-identifier">binds</span> = <span class="ruby-keyword">nil</span>
 
-  <span class="ruby-keyword">unless</span> (<span class="ruby-identifier">payload</span>[<span class="ruby-value">:binds</span>] <span class="ruby-operator">||</span> []).<span class="ruby-identifier">empty?</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">payload</span>[<span class="ruby-value">:binds</span>]&amp;.<span class="ruby-identifier">any?</span>
     <span class="ruby-identifier">casted_params</span> = <span class="ruby-identifier">type_casted_binds</span>(<span class="ruby-identifier">payload</span>[<span class="ruby-value">:type_casted_binds</span>])
-    <span class="ruby-identifier">binds</span> = <span class="ruby-string">&quot;  &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">payload</span>[<span class="ruby-value">:binds</span>].<span class="ruby-identifier">zip</span>(<span class="ruby-identifier">casted_params</span>).<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">attr</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">render_bind</span>(<span class="ruby-identifier">attr</span>, <span class="ruby-identifier">value</span>)
-    }.<span class="ruby-identifier">inspect</span>
+
+    <span class="ruby-identifier">binds</span> = []
+    <span class="ruby-identifier">payload</span>[<span class="ruby-value">:binds</span>].<span class="ruby-identifier">each_with_index</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">attr</span>, <span class="ruby-identifier">i</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">binds</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">render_bind</span>(<span class="ruby-identifier">attr</span>, <span class="ruby-identifier">casted_params</span>[<span class="ruby-identifier">i</span>])
+    <span class="ruby-keyword">end</span>
+    <span class="ruby-identifier">binds</span> = <span class="ruby-identifier">binds</span>.<span class="ruby-identifier">inspect</span>
+    <span class="ruby-identifier">binds</span>.<span class="ruby-identifier">prepend</span>(<span class="ruby-string">&quot;  &quot;</span>)
   <span class="ruby-keyword">end</span>
 
   <span class="ruby-identifier">name</span> = <span class="ruby-identifier">colorize_payload_name</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">payload</span>[<span class="ruby-value">:name</span>])
   <span class="ruby-identifier">sql</span>  = <span class="ruby-identifier">color</span>(<span class="ruby-identifier">sql</span>, <span class="ruby-identifier">sql_color</span>(<span class="ruby-identifier">sql</span>), <span class="ruby-keyword">true</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">colorize_logging</span>
 
   <span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;  #{name}  #{sql}#{binds}&quot;</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-strict_loading_violation">
+            
+              strict_loading_violation(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-strict_loading_violation_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/log_subscriber.rb, line 22</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">strict_loading_violation</span>(<span class="ruby-identifier">event</span>)
+  <span class="ruby-identifier">debug</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">owner</span> = <span class="ruby-identifier">event</span>.<span class="ruby-identifier">payload</span>[<span class="ruby-value">:owner</span>]
+    <span class="ruby-identifier">association</span> = <span class="ruby-identifier">event</span>.<span class="ruby-identifier">payload</span>[<span class="ruby-value">:reflection</span>].<span class="ruby-identifier">klass</span>
+    <span class="ruby-identifier">name</span> = <span class="ruby-identifier">event</span>.<span class="ruby-identifier">payload</span>[<span class="ruby-value">:reflection</span>].<span class="ruby-identifier">name</span>
+
+    <span class="ruby-identifier">color</span>(<span class="ruby-node">&quot;Strict loading violation: #{owner} is marked for strict loading. The #{association} association named :#{name} cannot be lazily loaded.&quot;</span>, <span class="ruby-constant">RED</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

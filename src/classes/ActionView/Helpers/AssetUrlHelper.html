@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -57,7 +57,7 @@ stylesheet_link_tag(&quot;application&quot;)
 
 <p>This may improve the asset loading performance of your application. It is also possible the combination of additional connection overhead (DNS, SSL) and the overall browser connection limits may result in this solution being slower. You should be sure to measure your actual performance across targeted browsers both before and after this change.</p>
 
-<p>To implement the corresponding hosts you can either setup four actual hosts or use wildcard DNS to CNAME the wildcard to a single asset host. You can read more about setting up your DNS CNAME records from your ISP.</p>
+<p>To implement the corresponding hosts you can either set up four actual hosts or use wildcard DNS to CNAME the wildcard to a single asset host. You can read more about setting up your DNS CNAME records from your ISP.</p>
 
 <p>Note: This is purely a browser performance optimization and is not meant for server load balancing. See <a href="https://www.die.net/musings/page_load_time">www.die.net/musings/page_load_time</a>/ for background and <a href="https://www.browserscope.org/?category=network">www.browserscope.org/?category=network</a> for connection limit data.</p>
 
@@ -77,7 +77,7 @@ stylesheet_link_tag(&quot;application&quot;)
 <p>As you see the proc takes a <code>source</code> parameter. That&#39;s a string with the absolute path of the asset, for example “/assets/rails.png”.</p>
 
 <pre><code> ActionController::Base.asset_host = Proc.new { |source|
-   if source.ends_with?(&#39;.css&#39;)
+   if source.end_with?(&#39;.css&#39;)
      &quot;http://stylesheets.example.com&quot;
    else
      &quot;http://assets.example.com&quot;
@@ -89,7 +89,7 @@ stylesheet_link_tag(&quot;application&quot;)
 # =&gt; &lt;link href=&quot;http://stylesheets.example.com/assets/application.css&quot; media=&quot;screen&quot; rel=&quot;stylesheet&quot; /&gt;
 </code></pre>
 
-<p>Alternatively you may ask for a second parameter <code>request</code>. That one is particularly useful for serving assets from an SSL-protected page. The example proc below disables asset hosting for HTTPS connections, while still sending assets for plain HTTP requests from asset hosts. If you don&#39;t have SSL certificates for each of the asset hosts this technique allows you to avoid warnings in the client about mixed media. Note that the <code>request</code> parameter might not be supplied, e.g. when the assets are precompiled with the command `rails assets:precompile`. Make sure to use a <code>Proc</code> instead of a lambda, since a <code>Proc</code> allows missing parameters and sets them to <code>nil</code>.</p>
+<p>Alternatively you may ask for a second parameter <code>request</code>. That one is particularly useful for serving assets from an SSL-protected page. The example proc below disables asset hosting for HTTPS connections, while still sending assets for plain HTTP requests from asset hosts. If you don&#39;t have SSL certificates for each of the asset hosts this technique allows you to avoid warnings in the client about mixed media. Note that the <code>request</code> parameter might not be supplied, e.g. when the assets are precompiled with the command <code>bin/rails assets:precompile</code>. Make sure to use a <code>Proc</code> instead of a lambda, since a <code>Proc</code> allows missing parameters and sets them to <code>nil</code>.</p>
 
 <pre><code>config.action_controller.asset_host = Proc.new { |source, request|
   if request &amp;&amp; request.ssl?
@@ -339,6 +339,8 @@ video:      &quot;/videos&quot;
 <p>All options passed to <code>asset_path</code> will be passed to <code>compute_asset_path</code> which is implemented by sprockets-rails.</p>
 
 <pre><code>asset_path(&quot;application.js&quot;) # =&gt; &quot;/assets/application-60aa4fdc5cea14baf5400fba1abf4f2a46a5166bad4772b1effe341570f07de9.js&quot;
+asset_path(&#39;application.js&#39;, host: &#39;example.com&#39;) # =&gt; &quot;//example.com/assets/application.js&quot;
+asset_path(&quot;application.js&quot;, host: &#39;example.com&#39;, protocol: &#39;https&#39;) # =&gt; &quot;https://example.com/assets/application.js&quot;
 </code></pre>
 
 <h3 id="method-i-asset_path-label-Without+the+asset+pipeline+-28skip_pipeline-3A+true-29">Without the asset pipeline (<code>skip_pipeline: true</code>)</h3>
@@ -408,7 +410,7 @@ asset_path(&quot;foo.css&quot;, skip_pipeline: true, extname: &quot;.js&quot;) #
                 
               </p>
               <div id="method-i-asset_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 184</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 186</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">asset_path</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;nil is not a valid asset source&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">source</span>.<span class="ruby-identifier">nil?</span>
 
@@ -432,7 +434,7 @@ asset_path(&quot;foo.css&quot;, skip_pipeline: true, extname: &quot;.js&quot;) #
 
   <span class="ruby-identifier">relative_url_root</span> = <span class="ruby-keyword">defined?</span>(<span class="ruby-identifier">config</span>.<span class="ruby-identifier">relative_url_root</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">relative_url_root</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">relative_url_root</span>
-    <span class="ruby-identifier">source</span> = <span class="ruby-constant">File</span>.<span class="ruby-identifier">join</span>(<span class="ruby-identifier">relative_url_root</span>, <span class="ruby-identifier">source</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">source</span>.<span class="ruby-identifier">starts_with?</span>(<span class="ruby-node">&quot;#{relative_url_root}/&quot;</span>)
+    <span class="ruby-identifier">source</span> = <span class="ruby-constant">File</span>.<span class="ruby-identifier">join</span>(<span class="ruby-identifier">relative_url_root</span>, <span class="ruby-identifier">source</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">source</span>.<span class="ruby-identifier">start_with?</span>(<span class="ruby-node">&quot;#{relative_url_root}/&quot;</span>)
   <span class="ruby-keyword">end</span>
 
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">host</span> = <span class="ruby-identifier">compute_asset_host</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span>)
@@ -482,7 +484,7 @@ asset_url &quot;application.js&quot;, host: &quot;http://cdn.example.com&quot; #
                 
               </p>
               <div id="method-i-asset_url_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 228</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 230</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">asset_url</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">path_to_asset</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-value">protocol:</span> <span class="ruby-value">:request</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -528,7 +530,7 @@ audio_path(&quot;http://www.example.com/sounds/horse.wav&quot;)          # =&gt;
                 
               </p>
               <div id="method-i-audio_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 427</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 429</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">audio_path</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">path_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:audio</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -570,7 +572,7 @@ audio_path(&quot;http://www.example.com/sounds/horse.wav&quot;)          # =&gt;
                 
               </p>
               <div id="method-i-audio_url_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 439</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 441</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">audio_url</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">url_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:audio</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -605,7 +607,7 @@ audio_path(&quot;http://www.example.com/sounds/horse.wav&quot;)          # =&gt;
                 
               </p>
               <div id="method-i-compute_asset_extname_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 240</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 242</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">compute_asset_extname</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:extname</span>] <span class="ruby-operator">==</span> <span class="ruby-keyword">false</span>
   <span class="ruby-identifier">extname</span> = <span class="ruby-identifier">options</span>[<span class="ruby-value">:extname</span>] <span class="ruby-operator">||</span> <span class="ruby-constant">ASSET_EXTENSIONS</span>[<span class="ruby-identifier">options</span>[<span class="ruby-value">:type</span>]]
@@ -646,7 +648,7 @@ audio_path(&quot;http://www.example.com/sounds/horse.wav&quot;)          # =&gt;
                 
               </p>
               <div id="method-i-compute_asset_host_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 274</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 276</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">compute_asset_host</span>(<span class="ruby-identifier">source</span> = <span class="ruby-string">&quot;&quot;</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">request</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">request</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:request</span>)
   <span class="ruby-identifier">host</span> = <span class="ruby-identifier">options</span>[<span class="ruby-value">:host</span>]
@@ -715,7 +717,7 @@ audio_path(&quot;http://www.example.com/sounds/horse.wav&quot;)          # =&gt;
                 
               </p>
               <div id="method-i-compute_asset_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 263</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 265</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">compute_asset_path</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">dir</span> = <span class="ruby-constant">ASSET_PUBLIC_DIRECTORIES</span>[<span class="ruby-identifier">options</span>[<span class="ruby-value">:type</span>]] <span class="ruby-operator">||</span> <span class="ruby-string">&quot;&quot;</span>
   <span class="ruby-constant">File</span>.<span class="ruby-identifier">join</span>(<span class="ruby-identifier">dir</span>, <span class="ruby-identifier">source</span>)
@@ -762,7 +764,7 @@ font_path(&quot;http://www.example.com/dir/font.ttf&quot;)            # =&gt; ht
                 
               </p>
               <div id="method-i-font_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 452</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 454</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">font_path</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">path_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:font</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -804,7 +806,7 @@ font_path(&quot;http://www.example.com/dir/font.ttf&quot;)            # =&gt; ht
                 
               </p>
               <div id="method-i-font_url_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 464</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 466</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">font_url</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">url_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:font</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -852,7 +854,7 @@ image_path(&quot;http://www.example.com/img/edit.png&quot;)          # =&gt; &qu
                 
               </p>
               <div id="method-i-image_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 375</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 377</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">image_path</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">path_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:image</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -894,7 +896,7 @@ image_path(&quot;http://www.example.com/img/edit.png&quot;)          # =&gt; &qu
                 
               </p>
               <div id="method-i-image_url_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 387</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 389</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">image_url</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">url_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:image</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -940,7 +942,7 @@ javascript_path &quot;http://www.example.com/js/xmlhr.js&quot; # =&gt; http://ww
                 
               </p>
               <div id="method-i-javascript_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 318</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 320</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">javascript_path</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">path_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:javascript</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -982,7 +984,7 @@ javascript_path &quot;http://www.example.com/js/xmlhr.js&quot; # =&gt; http://ww
                 
               </p>
               <div id="method-i-javascript_url_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 330</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 332</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">javascript_url</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">url_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:javascript</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -1220,7 +1222,7 @@ stylesheet_path &quot;http://www.example.com/css/style.css&quot;   # =&gt; http:
                 
               </p>
               <div id="method-i-stylesheet_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 345</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 347</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">stylesheet_path</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">path_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:stylesheet</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -1262,7 +1264,7 @@ stylesheet_path &quot;http://www.example.com/css/style.css&quot;   # =&gt; http:
                 
               </p>
               <div id="method-i-stylesheet_url_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 357</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 359</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">stylesheet_url</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">url_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:stylesheet</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -1476,7 +1478,7 @@ video_path(&quot;http://www.example.com/vid/hd.avi&quot;)             # =&gt; ht
                 
               </p>
               <div id="method-i-video_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 401</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 403</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">video_path</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">path_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:video</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -1518,7 +1520,7 @@ video_path(&quot;http://www.example.com/vid/hd.avi&quot;)             # =&gt; ht
                 
               </p>
               <div id="method-i-video_url_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 413</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/asset_url_helper.rb, line 415</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">video_url</span>(<span class="ruby-identifier">source</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">url_to_asset</span>(<span class="ruby-identifier">source</span>, { <span class="ruby-value">type:</span> <span class="ruby-value">:video</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>

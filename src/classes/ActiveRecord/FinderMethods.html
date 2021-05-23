@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -83,11 +83,19 @@ layout: default
         </li>
       
         <li>
+          <a href="#method-i-include-3F">include?</a>
+        </li>
+      
+        <li>
           <a href="#method-i-last">last</a>
         </li>
       
         <li>
           <a href="#method-i-last-21">last!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-member-3F">member?</a>
         </li>
       
         <li>
@@ -182,9 +190,9 @@ layout: default
 </li><li>
 <p><a href="../String.html"><code>String</code></a> - Finds the record with a primary key corresponding to this string (such as <code>&#39;5&#39;</code>).</p>
 </li><li>
-<p><a href="../Array.html"><code>Array</code></a> - Finds the record that matches these <code>find</code>-style conditions (such as <code>[&#39;name LIKE ?&#39;, &quot;%#{query}%&quot;]</code>).</p>
+<p><a href="../Array.html"><code>Array</code></a> - Finds the record that matches these <code>where</code>-style conditions (such as <code>[&#39;name LIKE ?&#39;, &quot;%#{query}%&quot;]</code>).</p>
 </li><li>
-<p><a href="../Hash.html"><code>Hash</code></a> - Finds the record that matches these <code>find</code>-style conditions (such as <code>{name: &#39;David&#39;}</code>).</p>
+<p><a href="../Hash.html"><code>Hash</code></a> - Finds the record that matches these <code>where</code>-style conditions (such as <code>{name: &#39;David&#39;}</code>).</p>
 </li><li>
 <p><code>false</code> - Returns always <code>false</code>.</p>
 </li><li>
@@ -220,7 +228,7 @@ Person.where(name: &#39;Spartacus&#39;, rating: 4).exists?
                 
               </p>
               <div id="method-i-exists-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 300</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 302</span>
     <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">exists?</span>(<span class="ruby-identifier">conditions</span> = <span class="ruby-value">:none</span>)
       <span class="ruby-keyword">if</span> <span class="ruby-constant">Base</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">conditions</span>
         <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>
@@ -237,8 +245,9 @@ Person.where(name: &#39;Spartacus&#39;, rating: 4).exists?
       <span class="ruby-keyword">end</span>
 
       <span class="ruby-identifier">relation</span> = <span class="ruby-identifier">construct_relation_for_exists</span>(<span class="ruby-identifier">conditions</span>)
+      <span class="ruby-keyword">return</span> <span class="ruby-keyword">false</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">where_clause</span>.<span class="ruby-identifier">contradiction?</span>
 
-      <span class="ruby-identifier">skip_query_cache_if_necessary</span> { <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">select_one</span>(<span class="ruby-identifier">relation</span>.<span class="ruby-identifier">arel</span>, <span class="ruby-node">&quot;#{name} Exists?&quot;</span>) } <span class="ruby-operator">?</span> <span class="ruby-keyword">true</span> <span class="ruby-operator">:</span> <span class="ruby-keyword">false</span>
+      <span class="ruby-identifier">skip_query_cache_if_necessary</span> { <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">select_rows</span>(<span class="ruby-identifier">relation</span>.<span class="ruby-identifier">arel</span>, <span class="ruby-node">&quot;#{name} Exists?&quot;</span>).<span class="ruby-identifier">size</span> <span class="ruby-operator">==</span> <span class="ruby-value">1</span> }
     <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -276,7 +285,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).fifth
                 
               </p>
               <div id="method-i-fifth_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 214</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 216</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">fifth</span>
   <span class="ruby-identifier">find_nth</span> <span class="ruby-value">4</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -311,7 +320,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).fifth
                 
               </p>
               <div id="method-i-fifth-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 220</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 222</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">fifth!</span>
   <span class="ruby-identifier">fifth</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">raise_record_not_found_exception!</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -519,6 +528,8 @@ Person.first(3) # returns the first three objects fetched by SELECT * FROM peopl
               <div id="method-i-first_source">
                 <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 116</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">first</span>(<span class="ruby-identifier">limit</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">check_reorder_deprecation</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">loaded?</span>
+
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">limit</span>
     <span class="ruby-identifier">find_nth_with_limit</span>(<span class="ruby-value">0</span>, <span class="ruby-identifier">limit</span>)
   <span class="ruby-keyword">else</span>
@@ -556,7 +567,7 @@ Person.first(3) # returns the first three objects fetched by SELECT * FROM peopl
                 
               </p>
               <div id="method-i-first-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 126</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 128</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">first!</span>
   <span class="ruby-identifier">first</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">raise_record_not_found_exception!</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -596,7 +607,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).forty_two
                 
               </p>
               <div id="method-i-forty_two_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 230</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 232</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">forty_two</span>
   <span class="ruby-identifier">find_nth</span> <span class="ruby-value">41</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -631,7 +642,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).forty_two
                 
               </p>
               <div id="method-i-forty_two-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 236</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 238</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">forty_two!</span>
   <span class="ruby-identifier">forty_two</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">raise_record_not_found_exception!</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -671,7 +682,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).fourth
                 
               </p>
               <div id="method-i-fourth_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 198</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 200</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">fourth</span>
   <span class="ruby-identifier">find_nth</span> <span class="ruby-value">3</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -706,9 +717,54 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).fourth
                 
               </p>
               <div id="method-i-fourth-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 204</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 206</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">fourth!</span>
   <span class="ruby-identifier">fourth</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">raise_record_not_found_exception!</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-include-3F">
+            
+              include?(record)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if the relation contains the given record or false otherwise.</p>
+
+<p>No query is performed if the relation is loaded; the given record is compared to the records in memory. If the relation is unloaded, an efficient existence query is performed, as in <a href="FinderMethods.html#method-i-exists-3F"><code>exists?</code></a>.</p>
+            </div>
+          
+
+          
+            <div class="aka">
+              Also aliased as: <a href="FinderMethods.html#method-i-member-3F">member?</a>
+            </div>
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-include-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 328</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">include?</span>(<span class="ruby-identifier">record</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">loaded?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">offset_value</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">limit_value</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">having_clause</span>.<span class="ruby-identifier">any?</span>
+    <span class="ruby-identifier">records</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">record</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">record</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-identifier">klass</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">exists?</span>(<span class="ruby-identifier">record</span>.<span class="ruby-identifier">id</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -757,7 +813,7 @@ Person.last(3) # returns the last three objects fetched by SELECT * FROM people.
                 
               </p>
               <div id="method-i-last_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 145</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 147</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">last</span>(<span class="ruby-identifier">limit</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-identifier">find_last</span>(<span class="ruby-identifier">limit</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">loaded?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">has_limit_or_offset?</span>
 
@@ -797,13 +853,37 @@ Person.last(3) # returns the last three objects fetched by SELECT * FROM people.
                 
               </p>
               <div id="method-i-last-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 156</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 158</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">last!</span>
   <span class="ruby-identifier">last</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">raise_record_not_found_exception!</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-member-3F">
+            
+              member?(record)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+            <div class="aka">
+              Alias for: <a href="FinderMethods.html#method-i-include-3F">include?</a>
+            </div>
+          
+
+          
           </div>
         
         <div class="method">
@@ -837,7 +917,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).second
                 
               </p>
               <div id="method-i-second_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 166</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 168</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">second</span>
   <span class="ruby-identifier">find_nth</span> <span class="ruby-value">1</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -872,7 +952,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).second
                 
               </p>
               <div id="method-i-second-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 172</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 174</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">second!</span>
   <span class="ruby-identifier">second</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">raise_record_not_found_exception!</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -912,7 +992,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).second_to_last
                 
               </p>
               <div id="method-i-second_to_last_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 262</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 264</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">second_to_last</span>
   <span class="ruby-identifier">find_nth_from_last</span> <span class="ruby-value">2</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -947,7 +1027,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).second_to_last
                 
               </p>
               <div id="method-i-second_to_last-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 268</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 270</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">second_to_last!</span>
   <span class="ruby-identifier">second_to_last</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">raise_record_not_found_exception!</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1062,7 +1142,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).third
                 
               </p>
               <div id="method-i-third_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 182</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 184</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">third</span>
   <span class="ruby-identifier">find_nth</span> <span class="ruby-value">2</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1097,7 +1177,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).third
                 
               </p>
               <div id="method-i-third-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 188</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 190</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">third!</span>
   <span class="ruby-identifier">third</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">raise_record_not_found_exception!</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1137,7 +1217,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).third_to_last
                 
               </p>
               <div id="method-i-third_to_last_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 246</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 248</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">third_to_last</span>
   <span class="ruby-identifier">find_nth_from_last</span> <span class="ruby-value">3</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1172,7 +1252,7 @@ Person.where([&quot;user_name = :u&quot;, { u: user_name }]).third_to_last
                 
               </p>
               <div id="method-i-third_to_last-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 252</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/finder_methods.rb, line 254</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">third_to_last!</span>
   <span class="ruby-identifier">third_to_last</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">raise_record_not_found_exception!</span>
 <span class="ruby-keyword">end</span></code></pre>

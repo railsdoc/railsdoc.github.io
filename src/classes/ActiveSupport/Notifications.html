@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -58,6 +58,19 @@ end
   payload # =&gt; Hash, the payload
 end
 </code></pre>
+
+<p>Here, the <code>start</code> and <code>finish</code> values represent wall-clock time. If you are concerned about accuracy, you can register a monotonic subscriber.</p>
+
+<pre><code>ActiveSupport::Notifications.monotonic_subscribe(&#39;render&#39;) do |name, start, finish, id, payload|
+  name    # =&gt; String, name of the event (such as &#39;render&#39; from above)
+  start   # =&gt; Monotonic time, when the instrumented block started execution
+  finish  # =&gt; Monotonic time, when the instrumented block ended execution
+  id      # =&gt; String, unique ID for the instrumenter that fired the event
+  payload # =&gt; Hash, the payload
+end
+</code></pre>
+
+<p>The <code>start</code> and <code>finish</code> values above represent monotonic time.</p>
 
 <p>For instance, let&#39;s store all “render” events in an array:</p>
 
@@ -145,6 +158,14 @@ end
 
 <p>the callback will be called for all “sql.active_record” events instrumented during the execution of the block. The callback is unsubscribed automatically after that.</p>
 
+<p>To record <code>started</code> and <code>finished</code> values with monotonic time, specify the optional <code>:monotonic</code> option to the <code>subscribed</code> method. The <code>:monotonic</code> option is set to <code>false</code> by default.</p>
+
+<pre><code>callback = lambda {|name, started, finished, unique_id, payload| ... }
+ActiveSupport::Notifications.subscribed(callback, &quot;sql.active_record&quot;, monotonic: true) do
+  ...
+end
+</code></pre>
+
 <h3 id="module-ActiveSupport::Notifications-label-Manual+Unsubscription">Manual Unsubscription</h3>
 
 <p>The <code>subscribe</code> method returns a subscriber object:</p>
@@ -164,7 +185,7 @@ end
 <pre><code>ActiveSupport::Notifications.unsubscribe(&quot;render&quot;)
 </code></pre>
 
-<p>Subscribers using a regexp or other pattern-matching object will remain subscribed to all events that match their original pattern, unless those events match a string passed to `unsubscribe`:</p>
+<p>Subscribers using a regexp or other pattern-matching object will remain subscribed to all events that match their original pattern, unless those events match a string passed to <code>unsubscribe</code>:</p>
 
 <pre><code>subscriber = ActiveSupport::Notifications.subscribe(/render/) { }
 ActiveSupport::Notifications.unsubscribe(&#39;render_template.action_view&#39;)
@@ -214,6 +235,10 @@ subscriber.matches?(&#39;render_partial.action_view&#39;) # =&gt; true
       
         <li>
           <a href="#method-c-instrumenter">instrumenter</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-monotonic_subscribe">monotonic_subscribe</a>
         </li>
       
         <li>
@@ -290,7 +315,7 @@ subscriber.matches?(&#39;render_partial.action_view&#39;) # =&gt; true
                 
               </p>
               <div id="method-c-instrument_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 178</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 201</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">instrument</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">payload</span> = {})
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">notifier</span>.<span class="ruby-identifier">listening?</span>(<span class="ruby-identifier">name</span>)
     <span class="ruby-identifier">instrumenter</span>.<span class="ruby-identifier">instrument</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">payload</span>) { <span class="ruby-keyword">yield</span> <span class="ruby-identifier">payload</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span> }
@@ -329,9 +354,44 @@ subscriber.matches?(&#39;render_partial.action_view&#39;) # =&gt; true
                 
               </p>
               <div id="method-c-instrumenter_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 226</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 253</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">instrumenter</span>
   <span class="ruby-constant">InstrumentationRegistry</span>.<span class="ruby-identifier">instance</span>.<span class="ruby-identifier">instrumenter_for</span>(<span class="ruby-identifier">notifier</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-monotonic_subscribe">
+            
+              monotonic_subscribe(pattern = nil, callback = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-monotonic_subscribe_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 238</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">monotonic_subscribe</span>(<span class="ruby-identifier">pattern</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">callback</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">notifier</span>.<span class="ruby-identifier">subscribe</span>(<span class="ruby-identifier">pattern</span>, <span class="ruby-identifier">callback</span>, <span class="ruby-value">monotonic:</span> <span class="ruby-keyword">true</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -364,7 +424,7 @@ subscriber.matches?(&#39;render_partial.action_view&#39;) # =&gt; true
                 
               </p>
               <div id="method-c-publish_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 174</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 197</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">publish</span>(<span class="ruby-identifier">name</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>)
   <span class="ruby-identifier">notifier</span>.<span class="ruby-identifier">publish</span>(<span class="ruby-identifier">name</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -376,7 +436,7 @@ subscriber.matches?(&#39;render_partial.action_view&#39;) # =&gt; true
         <div class="method">
           <h3 id="method-c-subscribe">
             
-              subscribe(*args, &amp;block)
+              subscribe(pattern = nil, callback = nil, &amp;block)
             
           </h3>
 
@@ -384,7 +444,7 @@ subscriber.matches?(&#39;render_partial.action_view&#39;) # =&gt; true
             <div class="description">
               <p>Subscribe to a given event name with the passed <code>block</code>.</p>
 
-<p>You can subscribe to events by passing a <a href="../String.html"><code>String</code></a> to match exact event names, or by passing a Regexp to match all events that match a pattern.</p>
+<p>You can subscribe to events by passing a <a href="../String.html"><code>String</code></a> to match exact event names, or by passing a <a href="../Regexp.html"><code>Regexp</code></a> to match all events that match a pattern.</p>
 
 <pre><code>ActiveSupport::Notifications.subscribe(/render/) do |*args|
   @event = ActiveSupport::Notifications::Event.new(*args)
@@ -424,9 +484,9 @@ end
                 
               </p>
               <div id="method-c-subscribe_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 211</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">subscribe</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">notifier</span>.<span class="ruby-identifier">subscribe</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 234</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">subscribe</span>(<span class="ruby-identifier">pattern</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">callback</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">notifier</span>.<span class="ruby-identifier">subscribe</span>(<span class="ruby-identifier">pattern</span>, <span class="ruby-identifier">callback</span>, <span class="ruby-value">monotonic:</span> <span class="ruby-keyword">false</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -436,7 +496,7 @@ end
         <div class="method">
           <h3 id="method-c-subscribed">
             
-              subscribed(callback, *args, &amp;block)
+              subscribed(callback, pattern = nil, monotonic: false, &amp;block)
             
           </h3>
 
@@ -459,9 +519,9 @@ end
                 
               </p>
               <div id="method-c-subscribed_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 215</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">subscribed</span>(<span class="ruby-identifier">callback</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">subscriber</span> = <span class="ruby-identifier">subscribe</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">callback</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 242</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">subscribed</span>(<span class="ruby-identifier">callback</span>, <span class="ruby-identifier">pattern</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-value">monotonic:</span> <span class="ruby-keyword">false</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">subscriber</span> = <span class="ruby-identifier">notifier</span>.<span class="ruby-identifier">subscribe</span>(<span class="ruby-identifier">pattern</span>, <span class="ruby-identifier">callback</span>, <span class="ruby-value">monotonic:</span> <span class="ruby-identifier">monotonic</span>)
   <span class="ruby-keyword">yield</span>
 <span class="ruby-keyword">ensure</span>
   <span class="ruby-identifier">unsubscribe</span>(<span class="ruby-identifier">subscriber</span>)
@@ -497,7 +557,7 @@ end
                 
               </p>
               <div id="method-c-unsubscribe_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 222</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/notifications.rb, line 249</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">unsubscribe</span>(<span class="ruby-identifier">subscriber_or_name</span>)
   <span class="ruby-identifier">notifier</span>.<span class="ruby-identifier">unsubscribe</span>(<span class="ruby-identifier">subscriber_or_name</span>)
 <span class="ruby-keyword">end</span></code></pre>

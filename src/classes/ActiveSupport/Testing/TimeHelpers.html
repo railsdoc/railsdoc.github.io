@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -109,7 +109,7 @@ layout: default
                 
               </p>
               <div id="method-i-after_teardown_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/time_helpers.rb, line 53</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/time_helpers.rb, line 70</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">after_teardown</span>
   <span class="ruby-identifier">travel_back</span>
   <span class="ruby-keyword">super</span>
@@ -161,7 +161,7 @@ Time.current # =&gt; Sun, 09 Jul 2017 15:34:50 EST -05:00
                 
               </p>
               <div id="method-i-freeze_time_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/time_helpers.rb, line 188</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/time_helpers.rb, line 225</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">freeze_time</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">travel_to</span> <span class="ruby-constant">Time</span>.<span class="ruby-identifier">now</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -212,7 +212,7 @@ Time.current # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
                 
               </p>
               <div id="method-i-travel_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/time_helpers.rb, line 76</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/time_helpers.rb, line 93</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">travel</span>(<span class="ruby-identifier">duration</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">travel_to</span> <span class="ruby-constant">Time</span>.<span class="ruby-identifier">now</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">duration</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -233,10 +233,26 @@ Time.current # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
               <p>Returns the current time back to its original state, by removing the stubs added by <code>travel</code>, <code>travel_to</code>, and <code>freeze_time</code>.</p>
 
 <pre><code>Time.current # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
-travel_to Time.zone.local(2004, 11, 24, 01, 04, 44)
+
+travel_to Time.zone.local(2004, 11, 24, 1, 4, 44)
 Time.current # =&gt; Wed, 24 Nov 2004 01:04:44 EST -05:00
+
 travel_back
 Time.current # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
+</code></pre>
+
+<p>This method also accepts a block, which brings the stubs back at the end of the block:</p>
+
+<pre><code>Time.current # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
+
+travel_to Time.zone.local(2004, 11, 24, 1, 4, 44)
+Time.current # =&gt; Wed, 24 Nov 2004 01:04:44 EST -05:00
+
+travel_back do
+  Time.current # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
+end
+
+Time.current # =&gt; Wed, 24 Nov 2004 01:04:44 EST -05:00
 </code></pre>
             </div>
           
@@ -258,9 +274,14 @@ Time.current # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
                 
               </p>
               <div id="method-i-travel_back_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/time_helpers.rb, line 167</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/time_helpers.rb, line 199</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">travel_back</span>
+  <span class="ruby-identifier">stubbed_time</span> = <span class="ruby-constant">Time</span>.<span class="ruby-identifier">current</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">simple_stubs</span>.<span class="ruby-identifier">stubbed?</span>
+
   <span class="ruby-identifier">simple_stubs</span>.<span class="ruby-identifier">unstub_all!</span>
+  <span class="ruby-keyword">yield</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+<span class="ruby-keyword">ensure</span>
+  <span class="ruby-identifier">travel_to</span> <span class="ruby-identifier">stubbed_time</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">stubbed_time</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -279,7 +300,7 @@ Time.current # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
               <p>Changes current time to the given time by stubbing <code>Time.now</code>, <code>Date.today</code>, and <code>DateTime.now</code> to return the time or date passed into this method. The stubs are automatically removed at the end of the test.</p>
 
 <pre><code>Time.current     # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
-travel_to Time.zone.local(2004, 11, 24, 01, 04, 44)
+travel_to Time.zone.local(2004, 11, 24, 1, 4, 44)
 Time.current     # =&gt; Wed, 24 Nov 2004 01:04:44 EST -05:00
 Date.current     # =&gt; Wed, 24 Nov 2004
 DateTime.current # =&gt; Wed, 24 Nov 2004 01:04:44 -0500
@@ -292,7 +313,7 @@ DateTime.current # =&gt; Wed, 24 Nov 2004 01:04:44 -0500
 <p>This method also accepts a block, which will return the current time back to its original state at the end of the block:</p>
 
 <pre><code>Time.current # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
-travel_to Time.zone.local(2004, 11, 24, 01, 04, 44) do
+travel_to Time.zone.local(2004, 11, 24, 1, 4, 44) do
   Time.current # =&gt; Wed, 24 Nov 2004 01:04:44 EST -05:00
 end
 Time.current # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
@@ -313,7 +334,7 @@ Time.current # =&gt; Sat, 09 Nov 2013 15:34:49 EST -05:00
                 
               </p>
               <div id="method-i-travel_to_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/time_helpers.rb, line 111</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/time_helpers.rb, line 128</span>
       <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">travel_to</span>(<span class="ruby-identifier">date_or_time</span>)
         <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">simple_stubs</span>.<span class="ruby-identifier">stubbing</span>(<span class="ruby-constant">Time</span>, <span class="ruby-value">:now</span>)
           <span class="ruby-identifier">travel_to_nested_block_call</span> = <span class="ruby-identifier">&lt;&lt;~MSG</span>

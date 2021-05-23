@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -45,6 +45,10 @@ layout: default
   
     <h2 id="methods">Methods</h2>
     <ul>
+      
+        <li>
+          <a href="#method-i-missing">missing</a>
+        </li>
       
         <li>
           <a href="#method-c-new">new</a>
@@ -98,7 +102,7 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 20</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 18</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">scope</span>)
   <span class="ruby-ivar">@scope</span> = <span class="ruby-identifier">scope</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -111,6 +115,65 @@ layout: default
     
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
+        <div class="method">
+          <h3 id="method-i-missing">
+            
+              missing(*args)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a new relation with left outer joins and where clause to identify missing relations.</p>
+
+<p>For example, posts that are missing a related author:</p>
+
+<pre><code>Post.where.missing(:author)
+# SELECT &quot;posts&quot;.* FROM &quot;posts&quot;
+# LEFT OUTER JOIN &quot;authors&quot; ON &quot;authors&quot;.&quot;id&quot; = &quot;posts&quot;.&quot;author_id&quot;
+# WHERE &quot;authors&quot;.&quot;id&quot; IS NULL
+</code></pre>
+
+<p>Additionally, multiple relations can be combined. This will return posts that are missing both an author and any comments:</p>
+
+<pre><code>Post.where.missing(:author, :comments)
+# SELECT &quot;posts&quot;.* FROM &quot;posts&quot;
+# LEFT OUTER JOIN &quot;authors&quot; ON &quot;authors&quot;.&quot;id&quot; = &quot;posts&quot;.&quot;author_id&quot;
+# LEFT OUTER JOIN &quot;comments&quot; ON &quot;comments&quot;.&quot;post_id&quot; = &quot;posts&quot;.&quot;id&quot;
+# WHERE &quot;authors&quot;.&quot;id&quot; IS NULL AND &quot;comments&quot;.&quot;id&quot; IS NULL
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-missing_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 71</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">missing</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>)
+  <span class="ruby-identifier">args</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">arg</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">reflection</span> = <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">klass</span>.<span class="ruby-identifier">_reflect_on_association</span>(<span class="ruby-identifier">arg</span>)
+    <span class="ruby-identifier">opts</span> = { <span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">table_name</span> <span class="ruby-operator">=&gt;</span> { <span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">association_primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">nil</span> } }
+    <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">left_outer_joins!</span>(<span class="ruby-identifier">arg</span>)
+    <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">where!</span>(<span class="ruby-identifier">opts</span>)
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-ivar">@scope</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
         <div class="method">
           <h3 id="method-i-not">
             
@@ -138,6 +201,9 @@ User.where.not(name: nil)
 
 User.where.not(name: %w(Ko1 Nobu))
 # SELECT * FROM users WHERE name NOT IN (&#39;Ko1&#39;, &#39;Nobu&#39;)
+
+User.where.not(name: &quot;Jon&quot;, role: &quot;admin&quot;)
+# SELECT * FROM users WHERE NOT (name == &#39;Jon&#39; AND role == &#39;admin&#39;)
 </code></pre>
             </div>
           
@@ -155,35 +221,14 @@ User.where.not(name: %w(Ko1 Nobu))
                 
               </p>
               <div id="method-i-not_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 44</span>
-      <span class="ruby-keyword">def</span> <span class="ruby-keyword">not</span>(<span class="ruby-identifier ruby-title">opts</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">rest</span>)
-        <span class="ruby-identifier">opts</span> = <span class="ruby-identifier">sanitize_forbidden_attributes</span>(<span class="ruby-identifier">opts</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 45</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">not</span>(<span class="ruby-identifier ruby-title">opts</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">rest</span>)
+  <span class="ruby-identifier">where_clause</span> = <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:build_where_clause</span>, <span class="ruby-identifier">opts</span>, <span class="ruby-identifier">rest</span>)
 
-        <span class="ruby-identifier">where_clause</span> = <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:where_clause_factory</span>).<span class="ruby-identifier">build</span>(<span class="ruby-identifier">opts</span>, <span class="ruby-identifier">rest</span>)
+  <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">where_clause</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">where_clause</span>.<span class="ruby-identifier">invert</span>
 
-        <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">references!</span>(<span class="ruby-constant">PredicateBuilder</span>.<span class="ruby-identifier">references</span>(<span class="ruby-identifier">opts</span>)) <span class="ruby-keyword">if</span> <span class="ruby-constant">Hash</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">opts</span>
-
-        <span class="ruby-keyword">if</span> <span class="ruby-identifier">not_behaves_as_nor?</span>(<span class="ruby-identifier">opts</span>)
-          <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;~MSG</span>.<span class="ruby-identifier">squish</span>)
-<span class="ruby-value">            NOT conditions will no longer behave as NOR in Rails 6.1.
-            To continue using NOR conditions, NOT each condition individually
-            (`#{
-              opts.flat_map { |key, value|
-                if value.is_a?(Hash) &amp;&amp; value.size &gt; 1
-                  value.map { |k, v| &quot;.where.not(#{key.inspect} =&gt; { #{k.inspect} =&gt; ... })&quot; }
-                else
-                  &quot;.where.not(#{key.inspect} =&gt; ...)&quot;
-                end
-              }.join
-            }`).
-</span><span class="ruby-identifier">          MSG</span>
-          <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">where_clause</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">where_clause</span>.<span class="ruby-identifier">invert</span>(<span class="ruby-value">:nor</span>)
-        <span class="ruby-keyword">else</span>
-          <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">where_clause</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">where_clause</span>.<span class="ruby-identifier">invert</span>
-        <span class="ruby-keyword">end</span>
-
-        <span class="ruby-ivar">@scope</span>
-      <span class="ruby-keyword">end</span></code></pre>
+  <span class="ruby-ivar">@scope</span>
+<span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
