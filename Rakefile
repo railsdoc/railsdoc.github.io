@@ -6,6 +6,7 @@ require 'bundler'
 SOURCE_DIR = "src"
 INDEX_HTML = 'files/railties/RDOC_MAIN_rdoc.html'
 
+desc "Build railsdoc"
 task :build do
   generate_rails_rdoc
   generate_src
@@ -13,10 +14,12 @@ task :build do
   sh 'bundle exec jekyll build'
 end
 
+desc "Switch to default Rails version"
 task :switch_default_rails do
   switch_rails(config["default_rails_version"])
 end
 
+desc "Build another version's railsdoc"
 task :build_multi do
   config["rails_versions"].each do |version, detail|
     dir = "#{SOURCE_DIR}/#{version}"
