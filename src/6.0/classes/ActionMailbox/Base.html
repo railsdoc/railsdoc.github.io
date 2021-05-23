@@ -1,0 +1,305 @@
+---
+title: ActionMailbox::Base
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionMailbox::Base
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionmailbox/lib/action_mailbox/base_rb.html">actionmailbox/lib/action_mailbox/base.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>The base class for all application mailboxes. Not intended to be inherited from directly. Inherit from <code>ApplicationMailbox</code> instead, as that&#39;s where the app-specific routing is configured. This routing is specified in the following ways:</p>
+
+<pre><code>class ApplicationMailbox &lt; ActionMailbox::Base
+  # Any of the recipients of the mail (whether to, cc, bcc) are matched against the regexp.
+  routing /^replies@/i =&gt; :replies
+
+  # Any of the recipients of the mail (whether to, cc, bcc) needs to be an exact match for the string.
+  routing &quot;help@example.com&quot; =&gt; :help
+
+  # Any callable (proc, lambda, etc) object is passed the inbound_email record and is a match if true.
+  routing -&gt;(inbound_email) { inbound_email.mail.to.size &gt; 2 } =&gt; :multiple_recipients
+
+  # Any object responding to #match? is called with the inbound_email record as an argument. Match if true.
+  routing CustomAddress.new =&gt; :custom
+
+  # Any inbound_email that has not been already matched will be sent to the BackstopMailbox.
+  routing :all =&gt; :backstop
+end
+</code></pre>
+
+<p>Application mailboxes need to overwrite the <code>#process</code> method, which is invoked by the framework after callbacks have been run. The callbacks available are: <code>before_processing</code>, <code>after_processing</code>, and <code>around_processing</code>. The primary use case is ensure certain preconditions to processing are fulfilled using <code>before_processing</code> callbacks.</p>
+
+<p>If a precondition fails to be met, you can halt the processing using the <code>#bounced!</code> method, which will silently prevent any further processing, but not actually send out any bounce notice. You can also pair this behavior with the invocation of an Action Mailer class responsible for sending out an actual bounce email. This is done using the <code>#bounce_with</code> method, which takes the mail object returned by an Action Mailer method, like so:</p>
+
+<pre><code>class ForwardsMailbox &lt; ApplicationMailbox
+  before_processing :ensure_sender_is_a_user
+
+  private
+    def ensure_sender_is_a_user
+      unless User.exist?(email_address: mail.from)
+        bounce_with UserRequiredMailer.missing(inbound_email)
+      end
+    end
+end
+</code></pre>
+
+<p>During the processing of the inbound email, the status will be tracked. Before processing begins, the email will normally have the <code>pending</code> status. Once processing begins, just before callbacks and the <code>#process</code> method is called, the status is changed to <code>processing</code>. If processing is allowed to complete, the status is changed to <code>delivered</code>. If a bounce is triggered, then <code>bounced</code>. If an unhandled exception is bubbled up, then <code>failed</code>.</p>
+
+<p>Exceptions can be handled at the class level using the familiar <code>Rescuable</code> approach:</p>
+
+<pre><code>class ForwardsMailbox &lt; ApplicationMailbox
+  rescue_from(ApplicationSpecificVerificationError) { bounced! }
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-bounce_with">bounce_with</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-process">process</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-receive">receive</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="../ActiveSupport/Rescuable.html">
+              ActiveSupport::Rescuable
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>inbound_email</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(inbound_email)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailbox/lib/action_mailbox/base.rb, line 76</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">inbound_email</span>)
+  <span class="ruby-ivar">@inbound_email</span> = <span class="ruby-identifier">inbound_email</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-receive">
+            
+              receive(inbound_email)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-receive_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailbox/lib/action_mailbox/base.rb, line 72</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">receive</span>(<span class="ruby-identifier">inbound_email</span>)
+  <span class="ruby-identifier">new</span>(<span class="ruby-identifier">inbound_email</span>).<span class="ruby-identifier">perform_processing</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-bounce_with">
+            
+              bounce_with(message)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Enqueues the given <code>message</code> for delivery and changes the inbound email&#39;s status to <code>:bounced</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-bounce_with_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailbox/lib/action_mailbox/base.rb, line 101</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">bounce_with</span>(<span class="ruby-identifier">message</span>)
+  <span class="ruby-identifier">inbound_email</span>.<span class="ruby-identifier">bounced!</span>
+  <span class="ruby-identifier">message</span>.<span class="ruby-identifier">deliver_later</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-process">
+            
+              process()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-process_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailbox/lib/action_mailbox/base.rb, line 91</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">process</span>
+  <span class="ruby-comment"># Overwrite in subclasses</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

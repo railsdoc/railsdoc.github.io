@@ -1,0 +1,331 @@
+---
+title: ActiveRecord::Attributes::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Attributes::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/attributes_rb.html">activerecord/lib/active_record/attributes.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-attribute">attribute</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-define_attribute">define_attribute</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-attribute">
+            
+              attribute(name, cast_type = Type::Value.new, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Defines an attribute with a type on this model. It will override the type of existing attributes if needed. This allows control over how values are converted to and from SQL when assigned to a model. It also changes the behavior of values passed to <a href="../QueryMethods.html#method-i-where">ActiveRecord::Base.where</a>. This will let you use your domain objects across much of Active Record, without having to rely on implementation details or monkey patching.</p>
+
+<p><code>name</code> The name of the methods to define attribute methods for, and the column which this will persist to.</p>
+
+<p><code>cast_type</code> A symbol such as <code>:string</code> or <code>:integer</code>, or a type object to be used for this attribute. See the examples below for more information about providing custom type objects.</p>
+
+<h4 id="method-i-attribute-label-Options">Options</h4>
+
+<p>The following options are accepted:</p>
+
+<p><code>default</code> The default value to use when no value is provided. If this option is not passed, the previous default value (if any) will be used. Otherwise, the default will be <code>nil</code>.</p>
+
+<p><code>array</code> (PostgreSQL only) specifies that the type should be an array (see the examples below).</p>
+
+<p><code>range</code> (PostgreSQL only) specifies that the type should be a range (see the examples below).</p>
+
+<p>When using a symbol for <code>cast_type</code>, extra options are forwarded to the constructor of the type object.</p>
+
+<h4 id="method-i-attribute-label-Examples">Examples</h4>
+
+<p>The type detected by Active Record can be overridden.</p>
+
+<pre><code># db/schema.rb
+create_table :store_listings, force: true do |t|
+  t.decimal :price_in_cents
+end
+
+# app/models/store_listing.rb
+class StoreListing &lt; ActiveRecord::Base
+end
+
+store_listing = StoreListing.new(price_in_cents: &#39;10.1&#39;)
+
+# before
+store_listing.price_in_cents # =&gt; BigDecimal(10.1)
+
+class StoreListing &lt; ActiveRecord::Base
+  attribute :price_in_cents, :integer
+end
+
+# after
+store_listing.price_in_cents # =&gt; 10
+</code></pre>
+
+<p>A default can also be provided.</p>
+
+<pre><code># db/schema.rb
+create_table :store_listings, force: true do |t|
+  t.string :my_string, default: &quot;original default&quot;
+end
+
+StoreListing.new.my_string # =&gt; &quot;original default&quot;
+
+# app/models/store_listing.rb
+class StoreListing &lt; ActiveRecord::Base
+  attribute :my_string, :string, default: &quot;new default&quot;
+end
+
+StoreListing.new.my_string # =&gt; &quot;new default&quot;
+
+class Product &lt; ActiveRecord::Base
+  attribute :my_default_proc, :datetime, default: -&gt; { Time.now }
+end
+
+Product.new.my_default_proc # =&gt; 2015-05-30 11:04:48 -0600
+sleep 1
+Product.new.my_default_proc # =&gt; 2015-05-30 11:04:49 -0600
+</code></pre>
+
+<p>Attributes do not need to be backed by a database column.</p>
+
+<pre><code># app/models/my_model.rb
+class MyModel &lt; ActiveRecord::Base
+  attribute :my_string, :string
+  attribute :my_int_array, :integer, array: true
+  attribute :my_float_range, :float, range: true
+end
+
+model = MyModel.new(
+  my_string: &quot;string&quot;,
+  my_int_array: [&quot;1&quot;, &quot;2&quot;, &quot;3&quot;],
+  my_float_range: &quot;[1,3.5]&quot;,
+)
+model.attributes
+# =&gt;
+  {
+    my_string: &quot;string&quot;,
+    my_int_array: [1, 2, 3],
+    my_float_range: 1.0..3.5
+  }
+</code></pre>
+
+<p>Passing options to the type constructor</p>
+
+<pre><code># app/models/my_model.rb
+class MyModel &lt; ActiveRecord::Base
+  attribute :small_int, :integer, limit: 2
+end
+
+MyModel.create(small_int: 65537)
+# =&gt; Error: 65537 is out of range for the limit of two bytes
+</code></pre>
+
+<h4 id="method-i-attribute-label-Creating+Custom+Types">Creating Custom Types</h4>
+
+<p>Users may also define their own custom types, as long as they respond to the methods defined on the value type. The method <code>deserialize</code> or <code>cast</code> will be called on your type object, with raw input from the database or from your controllers. See <a href="../../ActiveModel/Type/Value.html"><code>ActiveModel::Type::Value</code></a> for the expected API. It is recommended that your type objects inherit from an existing type, or from <a href="../../ActiveModel/Type/Value.html"><code>ActiveRecord::Type::Value</code></a></p>
+
+<pre><code>class MoneyType &lt; ActiveRecord::Type::Integer
+  def cast(value)
+    if !value.kind_of?(Numeric) &amp;&amp; value.include?(&#39;$&#39;)
+      price_in_dollars = value.gsub(/\$/, &#39;&#39;).to_f
+      super(price_in_dollars * 100)
+    else
+      super
+    end
+  end
+end
+
+# config/initializers/types.rb
+ActiveRecord::Type.register(:money, MoneyType)
+
+# app/models/store_listing.rb
+class StoreListing &lt; ActiveRecord::Base
+  attribute :price_in_cents, :money
+end
+
+store_listing = StoreListing.new(price_in_cents: &#39;$10.00&#39;)
+store_listing.price_in_cents # =&gt; 1000
+</code></pre>
+
+<p>For more details on creating custom types, see the documentation for <a href="../../ActiveModel/Type/Value.html"><code>ActiveModel::Type::Value</code></a>. For more details on registering your types to be referenced by a symbol, see <a href="../Type.html#method-c-register"><code>ActiveRecord::Type.register</code></a>. You can also pass a type object directly, in place of a symbol.</p>
+
+<h4 id="method-i-attribute-label-Querying">Querying</h4>
+
+<p>When <a href="../QueryMethods.html#method-i-where">ActiveRecord::Base.where</a> is called, it will use the type defined by the model class to convert the value to SQL, calling <code>serialize</code> on your type object. For example:</p>
+
+<pre><code>class Money &lt; Struct.new(:amount, :currency)
+end
+
+class MoneyType &lt; Type::Value
+  def initialize(currency_converter:)
+    @currency_converter = currency_converter
+  end
+
+  # value will be the result of +deserialize+ or
+  # +cast+. Assumed to be an instance of +Money+ in
+  # this case.
+  def serialize(value)
+    value_in_bitcoins = @currency_converter.convert_to_bitcoins(value)
+    value_in_bitcoins.amount
+  end
+end
+
+# config/initializers/types.rb
+ActiveRecord::Type.register(:money, MoneyType)
+
+# app/models/product.rb
+class Product &lt; ActiveRecord::Base
+  currency_converter = ConversionRatesFromTheInternet.new
+  attribute :price_in_bitcoins, :money, currency_converter: currency_converter
+end
+
+Product.where(price_in_bitcoins: Money.new(5, &quot;USD&quot;))
+# =&gt; SELECT * FROM products WHERE price_in_bitcoins = 0.02230
+
+Product.where(price_in_bitcoins: Money.new(5, &quot;GBP&quot;))
+# =&gt; SELECT * FROM products WHERE price_in_bitcoins = 0.03412
+</code></pre>
+
+<h4 id="method-i-attribute-label-Dirty+Tracking">Dirty Tracking</h4>
+
+<p>The type of an attribute is given the opportunity to change how dirty tracking is performed. The methods <code>changed?</code> and <code>changed_in_place?</code> will be called from <a href="../../ActiveModel/Dirty.html"><code>ActiveModel::Dirty</code></a>. See the documentation for those methods in <a href="../../ActiveModel/Type/Value.html"><code>ActiveModel::Type::Value</code></a> for more details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-attribute_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attributes.rb, line 208</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">cast_type</span> = <span class="ruby-constant">Type</span><span class="ruby-operator">::</span><span class="ruby-constant">Value</span>.<span class="ruby-identifier">new</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-identifier">name</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>
+  <span class="ruby-identifier">reload_schema_from_cache</span>
+
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">attributes_to_define_after_schema_loads</span> =
+    <span class="ruby-identifier">attributes_to_define_after_schema_loads</span>.<span class="ruby-identifier">merge</span>(
+      <span class="ruby-identifier">name</span> <span class="ruby-operator">=&gt;</span> [<span class="ruby-identifier">cast_type</span>, <span class="ruby-identifier">options</span>]
+    )
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-define_attribute">
+            
+              define_attribute( name, cast_type, default: NO_DEFAULT_PROVIDED, user_provided_default: true )
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>This is the low level API which sits beneath <code>attribute</code>. It only accepts type objects, and will do its work immediately instead of waiting for the schema to load. Automatic schema detection and <a href="ClassMethods.html#method-i-attribute"><code>ClassMethods#attribute</code></a> both call this under the hood. While this method is provided so it can be used by plugin authors, application code should probably use <a href="ClassMethods.html#method-i-attribute"><code>ClassMethods#attribute</code></a>.</p>
+
+<p><code>name</code> The name of the attribute being defined. Expected to be a <code>String</code>.</p>
+
+<p><code>cast_type</code> The type object to use for this attribute.</p>
+
+<p><code>default</code> The default value to use when no value is provided. If this option is not passed, the previous default value (if any) will be used. Otherwise, the default will be <code>nil</code>. A proc can also be passed, and will be called once each time a new value is needed.</p>
+
+<p><code>user_provided_default</code> Whether the default value should be cast using <code>cast</code> or <code>deserialize</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-define_attribute_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attributes.rb, line 236</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">define_attribute</span>(
+  <span class="ruby-identifier">name</span>,
+  <span class="ruby-identifier">cast_type</span>,
+  <span class="ruby-value">default:</span> <span class="ruby-constant">NO_DEFAULT_PROVIDED</span>,
+  <span class="ruby-value">user_provided_default:</span> <span class="ruby-keyword">true</span>
+)
+  <span class="ruby-identifier">attribute_types</span>[<span class="ruby-identifier">name</span>] = <span class="ruby-identifier">cast_type</span>
+  <span class="ruby-identifier">define_default_attribute</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">default</span>, <span class="ruby-identifier">cast_type</span>, <span class="ruby-value">from_user:</span> <span class="ruby-identifier">user_provided_default</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

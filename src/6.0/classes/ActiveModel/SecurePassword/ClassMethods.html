@@ -1,0 +1,182 @@
+---
+title: ActiveModel::SecurePassword::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveModel::SecurePassword::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activemodel/lib/active_model/secure_password_rb.html">activemodel/lib/active_model/secure_password.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-has_secure_password">has_secure_password</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="../Validations.html">
+              ActiveModel::Validations
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-has_secure_password">
+            
+              has_secure_password(attribute = :password, validations: true)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Adds methods to set and authenticate against a BCrypt password. This mechanism requires you to have a <code>XXX_digest</code> attribute. Where <code>XXX</code> is the attribute name of your desired password.</p>
+
+<p>The following validations are added automatically:</p>
+<ul><li>
+<p>Password must be present on creation</p>
+</li><li>
+<p>Password length should be less than or equal to 72 bytes</p>
+</li><li>
+<p>Confirmation of password (using a <code>XXX_confirmation</code> attribute)</p>
+</li></ul>
+
+<p>If confirmation validation is not needed, simply leave out the value for <code>XXX_confirmation</code> (i.e. don&#39;t provide a form field for it). When this attribute has a <code>nil</code> value, the validation will not be triggered.</p>
+
+<p>For further customizability, it is possible to suppress the default validations by passing <code>validations: false</code> as an argument.</p>
+
+<p>Add bcrypt (~&gt; 3.1.7) to Gemfile to use <a href="ClassMethods.html#method-i-has_secure_password"><code>has_secure_password</code></a>:</p>
+
+<pre><code>gem &#39;bcrypt&#39;, &#39;~&gt; 3.1.7&#39;
+</code></pre>
+
+<p>Example using Active Record (which automatically includes <a href="../SecurePassword.html"><code>ActiveModel::SecurePassword</code></a>):</p>
+
+<pre><code># Schema: User(name:string, password_digest:string, recovery_password_digest:string)
+class User &lt; ActiveRecord::Base
+  has_secure_password
+  has_secure_password :recovery_password, validations: false
+end
+
+user = User.new(name: &#39;david&#39;, password: &#39;&#39;, password_confirmation: &#39;nomatch&#39;)
+user.save                                                       # =&gt; false, password required
+user.password = &#39;mUc3m00RsqyRe&#39;
+user.save                                                       # =&gt; false, confirmation doesn&#39;t match
+user.password_confirmation = &#39;mUc3m00RsqyRe&#39;
+user.save                                                       # =&gt; true
+user.recovery_password = &quot;42password&quot;
+user.recovery_password_digest                                   # =&gt; &quot;$2a$04$iOfhwahFymCs5weB3BNH/uXkTG65HR.qpW.bNhEjFP3ftli3o5DQC&quot;
+user.save                                                       # =&gt; true
+user.authenticate(&#39;notright&#39;)                                   # =&gt; false
+user.authenticate(&#39;mUc3m00RsqyRe&#39;)                              # =&gt; user
+user.authenticate_recovery_password(&#39;42password&#39;)               # =&gt; user
+User.find_by(name: &#39;david&#39;).try(:authenticate, &#39;notright&#39;)      # =&gt; false
+User.find_by(name: &#39;david&#39;).try(:authenticate, &#39;mUc3m00RsqyRe&#39;) # =&gt; user
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-has_secure_password_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/secure_password.rb, line 61</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_secure_password</span>(<span class="ruby-identifier">attribute</span> = <span class="ruby-value">:password</span>, <span class="ruby-value">validations:</span> <span class="ruby-keyword">true</span>)
+  <span class="ruby-comment"># Load bcrypt gem only when has_secure_password is used.</span>
+  <span class="ruby-comment"># This is to avoid ActiveModel (and by extension the entire framework)</span>
+  <span class="ruby-comment"># being dependent on a binary library.</span>
+  <span class="ruby-keyword">begin</span>
+    <span class="ruby-identifier">require</span> <span class="ruby-string">&quot;bcrypt&quot;</span>
+  <span class="ruby-keyword">rescue</span> <span class="ruby-constant">LoadError</span>
+    <span class="ruby-identifier">$stderr</span>.<span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;You don&#39;t have bcrypt installed in your application. Please add it to your Gemfile and run bundle install&quot;</span>
+    <span class="ruby-identifier">raise</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">include</span> <span class="ruby-constant">InstanceMethodsOnActivation</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">attribute</span>)
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">validations</span>
+    <span class="ruby-identifier">include</span> <span class="ruby-constant">ActiveModel</span><span class="ruby-operator">::</span><span class="ruby-constant">Validations</span>
+
+    <span class="ruby-comment"># This ensures the model has a password by checking whether the password_digest</span>
+    <span class="ruby-comment"># is present, so that this works with both new and existing records. However,</span>
+    <span class="ruby-comment"># when there is an error, the message is added to the password attribute instead</span>
+    <span class="ruby-comment"># so that the error message will make sense to the end-user.</span>
+    <span class="ruby-identifier">validate</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">record</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">record</span>.<span class="ruby-identifier">errors</span>.<span class="ruby-identifier">add</span>(<span class="ruby-identifier">attribute</span>, <span class="ruby-value">:blank</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">send</span>(<span class="ruby-node">&quot;#{attribute}_digest&quot;</span>).<span class="ruby-identifier">present?</span>
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-identifier">validates_length_of</span> <span class="ruby-identifier">attribute</span>, <span class="ruby-value">maximum:</span> <span class="ruby-constant">ActiveModel</span><span class="ruby-operator">::</span><span class="ruby-constant">SecurePassword</span><span class="ruby-operator">::</span><span class="ruby-constant">MAX_PASSWORD_LENGTH_ALLOWED</span>
+    <span class="ruby-identifier">validates_confirmation_of</span> <span class="ruby-identifier">attribute</span>, <span class="ruby-value">allow_blank:</span> <span class="ruby-keyword">true</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

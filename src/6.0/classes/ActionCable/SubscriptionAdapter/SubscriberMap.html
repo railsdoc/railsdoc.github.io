@@ -1,0 +1,368 @@
+---
+title: ActionCable::SubscriptionAdapter::SubscriberMap
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionCable::SubscriptionAdapter::SubscriberMap
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actioncable/lib/action_cable/subscription_adapter/subscriber_map_rb.html">actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-add_channel">add_channel</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-add_subscriber">add_subscriber</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-broadcast">broadcast</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-invoke_callback">invoke_callback</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-remove_channel">remove_channel</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-remove_subscriber">remove_subscriber</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 6</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>
+  <span class="ruby-ivar">@subscribers</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">h</span>, <span class="ruby-identifier">k</span><span class="ruby-operator">|</span> <span class="ruby-identifier">h</span>[<span class="ruby-identifier">k</span>] = [] }
+  <span class="ruby-ivar">@sync</span> = <span class="ruby-constant">Mutex</span>.<span class="ruby-identifier">new</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-add_channel">
+            
+              add_channel(channel, on_success)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-add_channel_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 47</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_channel</span>(<span class="ruby-identifier">channel</span>, <span class="ruby-identifier">on_success</span>)
+  <span class="ruby-identifier">on_success</span>.<span class="ruby-identifier">call</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">on_success</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-add_subscriber">
+            
+              add_subscriber(channel, subscriber, on_success)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-add_subscriber_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 11</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_subscriber</span>(<span class="ruby-identifier">channel</span>, <span class="ruby-identifier">subscriber</span>, <span class="ruby-identifier">on_success</span>)
+  <span class="ruby-ivar">@sync</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">new_channel</span> = <span class="ruby-operator">!</span><span class="ruby-ivar">@subscribers</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-identifier">channel</span>)
+
+    <span class="ruby-ivar">@subscribers</span>[<span class="ruby-identifier">channel</span>] <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">subscriber</span>
+
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">new_channel</span>
+      <span class="ruby-identifier">add_channel</span> <span class="ruby-identifier">channel</span>, <span class="ruby-identifier">on_success</span>
+    <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">on_success</span>
+      <span class="ruby-identifier">on_success</span>.<span class="ruby-identifier">call</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-broadcast">
+            
+              broadcast(channel, message)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-broadcast_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 36</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">broadcast</span>(<span class="ruby-identifier">channel</span>, <span class="ruby-identifier">message</span>)
+  <span class="ruby-identifier">list</span> = <span class="ruby-ivar">@sync</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-operator">!</span><span class="ruby-ivar">@subscribers</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-identifier">channel</span>)
+    <span class="ruby-ivar">@subscribers</span>[<span class="ruby-identifier">channel</span>].<span class="ruby-identifier">dup</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">list</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">subscriber</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">invoke_callback</span>(<span class="ruby-identifier">subscriber</span>, <span class="ruby-identifier">message</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-invoke_callback">
+            
+              invoke_callback(callback, message)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-invoke_callback_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 54</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">invoke_callback</span>(<span class="ruby-identifier">callback</span>, <span class="ruby-identifier">message</span>)
+  <span class="ruby-identifier">callback</span>.<span class="ruby-identifier">call</span> <span class="ruby-identifier">message</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-remove_channel">
+            
+              remove_channel(channel)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-remove_channel_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 51</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_channel</span>(<span class="ruby-identifier">channel</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-remove_subscriber">
+            
+              remove_subscriber(channel, subscriber)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-remove_subscriber_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 25</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_subscriber</span>(<span class="ruby-identifier">channel</span>, <span class="ruby-identifier">subscriber</span>)
+  <span class="ruby-ivar">@sync</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-ivar">@subscribers</span>[<span class="ruby-identifier">channel</span>].<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">subscriber</span>)
+
+    <span class="ruby-keyword">if</span> <span class="ruby-ivar">@subscribers</span>[<span class="ruby-identifier">channel</span>].<span class="ruby-identifier">empty?</span>
+      <span class="ruby-ivar">@subscribers</span>.<span class="ruby-identifier">delete</span> <span class="ruby-identifier">channel</span>
+      <span class="ruby-identifier">remove_channel</span> <span class="ruby-identifier">channel</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,358 @@
+---
+title: ActiveSupport::DescendantsTracker
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::DescendantsTracker
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/descendants_tracker_rb.html">activesupport/lib/active_support/descendants_tracker.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>This module provides an internal implementation to track descendants which is faster than iterating through ObjectSpace.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-clear">clear</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-descendants">descendants</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-descendants">descendants</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-direct_descendants">direct_descendants</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-direct_descendants">direct_descendants</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-inherited">inherited</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-store_inherited">store_inherited</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-clear">
+            
+              clear()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-clear_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/descendants_tracker.rb, line 23</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-keyword">defined?</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Dependencies</span>
+    <span class="ruby-identifier">@@direct_descendants</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">klass</span>, <span class="ruby-identifier">descendants</span><span class="ruby-operator">|</span>
+      <span class="ruby-keyword">if</span> <span class="ruby-constant">Dependencies</span>.<span class="ruby-identifier">autoloaded?</span>(<span class="ruby-identifier">klass</span>)
+        <span class="ruby-identifier">@@direct_descendants</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">klass</span>)
+      <span class="ruby-keyword">else</span>
+        <span class="ruby-identifier">descendants</span>.<span class="ruby-identifier">reject!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">v</span><span class="ruby-operator">|</span> <span class="ruby-constant">Dependencies</span>.<span class="ruby-identifier">autoloaded?</span>(<span class="ruby-identifier">v</span>) }
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">@@direct_descendants</span>.<span class="ruby-identifier">clear</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-descendants">
+            
+              descendants(klass)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-descendants_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/descendants_tracker.rb, line 17</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">descendants</span>(<span class="ruby-identifier">klass</span>)
+  <span class="ruby-identifier">arr</span> = []
+  <span class="ruby-identifier">accumulate_descendants</span>(<span class="ruby-identifier">klass</span>, <span class="ruby-identifier">arr</span>)
+  <span class="ruby-identifier">arr</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-direct_descendants">
+            
+              direct_descendants(klass)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-direct_descendants_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/descendants_tracker.rb, line 12</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">direct_descendants</span>(<span class="ruby-identifier">klass</span>)
+  <span class="ruby-identifier">descendants</span> = <span class="ruby-identifier">@@direct_descendants</span>[<span class="ruby-identifier">klass</span>]
+  <span class="ruby-identifier">descendants</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">descendants</span>.<span class="ruby-identifier">to_a</span> <span class="ruby-operator">:</span> []
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-store_inherited">
+            
+              store_inherited(klass, descendant)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>This is the only method that is not thread safe, but is only ever called during the eager loading phase.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-store_inherited_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/descendants_tracker.rb, line 39</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">store_inherited</span>(<span class="ruby-identifier">klass</span>, <span class="ruby-identifier">descendant</span>)
+  (<span class="ruby-identifier">@@direct_descendants</span>[<span class="ruby-identifier">klass</span>] <span class="ruby-operator">||=</span> <span class="ruby-constant">DescendantsArray</span>.<span class="ruby-identifier">new</span>) <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">descendant</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-descendants">
+            
+              descendants()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-descendants_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/descendants_tracker.rb, line 63</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">descendants</span>
+  <span class="ruby-constant">DescendantsTracker</span>.<span class="ruby-identifier">descendants</span>(<span class="ruby-keyword">self</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-direct_descendants">
+            
+              direct_descendants()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-direct_descendants_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/descendants_tracker.rb, line 59</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">direct_descendants</span>
+  <span class="ruby-constant">DescendantsTracker</span>.<span class="ruby-identifier">direct_descendants</span>(<span class="ruby-keyword">self</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-inherited">
+            
+              inherited(base)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-inherited_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/descendants_tracker.rb, line 54</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">inherited</span>(<span class="ruby-identifier">base</span>)
+  <span class="ruby-constant">DescendantsTracker</span>.<span class="ruby-identifier">store_inherited</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">base</span>)
+  <span class="ruby-keyword">super</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
