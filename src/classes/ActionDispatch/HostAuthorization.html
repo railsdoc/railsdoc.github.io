@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -29,9 +29,14 @@ layout: default
   
     <div class="description">
       
-<p>This middleware guards from DNS rebinding attacks by explicitly permitting the hosts a request can be sent to.</p>
+<p>This middleware guards from DNS rebinding attacks by explicitly permitting the hosts a request can be sent to, and is passed the options set in <code>config.host_authorization</code>.</p>
 
-<p>When a request comes to an unauthorized host, the <code>response_app</code> application will be executed and rendered. If no <code>response_app</code> is given, a default one will run, which responds with +403 Forbidden+.</p>
+<p>Requests can opt-out of Host Authorization with <code>exclude</code>:</p>
+
+<pre><code>config.host_authorization = { exclude: -&gt;(request) { request.path =~ /healthcheck/ } }
+</code></pre>
+
+<p>When a request comes to an unauthorized host, the <code>response_app</code> application will be executed and rendered. If no <code>response_app</code> is given, a default one will run, which responds with <code>403 Forbidden</code>.</p>
 
     </div>
   
@@ -106,7 +111,7 @@ end</td>
         <div class="method">
           <h3 id="method-c-new">
             
-              new(app, hosts, response_app = nil)
+              new(app, hosts, deprecated_response_app = nil, exclude: nil, response_app: nil)
             
           </h3>
 
@@ -129,12 +134,23 @@ end</td>
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 69</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">app</span>, <span class="ruby-identifier">hosts</span>, <span class="ruby-identifier">response_app</span> = <span class="ruby-keyword">nil</span>)
-  <span class="ruby-ivar">@app</span> = <span class="ruby-identifier">app</span>
-  <span class="ruby-ivar">@permissions</span> = <span class="ruby-constant">Permissions</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">hosts</span>)
-  <span class="ruby-ivar">@response_app</span> = <span class="ruby-identifier">response_app</span> <span class="ruby-operator">||</span> <span class="ruby-constant">DEFAULT_RESPONSE_APP</span>
-<span class="ruby-keyword">end</span></code></pre>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 74</span>
+    <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">app</span>, <span class="ruby-identifier">hosts</span>, <span class="ruby-identifier">deprecated_response_app</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-value">exclude:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">response_app:</span> <span class="ruby-keyword">nil</span>)
+      <span class="ruby-ivar">@app</span> = <span class="ruby-identifier">app</span>
+      <span class="ruby-ivar">@permissions</span> = <span class="ruby-constant">Permissions</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">hosts</span>)
+      <span class="ruby-ivar">@exclude</span> = <span class="ruby-identifier">exclude</span>
+
+      <span class="ruby-keyword">unless</span> <span class="ruby-identifier">deprecated_response_app</span>.<span class="ruby-identifier">nil?</span>
+        <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">          `action_dispatch.hosts_response_app` is deprecated and will be ignored in Rails 6.2.
+          Use the Host Authorization `response_app` setting instead.
+</span><span class="ruby-identifier">        MSG</span>
+
+        <span class="ruby-identifier">response_app</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">deprecated_response_app</span>
+      <span class="ruby-keyword">end</span>
+
+      <span class="ruby-ivar">@response_app</span> = <span class="ruby-identifier">response_app</span> <span class="ruby-operator">||</span> <span class="ruby-constant">DEFAULT_RESPONSE_APP</span>
+    <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
@@ -170,13 +186,13 @@ end</td>
                 
               </p>
               <div id="method-i-call_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 75</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 91</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">call</span>(<span class="ruby-identifier">env</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-ivar">@app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>) <span class="ruby-keyword">if</span> <span class="ruby-ivar">@permissions</span>.<span class="ruby-identifier">empty?</span>
 
   <span class="ruby-identifier">request</span> = <span class="ruby-constant">Request</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">env</span>)
 
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">authorized?</span>(<span class="ruby-identifier">request</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">authorized?</span>(<span class="ruby-identifier">request</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">excluded?</span>(<span class="ruby-identifier">request</span>)
     <span class="ruby-identifier">mark_as_authorized</span>(<span class="ruby-identifier">request</span>)
     <span class="ruby-ivar">@app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>)
   <span class="ruby-keyword">else</span>

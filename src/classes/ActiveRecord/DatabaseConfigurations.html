@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -21,6 +21,8 @@ layout: default
         <ul class="files">
             
             <li><a href="../../files/activerecord/lib/active_record/database_configurations_rb.html">activerecord/lib/active_record/database_configurations.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/database_configurations/connection_url_resolver_rb.html">activerecord/lib/active_record/database_configurations/connection_url_resolver.rb</a></li>
             
             <li><a href="../../files/activerecord/lib/active_record/database_configurations/database_config_rb.html">activerecord/lib/active_record/database_configurations/database_config.rb</a></li>
             
@@ -86,19 +88,11 @@ layout: default
         </li>
       
         <li>
-          <a href="#method-i-each">each</a>
-        </li>
-      
-        <li>
           <a href="#method-i-empty-3F">empty?</a>
         </li>
       
         <li>
           <a href="#method-i-find_db_config">find_db_config</a>
-        </li>
-      
-        <li>
-          <a href="#method-i-first">first</a>
         </li>
       
         <li>
@@ -167,7 +161,7 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 17</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 18</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">configurations</span> = {})
   <span class="ruby-ivar">@configurations</span> = <span class="ruby-identifier">build_configs</span>(<span class="ruby-identifier">configurations</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -183,7 +177,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-5B-5D">
             
-              [](env = ActiveRecord::ConnectionHandling::DEFAULT_ENV.call.to_s)
+              [](env = default_env)
             
           </h3>
 
@@ -231,7 +225,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-configs_for">
             
-              configs_for(env_name: nil, spec_name: nil, include_replicas: false)
+              configs_for(env_name: nil, spec_name: nil, name: nil, include_replicas: false)
             
           </h3>
 
@@ -239,13 +233,13 @@ layout: default
             <div class="description">
               <p>Collects the configs for the environment and optionally the specification name passed in. To include replica configurations pass <code>include_replicas: true</code>.</p>
 
-<p>If a spec name is provided a single DatabaseConfig object will be returned, otherwise an array of DatabaseConfig objects will be returned that corresponds with the environment and type requested.</p>
+<p>If a name is provided a single DatabaseConfig object will be returned, otherwise an array of DatabaseConfig objects will be returned that corresponds with the environment and type requested.</p>
 
 <h4 id="method-i-configs_for-label-Options">Options</h4>
 <ul><li>
 <p><code>env_name:</code> The environment name. Defaults to <code>nil</code> which will collect configs for all environments.</p>
 </li><li>
-<p><code>spec_name:</code> The specification name (i.e. primary, animals, etc.). Defaults to <code>nil</code>.</p>
+<p><code>name:</code> The db config name (i.e. primary, animals, etc.). Defaults to <code>nil</code>. If no <code>env_name</code> is specified the config for the default env and the passed <code>name</code> will be returned.</p>
 </li><li>
 <p><code>include_replicas:</code> Determines whether to include replicas in the returned list. Most of the time we&#39;re only iterating over the write connection (i.e. migrations don&#39;t need to run for the write and read connection). Defaults to <code>false</code>.</p>
 </li></ul>
@@ -265,8 +259,14 @@ layout: default
                 
               </p>
               <div id="method-i-configs_for_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 38</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">configs_for</span>(<span class="ruby-value">env_name:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">spec_name:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">include_replicas:</span> <span class="ruby-keyword">false</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 40</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">configs_for</span>(<span class="ruby-value">env_name:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">spec_name:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">name:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">include_replicas:</span> <span class="ruby-keyword">false</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">spec_name</span>
+    <span class="ruby-identifier">name</span> = <span class="ruby-identifier">spec_name</span>
+    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-string">&quot;The kwarg `spec_name` is deprecated in favor of `name`. `spec_name` will be removed in Rails 6.2&quot;</span>)
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">env_name</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">default_env</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">name</span>
   <span class="ruby-identifier">configs</span> = <span class="ruby-identifier">env_with_configs</span>(<span class="ruby-identifier">env_name</span>)
 
   <span class="ruby-keyword">unless</span> <span class="ruby-identifier">include_replicas</span>
@@ -275,9 +275,9 @@ layout: default
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">spec_name</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">name</span>
     <span class="ruby-identifier">configs</span>.<span class="ruby-identifier">find</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">db_config</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">spec_name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">spec_name</span>
+      <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">name</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">configs</span>
@@ -291,7 +291,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-default_hash">
             
-              default_hash(env = ActiveRecord::ConnectionHandling::DEFAULT_ENV.call.to_s)
+              default_hash(env = default_env)
             
           </h3>
 
@@ -323,48 +323,10 @@ layout: default
                 
               </p>
               <div id="method-i-default_hash_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 62</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">default_hash</span>(<span class="ruby-identifier">env</span> = <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">ConnectionHandling</span><span class="ruby-operator">::</span><span class="ruby-constant">DEFAULT_ENV</span>.<span class="ruby-identifier">call</span>.<span class="ruby-identifier">to_s</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 70</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">default_hash</span>(<span class="ruby-identifier">env</span> = <span class="ruby-identifier">default_env</span>)
   <span class="ruby-identifier">default</span> = <span class="ruby-identifier">find_db_config</span>(<span class="ruby-identifier">env</span>)
-  <span class="ruby-identifier">default</span>.<span class="ruby-identifier">config</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">default</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
-        
-        <div class="method">
-          <h3 id="method-i-each">
-            
-              each()
-            
-          </h3>
-
-          
-            <div class="description">
-              
-            </div>
-          
-
-          
-
-          
-
-          
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-each_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 96</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">each</span>
-  <span class="ruby-identifier">throw_getter_deprecation</span>(<span class="ruby-value">:each</span>)
-  <span class="ruby-identifier">configurations</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">config</span><span class="ruby-operator">|</span>
-    <span class="ruby-keyword">yield</span> [<span class="ruby-identifier">config</span>.<span class="ruby-identifier">env_name</span>, <span class="ruby-identifier">config</span>.<span class="ruby-identifier">config</span>]
-  }
+  <span class="ruby-identifier">default</span>.<span class="ruby-identifier">configuration_hash</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">default</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -403,7 +365,7 @@ layout: default
                 
               </p>
               <div id="method-i-empty-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 91</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 114</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">empty?</span>
   <span class="ruby-identifier">configurations</span>.<span class="ruby-identifier">empty?</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -440,49 +402,14 @@ layout: default
                 
               </p>
               <div id="method-i-find_db_config_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 72</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 81</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">find_db_config</span>(<span class="ruby-identifier">env</span>)
-  <span class="ruby-identifier">configurations</span>.<span class="ruby-identifier">find</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">db_config</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">env_name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">env</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">||</span>
-      (<span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">for_current_env?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">spec_name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">env</span>.<span class="ruby-identifier">to_s</span>)
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
-        
-        <div class="method">
-          <h3 id="method-i-first">
-            
-              first()
-            
-          </h3>
-
-          
-            <div class="description">
-              
-            </div>
-          
-
-          
-
-          
-
-          
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-first_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 103</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">first</span>
-  <span class="ruby-identifier">throw_getter_deprecation</span>(<span class="ruby-value">:first</span>)
-  <span class="ruby-identifier">config</span> = <span class="ruby-identifier">configurations</span>.<span class="ruby-identifier">first</span>
-  [<span class="ruby-identifier">config</span>.<span class="ruby-identifier">env_name</span>, <span class="ruby-identifier">config</span>.<span class="ruby-identifier">config</span>]
+  <span class="ruby-identifier">configurations</span>
+    .<span class="ruby-identifier">sort_by</span>.<span class="ruby-identifier">with_index</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">db_config</span>, <span class="ruby-identifier">i</span><span class="ruby-operator">|</span> <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">for_current_env?</span> <span class="ruby-operator">?</span> [<span class="ruby-value">0</span>, <span class="ruby-identifier">i</span>] <span class="ruby-operator">:</span> [<span class="ruby-value">1</span>, <span class="ruby-identifier">i</span>] }
+    .<span class="ruby-identifier">find</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">db_config</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">env_name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">env</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">||</span>
+        (<span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">for_current_env?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">env</span>.<span class="ruby-identifier">to_s</span>)
+    <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -515,13 +442,11 @@ layout: default
                 
               </p>
               <div id="method-i-to_h_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 80</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 104</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_h</span>
-  <span class="ruby-identifier">configs</span> = <span class="ruby-identifier">configurations</span>.<span class="ruby-identifier">reverse</span>.<span class="ruby-identifier">inject</span>({}) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">memo</span>, <span class="ruby-identifier">db_config</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">memo</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">to_legacy_hash</span>)
+  <span class="ruby-identifier">configurations</span>.<span class="ruby-identifier">inject</span>({}) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">memo</span>, <span class="ruby-identifier">db_config</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">memo</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">env_name</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">configuration_hash</span>.<span class="ruby-identifier">stringify_keys</span>)
   <span class="ruby-keyword">end</span>
-
-  <span class="ruby-constant">Hash</span>[<span class="ruby-identifier">configs</span>.<span class="ruby-identifier">to_a</span>.<span class="ruby-identifier">reverse</span>]
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

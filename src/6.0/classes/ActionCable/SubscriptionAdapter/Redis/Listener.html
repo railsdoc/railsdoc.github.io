@@ -1,0 +1,366 @@
+---
+title: ActionCable::SubscriptionAdapter::Redis::Listener
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionCable::SubscriptionAdapter::Redis::Listener
+            
+                <span class="parent">&lt;
+                    
+                    SubscriberMap
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/actioncable/lib/action_cable/subscription_adapter/redis_rb.html">actioncable/lib/action_cable/subscription_adapter/redis.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-add_channel">add_channel</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-invoke_callback">invoke_callback</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-listen">listen</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-remove_channel">remove_channel</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-shutdown">shutdown</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(adapter, event_loop)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 64</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">adapter</span>, <span class="ruby-identifier">event_loop</span>)
+  <span class="ruby-keyword">super</span>()
+
+  <span class="ruby-ivar">@adapter</span> = <span class="ruby-identifier">adapter</span>
+  <span class="ruby-ivar">@event_loop</span> = <span class="ruby-identifier">event_loop</span>
+
+  <span class="ruby-ivar">@subscribe_callbacks</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">h</span>, <span class="ruby-identifier">k</span><span class="ruby-operator">|</span> <span class="ruby-identifier">h</span>[<span class="ruby-identifier">k</span>] = [] }
+  <span class="ruby-ivar">@subscription_lock</span> = <span class="ruby-constant">Mutex</span>.<span class="ruby-identifier">new</span>
+
+  <span class="ruby-ivar">@raw_client</span> = <span class="ruby-keyword">nil</span>
+
+  <span class="ruby-ivar">@when_connected</span> = []
+
+  <span class="ruby-ivar">@thread</span> = <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-add_channel">
+            
+              add_channel(channel, on_success)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-add_channel_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 131</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_channel</span>(<span class="ruby-identifier">channel</span>, <span class="ruby-identifier">on_success</span>)
+  <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">ensure_listener_running</span>
+    <span class="ruby-ivar">@subscribe_callbacks</span>[<span class="ruby-identifier">channel</span>] <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">on_success</span>
+    <span class="ruby-identifier">when_connected</span> { <span class="ruby-identifier">send_command</span>(<span class="ruby-string">&quot;subscribe&quot;</span>, <span class="ruby-identifier">channel</span>) }
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-invoke_callback">
+            
+              invoke_callback(*)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-invoke_callback_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 145</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">invoke_callback</span>(<span class="ruby-operator">*</span>)
+  <span class="ruby-ivar">@event_loop</span>.<span class="ruby-identifier">post</span> { <span class="ruby-keyword">super</span> }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-listen">
+            
+              listen(conn)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-listen_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 80</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">listen</span>(<span class="ruby-identifier">conn</span>)
+  <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">without_reconnect</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">original_client</span> = <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:_client</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">_client</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">client</span>
+
+    <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">subscribe</span>(<span class="ruby-string">&quot;_action_cable_internal&quot;</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">on</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">on</span>.<span class="ruby-identifier">subscribe</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">chan</span>, <span class="ruby-identifier">count</span><span class="ruby-operator">|</span>
+        <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+          <span class="ruby-keyword">if</span> <span class="ruby-identifier">count</span> <span class="ruby-operator">==</span> <span class="ruby-value">1</span>
+            <span class="ruby-ivar">@raw_client</span> = <span class="ruby-identifier">original_client</span>
+
+            <span class="ruby-keyword">until</span> <span class="ruby-ivar">@when_connected</span>.<span class="ruby-identifier">empty?</span>
+              <span class="ruby-ivar">@when_connected</span>.<span class="ruby-identifier">shift</span>.<span class="ruby-identifier">call</span>
+            <span class="ruby-keyword">end</span>
+          <span class="ruby-keyword">end</span>
+
+          <span class="ruby-keyword">if</span> <span class="ruby-identifier">callbacks</span> = <span class="ruby-ivar">@subscribe_callbacks</span>[<span class="ruby-identifier">chan</span>]
+            <span class="ruby-identifier">next_callback</span> = <span class="ruby-identifier">callbacks</span>.<span class="ruby-identifier">shift</span>
+            <span class="ruby-ivar">@event_loop</span>.<span class="ruby-identifier">post</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">next_callback</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">next_callback</span>
+            <span class="ruby-ivar">@subscribe_callbacks</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">chan</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">callbacks</span>.<span class="ruby-identifier">empty?</span>
+          <span class="ruby-keyword">end</span>
+        <span class="ruby-keyword">end</span>
+      <span class="ruby-keyword">end</span>
+
+      <span class="ruby-identifier">on</span>.<span class="ruby-identifier">message</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">chan</span>, <span class="ruby-identifier">message</span><span class="ruby-operator">|</span>
+        <span class="ruby-identifier">broadcast</span>(<span class="ruby-identifier">chan</span>, <span class="ruby-identifier">message</span>)
+      <span class="ruby-keyword">end</span>
+
+      <span class="ruby-identifier">on</span>.<span class="ruby-identifier">unsubscribe</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">chan</span>, <span class="ruby-identifier">count</span><span class="ruby-operator">|</span>
+        <span class="ruby-keyword">if</span> <span class="ruby-identifier">count</span> <span class="ruby-operator">==</span> <span class="ruby-value">0</span>
+          <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+            <span class="ruby-ivar">@raw_client</span> = <span class="ruby-keyword">nil</span>
+          <span class="ruby-keyword">end</span>
+        <span class="ruby-keyword">end</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-remove_channel">
+            
+              remove_channel(channel)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-remove_channel_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 139</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_channel</span>(<span class="ruby-identifier">channel</span>)
+  <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">when_connected</span> { <span class="ruby-identifier">send_command</span>(<span class="ruby-string">&quot;unsubscribe&quot;</span>, <span class="ruby-identifier">channel</span>) }
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-shutdown">
+            
+              shutdown()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-shutdown_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 118</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">shutdown</span>
+  <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-ivar">@thread</span>.<span class="ruby-identifier">nil?</span>
+
+    <span class="ruby-identifier">when_connected</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">send_command</span>(<span class="ruby-string">&quot;unsubscribe&quot;</span>)
+      <span class="ruby-ivar">@raw_client</span> = <span class="ruby-keyword">nil</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-constant">Thread</span>.<span class="ruby-identifier">pass</span> <span class="ruby-keyword">while</span> <span class="ruby-ivar">@thread</span>.<span class="ruby-identifier">alive?</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -417,7 +417,7 @@ end
 
 <p>If you do not set the <code>:inverse_of</code> record, the association will do its best to match itself up with the correct inverse. Automatic inverse detection only works on <a href="ClassMethods.html#method-i-has_many"><code>has_many</code></a>, <a href="ClassMethods.html#method-i-has_one"><code>has_one</code></a>, and <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a> associations.</p>
 
-<p>Extra options on the associations, as defined in the <code>AssociationReflection::INVALID_AUTOMATIC_INVERSE_OPTIONS</code> constant, or a custom scope, will also prevent the association&#39;s inverse from being found automatically.</p>
+<p><code>:foreign_key</code> and <code>:through</code> options on the associations, or a custom scope, will also prevent the association&#39;s inverse from being found automatically.</p>
 
 <p>The automatic guessing of the inverse association uses a heuristic based on the name of the class, so it may not work for all associations, especially the ones with non-standard names.</p>
 
@@ -917,7 +917,7 @@ belongs_to :level, -&gt;(game) { where(&quot;game_level &gt; ?&quot;, game.curre
 <p>Specify the method that returns the primary key of associated object used for the association. By default this is <code>id</code>.</p>
 </dd><dt>:dependent
 <dd>
-<p>If set to <code>:destroy</code>, the associated object is destroyed when this object is. If set to <code>:delete</code>, the associated object is deleted <strong>without</strong> calling its destroy method. This option should not be specified when <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a> is used in conjunction with a <a href="ClassMethods.html#method-i-has_many"><code>has_many</code></a> relationship on another class because of the potential to leave orphaned records behind.</p>
+<p>If set to <code>:destroy</code>, the associated object is destroyed when this object is. If set to <code>:delete</code>, the associated object is deleted <strong>without</strong> calling its destroy method. If set to <code>:destroy_async</code>, the associated object is scheduled to be destroyed in a background job. This option should not be specified when <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a> is used in conjunction with a <a href="ClassMethods.html#method-i-has_many"><code>has_many</code></a> relationship on another class because of the potential to leave orphaned records behind.</p>
 </dd><dt>:counter_cache
 <dd>
 <p>Caches the number of belonging objects on the associate class through the use of <a href="../CounterCache/ClassMethods.html#method-i-increment_counter"><code>CounterCache::ClassMethods#increment_counter</code></a> and <a href="../CounterCache/ClassMethods.html#method-i-decrement_counter"><code>CounterCache::ClassMethods#decrement_counter</code></a>. The counter cache is incremented when an object of this class is created and decremented when it&#39;s destroyed. This requires that a column named <code>#{table_name}_count</code> (such as <code>comments_count</code> for a belonging Comment class) is used on the associate class (such as a Post class) - that is the migration for <code>#{table_name}_count</code> is created on the associate class (such that <code>Post.comments_count</code> will return the count cached, see note below). You can also specify a custom counter cache column by providing a column name instead of a <code>true</code>/<code>false</code> value to this option (e.g., <code>counter_cache: :my_custom_counter</code>.) Note: Specifying a counter cache will add it to that model&#39;s list of readonly attributes using <code>attr_readonly</code>.</p>
@@ -947,6 +947,12 @@ belongs_to :level, -&gt;(game) { where(&quot;game_level &gt; ?&quot;, game.curre
 </dd><dt>:default
 <dd>
 <p>Provide a callable (i.e. proc or lambda) to specify that the association should be initialized with a particular record before validation.</p>
+</dd><dt>:strict_loading
+<dd>
+<p>Enforces strict loading every time the associated record is loaded through this association.</p>
+</dd><dt>:ensuring_owner_was
+<dd>
+<p>Specifies an instance method to be called on the owner. The method must return true in order for the associated records to be deleted in a background job.</p>
 </dd></dl>
 
 <p>Option examples:</p>
@@ -963,6 +969,7 @@ belongs_to :comment, touch: true
 belongs_to :company, touch: :employees_last_updated_at
 belongs_to :user, optional: true
 belongs_to :account, default: -&gt; { company.account }
+belongs_to :account, strict_loading: true
 </code></pre>
             </div>
           
@@ -980,7 +987,7 @@ belongs_to :account, default: -&gt; { company.account }
                 
               </p>
               <div id="method-i-belongs_to_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1657</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1761</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">belongs_to</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">reflection</span> = <span class="ruby-constant">Builder</span><span class="ruby-operator">::</span><span class="ruby-constant">BelongsTo</span>.<span class="ruby-identifier">build</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span>, <span class="ruby-identifier">options</span>)
   <span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">add_reflection</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">reflection</span>
@@ -1003,7 +1010,7 @@ belongs_to :account, default: -&gt; { company.account }
 
 <p>The join table should not have a primary key or a model associated with it. You must manually generate the join table with a migration such as this:</p>
 
-<pre><code>class CreateDevelopersProjectsJoinTable &lt; ActiveRecord::Migration[5.0]
+<pre><code>class CreateDevelopersProjectsJoinTable &lt; ActiveRecord::Migration[6.0]
   def change
     create_join_table :developers, :projects
   end
@@ -1148,6 +1155,9 @@ end
 <p>If true, always save the associated objects or destroy them if marked for destruction, when saving the parent object. If false, never save or destroy the associated objects. By default, only save associated objects that are new records.</p>
 
 <p>Note that <a href="../NestedAttributes/ClassMethods.html#method-i-accepts_nested_attributes_for"><code>NestedAttributes::ClassMethods#accepts_nested_attributes_for</code></a> sets <code>:autosave</code> to <code>true</code>.</p>
+</dd><dt>:strict_loading
+<dd>
+<p>Enforces strict loading every time an associated record is loaded through this association.</p>
 </dd></dl>
 
 <p>Option examples:</p>
@@ -1157,6 +1167,7 @@ has_and_belongs_to_many :projects, -&gt; { includes(:milestones, :manager) }
 has_and_belongs_to_many :nations, class_name: &quot;Country&quot;
 has_and_belongs_to_many :categories, join_table: &quot;prods_cats&quot;
 has_and_belongs_to_many :categories, -&gt; { readonly }
+has_and_belongs_to_many :categories, strict_loading: true
 </code></pre>
             </div>
           
@@ -1174,7 +1185,7 @@ has_and_belongs_to_many :categories, -&gt; { readonly }
                 
               </p>
               <div id="method-i-has_and_belongs_to_many_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1826</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1933</span>
         <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_and_belongs_to_many</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">extension</span>)
           <span class="ruby-identifier">habtm_reflection</span> = <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Reflection</span><span class="ruby-operator">::</span><span class="ruby-constant">HasAndBelongsToManyReflection</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span>, <span class="ruby-identifier">options</span>, <span class="ruby-keyword">self</span>)
 
@@ -1205,7 +1216,7 @@ has_and_belongs_to_many :categories, -&gt; { readonly }
           <span class="ruby-identifier">hm_options</span>[<span class="ruby-value">:through</span>] = <span class="ruby-identifier">middle_reflection</span>.<span class="ruby-identifier">name</span>
           <span class="ruby-identifier">hm_options</span>[<span class="ruby-value">:source</span>] = <span class="ruby-identifier">join_model</span>.<span class="ruby-identifier">right_reflection</span>.<span class="ruby-identifier">name</span>
 
-          [<span class="ruby-value">:before_add</span>, <span class="ruby-value">:after_add</span>, <span class="ruby-value">:before_remove</span>, <span class="ruby-value">:after_remove</span>, <span class="ruby-value">:autosave</span>, <span class="ruby-value">:validate</span>, <span class="ruby-value">:join_table</span>, <span class="ruby-value">:class_name</span>, <span class="ruby-value">:extend</span>].<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">k</span><span class="ruby-operator">|</span>
+          [<span class="ruby-value">:before_add</span>, <span class="ruby-value">:after_add</span>, <span class="ruby-value">:before_remove</span>, <span class="ruby-value">:after_remove</span>, <span class="ruby-value">:autosave</span>, <span class="ruby-value">:validate</span>, <span class="ruby-value">:join_table</span>, <span class="ruby-value">:class_name</span>, <span class="ruby-value">:extend</span>, <span class="ruby-value">:strict_loading</span>].<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">k</span><span class="ruby-operator">|</span>
             <span class="ruby-identifier">hm_options</span>[<span class="ruby-identifier">k</span>] = <span class="ruby-identifier">options</span>[<span class="ruby-identifier">k</span>] <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>.<span class="ruby-identifier">key?</span> <span class="ruby-identifier">k</span>
           <span class="ruby-keyword">end</span>
 
@@ -1366,7 +1377,11 @@ end
 <dd>
 <p>Controls what happens to the associated objects when their owner is destroyed. Note that these are implemented as callbacks, and Rails executes callbacks in order. Therefore, other similar callbacks may affect the <code>:dependent</code> behavior, and the <code>:dependent</code> behavior may affect other callbacks.</p>
 <ul><li>
+<p><code>nil</code> do nothing (default).</p>
+</li><li>
 <p><code>:destroy</code> causes all the associated objects to also be destroyed.</p>
+</li><li>
+<p><code>:destroy_async</code> destroys all the associated objects in a background job. <strong>WARNING:</strong> Do not use this option if the association is backed by foreign key constraints in your database. The foreign key constraint actions will occur inside the same transaction that deletes its owner.</p>
 </li><li>
 <p><code>:delete_all</code> causes all the associated objects to be deleted directly from the database (so callbacks will not be executed).</p>
 </li><li>
@@ -1413,6 +1428,12 @@ end
 </dd><dt>:extend
 <dd>
 <p>Specifies a module or array of modules that will be extended into the association object returned. Useful for defining methods on associations, especially when they should be shared between multiple association objects.</p>
+</dd><dt>:strict_loading
+<dd>
+<p>Enforces strict loading every time the associated record is loaded through this association.</p>
+</dd><dt>:ensuring_owner_was
+<dd>
+<p>Specifies an instance method to be called on the owner. The method must return true in order for the associated records to be deleted in a background job.</p>
 </dd></dl>
 
 <p>Option examples:</p>
@@ -1425,6 +1446,7 @@ has_many :comments, dependent: :nullify
 has_many :tags, as: :taggable
 has_many :reports, -&gt; { readonly }
 has_many :subscribers, through: :subscriptions, source: :user
+has_many :comments, strict_loading: true
 </code></pre>
             </div>
           
@@ -1442,7 +1464,7 @@ has_many :subscribers, through: :subscriptions, source: :user
                 
               </p>
               <div id="method-i-has_many_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1370</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1457</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_many</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">extension</span>)
   <span class="ruby-identifier">reflection</span> = <span class="ruby-constant">Builder</span><span class="ruby-operator">::</span><span class="ruby-constant">HasMany</span>.<span class="ruby-identifier">build</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span>, <span class="ruby-identifier">options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">extension</span>)
   <span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">add_reflection</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">reflection</span>
@@ -1526,7 +1548,11 @@ has_one :latest_post, -&gt;(blog) { where(&quot;created_at &gt; ?&quot;, blog.en
 <dd>
 <p>Controls what happens to the associated object when its owner is destroyed:</p>
 <ul><li>
+<p><code>nil</code> do nothing (default).</p>
+</li><li>
 <p><code>:destroy</code> causes the associated object to also be destroyed</p>
+</li><li>
+<p><code>:destroy_async</code> causes the associated object to be destroyed in a background job. <strong>WARNING:</strong> Do not use this option if the association is backed by foreign key constraints in your database. The foreign key constraint actions will occur inside the same transaction that deletes its owner.</p>
 </li><li>
 <p><code>:delete</code> causes the associated object to be deleted directly from the database (so callbacks will not execute)</p>
 </li><li>
@@ -1577,6 +1603,12 @@ has_one :latest_post, -&gt;(blog) { where(&quot;created_at &gt; ?&quot;, blog.en
 </dd><dt>:required
 <dd>
 <p>When set to <code>true</code>, the association will also have its presence validated. This will validate the association itself, not the id. You can use <code>:inverse_of</code> to avoid an extra query during validation.</p>
+</dd><dt>:strict_loading
+<dd>
+<p>Enforces strict loading every time the associated record is loaded through this association.</p>
+</dd><dt>:ensuring_owner_was
+<dd>
+<p>Specifies an instance method to be called on the owner. The method must return true in order for the associated records to be deleted in a background job.</p>
 </dd></dl>
 
 <p>Option examples:</p>
@@ -1591,6 +1623,7 @@ has_one :boss, -&gt; { readonly }
 has_one :club, through: :membership
 has_one :primary_address, -&gt; { where(primary: true) }, through: :addressables, source: :addressable
 has_one :credit_card, required: true
+has_one :credit_card, strict_loading: true
 </code></pre>
             </div>
           
@@ -1608,7 +1641,7 @@ has_one :credit_card, required: true
                 
               </p>
               <div id="method-i-has_one_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1510</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1607</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_one</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">reflection</span> = <span class="ruby-constant">Builder</span><span class="ruby-operator">::</span><span class="ruby-constant">HasOne</span>.<span class="ruby-identifier">build</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span>, <span class="ruby-identifier">options</span>)
   <span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">add_reflection</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">reflection</span>

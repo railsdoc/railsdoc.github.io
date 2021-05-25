@@ -1,0 +1,240 @@
+---
+title: ActiveModel::Translation
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveModel::Translation
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activemodel/lib/active_model/translation_rb.html">activemodel/lib/active_model/translation.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h2 id="module-ActiveModel::Translation-label-Active+Model+Translation">Active Model Translation</h2>
+
+<p>Provides integration between your object and the Rails internationalization (i18n) framework.</p>
+
+<p>A minimal implementation could be:</p>
+
+<pre><code>class TranslatedPerson
+  extend ActiveModel::Translation
+end
+
+TranslatedPerson.human_attribute_name(&#39;my_attribute&#39;)
+# =&gt; &quot;My attribute&quot;
+</code></pre>
+
+<p>This also provides the required class methods for hooking into the Rails internationalization API, including being able to define a class based <code>i18n_scope</code> and <code>lookup_ancestors</code> to find translations in parent classes.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-human_attribute_name">human_attribute_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-i18n_scope">i18n_scope</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-lookup_ancestors">lookup_ancestors</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="Naming.html">
+              ActiveModel::Naming
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-human_attribute_name">
+            
+              human_attribute_name(attribute, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Transforms attribute names into a more human format, such as “First name” instead of “first_name”.</p>
+
+<pre><code>Person.human_attribute_name(&quot;first_name&quot;) # =&gt; &quot;First name&quot;
+</code></pre>
+
+<p>Specify <code>options</code> with additional translating options.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-human_attribute_name_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/translation.rb, line 44</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">human_attribute_name</span>(<span class="ruby-identifier">attribute</span>, <span class="ruby-identifier">options</span> = {})
+  <span class="ruby-identifier">options</span>   = { <span class="ruby-value">count:</span> <span class="ruby-value">1</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>)
+  <span class="ruby-identifier">parts</span>     = <span class="ruby-identifier">attribute</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;.&quot;</span>)
+  <span class="ruby-identifier">attribute</span> = <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">pop</span>
+  <span class="ruby-identifier">namespace</span> = <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;/&quot;</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">empty?</span>
+  <span class="ruby-identifier">attributes_scope</span> = <span class="ruby-node">&quot;#{i18n_scope}.attributes&quot;</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">namespace</span>
+    <span class="ruby-identifier">defaults</span> = <span class="ruby-identifier">lookup_ancestors</span>.<span class="ruby-identifier">map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">klass</span><span class="ruby-operator">|</span>
+      <span class="ruby-value">:&quot;#{attributes_scope}.#{klass.model_name.i18n_key}/#{namespace}.#{attribute}&quot;</span>
+    <span class="ruby-keyword">end</span>
+    <span class="ruby-identifier">defaults</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-value">:&quot;#{attributes_scope}.#{namespace}.#{attribute}&quot;</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">defaults</span> = <span class="ruby-identifier">lookup_ancestors</span>.<span class="ruby-identifier">map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">klass</span><span class="ruby-operator">|</span>
+      <span class="ruby-value">:&quot;#{attributes_scope}.#{klass.model_name.i18n_key}.#{attribute}&quot;</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">defaults</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-value">:&quot;attributes.#{attribute}&quot;</span>
+  <span class="ruby-identifier">defaults</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">options</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-value">:default</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:default</span>]
+  <span class="ruby-identifier">defaults</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">attribute</span>.<span class="ruby-identifier">humanize</span>
+
+  <span class="ruby-identifier">options</span>[<span class="ruby-value">:default</span>] = <span class="ruby-identifier">defaults</span>
+  <span class="ruby-constant">I18n</span>.<span class="ruby-identifier">translate</span>(<span class="ruby-identifier">defaults</span>.<span class="ruby-identifier">shift</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-i18n_scope">
+            
+              i18n_scope()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the <code>i18n_scope</code> for the class. Overwrite if you want custom lookup.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-i18n_scope_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/translation.rb, line 26</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">i18n_scope</span>
+  <span class="ruby-value">:activemodel</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-lookup_ancestors">
+            
+              lookup_ancestors()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>When localizing a string, it goes through the lookup returned by this method, which is used in <a href="Name.html#method-i-human"><code>ActiveModel::Name#human</code></a>, <a href="Errors.html#method-i-full_messages"><code>ActiveModel::Errors#full_messages</code></a> and <a href="Translation.html#method-i-human_attribute_name"><code>ActiveModel::Translation#human_attribute_name</code></a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-lookup_ancestors_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/translation.rb, line 34</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">lookup_ancestors</span>
+  <span class="ruby-identifier">ancestors</span>.<span class="ruby-identifier">select</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">x</span><span class="ruby-operator">|</span> <span class="ruby-identifier">x</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:model_name</span>) }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

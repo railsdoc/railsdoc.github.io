@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -87,10 +87,26 @@ layout: default
   <span class="ruby-constant">Module</span>.<span class="ruby-identifier">new</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">define_method</span>(<span class="ruby-value">:inherited</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">klass</span><span class="ruby-operator">|</span>
       <span class="ruby-keyword">super</span>(<span class="ruby-identifier">klass</span>)
-      <span class="ruby-keyword">if</span> <span class="ruby-identifier">namespace</span> = <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">module_parents</span>.<span class="ruby-identifier">detect</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">m</span><span class="ruby-operator">|</span> <span class="ruby-identifier">m</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:railtie_routes_url_helpers</span>) }
+
+      <span class="ruby-identifier">namespace</span> = <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">module_parents</span>.<span class="ruby-identifier">detect</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">m</span><span class="ruby-operator">|</span> <span class="ruby-identifier">m</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:railtie_routes_url_helpers</span>) }
+      <span class="ruby-identifier">actual_routes</span> = <span class="ruby-identifier">namespace</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">namespace</span>.<span class="ruby-identifier">railtie_routes_url_helpers</span>.<span class="ruby-identifier">_routes</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">routes</span>
+
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">namespace</span>
         <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">include</span>(<span class="ruby-identifier">namespace</span>.<span class="ruby-identifier">railtie_routes_url_helpers</span>(<span class="ruby-identifier">include_path_helpers</span>))
       <span class="ruby-keyword">else</span>
         <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">include</span>(<span class="ruby-identifier">routes</span>.<span class="ruby-identifier">url_helpers</span>(<span class="ruby-identifier">include_path_helpers</span>))
+      <span class="ruby-keyword">end</span>
+
+      <span class="ruby-comment"># In the case that we have ex.</span>
+      <span class="ruby-comment">#   class A::Foo &lt; ApplicationController</span>
+      <span class="ruby-comment">#   class Bar &lt; A::Foo</span>
+      <span class="ruby-comment"># We will need to redefine _routes because it will not be correct</span>
+      <span class="ruby-comment"># via inheritance.</span>
+      <span class="ruby-keyword">unless</span> <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">_routes</span>.<span class="ruby-identifier">equal?</span>(<span class="ruby-identifier">actual_routes</span>)
+        <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">redefine_singleton_method</span>(<span class="ruby-value">:_routes</span>) { <span class="ruby-identifier">actual_routes</span> }
+        <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">include</span>(<span class="ruby-constant">Module</span>.<span class="ruby-identifier">new</span> <span class="ruby-keyword">do</span>
+          <span class="ruby-identifier">define_method</span>(<span class="ruby-value">:_routes</span>) { <span class="ruby-ivar">@_routes</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">actual_routes</span> }
+        <span class="ruby-keyword">end</span>)
       <span class="ruby-keyword">end</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>

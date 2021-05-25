@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.0.3.7</span><br />
+            <span>Ruby on Rails 6.1.3.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -64,7 +64,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-generate_unique_secure_token">
             
-              generate_unique_secure_token()
+              generate_unique_secure_token(length: MINIMUM_TOKEN_LENGTH)
             
           </h3>
 
@@ -87,9 +87,9 @@ layout: default
                 
               </p>
               <div id="method-i-generate_unique_secure_token_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/secure_token.rb, line 35</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">generate_unique_secure_token</span>
-  <span class="ruby-constant">SecureRandom</span>.<span class="ruby-identifier">base58</span>(<span class="ruby-value">24</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/secure_token.rb, line 43</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">generate_unique_secure_token</span>(<span class="ruby-value">length:</span> <span class="ruby-constant">MINIMUM_TOKEN_LENGTH</span>)
+  <span class="ruby-constant">SecureRandom</span>.<span class="ruby-identifier">base58</span>(<span class="ruby-identifier">length</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -99,7 +99,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-has_secure_token">
             
-              has_secure_token(attribute = :token)
+              has_secure_token(attribute = :token, length: MINIMUM_TOKEN_LENGTH)
             
           </h3>
 
@@ -110,18 +110,18 @@ layout: default
 <pre><code># Schema: User(token:string, auth_token:string)
 class User &lt; ActiveRecord::Base
   has_secure_token
-  has_secure_token :auth_token
+  has_secure_token :auth_token, length: 36
 end
 
 user = User.new
 user.save
 user.token # =&gt; &quot;pX27zsMN2ViQKta1bGfLmVJE&quot;
-user.auth_token # =&gt; &quot;77TMHrHJFvFDwodq8w7Ev2m7&quot;
+user.auth_token # =&gt; &quot;tU9bLuZseefXQ4yQxQo8wjtBvsAfPc78os6R&quot;
 user.regenerate_token # =&gt; true
 user.regenerate_auth_token # =&gt; true
 </code></pre>
 
-<p><code>SecureRandom::base58</code> is used to generate the 24-character unique token, so collisions are highly unlikely.</p>
+<p><code>SecureRandom::base58</code> is used to generate at minimum a 24-character unique token, so collisions are highly unlikely.</p>
 
 <p>Note that it&#39;s still possible to generate a race condition in the database in the same way that <a href="../Validations/ClassMethods.html#method-i-validates_uniqueness_of">validates_uniqueness_of</a> can. You&#39;re encouraged to add a unique index in the database to deal with this even more unlikely scenario.</p>
             </div>
@@ -140,12 +140,16 @@ user.regenerate_auth_token # =&gt; true
                 
               </p>
               <div id="method-i-has_secure_token_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/secure_token.rb, line 28</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_secure_token</span>(<span class="ruby-identifier">attribute</span> = <span class="ruby-value">:token</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/secure_token.rb, line 32</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_secure_token</span>(<span class="ruby-identifier">attribute</span> = <span class="ruby-value">:token</span>, <span class="ruby-value">length:</span> <span class="ruby-constant">MINIMUM_TOKEN_LENGTH</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">length</span> <span class="ruby-operator">&lt;</span> <span class="ruby-constant">MINIMUM_TOKEN_LENGTH</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">MinimumLengthError</span>, <span class="ruby-node">&quot;Token requires a minimum length of #{MINIMUM_TOKEN_LENGTH} characters.&quot;</span>
+  <span class="ruby-keyword">end</span>
+
   <span class="ruby-comment"># Load securerandom only when has_secure_token is used.</span>
   <span class="ruby-identifier">require</span> <span class="ruby-string">&quot;active_support/core_ext/securerandom&quot;</span>
-  <span class="ruby-identifier">define_method</span>(<span class="ruby-node">&quot;regenerate_#{attribute}&quot;</span>) { <span class="ruby-identifier">update!</span> <span class="ruby-identifier">attribute</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">generate_unique_secure_token</span> }
-  <span class="ruby-identifier">before_create</span> { <span class="ruby-identifier">send</span>(<span class="ruby-node">&quot;#{attribute}=&quot;</span>, <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">generate_unique_secure_token</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">send</span>(<span class="ruby-node">&quot;#{attribute}?&quot;</span>) }
+  <span class="ruby-identifier">define_method</span>(<span class="ruby-node">&quot;regenerate_#{attribute}&quot;</span>) { <span class="ruby-identifier">update!</span> <span class="ruby-identifier">attribute</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">generate_unique_secure_token</span>(<span class="ruby-value">length:</span> <span class="ruby-identifier">length</span>) }
+  <span class="ruby-identifier">before_create</span> { <span class="ruby-identifier">send</span>(<span class="ruby-node">&quot;#{attribute}=&quot;</span>, <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">generate_unique_secure_token</span>(<span class="ruby-value">length:</span> <span class="ruby-identifier">length</span>)) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">send</span>(<span class="ruby-node">&quot;#{attribute}?&quot;</span>) }
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

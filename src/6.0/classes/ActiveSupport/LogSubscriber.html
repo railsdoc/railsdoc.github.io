@@ -1,0 +1,559 @@
+---
+title: ActiveSupport::LogSubscriber
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::LogSubscriber
+            
+                <span class="parent">&lt;
+                    
+                    Subscriber
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/log_subscriber_rb.html">activesupport/lib/active_support/log_subscriber.rb</a></li>
+            
+            <li><a href="../../files/activesupport/lib/active_support/log_subscriber/test_helper_rb.html">activesupport/lib/active_support/log_subscriber/test_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p><code>ActiveSupport::LogSubscriber</code> is an object set to consume <code>ActiveSupport::Notifications</code> with the sole purpose of logging them. The log subscriber dispatches notifications to a registered object based on its given namespace.</p>
+
+<p>An example would be Active Record log subscriber responsible for logging queries:</p>
+
+<pre><code>module ActiveRecord
+  class LogSubscriber &lt; ActiveSupport::LogSubscriber
+    def sql(event)
+      info &quot;#{event.payload[:name]} (#{event.duration}) #{event.payload[:sql]}&quot;
+    end
+  end
+end
+</code></pre>
+
+<p>And it&#39;s finally registered as:</p>
+
+<pre><code>ActiveRecord::LogSubscriber.attach_to :active_record
+</code></pre>
+
+<p>Since we need to know all instance methods before attaching the log subscriber, the line above should be called after your <code>ActiveRecord::LogSubscriber</code> definition.</p>
+
+<p>After configured, whenever a <code>&quot;sql.active_record&quot;</code> notification is published, it will properly dispatch the event (<code>ActiveSupport::Notifications::Event</code>) to the sql method.</p>
+
+<p>Being an <code>ActiveSupport::Notifications</code> consumer, <code>ActiveSupport::LogSubscriber</code> exposes a simple interface to check if instrumented code raises an exception. It is common to log a different message in case of an error, and this can be achieved by extending the previous example:</p>
+
+<pre><code>module ActiveRecord
+  class LogSubscriber &lt; ActiveSupport::LogSubscriber
+    def sql(event)
+      exception = event.payload[:exception]
+
+      if exception
+        exception_object = event.payload[:exception_object]
+
+        error &quot;[ERROR] #{event.payload[:name]}: #{exception.join(&#39;, &#39;)} &quot; \
+              &quot;(#{exception_object.backtrace.first})&quot;
+      else
+        # standard logger code
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>Log subscriber also has some helpers to deal with logging and automatically flushes all logs when the request finishes (via <code>action_dispatch.callback</code> notification) in a Rails environment.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="LogSubscriber/TestHelper.html">ActiveSupport::LogSubscriber::TestHelper</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-color">color</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-finish">finish</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-flush_all-21">flush_all!</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-log_subscribers">log_subscribers</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-logger">logger</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-logger">logger</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-start">start</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">BLACK</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[30m&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>Colors</p></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">BLUE</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[34m&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">BOLD</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[1m&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">CLEAR</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[0m&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>Embed in a <a href="../String.html"><code>String</code></a> to clear all previous ANSI sequences.</p></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">CYAN</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[36m&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">GREEN</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[32m&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MAGENTA</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[35m&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">RED</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[31m&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">WHITE</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[37m&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">YELLOW</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[33m&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [W]
+            </td>
+            <td class='attr-name'>logger</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-flush_all-21">
+            
+              flush_all!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Flush all <a href="LogSubscriber.html#method-c-log_subscribers"><code>log_subscribers</code></a>&#39; logger.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-flush_all-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 93</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">flush_all!</span>
+  <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">flush</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:flush</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-log_subscribers">
+            
+              log_subscribers()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-log_subscribers_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 88</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">log_subscribers</span>
+  <span class="ruby-identifier">subscribers</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-logger">
+            
+              logger()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-logger_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 80</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">logger</span>
+  <span class="ruby-ivar">@logger</span> <span class="ruby-operator">||=</span> <span class="ruby-keyword">if</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-constant">Rails</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:logger</span>)
+    <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">logger</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-finish">
+            
+              finish(name, id, payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-finish_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 106</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">finish</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">id</span>, <span class="ruby-identifier">payload</span>)
+  <span class="ruby-keyword">super</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">logger</span>
+<span class="ruby-keyword">rescue</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">e</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">logger</span>
+    <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-node">&quot;Could not log #{name.inspect} event. #{e.class}: #{e.message} #{e.backtrace}&quot;</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-logger">
+            
+              logger()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-logger_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 98</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">logger</span>
+  <span class="ruby-constant">LogSubscriber</span>.<span class="ruby-identifier">logger</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-start">
+            
+              start(name, id, payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-start_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 102</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">start</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">id</span>, <span class="ruby-identifier">payload</span>)
+  <span class="ruby-keyword">super</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">logger</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+      <h2 id="instance-private-methods">Instance Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-color">
+            
+              color(text, color, bold = false)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Set color by using a symbol or one of the defined constants. If a third option is set to <code>true</code>, it also adds bold to the string. This is based on the Highline implementation and will automatically append <a href="LogSubscriber.html#CLEAR"><code>CLEAR</code></a> to the end of the returned <a href="../String.html"><code>String</code></a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-color_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/log_subscriber.rb, line 127</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">color</span>(<span class="ruby-identifier">text</span>, <span class="ruby-identifier">color</span>, <span class="ruby-identifier">bold</span> = <span class="ruby-keyword">false</span>) <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-identifier">text</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">colorize_logging</span>
+  <span class="ruby-identifier">color</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">const_get</span>(<span class="ruby-identifier">color</span>.<span class="ruby-identifier">upcase</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">color</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Symbol</span>)
+  <span class="ruby-identifier">bold</span>  = <span class="ruby-identifier">bold</span> <span class="ruby-operator">?</span> <span class="ruby-constant">BOLD</span> <span class="ruby-operator">:</span> <span class="ruby-string">&quot;&quot;</span>
+  <span class="ruby-node">&quot;#{bold}#{color}#{text}#{CLEAR}&quot;</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

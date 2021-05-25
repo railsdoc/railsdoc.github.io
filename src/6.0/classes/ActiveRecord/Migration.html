@@ -1,0 +1,1645 @@
+---
+title: ActiveRecord::Migration
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::Migration
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration_rb.html">activerecord/lib/active_record/migration.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration/command_recorder_rb.html">activerecord/lib/active_record/migration/command_recorder.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration/compatibility_rb.html">activerecord/lib/active_record/migration/compatibility.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration/join_table_rb.html">activerecord/lib/active_record/migration/join_table.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/railtie_rb.html">activerecord/lib/active_record/railtie.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/tasks/database_tasks_rb.html">activerecord/lib/active_record/tasks/database_tasks.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveRecord::Migration-label-Active+Record+Migrations">Active Record Migrations</h1>
+
+<p>Migrations can manage the evolution of a schema used by several physical databases. It&#39;s a solution to the common problem of adding a field to make a new feature work in your local database, but being unsure of how to push that change to other developers and to the production server. With migrations, you can describe the transformations in self-contained classes that can be checked into version control systems and executed against another database that might be one, two, or five versions behind.</p>
+
+<p>Example of a simple migration:</p>
+
+<pre><code>class AddSsl &lt; ActiveRecord::Migration[5.0]
+  def up
+    add_column :accounts, :ssl_enabled, :boolean, default: true
+  end
+
+  def down
+    remove_column :accounts, :ssl_enabled
+  end
+end
+</code></pre>
+
+<p>This migration will add a boolean flag to the accounts table and remove it if you&#39;re backing out of the migration. It shows how all migrations have two methods <code>up</code> and <code>down</code> that describes the transformations required to implement or remove the migration. These methods can consist of both the migration specific methods like <code>add_column</code> and <code>remove_column</code>, but may also contain regular Ruby code for generating data needed for the transformations.</p>
+
+<p>Example of a more complex migration that also needs to initialize data:</p>
+
+<pre><code>class AddSystemSettings &lt; ActiveRecord::Migration[5.0]
+  def up
+    create_table :system_settings do |t|
+      t.string  :name
+      t.string  :label
+      t.text    :value
+      t.string  :type
+      t.integer :position
+    end
+
+    SystemSetting.create  name:  &#39;notice&#39;,
+                          label: &#39;Use notice?&#39;,
+                          value: 1
+  end
+
+  def down
+    drop_table :system_settings
+  end
+end
+</code></pre>
+
+<p>This migration first adds the <code>system_settings</code> table, then creates the very first row in it using the Active Record model that relies on the table. It also uses the more advanced <code>create_table</code> syntax where you can specify a complete table schema in one block call.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-Available+transformations">Available transformations</h2>
+
+<h3 id="class-ActiveRecord::Migration-label-Creation">Creation</h3>
+<ul><li>
+<p><code>create_join_table(table_1, table_2, options)</code>: Creates a join table having its name as the lexical order of the first two arguments. See <a href="ConnectionAdapters/SchemaStatements.html#method-i-create_join_table"><code>ActiveRecord::ConnectionAdapters::SchemaStatements#create_join_table</code></a> for details.</p>
+</li><li>
+<p><code>create_table(name, options)</code>: Creates a table called <code>name</code> and makes the table object available to a block that can then add columns to it, following the same format as <code>add_column</code>. See example above. The options hash is for fragments like “DEFAULT CHARSET=UTF-8” that are appended to the create table definition.</p>
+</li><li>
+<p><code>add_column(table_name, column_name, type, options)</code>: Adds a new column to the table called <code>table_name</code> named <code>column_name</code> specified to be one of the following types: <code>:string</code>, <code>:text</code>, <code>:integer</code>, <code>:float</code>, <code>:decimal</code>, <code>:datetime</code>, <code>:timestamp</code>, <code>:time</code>, <code>:date</code>, <code>:binary</code>, <code>:boolean</code>. A default value can be specified by passing an <code>options</code> hash like <code>{ default: 11 }</code>. Other options include <code>:limit</code> and <code>:null</code> (e.g. <code>{ limit: 50, null: false }</code>) – see <a href="ConnectionAdapters/TableDefinition.html#method-i-column"><code>ActiveRecord::ConnectionAdapters::TableDefinition#column</code></a> for details.</p>
+</li><li>
+<p><code>add_foreign_key(from_table, to_table, options)</code>: Adds a new foreign key. <code>from_table</code> is the table with the key column, <code>to_table</code> contains the referenced primary key.</p>
+</li><li>
+<p><code>add_index(table_name, column_names, options)</code>: Adds a new index with the name of the column. Other options include <code>:name</code>, <code>:unique</code> (e.g. <code>{ name: &#39;users_name_index&#39;, unique: true }</code>) and <code>:order</code> (e.g. <code>{ order: { name: :desc } }</code>).</p>
+</li><li>
+<p><code>add_reference(:table_name, :reference_name)</code>: Adds a new column <code>reference_name_id</code> by default an integer. See <a href="ConnectionAdapters/SchemaStatements.html#method-i-add_reference"><code>ActiveRecord::ConnectionAdapters::SchemaStatements#add_reference</code></a> for details.</p>
+</li><li>
+<p><code>add_timestamps(table_name, options)</code>: Adds timestamps (<code>created_at</code> and <code>updated_at</code>) columns to <code>table_name</code>.</p>
+</li></ul>
+
+<h3 id="class-ActiveRecord::Migration-label-Modification">Modification</h3>
+<ul><li>
+<p><code>change_column(table_name, column_name, type, options)</code>:  Changes the column to a different type using the same parameters as add_column.</p>
+</li><li>
+<p><code>change_column_default(table_name, column_name, default_or_changes)</code>: Sets a default value for <code>column_name</code> defined by <code>default_or_changes</code> on <code>table_name</code>. Passing a hash containing <code>:from</code> and <code>:to</code> as <code>default_or_changes</code> will make this change reversible in the migration.</p>
+</li><li>
+<p><code>change_column_null(table_name, column_name, null, default = nil)</code>: Sets or removes a +NOT NULL+ constraint on <code>column_name</code>. The <code>null</code> flag indicates whether the value can be <code>NULL</code>. See <a href="ConnectionAdapters/SchemaStatements.html#method-i-change_column_null"><code>ActiveRecord::ConnectionAdapters::SchemaStatements#change_column_null</code></a> for details.</p>
+</li><li>
+<p><code>change_table(name, options)</code>: Allows to make column alterations to the table called <code>name</code>. It makes the table object available to a block that can then add/remove columns, indexes or foreign keys to it.</p>
+</li><li>
+<p><code>rename_column(table_name, column_name, new_column_name)</code>: Renames a column but keeps the type and content.</p>
+</li><li>
+<p><code>rename_index(table_name, old_name, new_name)</code>: Renames an index.</p>
+</li><li>
+<p><code>rename_table(old_name, new_name)</code>: Renames the table called <code>old_name</code> to <code>new_name</code>.</p>
+</li></ul>
+
+<h3 id="class-ActiveRecord::Migration-label-Deletion">Deletion</h3>
+<ul><li>
+<p><code>drop_table(name)</code>: Drops the table called <code>name</code>.</p>
+</li><li>
+<p><code>drop_join_table(table_1, table_2, options)</code>: Drops the join table specified by the given arguments.</p>
+</li><li>
+<p><code>remove_column(table_name, column_name, type, options)</code>: Removes the column named <code>column_name</code> from the table called <code>table_name</code>.</p>
+</li><li>
+<p><code>remove_columns(table_name, *column_names)</code>: Removes the given columns from the table definition.</p>
+</li><li>
+<p><code>remove_foreign_key(from_table, to_table = nil, **options)</code>: Removes the given foreign key from the table called <code>table_name</code>.</p>
+</li><li>
+<p><code>remove_index(table_name, column: column_names)</code>: Removes the index specified by <code>column_names</code>.</p>
+</li><li>
+<p><code>remove_index(table_name, name: index_name)</code>: Removes the index specified by <code>index_name</code>.</p>
+</li><li>
+<p><code>remove_reference(table_name, ref_name, options)</code>: Removes the reference(s) on <code>table_name</code> specified by <code>ref_name</code>.</p>
+</li><li>
+<p><code>remove_timestamps(table_name, options)</code>: Removes the timestamp columns (<code>created_at</code> and <code>updated_at</code>) from the table definition.</p>
+</li></ul>
+
+<h2 id="class-ActiveRecord::Migration-label-Irreversible+transformations">Irreversible transformations</h2>
+
+<p>Some transformations are destructive in a manner that cannot be reversed. Migrations of that kind should raise an <code>ActiveRecord::IrreversibleMigration</code> exception in their <code>down</code> method.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-Running+migrations+from+within+Rails">Running migrations from within Rails</h2>
+
+<p>The Rails package has several tools to help create and apply migrations.</p>
+
+<p>To generate a new migration, you can use</p>
+
+<pre><code>rails generate migration MyNewMigration
+</code></pre>
+
+<p>where MyNewMigration is the name of your migration. The generator will create an empty migration file <code>timestamp_my_new_migration.rb</code> in the <code>db/migrate/</code> directory where <code>timestamp</code> is the UTC formatted date and time that the migration was generated.</p>
+
+<p>There is a special syntactic shortcut to generate migrations that add fields to a table.</p>
+
+<pre><code>rails generate migration add_fieldname_to_tablename fieldname:string
+</code></pre>
+
+<p>This will generate the file <code>timestamp_add_fieldname_to_tablename.rb</code>, which will look like this:</p>
+
+<pre><code>class AddFieldnameToTablename &lt; ActiveRecord::Migration[5.0]
+  def change
+    add_column :tablenames, :fieldname, :string
+  end
+end
+</code></pre>
+
+<p>To run migrations against the currently configured database, use <code>rails db:migrate</code>. This will update the database by running all of the pending migrations, creating the <code>schema_migrations</code> table (see “About the schema_migrations table” section below) if missing. It will also invoke the db:schema:dump command, which will update your db/schema.rb file to match the structure of your database.</p>
+
+<p>To roll the database back to a previous migration version, use <code>rails db:rollback VERSION=X</code> where <code>X</code> is the version to which you wish to downgrade. Alternatively, you can also use the STEP option if you wish to rollback last few migrations. <code>rails db:rollback STEP=2</code> will rollback the latest two migrations.</p>
+
+<p>If any of the migrations throw an <code>ActiveRecord::IrreversibleMigration</code> exception, that step will fail and you&#39;ll have some manual work to do.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-Database+support">Database support</h2>
+
+<p>Migrations are currently supported in MySQL, PostgreSQL, SQLite, SQL Server, and Oracle (all supported databases except DB2).</p>
+
+<h2 id="class-ActiveRecord::Migration-label-More+examples">More examples</h2>
+
+<p>Not all migrations change the schema. Some just fix the data:</p>
+
+<pre><code>class RemoveEmptyTags &lt; ActiveRecord::Migration[5.0]
+  def up
+    Tag.all.each { |tag| tag.destroy if tag.pages.empty? }
+  end
+
+  def down
+    # not much we can do to restore deleted data
+    raise ActiveRecord::IrreversibleMigration, &quot;Can&#39;t recover the deleted tags&quot;
+  end
+end
+</code></pre>
+
+<p>Others remove columns when they migrate up instead of down:</p>
+
+<pre><code>class RemoveUnnecessaryItemAttributes &lt; ActiveRecord::Migration[5.0]
+  def up
+    remove_column :items, :incomplete_items_count
+    remove_column :items, :completed_items_count
+  end
+
+  def down
+    add_column :items, :incomplete_items_count
+    add_column :items, :completed_items_count
+  end
+end
+</code></pre>
+
+<p>And sometimes you need to do something in SQL not abstracted directly by migrations:</p>
+
+<pre><code>class MakeJoinUnique &lt; ActiveRecord::Migration[5.0]
+  def up
+    execute &quot;ALTER TABLE `pages_linked_pages` ADD UNIQUE `page_id_linked_page_id` (`page_id`,`linked_page_id`)&quot;
+  end
+
+  def down
+    execute &quot;ALTER TABLE `pages_linked_pages` DROP INDEX `page_id_linked_page_id`&quot;
+  end
+end
+</code></pre>
+
+<h2 id="class-ActiveRecord::Migration-label-Using+a+model+after+changing+its+table">Using a model after changing its table</h2>
+
+<p>Sometimes you&#39;ll want to add a column in a migration and populate it immediately after. In that case, you&#39;ll need to make a call to <code>Base#reset_column_information</code> in order to ensure that the model has the latest column data from after the new column was added. Example:</p>
+
+<pre><code>class AddPeopleSalary &lt; ActiveRecord::Migration[5.0]
+  def up
+    add_column :people, :salary, :integer
+    Person.reset_column_information
+    Person.all.each do |p|
+      p.update_attribute :salary, SalaryCalculator.compute(p)
+    end
+  end
+end
+</code></pre>
+
+<h2 id="class-ActiveRecord::Migration-label-Controlling+verbosity">Controlling verbosity</h2>
+
+<p>By default, migrations will describe the actions they are taking, writing them to the console as they happen, along with benchmarks describing how long each step took.</p>
+
+<p>You can quiet them down by setting ActiveRecord::Migration.verbose = false.</p>
+
+<p>You can also insert your own messages and benchmarks by using the <code>say_with_time</code> method:</p>
+
+<pre><code>def up
+  ...
+  say_with_time &quot;Updating salaries...&quot; do
+    Person.all.each do |p|
+      p.update_attribute :salary, SalaryCalculator.compute(p)
+    end
+  end
+  ...
+end
+</code></pre>
+
+<p>The phrase “Updating salaries…” would then be printed, along with the benchmark for the block when the block completes.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-Timestamped+Migrations">Timestamped Migrations</h2>
+
+<p>By default, Rails generates migrations that look like:</p>
+
+<pre><code>20080717013526_your_migration_name.rb
+</code></pre>
+
+<p>The prefix is a generation timestamp (in UTC).</p>
+
+<p>If you&#39;d prefer to use numeric prefixes, you can turn timestamped migrations off by setting:</p>
+
+<pre><code>config.active_record.timestamped_migrations = false
+</code></pre>
+
+<p>In application.rb.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-Reversible+Migrations">Reversible Migrations</h2>
+
+<p>Reversible migrations are migrations that know how to go <code>down</code> for you. You simply supply the <code>up</code> logic, and the <a href="Migration.html"><code>Migration</code></a> system figures out how to execute the down commands for you.</p>
+
+<p>To define a reversible migration, define the <code>change</code> method in your migration like this:</p>
+
+<pre><code>class TenderloveMigration &lt; ActiveRecord::Migration[5.0]
+  def change
+    create_table(:horses) do |t|
+      t.column :content, :text
+      t.column :remind_at, :datetime
+    end
+  end
+end
+</code></pre>
+
+<p>This migration will create the horses table for you on the way up, and automatically figure out how to drop the table on the way down.</p>
+
+<p>Some commands cannot be reversed. If you care to define how to move up and down in these cases, you should define the <code>up</code> and <code>down</code> methods as before.</p>
+
+<p>If a command cannot be reversed, an <code>ActiveRecord::IrreversibleMigration</code> exception will be raised when the migration is moving down.</p>
+
+<p>For a list of commands that are reversible, please see <code>ActiveRecord::Migration::CommandRecorder</code>.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-Transactional+Migrations">Transactional Migrations</h2>
+
+<p>If the database adapter supports DDL transactions, all migrations will automatically be wrapped in a transaction. There are queries that you can&#39;t execute inside a transaction though, and for these situations you can turn the automatic transactions off.</p>
+
+<pre><code>class ChangeEnum &lt; ActiveRecord::Migration[5.0]
+  disable_ddl_transaction!
+
+  def up
+    execute &quot;ALTER TYPE model_size ADD VALUE &#39;new_value&#39;&quot;
+  end
+end
+</code></pre>
+
+<p>Remember that you can still open your own transactions, even if you are in a <a href="Migration.html"><code>Migration</code></a> with <code>self.disable_ddl_transaction!</code>.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Migration/Compatibility.html">ActiveRecord::Migration::Compatibility</a></li>
+      
+      </ul>
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Migration/CheckPending.html">ActiveRecord::Migration::CheckPending</a></li>
+      
+        <li><a href="Migration/CommandRecorder.html">ActiveRecord::Migration::CommandRecorder</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-5B-5D">[]</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-announce">announce</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-check_pending-21">check_pending!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connection">connection</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-copy">copy</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-current_version">current_version</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-disable_ddl_transaction-21">disable_ddl_transaction!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-down">down</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-exec_migration">exec_migration</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-load_schema_if_pending-21">load_schema_if_pending!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-method_missing">method_missing</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-migrate">migrate</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-migrate">migrate</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-next_migration_number">next_migration_number</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-proper_table_name">proper_table_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-reversible">reversible</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-revert">revert</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-reverting-3F">reverting?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-run">run</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-say">say</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-say_with_time">say_with_time</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-suppress_messages">suppress_messages</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-up">up</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-up_only">up_only</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-write">write</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>name</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>version</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-5B-5D">
+            
+              [](version)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-5B-5D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 543</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">[]</span>(<span class="ruby-identifier">version</span>)
+  <span class="ruby-constant">Compatibility</span>.<span class="ruby-identifier">find</span>(<span class="ruby-identifier">version</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-check_pending-21">
+            
+              check_pending!(connection = Base.connection)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Raises <code>ActiveRecord::PendingMigrationError</code> error if any migrations are pending.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-check_pending-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 585</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">check_pending!</span>(<span class="ruby-identifier">connection</span> = <span class="ruby-constant">Base</span>.<span class="ruby-identifier">connection</span>)
+  <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">PendingMigrationError</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">migration_context</span>.<span class="ruby-identifier">needs_migration?</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-current_version">
+            
+              current_version()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-current_version_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 547</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">current_version</span>
+  <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">VERSION</span><span class="ruby-operator">::</span><span class="ruby-constant">STRING</span>.<span class="ruby-identifier">to_f</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-disable_ddl_transaction-21">
+            
+              disable_ddl_transaction!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Disable the transaction wrapping this migration. You can still create your own transactions even after calling disable_ddl_transaction!</p>
+
+<p>For more details read the <a href="Migration.html">“Transactional Migrations” section above</a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-disable_ddl_transaction-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 631</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">disable_ddl_transaction!</span>
+  <span class="ruby-ivar">@disable_ddl_transaction</span> = <span class="ruby-keyword">true</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-load_schema_if_pending-21">
+            
+              load_schema_if_pending!()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-load_schema_if_pending-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 589</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">load_schema_if_pending!</span>
+  <span class="ruby-identifier">current_config</span> = <span class="ruby-constant">Base</span>.<span class="ruby-identifier">connection_config</span>
+  <span class="ruby-identifier">all_configs</span> = <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">configurations</span>.<span class="ruby-identifier">configs_for</span>(<span class="ruby-value">env_name:</span> <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">env</span>)
+
+  <span class="ruby-identifier">needs_update</span> = <span class="ruby-operator">!</span><span class="ruby-identifier">all_configs</span>.<span class="ruby-identifier">all?</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">db_config</span><span class="ruby-operator">|</span>
+    <span class="ruby-constant">Tasks</span><span class="ruby-operator">::</span><span class="ruby-constant">DatabaseTasks</span>.<span class="ruby-identifier">schema_up_to_date?</span>(<span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">config</span>, <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">schema_format</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">env</span>, <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">spec_name</span>)
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">needs_update</span>
+    <span class="ruby-comment"># Roundtrip to Rake to allow plugins to hook into database initialization.</span>
+    <span class="ruby-identifier">root</span> = <span class="ruby-keyword">defined?</span>(<span class="ruby-constant">ENGINE_ROOT</span>) <span class="ruby-operator">?</span> <span class="ruby-constant">ENGINE_ROOT</span> <span class="ruby-operator">:</span> <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">root</span>
+    <span class="ruby-constant">FileUtils</span>.<span class="ruby-identifier">cd</span>(<span class="ruby-identifier">root</span>) <span class="ruby-keyword">do</span>
+      <span class="ruby-constant">Base</span>.<span class="ruby-identifier">clear_all_connections!</span>
+      <span class="ruby-identifier">system</span>(<span class="ruby-string">&quot;bin/rails db:test:prepare&quot;</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-comment"># Establish a new connection, the old database may be gone (db:test:prepare uses purge)</span>
+  <span class="ruby-constant">Base</span>.<span class="ruby-identifier">establish_connection</span>(<span class="ruby-identifier">current_config</span>)
+
+  <span class="ruby-identifier">check_pending!</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-migrate">
+            
+              migrate(direction)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-migrate_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 623</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">migrate</span>(<span class="ruby-identifier">direction</span>)
+  <span class="ruby-identifier">new</span>.<span class="ruby-identifier">migrate</span> <span class="ruby-identifier">direction</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(name = self.class.name, version = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 643</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">name</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">name</span>, <span class="ruby-identifier">version</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-ivar">@name</span>       = <span class="ruby-identifier">name</span>
+  <span class="ruby-ivar">@version</span>    = <span class="ruby-identifier">version</span>
+  <span class="ruby-ivar">@connection</span> = <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-announce">
+            
+              announce(message)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-announce_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 841</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">announce</span>(<span class="ruby-identifier">message</span>)
+  <span class="ruby-identifier">text</span> = <span class="ruby-node">&quot;#{version} #{name}: #{message}&quot;</span>
+  <span class="ruby-identifier">length</span> = [<span class="ruby-value">0</span>, <span class="ruby-value">75</span> <span class="ruby-operator">-</span> <span class="ruby-identifier">text</span>.<span class="ruby-identifier">length</span>].<span class="ruby-identifier">max</span>
+  <span class="ruby-identifier">write</span> <span class="ruby-string">&quot;== %s %s&quot;</span> <span class="ruby-operator">%</span> [<span class="ruby-identifier">text</span>, <span class="ruby-string">&quot;=&quot;</span> <span class="ruby-operator">*</span> <span class="ruby-identifier">length</span>]
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-connection">
+            
+              connection()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-connection_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 872</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connection</span>
+  <span class="ruby-ivar">@connection</span> <span class="ruby-operator">||</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">connection</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-copy">
+            
+              copy(destination, sources, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-copy_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 895</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">copy</span>(<span class="ruby-identifier">destination</span>, <span class="ruby-identifier">sources</span>, <span class="ruby-identifier">options</span> = {})
+  <span class="ruby-identifier">copied</span> = []
+  <span class="ruby-identifier">schema_migration</span> = <span class="ruby-identifier">options</span>[<span class="ruby-value">:schema_migration</span>] <span class="ruby-operator">||</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">SchemaMigration</span>
+
+  <span class="ruby-constant">FileUtils</span>.<span class="ruby-identifier">mkdir_p</span>(<span class="ruby-identifier">destination</span>) <span class="ruby-keyword">unless</span> <span class="ruby-constant">File</span>.<span class="ruby-identifier">exist?</span>(<span class="ruby-identifier">destination</span>)
+
+  <span class="ruby-identifier">destination_migrations</span> = <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">MigrationContext</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">destination</span>, <span class="ruby-identifier">schema_migration</span>).<span class="ruby-identifier">migrations</span>
+  <span class="ruby-identifier">last</span> = <span class="ruby-identifier">destination_migrations</span>.<span class="ruby-identifier">last</span>
+  <span class="ruby-identifier">sources</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">scope</span>, <span class="ruby-identifier">path</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">source_migrations</span> = <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">MigrationContext</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">path</span>, <span class="ruby-identifier">schema_migration</span>).<span class="ruby-identifier">migrations</span>
+
+    <span class="ruby-identifier">source_migrations</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">migration</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">source</span> = <span class="ruby-constant">File</span>.<span class="ruby-identifier">binread</span>(<span class="ruby-identifier">migration</span>.<span class="ruby-identifier">filename</span>)
+      <span class="ruby-identifier">inserted_comment</span> = <span class="ruby-node">&quot;# This migration comes from #{scope} (originally #{migration.version})\n&quot;</span>
+      <span class="ruby-identifier">magic_comments</span> = <span class="ruby-string">+&quot;&quot;</span>
+      <span class="ruby-identifier">loop</span> <span class="ruby-keyword">do</span>
+        <span class="ruby-comment"># If we have a magic comment in the original migration,</span>
+        <span class="ruby-comment"># insert our comment after the first newline(end of the magic comment line)</span>
+        <span class="ruby-comment"># so the magic keep working.</span>
+        <span class="ruby-comment"># Note that magic comments must be at the first line(except sh-bang).</span>
+        <span class="ruby-identifier">source</span>.<span class="ruby-identifier">sub!</span>(<span class="ruby-regexp">/\A(?:#.*\b(?:en)?coding:\s*\S+|#\s*frozen_string_literal:\s*(?:true|false)).*\n/</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">magic_comment</span><span class="ruby-operator">|</span>
+          <span class="ruby-identifier">magic_comments</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">magic_comment</span>; <span class="ruby-string">&quot;&quot;</span>
+        <span class="ruby-keyword">end</span> <span class="ruby-operator">||</span> <span class="ruby-keyword">break</span>
+      <span class="ruby-keyword">end</span>
+      <span class="ruby-identifier">source</span> = <span class="ruby-node">&quot;#{magic_comments}#{inserted_comment}#{source}&quot;</span>
+
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">duplicate</span> = <span class="ruby-identifier">destination_migrations</span>.<span class="ruby-identifier">detect</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">m</span><span class="ruby-operator">|</span> <span class="ruby-identifier">m</span>.<span class="ruby-identifier">name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">migration</span>.<span class="ruby-identifier">name</span> }
+        <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:on_skip</span>] <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">duplicate</span>.<span class="ruby-identifier">scope</span> <span class="ruby-operator">!=</span> <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">to_s</span>
+          <span class="ruby-identifier">options</span>[<span class="ruby-value">:on_skip</span>].<span class="ruby-identifier">call</span>(<span class="ruby-identifier">scope</span>, <span class="ruby-identifier">migration</span>)
+        <span class="ruby-keyword">end</span>
+        <span class="ruby-keyword">next</span>
+      <span class="ruby-keyword">end</span>
+
+      <span class="ruby-identifier">migration</span>.<span class="ruby-identifier">version</span> = <span class="ruby-identifier">next_migration_number</span>(<span class="ruby-identifier">last</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">last</span>.<span class="ruby-identifier">version</span> <span class="ruby-operator">+</span> <span class="ruby-value">1</span> <span class="ruby-operator">:</span> <span class="ruby-value">0</span>).<span class="ruby-identifier">to_i</span>
+      <span class="ruby-identifier">new_path</span> = <span class="ruby-constant">File</span>.<span class="ruby-identifier">join</span>(<span class="ruby-identifier">destination</span>, <span class="ruby-node">&quot;#{migration.version}_#{migration.name.underscore}.#{scope}.rb&quot;</span>)
+      <span class="ruby-identifier">old_path</span>, <span class="ruby-identifier">migration</span>.<span class="ruby-identifier">filename</span> = <span class="ruby-identifier">migration</span>.<span class="ruby-identifier">filename</span>, <span class="ruby-identifier">new_path</span>
+      <span class="ruby-identifier">last</span> = <span class="ruby-identifier">migration</span>
+
+      <span class="ruby-constant">File</span>.<span class="ruby-identifier">binwrite</span>(<span class="ruby-identifier">migration</span>.<span class="ruby-identifier">filename</span>, <span class="ruby-identifier">source</span>)
+      <span class="ruby-identifier">copied</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">migration</span>
+      <span class="ruby-identifier">options</span>[<span class="ruby-value">:on_copy</span>].<span class="ruby-identifier">call</span>(<span class="ruby-identifier">scope</span>, <span class="ruby-identifier">migration</span>, <span class="ruby-identifier">old_path</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:on_copy</span>]
+      <span class="ruby-identifier">destination_migrations</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">migration</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">copied</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-down">
+            
+              down()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-down_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 794</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">down</span>
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">delegate</span> = <span class="ruby-keyword">self</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:down</span>)
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">down</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-exec_migration">
+            
+              exec_migration(conn, direction)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-exec_migration_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 822</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">exec_migration</span>(<span class="ruby-identifier">conn</span>, <span class="ruby-identifier">direction</span>)
+  <span class="ruby-ivar">@connection</span> = <span class="ruby-identifier">conn</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:change</span>)
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">direction</span> <span class="ruby-operator">==</span> <span class="ruby-value">:down</span>
+      <span class="ruby-identifier">revert</span> { <span class="ruby-identifier">change</span> }
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-identifier">change</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">send</span>(<span class="ruby-identifier">direction</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">ensure</span>
+  <span class="ruby-ivar">@connection</span> = <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-method_missing">
+            
+              method_missing(method, *arguments, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-method_missing_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 876</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">method_missing</span>(<span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">arguments</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">arg_list</span> = <span class="ruby-identifier">arguments</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:inspect</span>) <span class="ruby-operator">*</span> <span class="ruby-string">&quot;, &quot;</span>
+
+  <span class="ruby-identifier">say_with_time</span> <span class="ruby-node">&quot;#{method}(#{arg_list})&quot;</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-keyword">unless</span> <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">respond_to?</span> <span class="ruby-value">:revert</span>
+      <span class="ruby-keyword">unless</span> <span class="ruby-identifier">arguments</span>.<span class="ruby-identifier">empty?</span> <span class="ruby-operator">||</span> [<span class="ruby-value">:execute</span>, <span class="ruby-value">:enable_extension</span>, <span class="ruby-value">:disable_extension</span>].<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">method</span>)
+        <span class="ruby-identifier">arguments</span>[<span class="ruby-value">0</span>] = <span class="ruby-identifier">proper_table_name</span>(<span class="ruby-identifier">arguments</span>.<span class="ruby-identifier">first</span>, <span class="ruby-identifier">table_name_options</span>)
+        <span class="ruby-keyword">if</span> [<span class="ruby-value">:rename_table</span>, <span class="ruby-value">:add_foreign_key</span>].<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">method</span>) <span class="ruby-operator">||</span>
+          (<span class="ruby-identifier">method</span> <span class="ruby-operator">==</span> <span class="ruby-value">:remove_foreign_key</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">arguments</span>.<span class="ruby-identifier">second</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>))
+          <span class="ruby-identifier">arguments</span>[<span class="ruby-value">1</span>] = <span class="ruby-identifier">proper_table_name</span>(<span class="ruby-identifier">arguments</span>.<span class="ruby-identifier">second</span>, <span class="ruby-identifier">table_name_options</span>)
+        <span class="ruby-keyword">end</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">return</span> <span class="ruby-keyword">super</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-identifier">method</span>)
+    <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">send</span>(<span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">arguments</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-migrate">
+            
+              migrate(direction)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Execute this migration in the named direction</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-migrate_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 801</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">migrate</span>(<span class="ruby-identifier">direction</span>)
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">respond_to?</span>(<span class="ruby-identifier">direction</span>)
+
+  <span class="ruby-keyword">case</span> <span class="ruby-identifier">direction</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-value">:up</span>   <span class="ruby-keyword">then</span> <span class="ruby-identifier">announce</span> <span class="ruby-string">&quot;migrating&quot;</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-value">:down</span> <span class="ruby-keyword">then</span> <span class="ruby-identifier">announce</span> <span class="ruby-string">&quot;reverting&quot;</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">time</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">connection_pool</span>.<span class="ruby-identifier">with_connection</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">conn</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">time</span> = <span class="ruby-constant">Benchmark</span>.<span class="ruby-identifier">measure</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">exec_migration</span>(<span class="ruby-identifier">conn</span>, <span class="ruby-identifier">direction</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">case</span> <span class="ruby-identifier">direction</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-value">:up</span>   <span class="ruby-keyword">then</span> <span class="ruby-identifier">announce</span> <span class="ruby-string">&quot;migrated (%.4fs)&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">time</span>.<span class="ruby-identifier">real</span>; <span class="ruby-identifier">write</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-value">:down</span> <span class="ruby-keyword">then</span> <span class="ruby-identifier">announce</span> <span class="ruby-string">&quot;reverted (%.4fs)&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">time</span>.<span class="ruby-identifier">real</span>; <span class="ruby-identifier">write</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-next_migration_number">
+            
+              next_migration_number(number)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Determines the version number of the next migration.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-next_migration_number_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 955</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">next_migration_number</span>(<span class="ruby-identifier">number</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">timestamped_migrations</span>
+    [<span class="ruby-constant">Time</span>.<span class="ruby-identifier">now</span>.<span class="ruby-identifier">utc</span>.<span class="ruby-identifier">strftime</span>(<span class="ruby-string">&quot;%Y%m%d%H%M%S&quot;</span>), <span class="ruby-string">&quot;%.14d&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">number</span>].<span class="ruby-identifier">max</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-constant">SchemaMigration</span>.<span class="ruby-identifier">normalize_migration_number</span>(<span class="ruby-identifier">number</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-proper_table_name">
+            
+              proper_table_name(name, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Finds the correct table name given an Active Record object. Uses the Active Record object&#39;s own table_name, or pre/suffix from the options passed in.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-proper_table_name_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 946</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">proper_table_name</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span> = {})
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">name</span>.<span class="ruby-identifier">respond_to?</span> <span class="ruby-value">:table_name</span>
+    <span class="ruby-identifier">name</span>.<span class="ruby-identifier">table_name</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-node">&quot;#{options[:table_name_prefix]}#{name}#{options[:table_name_suffix]}&quot;</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-reversible">
+            
+              reversible()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Used to specify an operation that can be run in one direction or another. Call the methods <code>up</code> and <code>down</code> of the yielded object to run a block only in one given direction. The whole block will be called in the right order within the migration.</p>
+
+<p>In the following example, the looping on users will always be done when the three columns &#39;first_name&#39;, &#39;last_name&#39; and &#39;full_name&#39; exist, even when migrating down:</p>
+
+<pre><code>class SplitNameMigration &lt; ActiveRecord::Migration[5.0]
+  def change
+    add_column :users, :first_name, :string
+    add_column :users, :last_name, :string
+
+    reversible do |dir|
+      User.reset_column_information
+      User.all.each do |u|
+        dir.up   { u.first_name, u.last_name = u.full_name.split(&#39; &#39;) }
+        dir.down { u.full_name = &quot;#{u.first_name} #{u.last_name}&quot; }
+        u.save
+      end
+    end
+
+    revert { add_column :users, :full_name, :string }
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-reversible_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 747</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reversible</span>
+  <span class="ruby-identifier">helper</span> = <span class="ruby-constant">ReversibleBlockHelper</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">reverting?</span>)
+  <span class="ruby-identifier">execute_block</span> { <span class="ruby-keyword">yield</span> <span class="ruby-identifier">helper</span> }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-revert">
+            
+              revert(*migration_classes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Reverses the migration commands for the given block and the given migrations.</p>
+
+<p>The following migration will remove the table &#39;horses&#39; and create the table &#39;apples&#39; on the way up, and the reverse on the way down.</p>
+
+<pre><code>class FixTLMigration &lt; ActiveRecord::Migration[5.0]
+  def change
+    revert do
+      create_table(:horses) do |t|
+        t.text :content
+        t.datetime :remind_at
+      end
+    end
+    create_table(:apples) do |t|
+      t.string :variety
+    end
+  end
+end
+</code></pre>
+
+<p>Or equivalently, if <code>TenderloveMigration</code> is defined as in the documentation for Migration:</p>
+
+<pre><code>require_relative &#39;20121212123456_tenderlove_migration&#39;
+
+class FixupTLMigration &lt; ActiveRecord::Migration[5.0]
+  def change
+    revert TenderloveMigration
+
+    create_table(:apples) do |t|
+      t.string :variety
+    end
+  end
+end
+</code></pre>
+
+<p>This command can be nested.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-revert_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 690</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">revert</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">migration_classes</span>)
+  <span class="ruby-identifier">run</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">migration_classes</span>.<span class="ruby-identifier">reverse</span>, <span class="ruby-value">revert:</span> <span class="ruby-keyword">true</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">migration_classes</span>.<span class="ruby-identifier">empty?</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">respond_to?</span> <span class="ruby-value">:revert</span>
+      <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">revert</span> { <span class="ruby-keyword">yield</span> }
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-identifier">recorder</span> = <span class="ruby-identifier">command_recorder</span>
+      <span class="ruby-ivar">@connection</span> = <span class="ruby-identifier">recorder</span>
+      <span class="ruby-identifier">suppress_messages</span> <span class="ruby-keyword">do</span>
+        <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">revert</span> { <span class="ruby-keyword">yield</span> }
+      <span class="ruby-keyword">end</span>
+      <span class="ruby-ivar">@connection</span> = <span class="ruby-identifier">recorder</span>.<span class="ruby-identifier">delegate</span>
+      <span class="ruby-identifier">recorder</span>.<span class="ruby-identifier">replay</span>(<span class="ruby-keyword">self</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-reverting-3F">
+            
+              reverting?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-reverting-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 707</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reverting?</span>
+  <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:reverting</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">reverting</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-run">
+            
+              run(*migration_classes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Runs the given migration classes. Last argument can specify options:</p>
+<ul><li>
+<p>:direction (default is :up)</p>
+</li><li>
+<p>:revert (default is false)</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-run_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 774</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">run</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">migration_classes</span>)
+  <span class="ruby-identifier">opts</span> = <span class="ruby-identifier">migration_classes</span>.<span class="ruby-identifier">extract_options!</span>
+  <span class="ruby-identifier">dir</span> = <span class="ruby-identifier">opts</span>[<span class="ruby-value">:direction</span>] <span class="ruby-operator">||</span> <span class="ruby-value">:up</span>
+  <span class="ruby-identifier">dir</span> = (<span class="ruby-identifier">dir</span> <span class="ruby-operator">==</span> <span class="ruby-value">:down</span> <span class="ruby-operator">?</span> <span class="ruby-value">:up</span> <span class="ruby-operator">:</span> <span class="ruby-value">:down</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">opts</span>[<span class="ruby-value">:revert</span>]
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">reverting?</span>
+    <span class="ruby-comment"># If in revert and going :up, say, we want to execute :down without reverting, so</span>
+    <span class="ruby-identifier">revert</span> { <span class="ruby-identifier">run</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">migration_classes</span>, <span class="ruby-value">direction:</span> <span class="ruby-identifier">dir</span>, <span class="ruby-value">revert:</span> <span class="ruby-keyword">true</span>) }
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">migration_classes</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">migration_class</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">migration_class</span>.<span class="ruby-identifier">new</span>.<span class="ruby-identifier">exec_migration</span>(<span class="ruby-identifier">connection</span>, <span class="ruby-identifier">dir</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-say">
+            
+              say(message, subitem = false)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Takes a message argument and outputs it as is. A second boolean argument can be passed to specify whether to indent or not.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-say_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 849</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">say</span>(<span class="ruby-identifier">message</span>, <span class="ruby-identifier">subitem</span> = <span class="ruby-keyword">false</span>)
+  <span class="ruby-identifier">write</span> <span class="ruby-node">&quot;#{subitem ? &quot;   -&gt;&quot; : &quot;--&quot;} #{message}&quot;</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-say_with_time">
+            
+              say_with_time(message)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Outputs text along with how long it took to run its block. If the block returns an integer it assumes it is the number of rows affected.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-say_with_time_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 855</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">say_with_time</span>(<span class="ruby-identifier">message</span>)
+  <span class="ruby-identifier">say</span>(<span class="ruby-identifier">message</span>)
+  <span class="ruby-identifier">result</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-identifier">time</span> = <span class="ruby-constant">Benchmark</span>.<span class="ruby-identifier">measure</span> { <span class="ruby-identifier">result</span> = <span class="ruby-keyword">yield</span> }
+  <span class="ruby-identifier">say</span> <span class="ruby-string">&quot;%.4fs&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">time</span>.<span class="ruby-identifier">real</span>, <span class="ruby-value">:subitem</span>
+  <span class="ruby-identifier">say</span>(<span class="ruby-node">&quot;#{result} rows&quot;</span>, <span class="ruby-value">:subitem</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">result</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Integer</span>)
+  <span class="ruby-identifier">result</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-suppress_messages">
+            
+              suppress_messages()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Takes a block as an argument and suppresses any output generated by the block.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-suppress_messages_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 865</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">suppress_messages</span>
+  <span class="ruby-identifier">save</span>, <span class="ruby-keyword">self</span>.<span class="ruby-identifier">verbose</span> = <span class="ruby-identifier">verbose</span>, <span class="ruby-keyword">false</span>
+  <span class="ruby-keyword">yield</span>
+<span class="ruby-keyword">ensure</span>
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">verbose</span> = <span class="ruby-identifier">save</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-up">
+            
+              up()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-up_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 788</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">up</span>
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">delegate</span> = <span class="ruby-keyword">self</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:up</span>)
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">up</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-up_only">
+            
+              up_only()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Used to specify an operation that is only run when migrating up (for example, populating a new column with its initial values).</p>
+
+<p>In the following example, the new column <code>published</code> will be given the value <code>true</code> for all existing records.</p>
+
+<pre><code>class AddPublishedToPosts &lt; ActiveRecord::Migration[5.2]
+  def change
+    add_column :posts, :published, :boolean, default: false
+    up_only do
+      execute &quot;update posts set published = &#39;true&#39;&quot;
+    end
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-up_only_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 766</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">up_only</span>
+  <span class="ruby-identifier">execute_block</span> { <span class="ruby-keyword">yield</span> } <span class="ruby-keyword">unless</span> <span class="ruby-identifier">reverting?</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-write">
+            
+              write(text = &quot;&quot;)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-write_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration.rb, line 837</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">write</span>(<span class="ruby-identifier">text</span> = <span class="ruby-string">&quot;&quot;</span>)
+  <span class="ruby-identifier">puts</span>(<span class="ruby-identifier">text</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">verbose</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

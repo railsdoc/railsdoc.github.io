@@ -1,0 +1,762 @@
+---
+title: ActiveRecord::ConnectionHandling
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::ConnectionHandling
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/connection_adapters/mysql2_adapter_rb.html">activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/connection_adapters/postgresql_adapter_rb.html">activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/connection_adapters/sqlite3_adapter_rb.html">activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/connection_handling_rb.html">activerecord/lib/active_record/connection_handling.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/database_configurations_rb.html">activerecord/lib/active_record/database_configurations.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/database_configurations/database_config_rb.html">activerecord/lib/active_record/database_configurations/database_config.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration_rb.html">activerecord/lib/active_record/migration.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-clear_query_caches_for_current_thread">clear_query_caches_for_current_thread</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connected-3F">connected?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connected_to">connected_to</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connected_to-3F">connected_to?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connection">connection</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connection_config">connection_config</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connection_pool">connection_pool</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connection_specification_name">connection_specification_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connects_to">connects_to</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-current_role">current_role</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-establish_connection">establish_connection</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-remove_connection">remove_connection</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-retrieve_connection">retrieve_connection</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">DEFAULT_ENV</td>
+            <td>=</td>
+            <td class="attr-value">-&gt; { RAILS_ENV.call || &quot;default_env&quot; }</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">RAILS_ENV</td>
+            <td>=</td>
+            <td class="attr-value">-&gt; { (Rails.env if defined?(Rails.env)) || ENV[&quot;RAILS_ENV&quot;].presence || ENV[&quot;RACK_ENV&quot;].presence }</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [W]
+            </td>
+            <td class='attr-name'>connection_specification_name</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-clear_query_caches_for_current_thread">
+            
+              clear_query_caches_for_current_thread()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Clears the query cache for all connections associated with the current thread.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-clear_query_caches_for_current_thread_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 177</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear_query_caches_for_current_thread</span>
+  <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">connection_handlers</span>.<span class="ruby-identifier">each_value</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">handler</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">handler</span>.<span class="ruby-identifier">connection_pool_list</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">pool</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">pool</span>.<span class="ruby-identifier">connection</span>.<span class="ruby-identifier">clear_query_cache</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">pool</span>.<span class="ruby-identifier">active_connection?</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-connected-3F">
+            
+              connected?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns <code>true</code> if Active Record is connected.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-connected-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 225</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connected?</span>
+  <span class="ruby-identifier">connection_handler</span>.<span class="ruby-identifier">connected?</span>(<span class="ruby-identifier">connection_specification_name</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-connected_to">
+            
+              connected_to(database: nil, role: nil, prevent_writes: false, &amp;blk)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Connects to a database or role (ex writing, reading, or another custom role) for the duration of the block.</p>
+
+<p>If a role is passed, Active Record will look up the connection based on the requested role:</p>
+
+<pre><code>ActiveRecord::Base.connected_to(role: :writing) do
+  Dog.create! # creates dog using dog writing connection
+end
+
+ActiveRecord::Base.connected_to(role: :reading) do
+  Dog.create! # throws exception because we&#39;re on a replica
+end
+
+ActiveRecord::Base.connected_to(role: :unknown_role) do
+  # raises exception due to non-existent role
+end
+</code></pre>
+
+<p>The `database` kwarg is deprecated in 6.1 and will be removed in 6.2</p>
+
+<p>It is not recommended for use as it re-establishes a connection every time it is called.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-connected_to_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 103</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connected_to</span>(<span class="ruby-value">database:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">role:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">prevent_writes:</span> <span class="ruby-keyword">false</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">database</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">role</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;connected_to can only accept a `database` or a `role` argument, but not both arguments.&quot;</span>
+  <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">database</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">database</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>)
+      <span class="ruby-identifier">role</span>, <span class="ruby-identifier">database</span> = <span class="ruby-identifier">database</span>.<span class="ruby-identifier">first</span>
+      <span class="ruby-identifier">role</span> = <span class="ruby-identifier">role</span>.<span class="ruby-identifier">to_sym</span>
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-identifier">config_hash</span> = <span class="ruby-identifier">resolve_config_for_connection</span>(<span class="ruby-identifier">database</span>)
+    <span class="ruby-identifier">handler</span> = <span class="ruby-identifier">lookup_connection_handler</span>(<span class="ruby-identifier">role</span>)
+
+    <span class="ruby-identifier">handler</span>.<span class="ruby-identifier">establish_connection</span>(<span class="ruby-identifier">config_hash</span>)
+
+    <span class="ruby-identifier">with_handler</span>(<span class="ruby-identifier">role</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
+  <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">role</span>
+    <span class="ruby-identifier">prevent_writes</span> = <span class="ruby-keyword">true</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">role</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">reading_role</span>
+
+    <span class="ruby-identifier">with_handler</span>(<span class="ruby-identifier">role</span>.<span class="ruby-identifier">to_sym</span>) <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">connection_handler</span>.<span class="ruby-identifier">while_preventing_writes</span>(<span class="ruby-identifier">prevent_writes</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;must provide a `database` or a `role`.&quot;</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-connected_to-3F">
+            
+              connected_to?(role:)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if role is the current connected role.</p>
+
+<pre><code>ActiveRecord::Base.connected_to(role: :writing) do
+  ActiveRecord::Base.connected_to?(role: :writing) #=&gt; true
+  ActiveRecord::Base.connected_to?(role: :reading) #=&gt; false
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-connected_to-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 135</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connected_to?</span>(<span class="ruby-value">role:</span>)
+  <span class="ruby-identifier">current_role</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">role</span>.<span class="ruby-identifier">to_sym</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-connection">
+            
+              connection()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the connection currently associated with the class. This can also be used to “borrow” the connection to do database work unrelated to any of the specific Active Records.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-connection_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 188</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connection</span>
+  <span class="ruby-identifier">retrieve_connection</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-connection_config">
+            
+              connection_config()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the configuration of the associated connection as a hash:</p>
+
+<pre><code>ActiveRecord::Base.connection_config
+# =&gt; {pool: 5, timeout: 5000, database: &quot;db/development.sqlite3&quot;, adapter: &quot;sqlite3&quot;}
+</code></pre>
+
+<p>Please use only for reading.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-connection_config_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 212</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connection_config</span>
+  <span class="ruby-identifier">connection_pool</span>.<span class="ruby-identifier">spec</span>.<span class="ruby-identifier">config</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-connection_pool">
+            
+              connection_pool()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-connection_pool_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 216</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connection_pool</span>
+  <span class="ruby-identifier">connection_handler</span>.<span class="ruby-identifier">retrieve_connection_pool</span>(<span class="ruby-identifier">connection_specification_name</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">raise</span>(<span class="ruby-constant">ConnectionNotEstablished</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-connection_specification_name">
+            
+              connection_specification_name()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Return the specification name from the current class or its parent.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-connection_specification_name_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 195</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connection_specification_name</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-operator">!</span><span class="ruby-keyword">defined?</span>(<span class="ruby-ivar">@connection_specification_name</span>) <span class="ruby-operator">||</span> <span class="ruby-ivar">@connection_specification_name</span>.<span class="ruby-identifier">nil?</span>
+    <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span> <span class="ruby-operator">==</span> <span class="ruby-constant">Base</span> <span class="ruby-operator">?</span> <span class="ruby-string">&quot;primary&quot;</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">superclass</span>.<span class="ruby-identifier">connection_specification_name</span>
+  <span class="ruby-keyword">end</span>
+  <span class="ruby-ivar">@connection_specification_name</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-connects_to">
+            
+              connects_to(database: {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Connects a model to the databases specified. The <code>database</code> keyword takes a hash consisting of a <code>role</code> and a <code>database_key</code>.</p>
+
+<p>This will create a connection handler for switching between connections, look up the config hash using the <code>database_key</code> and finally establishes a connection to that config.</p>
+
+<pre><code>class AnimalsModel &lt; ApplicationRecord
+  self.abstract_class = true
+
+  connects_to database: { writing: :primary, reading: :primary_replica }
+end
+</code></pre>
+
+<p>Returns an array of established connections.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-connects_to_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 68</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connects_to</span>(<span class="ruby-value">database:</span> {})
+  <span class="ruby-identifier">connections</span> = []
+
+  <span class="ruby-identifier">database</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">role</span>, <span class="ruby-identifier">database_key</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">config_hash</span> = <span class="ruby-identifier">resolve_config_for_connection</span>(<span class="ruby-identifier">database_key</span>)
+    <span class="ruby-identifier">handler</span> = <span class="ruby-identifier">lookup_connection_handler</span>(<span class="ruby-identifier">role</span>.<span class="ruby-identifier">to_sym</span>)
+
+    <span class="ruby-identifier">connections</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">handler</span>.<span class="ruby-identifier">establish_connection</span>(<span class="ruby-identifier">config_hash</span>)
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">connections</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-current_role">
+            
+              current_role()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the symbol representing the current connected role.</p>
+
+<pre><code>ActiveRecord::Base.connected_to(role: :writing) do
+  ActiveRecord::Base.current_role #=&gt; :writing
+end
+
+ActiveRecord::Base.connected_to(role: :reading) do
+  ActiveRecord::Base.current_role #=&gt; :reading
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-current_role_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 148</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">current_role</span>
+  <span class="ruby-identifier">connection_handlers</span>.<span class="ruby-identifier">key</span>(<span class="ruby-identifier">connection_handler</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-establish_connection">
+            
+              establish_connection(config_or_env = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Establishes the connection to the database. Accepts a hash as input where the <code>:adapter</code> key must be specified with the name of a database adapter (in lower-case) example for regular databases (MySQL, PostgreSQL, etc):</p>
+
+<pre><code>ActiveRecord::Base.establish_connection(
+  adapter:  &quot;mysql2&quot;,
+  host:     &quot;localhost&quot;,
+  username: &quot;myuser&quot;,
+  password: &quot;mypass&quot;,
+  database: &quot;somedatabase&quot;
+)
+</code></pre>
+
+<p>Example for SQLite database:</p>
+
+<pre><code>ActiveRecord::Base.establish_connection(
+  adapter:  &quot;sqlite3&quot;,
+  database: &quot;path/to/dbfile&quot;
+)
+</code></pre>
+
+<p>Also accepts keys as strings (for parsing from YAML for example):</p>
+
+<pre><code>ActiveRecord::Base.establish_connection(
+  &quot;adapter&quot;  =&gt; &quot;sqlite3&quot;,
+  &quot;database&quot; =&gt; &quot;path/to/dbfile&quot;
+)
+</code></pre>
+
+<p>Or a URL:</p>
+
+<pre><code>ActiveRecord::Base.establish_connection(
+  &quot;postgres://myuser:mypass@localhost/somedatabase&quot;
+)
+</code></pre>
+
+<p>In case <a href="Core.html#method-c-configurations">ActiveRecord::Base.configurations</a> is set (Rails automatically loads the contents of config/database.yml into it), a symbol can also be given as argument, representing a key in the configuration hash:</p>
+
+<pre><code>ActiveRecord::Base.establish_connection(:production)
+</code></pre>
+
+<p>The exceptions <a href="AdapterNotSpecified.html"><code>AdapterNotSpecified</code></a>, <a href="AdapterNotFound.html"><code>AdapterNotFound</code></a> and <code>ArgumentError</code> may be returned on an error.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-establish_connection_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 49</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">establish_connection</span>(<span class="ruby-identifier">config_or_env</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">config_hash</span> = <span class="ruby-identifier">resolve_config_for_connection</span>(<span class="ruby-identifier">config_or_env</span>)
+  <span class="ruby-identifier">connection_handler</span>.<span class="ruby-identifier">establish_connection</span>(<span class="ruby-identifier">config_hash</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-remove_connection">
+            
+              remove_connection(name = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-remove_connection_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 229</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_connection</span>(<span class="ruby-identifier">name</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">name</span> <span class="ruby-operator">||=</span> <span class="ruby-ivar">@connection_specification_name</span> <span class="ruby-keyword">if</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-ivar">@connection_specification_name</span>)
+  <span class="ruby-comment"># if removing a connection that has a pool, we reset the</span>
+  <span class="ruby-comment"># connection_specification_name so it will use the parent</span>
+  <span class="ruby-comment"># pool.</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">connection_handler</span>.<span class="ruby-identifier">retrieve_connection_pool</span>(<span class="ruby-identifier">name</span>)
+    <span class="ruby-keyword">self</span>.<span class="ruby-identifier">connection_specification_name</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">connection_handler</span>.<span class="ruby-identifier">remove_connection</span>(<span class="ruby-identifier">name</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-retrieve_connection">
+            
+              retrieve_connection()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-retrieve_connection_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_handling.rb, line 220</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retrieve_connection</span>
+  <span class="ruby-identifier">connection_handler</span>.<span class="ruby-identifier">retrieve_connection</span>(<span class="ruby-identifier">connection_specification_name</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

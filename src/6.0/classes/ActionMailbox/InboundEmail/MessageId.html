@@ -1,0 +1,196 @@
+---
+title: ActionMailbox::InboundEmail::MessageId
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionMailbox::InboundEmail::MessageId
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionmailbox/app/models/action_mailbox/inbound_email/message_id_rb.html">actionmailbox/app/models/action_mailbox/inbound_email/message_id.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>The <code>Message-ID</code> as specified by rfc822 is supposed to be a unique identifier for that individual email. That makes it an ideal tracking token for debugging and forensics, just like <code>X-Request-Id</code> does for web request.</p>
+
+<p>If an inbound email does not, against the rfc822 mandate, specify a Message-ID, one will be generated using the approach from <code>Mail::MessageIdField</code>.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-create_and_extract_message_id-21">create_and_extract_message_id!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-extract_message_id">extract_message_id</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-generate_missing_message_id">generate_missing_message_id</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-create_and_extract_message_id-21">
+            
+              create_and_extract_message_id!(source, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Create a new <code>InboundEmail</code> from the raw <code>source</code> of the email, which be uploaded as a Active Storage attachment called <code>raw_email</code>. Before the upload, extract the Message-ID from the <code>source</code> and set it as an attribute on the new <code>InboundEmail</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-create_and_extract_message_id-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailbox/app/models/action_mailbox/inbound_email/message_id.rb, line 16</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">create_and_extract_message_id!</span>(<span class="ruby-identifier">source</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-identifier">message_checksum</span> = <span class="ruby-constant">Digest</span><span class="ruby-operator">::</span><span class="ruby-constant">SHA1</span>.<span class="ruby-identifier">hexdigest</span>(<span class="ruby-identifier">source</span>)
+  <span class="ruby-identifier">message_id</span> = <span class="ruby-identifier">extract_message_id</span>(<span class="ruby-identifier">source</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">generate_missing_message_id</span>(<span class="ruby-identifier">message_checksum</span>)
+
+  <span class="ruby-identifier">create!</span> <span class="ruby-identifier">options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-value">message_id:</span> <span class="ruby-identifier">message_id</span>, <span class="ruby-value">message_checksum:</span> <span class="ruby-identifier">message_checksum</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">inbound_email</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">inbound_email</span>.<span class="ruby-identifier">raw_email</span>.<span class="ruby-identifier">attach</span> <span class="ruby-value">io:</span> <span class="ruby-constant">StringIO</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">source</span>), <span class="ruby-value">filename:</span> <span class="ruby-string">&quot;message.eml&quot;</span>, <span class="ruby-value">content_type:</span> <span class="ruby-string">&quot;message/rfc822&quot;</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">rescue</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">RecordNotUnique</span>
+  <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-extract_message_id">
+            
+              extract_message_id(source)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-extract_message_id_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailbox/app/models/action_mailbox/inbound_email/message_id.rb, line 28</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">extract_message_id</span>(<span class="ruby-identifier">source</span>)
+  <span class="ruby-constant">Mail</span>.<span class="ruby-identifier">from_source</span>(<span class="ruby-identifier">source</span>).<span class="ruby-identifier">message_id</span> <span class="ruby-keyword">rescue</span> <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-generate_missing_message_id">
+            
+              generate_missing_message_id(message_checksum)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-generate_missing_message_id_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailbox/app/models/action_mailbox/inbound_email/message_id.rb, line 32</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">generate_missing_message_id</span>(<span class="ruby-identifier">message_checksum</span>)
+  <span class="ruby-constant">Mail</span><span class="ruby-operator">::</span><span class="ruby-constant">MessageIdField</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;&lt;#{message_checksum}@#{::Socket.gethostname}.mail&gt;&quot;</span>).<span class="ruby-identifier">message_id</span>.<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">message_id</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">warn</span> <span class="ruby-node">&quot;Message-ID couldn&#39;t be parsed or is missing. Generated a new Message-ID: #{message_id}&quot;</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,132 @@
+---
+title: ActiveSupport::Testing::Isolation::Forking
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.0.3.7</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Testing::Isolation::Forking
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/activesupport/lib/active_support/testing/isolation_rb.html">activesupport/lib/active_support/testing/isolation.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-run_in_isolation">run_in_isolation</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-run_in_isolation">
+            
+              run_in_isolation(&amp;blk)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-run_in_isolation_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/isolation.rb, line 27</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">run_in_isolation</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
+  <span class="ruby-identifier">read</span>, <span class="ruby-identifier">write</span> = <span class="ruby-constant">IO</span>.<span class="ruby-identifier">pipe</span>
+  <span class="ruby-identifier">read</span>.<span class="ruby-identifier">binmode</span>
+  <span class="ruby-identifier">write</span>.<span class="ruby-identifier">binmode</span>
+
+  <span class="ruby-identifier">pid</span> = <span class="ruby-identifier">fork</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">read</span>.<span class="ruby-identifier">close</span>
+    <span class="ruby-keyword">yield</span>
+    <span class="ruby-keyword">begin</span>
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">error?</span>
+        <span class="ruby-identifier">failures</span>.<span class="ruby-identifier">map!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">e</span><span class="ruby-operator">|</span>
+          <span class="ruby-keyword">begin</span>
+            <span class="ruby-constant">Marshal</span>.<span class="ruby-identifier">dump</span> <span class="ruby-identifier">e</span>
+            <span class="ruby-identifier">e</span>
+          <span class="ruby-keyword">rescue</span> <span class="ruby-constant">TypeError</span>
+            <span class="ruby-identifier">ex</span> = <span class="ruby-constant">Exception</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">e</span>.<span class="ruby-identifier">message</span>
+            <span class="ruby-identifier">ex</span>.<span class="ruby-identifier">set_backtrace</span> <span class="ruby-identifier">e</span>.<span class="ruby-identifier">backtrace</span>
+            <span class="ruby-constant">Minitest</span><span class="ruby-operator">::</span><span class="ruby-constant">UnexpectedError</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">ex</span>
+          <span class="ruby-keyword">end</span>
+        }
+      <span class="ruby-keyword">end</span>
+      <span class="ruby-identifier">test_result</span> = <span class="ruby-keyword">defined?</span>(<span class="ruby-constant">Minitest</span><span class="ruby-operator">::</span><span class="ruby-constant">Result</span>) <span class="ruby-operator">?</span> <span class="ruby-constant">Minitest</span><span class="ruby-operator">::</span><span class="ruby-constant">Result</span>.<span class="ruby-identifier">from</span>(<span class="ruby-keyword">self</span>) <span class="ruby-operator">:</span> <span class="ruby-identifier">dup</span>
+      <span class="ruby-identifier">result</span> = <span class="ruby-constant">Marshal</span>.<span class="ruby-identifier">dump</span>(<span class="ruby-identifier">test_result</span>)
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-identifier">write</span>.<span class="ruby-identifier">puts</span> [<span class="ruby-identifier">result</span>].<span class="ruby-identifier">pack</span>(<span class="ruby-string">&quot;m&quot;</span>)
+    <span class="ruby-identifier">exit!</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">write</span>.<span class="ruby-identifier">close</span>
+  <span class="ruby-identifier">result</span> = <span class="ruby-identifier">read</span>.<span class="ruby-identifier">read</span>
+  <span class="ruby-constant">Process</span>.<span class="ruby-identifier">wait2</span>(<span class="ruby-identifier">pid</span>)
+  <span class="ruby-identifier">result</span>.<span class="ruby-identifier">unpack1</span>(<span class="ruby-string">&quot;m&quot;</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
