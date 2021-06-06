@@ -6,7 +6,7 @@ $(() => {
   // highlight.js
   hljs.highlightAll();
 
-  $("#navigation").load("/navigation.html", function() {
+  $("#navigation").load(`${config.rootPath}navigation.html`, function() {
     $(".sidebar-sticky .icon").on("click", function (e) {
       $(this).siblings("ul").toggle();
       this.classList.toggle("icon-opened");
