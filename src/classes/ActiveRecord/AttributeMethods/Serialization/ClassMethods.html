@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -66,9 +66,36 @@ layout: default
 
           
             <div class="description">
-              <p>If you have an attribute that needs to be saved to the database as an object, and retrieved as the same object, then specify the name of that attribute using this method and it will be handled automatically. The serialization is done through YAML. If <code>class_name</code> is specified, the serialized object must be of that class on assignment and retrieval. Otherwise <a href="../../SerializationTypeMismatch.html"><code>SerializationTypeMismatch</code></a> will be raised.</p>
+              <p>If you have an attribute that needs to be saved to the database as a serialized object, and retrieved by deserializing into the same object, then specify the name of that attribute using this method and serialization will be handled automatically.</p>
 
-<p>Empty objects as <code>{}</code>, in the case of <code>Hash</code>, or <code>[]</code>, in the case of <code>Array</code>, will always be persisted as null.</p>
+<p>The serialization format may be YAML, JSON, or any custom format using a custom coder class.</p>
+
+<h3 id="method-i-serialize-label-Serialization+formats"><a href="../Serialization.html"><code>Serialization</code></a> formats</h3>
+
+<pre><code>serialize attr_name [, class_name_or_coder]
+
+                     |                           |  database storage   |
+class_name_or_coder  | attribute read/write type | serialized | NULL   |
+---------------------+---------------------------+------------+--------+
+  &lt;not given&gt;        | any value that supports   |    YAML    |        |
+                     |   .to_yaml                |            |        |
+                     |                           |            |        |
+Array                | Array **                  |    YAML    |  []    |
+                     |                           |            |        |
+Hash                 | Hash **                   |    YAML    |  {}    |
+                     |                           |            |        |
+JSON                 | any value that supports   |    JSON    |        |
+                     |   .to_json                |            |        |
+                     |                           |            |        |
+&lt;custom coder class&gt; | any value supported by    |   custom   | custom |
+                     | the custom coder class    |            |        |
+</code></pre>
+
+<p>** If <code>class_name_or_coder</code> is <code>Array</code> or <code>Hash</code>, values retrieved will always be of that type, and any value assigned must be of that type or <code>SerializationTypeMismatch</code> will be raised.</p>
+
+<h4 id="method-i-serialize-label-Custom+coders">Custom coders</h4>
+
+<p>A custom coder class or module may be given. This must have <code>self.load</code> and <code>self.dump</code> class/module methods. <code>self.dump(object)</code> will be called to serialize an object and should return the serialized value to be stored in the database (<code>nil</code> to store as <code>NULL</code>). <code>self.load(string)</code> will be called to reverse the process and load (unserialize) from the database.</p>
 
 <p>Keep in mind that database adapters handle certain serialization tasks for you. For instance: <code>json</code> and <code>jsonb</code> types in PostgreSQL will be converted between JSON object/array syntax and Ruby <code>Hash</code> or <code>Array</code> objects transparently. There is no need to use <a href="ClassMethods.html#method-i-serialize"><code>serialize</code></a> in this case.</p>
 
@@ -78,7 +105,7 @@ layout: default
 <ul><li>
 <p><code>attr_name</code> - The field name that should be serialized.</p>
 </li><li>
-<p><code>class_name_or_coder</code> - Optional, a coder object, which responds to <code>.load</code> and <code>.dump</code> or a class name that the object type should be equal to.</p>
+<p><code>class_name_or_coder</code> - Optional, may be be <code>Array</code> or <code>Hash</code> or <code>JSON</code> or a custom coder class or module which responds to <code>.load</code> and <code>.dump</code>. See table above.</p>
 </li></ul>
 
 <h4 id="method-i-serialize-label-Options">Options</h4>
@@ -87,7 +114,7 @@ layout: default
 
 <h4 id="method-i-serialize-label-Example">Example</h4>
 
-<pre><code># Serialize a preferences attribute.
+<pre><code># Serialize a preferences attribute using YAML coder.
 class User &lt; ActiveRecord::Base
   serialize :preferences
 end
@@ -100,6 +127,28 @@ end
 # Serialize preferences as Hash using YAML coder.
 class User &lt; ActiveRecord::Base
   serialize :preferences, Hash
+end
+
+# Serialize preferences using a custom coder.
+class Rot13JSON
+  def self.rot13(string)
+    string.tr(&quot;a-zA-Z&quot;, &quot;n-za-mN-ZA-M&quot;)
+  end
+
+  # returns serialized string that will be stored in the database
+  def self.dump(object)
+    ActiveSupport::JSON.encode(object).rot13
+  end
+
+  # reverses the above, turning the serialized string from the database
+  # back into its original value
+  def self.load(string)
+    ActiveSupport::JSON.decode(string.rot13)
+  end
+end
+
+class User &lt; ActiveRecord::Base
+  serialize :preferences, Rot13JSON
 end
 </code></pre>
             </div>
@@ -118,7 +167,7 @@ end
                 
               </p>
               <div id="method-i-serialize_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/serialization.rb, line 66</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/serialization.rb, line 119</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">serialize</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-identifier">class_name_or_coder</span> = <span class="ruby-constant">Object</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-comment"># When ::JSON is used, force it to go through the Active Support JSON encoder</span>
   <span class="ruby-comment"># to ensure special objects (e.g. Active Record models) are dumped correctly</span>
@@ -131,11 +180,12 @@ end
     <span class="ruby-constant">Coders</span><span class="ruby-operator">::</span><span class="ruby-constant">YAMLColumn</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-identifier">class_name_or_coder</span>)
   <span class="ruby-keyword">end</span>
 
-  <span class="ruby-identifier">decorate_attribute_type</span>(<span class="ruby-identifier">attr_name</span>.<span class="ruby-identifier">to_s</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">cast_type</span><span class="ruby-operator">|</span>
+  <span class="ruby-identifier">attribute</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">cast_type</span><span class="ruby-operator">|</span>
     <span class="ruby-keyword">if</span> <span class="ruby-identifier">type_incompatible_with_serialize?</span>(<span class="ruby-identifier">cast_type</span>, <span class="ruby-identifier">class_name_or_coder</span>)
       <span class="ruby-identifier">raise</span> <span class="ruby-constant">ColumnNotSerializableError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-identifier">cast_type</span>)
     <span class="ruby-keyword">end</span>
 
+    <span class="ruby-identifier">cast_type</span> = <span class="ruby-identifier">cast_type</span>.<span class="ruby-identifier">subtype</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">Type</span><span class="ruby-operator">::</span><span class="ruby-constant">Serialized</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">cast_type</span>
     <span class="ruby-constant">Type</span><span class="ruby-operator">::</span><span class="ruby-constant">Serialized</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">cast_type</span>, <span class="ruby-identifier">coder</span>)
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>

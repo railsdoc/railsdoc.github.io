@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -33,6 +33,15 @@ layout: default
 
 <p>Attachments also have access to all methods from <a href="Blob.html"><code>ActiveStorage::Blob</code></a>.</p>
 
+<p>If you wish to preload attachments or blobs, you can use these scopes:</p>
+
+<pre><code># preloads attachments, their corresponding blobs, and variant records (if using `ActiveStorage.track_variants`)
+User.all.with_attached_avatars
+
+# preloads blobs and variant records (if using `ActiveStorage.track_variants`)
+User.first.avatars.with_all_variant_records
+</code></pre>
+
     </div>
   
 
@@ -54,6 +63,10 @@ layout: default
       
         <li>
           <a href="#method-i-purge_later">purge_later</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-variant">variant</a>
         </li>
       
     </ul>
@@ -101,11 +114,11 @@ layout: default
                 
               </p>
               <div id="method-i-purge_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/attachment.rb, line 23</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/attachment.rb, line 33</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge</span>
   <span class="ruby-identifier">transaction</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">delete</span>
-    <span class="ruby-identifier">record</span>&amp;.<span class="ruby-identifier">touch</span>
+    <span class="ruby-identifier">record</span>.<span class="ruby-identifier">touch</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">record</span>&amp;.<span class="ruby-identifier">persisted?</span>
   <span class="ruby-keyword">end</span>
   <span class="ruby-identifier">blob</span>&amp;.<span class="ruby-identifier">purge</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -140,13 +153,59 @@ layout: default
                 
               </p>
               <div id="method-i-purge_later_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/attachment.rb, line 32</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/attachment.rb, line 42</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge_later</span>
   <span class="ruby-identifier">transaction</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">delete</span>
-    <span class="ruby-identifier">record</span>&amp;.<span class="ruby-identifier">touch</span>
+    <span class="ruby-identifier">record</span>.<span class="ruby-identifier">touch</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">record</span>&amp;.<span class="ruby-identifier">persisted?</span>
   <span class="ruby-keyword">end</span>
   <span class="ruby-identifier">blob</span>&amp;.<span class="ruby-identifier">purge_later</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-variant">
+            
+              variant(transformations)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns an <a href="Variant.html"><code>ActiveStorage::Variant</code></a> or <a href="VariantWithRecord.html"><code>ActiveStorage::VariantWithRecord</code></a> instance for the attachment with the set of <code>transformations</code> provided. See <a href="Blob/Representable.html#method-i-variant"><code>ActiveStorage::Blob::Representable#variant</code></a> for more information.</p>
+
+<p>Raises an <code>ArgumentError</code> if <code>transformations</code> is a <code>Symbol</code> which is an unknown pre-defined variant of the attachment.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-variant_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/attachment.rb, line 56</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">variant</span>(<span class="ruby-identifier">transformations</span>)
+  <span class="ruby-keyword">case</span> <span class="ruby-identifier">transformations</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-constant">Symbol</span>
+    <span class="ruby-identifier">variant_name</span> = <span class="ruby-identifier">transformations</span>
+    <span class="ruby-identifier">transformations</span> = <span class="ruby-identifier">variants</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-identifier">variant_name</span>) <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">record_model_name</span> = <span class="ruby-identifier">record</span>.<span class="ruby-identifier">to_model</span>.<span class="ruby-identifier">model_name</span>.<span class="ruby-identifier">name</span>
+      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;Cannot find variant :#{variant_name} for #{record_model_name}##{name}&quot;</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">blob</span>.<span class="ruby-identifier">variant</span>(<span class="ruby-identifier">transformations</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

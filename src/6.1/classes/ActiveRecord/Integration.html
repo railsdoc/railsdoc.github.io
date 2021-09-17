@@ -1,0 +1,292 @@
+---
+title: ActiveRecord::Integration
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.1.4</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Integration
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/integration_rb.html">activerecord/lib/active_record/integration.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Integration/ClassMethods.html">ActiveRecord::Integration::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-cache_key">cache_key</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-cache_key_with_version">cache_key_with_version</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-cache_version">cache_version</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_param">to_param</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-cache_key">
+            
+              cache_key()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a stable cache key that can be used to identify this record.</p>
+
+<pre><code>Product.new.cache_key     # =&gt; &quot;products/new&quot;
+Product.find(5).cache_key # =&gt; &quot;products/5&quot;
+</code></pre>
+
+<p>If ActiveRecord::Base.cache_versioning is turned off, as it was in Rails 5.1 and earlier, the cache key will also include a version.</p>
+
+<pre><code>Product.cache_versioning = false
+Product.find(5).cache_key  # =&gt; &quot;products/5-20071224150000&quot; (updated_at available)
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-cache_key_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 72</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">cache_key</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">new_record?</span>
+    <span class="ruby-node">&quot;#{model_name.cache_key}/new&quot;</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">cache_version</span>
+      <span class="ruby-node">&quot;#{model_name.cache_key}/#{id}&quot;</span>
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-identifier">timestamp</span> = <span class="ruby-identifier">max_updated_column_timestamp</span>
+
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">timestamp</span>
+        <span class="ruby-identifier">timestamp</span> = <span class="ruby-identifier">timestamp</span>.<span class="ruby-identifier">utc</span>.<span class="ruby-identifier">to_s</span>(<span class="ruby-identifier">cache_timestamp_format</span>)
+        <span class="ruby-node">&quot;#{model_name.cache_key}/#{id}-#{timestamp}&quot;</span>
+      <span class="ruby-keyword">else</span>
+        <span class="ruby-node">&quot;#{model_name.cache_key}/#{id}&quot;</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-cache_key_with_version">
+            
+              cache_key_with_version()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a cache key along with the version.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-cache_key_with_version_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 113</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">cache_key_with_version</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">version</span> = <span class="ruby-identifier">cache_version</span>
+    <span class="ruby-node">&quot;#{cache_key}-#{version}&quot;</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">cache_key</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-cache_version">
+            
+              cache_version()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a cache version that can be used together with the cache key to form a recyclable caching scheme. By default, the updated_at column is used for the <a href="Integration.html#method-i-cache_version"><code>cache_version</code></a>, but this method can be overwritten to return something else.</p>
+
+<p>Note, this method will return nil if ActiveRecord::Base.cache_versioning is set to <code>false</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-cache_version_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 97</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">cache_version</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">cache_versioning</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">has_attribute?</span>(<span class="ruby-string">&quot;updated_at&quot;</span>)
+    <span class="ruby-identifier">timestamp</span> = <span class="ruby-identifier">updated_at_before_type_cast</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">can_use_fast_cache_version?</span>(<span class="ruby-identifier">timestamp</span>)
+      <span class="ruby-identifier">raw_timestamp_to_cache_version</span>(<span class="ruby-identifier">timestamp</span>)
+    <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">timestamp</span> = <span class="ruby-identifier">updated_at</span>
+      <span class="ruby-identifier">timestamp</span>.<span class="ruby-identifier">utc</span>.<span class="ruby-identifier">to_s</span>(<span class="ruby-identifier">cache_timestamp_format</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">elsif</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">has_attribute?</span>(<span class="ruby-string">&quot;updated_at&quot;</span>)
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveModel</span><span class="ruby-operator">::</span><span class="ruby-constant">MissingAttributeError</span>, <span class="ruby-string">&quot;missing attribute: updated_at&quot;</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_param">
+            
+              to_param()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a <code>String</code>, which Action Pack uses for constructing a URL to this object. The default implementation returns this record&#39;s id as a <code>String</code>, or <code>nil</code> if this record&#39;s unsaved.</p>
+
+<p>For example, suppose that you have a User model, and that you have a <code>resources :users</code> route. Normally, <code>user_path</code> will construct a path with the user object&#39;s &#39;id&#39; in it:</p>
+
+<pre><code>user = User.find_by(name: &#39;Phusion&#39;)
+user_path(user)  # =&gt; &quot;/users/1&quot;
+</code></pre>
+
+<p>You can override <code>to_param</code> in your model to make <code>user_path</code> construct a path using the user&#39;s name instead of the user&#39;s id:</p>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  def to_param  # overridden
+    name
+  end
+end
+
+user = User.find_by(name: &#39;Phusion&#39;)
+user_path(user)  # =&gt; &quot;/users/Phusion&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-to_param_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/integration.rb, line 57</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_param</span>
+  <span class="ruby-comment"># We can&#39;t use alias_method here, because method &#39;id&#39; optimizes itself on the fly.</span>
+  <span class="ruby-identifier">id</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">id</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-comment"># Be sure to stringify the id for routes</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

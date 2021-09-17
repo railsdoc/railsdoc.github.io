@@ -1,0 +1,869 @@
+---
+title: ActionCable::Channel::Base
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.1.4</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionCable::Channel::Base
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actioncable/lib/action_cable/channel/base_rb.html">actioncable/lib/action_cable/channel/base.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>The channel provides the basic structure of grouping behavior into logical units when communicating over the WebSocket connection. You can think of a channel like a form of controller, but one that&#39;s capable of pushing content to the subscriber in addition to simply responding to the subscriber&#39;s direct requests.</p>
+
+<p><a href="../Channel.html"><code>Channel</code></a> instances are long-lived. A channel object will be instantiated when the cable consumer becomes a subscriber, and then lives until the consumer disconnects. This may be seconds, minutes, hours, or even days. That means you have to take special care not to do anything silly in a channel that would balloon its memory footprint or whatever. The references are forever, so they won&#39;t be released as is normally the case with a controller instance that gets thrown away after every request.</p>
+
+<p>Long-lived channels (and connections) also mean you&#39;re responsible for ensuring that the data is fresh. If you hold a reference to a user record, but the name is changed while that reference is held, you may be sending stale data if you don&#39;t take precautions to avoid it.</p>
+
+<p>The upside of long-lived channel instances is that you can use instance variables to keep reference to objects that future subscriber requests can interact with. Here&#39;s a quick example:</p>
+
+<pre><code>class ChatChannel &lt; ApplicationCable::Channel
+  def subscribed
+    @room = Chat::Room[params[:room_number]]
+  end
+
+  def speak(data)
+    @room.speak data, user: current_user
+  end
+end
+</code></pre>
+
+<p>The speak action simply uses the Chat::Room object that was created when the channel was first subscribed to by the consumer when that subscriber wants to say something in the room.</p>
+
+<h2 id="class-ActionCable::Channel::Base-label-Action+processing">Action processing</h2>
+
+<p>Unlike subclasses of <a href="../../ActionController/Base.html"><code>ActionController::Base</code></a>, channels do not follow a RESTful constraint form for their actions. Instead, Action Cable operates through a remote-procedure call model. You can declare any public method on the channel (optionally taking a <code>data</code> argument), and this method is automatically exposed as callable to the client.</p>
+
+<p>Example:</p>
+
+<pre><code>class AppearanceChannel &lt; ApplicationCable::Channel
+  def subscribed
+    @connection_token = generate_connection_token
+  end
+
+  def unsubscribed
+    current_user.disappear @connection_token
+  end
+
+  def appear(data)
+    current_user.appear @connection_token, on: data[&#39;appearing_on&#39;]
+  end
+
+  def away
+    current_user.away @connection_token
+  end
+
+  private
+    def generate_connection_token
+      SecureRandom.hex(36)
+    end
+end
+</code></pre>
+
+<p>In this example, the subscribed and unsubscribed methods are not callable methods, as they were already declared in <a href="Base.html"><code>ActionCable::Channel::Base</code></a>, but <code>#appear</code> and <code>#away</code> are. <code>#generate_connection_token</code> is also not callable, since it&#39;s a private method. You&#39;ll see that appear accepts a data parameter, which it then uses as part of its model call. <code>#away</code> does not, since it&#39;s simply a trigger action.</p>
+
+<p>Also note that in this example, <code>current_user</code> is available because it was marked as an identifying attribute on the connection. All such identifiers will automatically create a delegation method of the same name on the channel instance.</p>
+
+<h2 id="class-ActionCable::Channel::Base-label-Rejecting+subscription+requests">Rejecting subscription requests</h2>
+
+<p>A channel can reject a subscription request in the <a href="Base.html#method-i-subscribed"><code>subscribed</code></a> callback by invoking the <a href="Base.html#method-i-reject"><code>reject</code></a> method:</p>
+
+<pre><code>class ChatChannel &lt; ApplicationCable::Channel
+  def subscribed
+    @room = Chat::Room[params[:room_number]]
+    reject unless current_user.can_access?(@room)
+  end
+end
+</code></pre>
+
+<p>In this example, the subscription will be rejected if the <code>current_user</code> does not have access to the chat room. On the client-side, the <code>Channel#rejected</code> callback will get invoked when the server rejects the subscription request.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-action_methods">action_methods</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-clear_action_methods-21">clear_action_methods!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-defer_subscription_confirmation-21">defer_subscription_confirmation!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-defer_subscription_confirmation-3F">defer_subscription_confirmation?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-ensure_confirmation_sent">ensure_confirmation_sent</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-method_added">method_added</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-perform_action">perform_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-reject">reject</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-subscribe_to_channel">subscribe_to_channel</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-subscribed">subscribed</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-subscription_confirmation_sent-3F">subscription_confirmation_sent?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-subscription_rejected-3F">subscription_rejected?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-transmit">transmit</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-unsubscribed">unsubscribed</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="Callbacks.html">
+              ActionCable::Channel::Callbacks
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="PeriodicTimers.html">
+              ActionCable::Channel::PeriodicTimers
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="Streams.html">
+              ActionCable::Channel::Streams
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="Naming.html">
+              ActionCable::Channel::Naming
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="Broadcasting.html">
+              ActionCable::Channel::Broadcasting
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="../../ActiveSupport/Rescuable.html">
+              ActiveSupport::Rescuable
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>connection</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>identifier</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>params</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-action_methods">
+            
+              action_methods()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>A list of method names that should be considered actions. This includes all public instance methods on a channel, less any internal methods (defined on <a href="Base.html"><code>Base</code></a>), adding back in any methods that are internal, but still exist on the class itself.</p>
+
+<h4 id="method-c-action_methods-label-Returns">Returns</h4>
+<ul><li>
+<p><code>Set</code> - A set of all methods that should be considered actions.</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-action_methods_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 117</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">action_methods</span>
+  <span class="ruby-ivar">@action_methods</span> <span class="ruby-operator">||=</span> <span class="ruby-keyword">begin</span>
+    <span class="ruby-comment"># All public instance methods of this class, including ancestors</span>
+    <span class="ruby-identifier">methods</span> = (<span class="ruby-identifier">public_instance_methods</span>(<span class="ruby-keyword">true</span>) <span class="ruby-operator">-</span>
+      <span class="ruby-comment"># Except for public instance methods of Base and its ancestors</span>
+      <span class="ruby-constant">ActionCable</span><span class="ruby-operator">::</span><span class="ruby-constant">Channel</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">public_instance_methods</span>(<span class="ruby-keyword">true</span>) <span class="ruby-operator">+</span>
+      <span class="ruby-comment"># Be sure to include shadowed public instance methods of this class</span>
+      <span class="ruby-identifier">public_instance_methods</span>(<span class="ruby-keyword">false</span>)).<span class="ruby-identifier">uniq</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:to_s</span>)
+    <span class="ruby-identifier">methods</span>.<span class="ruby-identifier">to_set</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(connection, identifier, params = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 144</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">connection</span>, <span class="ruby-identifier">identifier</span>, <span class="ruby-identifier">params</span> = {})
+  <span class="ruby-ivar">@connection</span> = <span class="ruby-identifier">connection</span>
+  <span class="ruby-ivar">@identifier</span> = <span class="ruby-identifier">identifier</span>
+  <span class="ruby-ivar">@params</span>     = <span class="ruby-identifier">params</span>
+
+  <span class="ruby-comment"># When a channel is streaming via pubsub, we want to delay the confirmation</span>
+  <span class="ruby-comment"># transmission until pubsub subscription is confirmed.</span>
+  <span class="ruby-comment">#</span>
+  <span class="ruby-comment"># The counter starts at 1 because it&#39;s awaiting a call to #subscribe_to_channel</span>
+  <span class="ruby-ivar">@defer_subscription_confirmation_counter</span> = <span class="ruby-constant">Concurrent</span><span class="ruby-operator">::</span><span class="ruby-constant">AtomicFixnum</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">1</span>)
+
+  <span class="ruby-ivar">@reject_subscription</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-ivar">@subscription_confirmation_sent</span> = <span class="ruby-keyword">nil</span>
+
+  <span class="ruby-identifier">delegate_connection_identifiers</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+      <h2 id="class-private-methods">Class Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-clear_action_methods-21">
+            
+              clear_action_methods!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><a href="Base.html#method-c-action_methods"><code>action_methods</code></a> are cached and there is sometimes need to refresh them. <a href="Base.html#method-c-clear_action_methods-21"><code>::clear_action_methods!</code></a> allows you to do that, so next time you run <a href="Base.html#method-c-action_methods"><code>action_methods</code></a>, they will be recalculated.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-clear_action_methods-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 133</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear_action_methods!</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-ivar">@action_methods</span> = <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-method_added">
+            
+              method_added(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Refresh the cached <a href="Base.html#method-c-action_methods"><code>action_methods</code></a> when a new action_method is added.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-method_added_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 138</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">method_added</span>(<span class="ruby-identifier">name</span>) <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-keyword">super</span>
+  <span class="ruby-identifier">clear_action_methods!</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-perform_action">
+            
+              perform_action(data)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Extract the action name from the passed data and process it via the channel. The process will ensure that the action requested is a public method on the channel declared by the user (so not one of the callbacks like <a href="Base.html#method-i-subscribed"><code>subscribed</code></a>).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-perform_action_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 164</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">perform_action</span>(<span class="ruby-identifier">data</span>)
+  <span class="ruby-identifier">action</span> = <span class="ruby-identifier">extract_action</span>(<span class="ruby-identifier">data</span>)
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">processable_action?</span>(<span class="ruby-identifier">action</span>)
+    <span class="ruby-identifier">payload</span> = { <span class="ruby-value">channel_class:</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">name</span>, <span class="ruby-value">action:</span> <span class="ruby-identifier">action</span>, <span class="ruby-value">data:</span> <span class="ruby-identifier">data</span> }
+    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Notifications</span>.<span class="ruby-identifier">instrument</span>(<span class="ruby-string">&quot;perform_action.action_cable&quot;</span>, <span class="ruby-identifier">payload</span>) <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">dispatch_action</span>(<span class="ruby-identifier">action</span>, <span class="ruby-identifier">data</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-node">&quot;Unable to process #{action_signature(action, data)}&quot;</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-subscribe_to_channel">
+            
+              subscribe_to_channel()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>This method is called after subscription has been added to the connection and confirms or rejects the subscription.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-subscribe_to_channel_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 179</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">subscribe_to_channel</span>
+  <span class="ruby-identifier">run_callbacks</span> <span class="ruby-value">:subscribe</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">subscribed</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">reject_subscription</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">subscription_rejected?</span>
+  <span class="ruby-identifier">ensure_confirmation_sent</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+      <h2 id="instance-private-methods">Instance Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-defer_subscription_confirmation-21">
+            
+              defer_subscription_confirmation!()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-defer_subscription_confirmation-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 228</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">defer_subscription_confirmation!</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-ivar">@defer_subscription_confirmation_counter</span>.<span class="ruby-identifier">increment</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-defer_subscription_confirmation-3F">
+            
+              defer_subscription_confirmation?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-defer_subscription_confirmation-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 232</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">defer_subscription_confirmation?</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-ivar">@defer_subscription_confirmation_counter</span>.<span class="ruby-identifier">value</span> <span class="ruby-operator">&gt;</span> <span class="ruby-value">0</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-ensure_confirmation_sent">
+            
+              ensure_confirmation_sent()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-ensure_confirmation_sent_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 222</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">ensure_confirmation_sent</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">subscription_rejected?</span>
+  <span class="ruby-ivar">@defer_subscription_confirmation_counter</span>.<span class="ruby-identifier">decrement</span>
+  <span class="ruby-identifier">transmit_subscription_confirmation</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">defer_subscription_confirmation?</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-reject">
+            
+              reject()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-reject_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 240</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reject</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-ivar">@reject_subscription</span> = <span class="ruby-keyword">true</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-subscribed">
+            
+              subscribed()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Called once a consumer has become a subscriber of the channel. Usually the place to set up any streams you want this channel to be sending to the subscriber.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-subscribed_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 199</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">subscribed</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-comment"># Override in subclasses</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-subscription_confirmation_sent-3F">
+            
+              subscription_confirmation_sent?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-subscription_confirmation_sent-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 236</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">subscription_confirmation_sent?</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-ivar">@subscription_confirmation_sent</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-subscription_rejected-3F">
+            
+              subscription_rejected?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-subscription_rejected-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 244</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">subscription_rejected?</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-ivar">@reject_subscription</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-transmit">
+            
+              transmit(data, via: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Transmit a hash of data to the subscriber. The hash will automatically be wrapped in a JSON envelope with the proper channel identifier marked as the recipient.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-transmit_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 211</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">transmit</span>(<span class="ruby-identifier">data</span>, <span class="ruby-value">via:</span> <span class="ruby-keyword">nil</span>) <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-identifier">status</span> = <span class="ruby-node">&quot;#{self.class.name} transmitting #{data.inspect.truncate(300)}&quot;</span>
+  <span class="ruby-identifier">status</span> <span class="ruby-operator">+=</span> <span class="ruby-node">&quot; (via #{via})&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">via</span>
+  <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug</span>(<span class="ruby-identifier">status</span>)
+
+  <span class="ruby-identifier">payload</span> = { <span class="ruby-value">channel_class:</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">name</span>, <span class="ruby-value">data:</span> <span class="ruby-identifier">data</span>, <span class="ruby-value">via:</span> <span class="ruby-identifier">via</span> }
+  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Notifications</span>.<span class="ruby-identifier">instrument</span>(<span class="ruby-string">&quot;transmit.action_cable&quot;</span>, <span class="ruby-identifier">payload</span>) <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">transmit</span> <span class="ruby-value">identifier:</span> <span class="ruby-ivar">@identifier</span>, <span class="ruby-value">message:</span> <span class="ruby-identifier">data</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-unsubscribed">
+            
+              unsubscribed()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Called once a consumer has cut its cable connection. Can be used for cleaning up connections or marking users as offline or the like.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-unsubscribed_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/channel/base.rb, line 205</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">unsubscribed</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-comment"># Override in subclasses</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

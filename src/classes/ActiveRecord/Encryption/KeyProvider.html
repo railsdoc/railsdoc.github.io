@@ -1,0 +1,211 @@
+---
+title: ActiveRecord::Encryption::KeyProvider
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::Encryption::KeyProvider
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/encryption/key_provider_rb.html">activerecord/lib/active_record/encryption/key_provider.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>A <code>KeyProvider</code> serves keys:</p>
+<ul><li>
+<p>An encryption key</p>
+</li><li>
+<p>A list of potential decryption keys. Serving multiple decryption keys supports rotation-schemes where new keys are added but old keys need to continue working</p>
+</li></ul>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-decryption_keys">decryption_keys</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-encryption_key">encryption_key</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(keys)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/key_provider.rb, line 11</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">keys</span>)
+  <span class="ruby-ivar">@keys</span> = <span class="ruby-constant">Array</span>(<span class="ruby-identifier">keys</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-decryption_keys">
+            
+              decryption_keys(encrypted_message)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the list of decryption keys</p>
+
+<p>When the message holds a reference to its encryption key, it will return an array with that key. If not, it will return the list of keys.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-decryption_keys_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/key_provider.rb, line 32</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">decryption_keys</span>(<span class="ruby-identifier">encrypted_message</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">encrypted_message</span>.<span class="ruby-identifier">headers</span>.<span class="ruby-identifier">encrypted_data_key_id</span>
+    <span class="ruby-identifier">keys_grouped_by_id</span>[<span class="ruby-identifier">encrypted_message</span>.<span class="ruby-identifier">headers</span>.<span class="ruby-identifier">encrypted_data_key_id</span>]
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-ivar">@keys</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-encryption_key">
+            
+              encryption_key()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the first key in the list as the active key to perform encryptions</p>
+
+<p>When <code>ActiveRecord::Encryption.config.store_key_references</code> is true, the key will include a public tag referencing the key itself. That key will be stored in the public headers of the encrypted message</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-encryption_key_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/key_provider.rb, line 20</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">encryption_key</span>
+  <span class="ruby-ivar">@encryption_key</span> <span class="ruby-operator">||=</span> <span class="ruby-ivar">@keys</span>.<span class="ruby-identifier">last</span>.<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">key</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">key</span>.<span class="ruby-identifier">public_tags</span>.<span class="ruby-identifier">encrypted_data_key_id</span> = <span class="ruby-identifier">key</span>.<span class="ruby-identifier">id</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">store_key_references</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-ivar">@encryption_key</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

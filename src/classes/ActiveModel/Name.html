@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -82,6 +82,10 @@ layout: default
       
         <li>
           <a href="#method-i-to_str">to_str</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-uncountable-3F">uncountable?</a>
         </li>
       
     </ul>
@@ -203,13 +207,13 @@ layout: default
         <div class="method">
           <h3 id="method-c-new">
             
-              new(klass, namespace = nil, name = nil)
+              new(klass, namespace = nil, name = nil, locale = :en)
             
           </h3>
 
           
             <div class="description">
-              <p>Returns a new <a href="Name.html"><code>ActiveModel::Name</code></a> instance. By default, the <code>namespace</code> and <code>name</code> option will take the namespace and name of the given class respectively.</p>
+              <p>Returns a new <a href="Name.html"><code>ActiveModel::Name</code></a> instance. By default, the <code>namespace</code> and <code>name</code> option will take the namespace and name of the given class respectively. Use <code>locale</code> argument for singularize and pluralize model name.</p>
 
 <pre><code>module Foo
   class Bar
@@ -235,8 +239,8 @@ ActiveModel::Name.new(Foo::Bar).to_s
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 164</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">klass</span>, <span class="ruby-identifier">namespace</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">name</span> = <span class="ruby-keyword">nil</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 166</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">klass</span>, <span class="ruby-identifier">namespace</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">name</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">locale</span> = <span class="ruby-value">:en</span>)
   <span class="ruby-ivar">@name</span> = <span class="ruby-identifier">name</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">name</span>
 
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;Class name cannot be blank. You need to supply a name argument when anonymous class given&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-ivar">@name</span>.<span class="ruby-identifier">blank?</span>
@@ -244,16 +248,17 @@ ActiveModel::Name.new(Foo::Bar).to_s
   <span class="ruby-ivar">@unnamespaced</span> = <span class="ruby-ivar">@name</span>.<span class="ruby-identifier">delete_prefix</span>(<span class="ruby-node">&quot;#{namespace.name}::&quot;</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">namespace</span>
   <span class="ruby-ivar">@klass</span>        = <span class="ruby-identifier">klass</span>
   <span class="ruby-ivar">@singular</span>     = <span class="ruby-identifier">_singularize</span>(<span class="ruby-ivar">@name</span>)
-  <span class="ruby-ivar">@plural</span>       = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">pluralize</span>(<span class="ruby-ivar">@singular</span>)
+  <span class="ruby-ivar">@plural</span>       = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">pluralize</span>(<span class="ruby-ivar">@singular</span>, <span class="ruby-identifier">locale</span>)
+  <span class="ruby-ivar">@uncountable</span>  = <span class="ruby-ivar">@plural</span> <span class="ruby-operator">==</span> <span class="ruby-ivar">@singular</span>
   <span class="ruby-ivar">@element</span>      = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">underscore</span>(<span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">demodulize</span>(<span class="ruby-ivar">@name</span>))
   <span class="ruby-ivar">@human</span>        = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">humanize</span>(<span class="ruby-ivar">@element</span>)
   <span class="ruby-ivar">@collection</span>   = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">tableize</span>(<span class="ruby-ivar">@name</span>)
   <span class="ruby-ivar">@param_key</span>    = (<span class="ruby-identifier">namespace</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">_singularize</span>(<span class="ruby-ivar">@unnamespaced</span>) <span class="ruby-operator">:</span> <span class="ruby-ivar">@singular</span>)
   <span class="ruby-ivar">@i18n_key</span>     = <span class="ruby-ivar">@name</span>.<span class="ruby-identifier">underscore</span>.<span class="ruby-identifier">to_sym</span>
 
-  <span class="ruby-ivar">@route_key</span>          = (<span class="ruby-identifier">namespace</span> <span class="ruby-operator">?</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">pluralize</span>(<span class="ruby-ivar">@param_key</span>) <span class="ruby-operator">:</span> <span class="ruby-ivar">@plural</span>.<span class="ruby-identifier">dup</span>)
-  <span class="ruby-ivar">@singular_route_key</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">singularize</span>(<span class="ruby-ivar">@route_key</span>)
-  <span class="ruby-ivar">@route_key</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-string">&quot;_index&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-ivar">@plural</span> <span class="ruby-operator">==</span> <span class="ruby-ivar">@singular</span>
+  <span class="ruby-ivar">@route_key</span>          = (<span class="ruby-identifier">namespace</span> <span class="ruby-operator">?</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">pluralize</span>(<span class="ruby-ivar">@param_key</span>, <span class="ruby-identifier">locale</span>) <span class="ruby-operator">:</span> <span class="ruby-ivar">@plural</span>.<span class="ruby-identifier">dup</span>)
+  <span class="ruby-ivar">@singular_route_key</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Inflector</span>.<span class="ruby-identifier">singularize</span>(<span class="ruby-ivar">@route_key</span>, <span class="ruby-identifier">locale</span>)
+  <span class="ruby-ivar">@route_key</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-string">&quot;_index&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-ivar">@uncountable</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -299,7 +304,7 @@ BlogPost.model_name !~ /\d/   # =&gt; true
                 
               </p>
               <div id="method-i-21~_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 82</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 83</span>
     </code></pre>
               </div>
             </div>
@@ -342,7 +347,7 @@ BlogPost.model_name &lt;=&gt; &#39;BlogPosts&#39; # =&gt; -1
                 
               </p>
               <div id="method-i-3C-3D-3E_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 49</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 50</span>
     </code></pre>
               </div>
             </div>
@@ -384,7 +389,7 @@ BlogPost.model_name == &#39;Blog Post&#39; # =&gt; false
                 
               </p>
               <div id="method-i-3D-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 18</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 19</span>
     </code></pre>
               </div>
             </div>
@@ -426,7 +431,7 @@ BlogPost.model_name === &#39;Blog Post&#39; # =&gt; false
                 
               </p>
               <div id="method-i-3D-3D-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 34</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 35</span>
     </code></pre>
               </div>
             </div>
@@ -468,7 +473,7 @@ BlogPost.model_name =~ /\d/   # =&gt; nil
                 
               </p>
               <div id="method-i-3D~_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 65</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 66</span>
     </code></pre>
               </div>
             </div>
@@ -510,7 +515,7 @@ BlogPost.model_name.eql?(&#39;Blog Post&#39;) # =&gt; false
                 
               </p>
               <div id="method-i-eql-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 98</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 99</span>
     </code></pre>
               </div>
             </div>
@@ -552,7 +557,7 @@ BlogPost.model_name.human # =&gt; &quot;Blog post&quot;
                 
               </p>
               <div id="method-i-human_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 194</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 197</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">human</span>(<span class="ruby-identifier">options</span> = {})
   <span class="ruby-keyword">return</span> <span class="ruby-ivar">@human</span> <span class="ruby-keyword">unless</span> <span class="ruby-ivar">@klass</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:lookup_ancestors</span>) <span class="ruby-operator">&amp;&amp;</span>
                        <span class="ruby-ivar">@klass</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:i18n_scope</span>)
@@ -607,7 +612,7 @@ BlogPost.model_name.match?(/\d/) # =&gt; false
                 
               </p>
               <div id="method-i-match-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 114</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 115</span>
     </code></pre>
               </div>
             </div>
@@ -648,7 +653,7 @@ BlogPost.model_name.to_s # =&gt; &quot;BlogPost&quot;
                 
               </p>
               <div id="method-i-to_s_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 130</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 131</span>
     </code></pre>
               </div>
             </div>
@@ -682,10 +687,45 @@ BlogPost.model_name.to_s # =&gt; &quot;BlogPost&quot;
                 
               </p>
               <div id="method-i-to_str_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 150</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 151</span>
 <span class="ruby-identifier">delegate</span> <span class="ruby-value">:==</span>, <span class="ruby-value">:===</span>, <span class="ruby-value">:&lt;=&gt;</span>, <span class="ruby-value">:=~</span>, <span class="ruby-value">:&quot;!~&quot;</span>, <span class="ruby-value">:eql?</span>, <span class="ruby-value">:match?</span>, <span class="ruby-value">:to_s</span>,
          <span class="ruby-value">:to_str</span>, <span class="ruby-value">:as_json</span>, <span class="ruby-value">to:</span> <span class="ruby-value">:name</span>
 </code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-uncountable-3F">
+            
+              uncountable?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-uncountable-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/naming.rb, line 212</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">uncountable?</span>
+  <span class="ruby-ivar">@uncountable</span>
+<span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             

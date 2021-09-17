@@ -1,0 +1,354 @@
+---
+title: ActionDispatch::Routing
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.1.4</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionDispatch::Routing
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/routing_rb.html">actionpack/lib/action_dispatch/routing.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/routing/endpoint_rb.html">actionpack/lib/action_dispatch/routing/endpoint.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/routing/inspector_rb.html">actionpack/lib/action_dispatch/routing/inspector.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/routing/mapper_rb.html">actionpack/lib/action_dispatch/routing/mapper.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/routing/polymorphic_routes_rb.html">actionpack/lib/action_dispatch/routing/polymorphic_routes.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/routing/redirection_rb.html">actionpack/lib/action_dispatch/routing/redirection.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/routing/route_set_rb.html">actionpack/lib/action_dispatch/routing/route_set.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/routing/routes_proxy_rb.html">actionpack/lib/action_dispatch/routing/routes_proxy.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/routing/url_for_rb.html">actionpack/lib/action_dispatch/routing/url_for.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/testing/assertions/routing_rb.html">actionpack/lib/action_dispatch/testing/assertions/routing.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/testing/integration_rb.html">actionpack/lib/action_dispatch/testing/integration.rb</a></li>
+            
+            <li><a href="../../files/actionview/lib/action_view/routing_url_for_rb.html">actionview/lib/action_view/routing_url_for.rb</a></li>
+            
+            <li><a href="../../files/railties/lib/rails/commands/routes/routes_command_rb.html">railties/lib/rails/commands/routes/routes_command.rb</a></li>
+            
+            <li><a href="../../files/railties/lib/rails/engine_rb.html">railties/lib/rails/engine.rb</a></li>
+            
+            <li><a href="../../files/railties/lib/rails/info_controller_rb.html">railties/lib/rails/info_controller.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>The routing module provides URL rewriting in native Ruby. It&#39;s a way to redirect incoming requests to controllers and actions. This replaces mod_rewrite rules. Best of all, Rails&#39; Routing works with any web server. Routes are defined in <code>config/routes.rb</code>.</p>
+
+<p>Think of creating routes as drawing a map for your requests. The map tells them where to go based on some predefined pattern:</p>
+
+<pre><code>Rails.application.routes.draw do
+  Pattern 1 tells some request to go to one place
+  Pattern 2 tell them to go to another
+  ...
+end
+</code></pre>
+
+<p>The following symbols are special:</p>
+
+<pre><code>:controller maps to your controller name
+:action     maps to an action with your controllers
+</code></pre>
+
+<p>Other names simply map to a parameter as in the case of <code>:id</code>.</p>
+
+<h2 id="module-ActionDispatch::Routing-label-Resources">Resources</h2>
+
+<p>Resource routing allows you to quickly declare all of the common routes for a given resourceful controller. Instead of declaring separate routes for your <code>index</code>, <code>show</code>, <code>new</code>, <code>edit</code>, <code>create</code>, <code>update</code> and <code>destroy</code> actions, a resourceful route declares them in a single line of code:</p>
+
+<pre><code>resources :photos
+</code></pre>
+
+<p>Sometimes, you have a resource that clients always look up without referencing an ID. A common example, /profile always shows the profile of the currently logged in user. In this case, you can use a singular resource to map /profile (rather than /profile/:id) to the show action.</p>
+
+<pre><code>resource :profile
+</code></pre>
+
+<p>It&#39;s common to have resources that are logically children of other resources:</p>
+
+<pre><code>resources :magazines do
+  resources :ads
+end
+</code></pre>
+
+<p>You may wish to organize groups of controllers under a namespace. Most commonly, you might group a number of administrative controllers under an <code>admin</code> namespace. You would place these controllers under the <code>app/controllers/admin</code> directory, and you can group them together in your router:</p>
+
+<pre><code>namespace &quot;admin&quot; do
+  resources :posts, :comments
+end
+</code></pre>
+
+<p>Alternatively, you can add prefixes to your path without using a separate directory by using <code>scope</code>. <code>scope</code> takes additional options which apply to all enclosed routes.</p>
+
+<pre><code>scope path: &quot;/cpanel&quot;, as: &#39;admin&#39; do
+  resources :posts, :comments
+end
+</code></pre>
+
+<p>For more, see <code>Routing::Mapper::Resources#resources</code>, <code>Routing::Mapper::Scoping#namespace</code>, and <code>Routing::Mapper::Scoping#scope</code>.</p>
+
+<h2 id="module-ActionDispatch::Routing-label-Non-resourceful+routes">Non-resourceful routes</h2>
+
+<p>For routes that don&#39;t fit the <code>resources</code> mold, you can use the HTTP helper methods <code>get</code>, <code>post</code>, <code>patch</code>, <code>put</code> and <code>delete</code>.</p>
+
+<pre><code>get &#39;post/:id&#39;, to: &#39;posts#show&#39;
+post &#39;post/:id&#39;, to: &#39;posts#create_comment&#39;
+</code></pre>
+
+<p>Now, if you POST to <code>/posts/:id</code>, it will route to the <code>create_comment</code> action. A GET on the same URL will route to the <code>show</code> action.</p>
+
+<p>If your route needs to respond to more than one HTTP method (or all methods) then using the <code>:via</code> option on <code>match</code> is preferable.</p>
+
+<pre><code>match &#39;post/:id&#39;, to: &#39;posts#show&#39;, via: [:get, :post]
+</code></pre>
+
+<h2 id="module-ActionDispatch::Routing-label-Named+routes">Named routes</h2>
+
+<p>Routes can be named by passing an <code>:as</code> option, allowing for easy reference within your source as <code>name_of_route_url</code> for the full URL and <code>name_of_route_path</code> for the URI path.</p>
+
+<p>Example:</p>
+
+<pre><code># In config/routes.rb
+get &#39;/login&#39;, to: &#39;accounts#login&#39;, as: &#39;login&#39;
+
+# With render, redirect_to, tests, etc.
+redirect_to login_url
+</code></pre>
+
+<p>Arguments can be passed as well.</p>
+
+<pre><code>redirect_to show_item_path(id: 25)
+</code></pre>
+
+<p>Use <code>root</code> as a shorthand to name a route for the root path “/”.</p>
+
+<pre><code># In config/routes.rb
+root to: &#39;blogs#index&#39;
+
+# would recognize http://www.example.com/ as
+params = { controller: &#39;blogs&#39;, action: &#39;index&#39; }
+
+# and provide these named routes
+root_url   # =&gt; &#39;http://www.example.com/&#39;
+root_path  # =&gt; &#39;/&#39;
+</code></pre>
+
+<p>Note: when using <code>controller</code>, the route is simply named after the method you call on the block parameter rather than map.</p>
+
+<pre><code># In config/routes.rb
+controller :blog do
+  get &#39;blog/show&#39;,    to: :list
+  get &#39;blog/delete&#39;,  to: :delete
+  get &#39;blog/edit&#39;,    to: :edit
+end
+
+# provides named routes for show, delete, and edit
+link_to @article.title, blog_show_path(id: @article.id)
+</code></pre>
+
+<h2 id="module-ActionDispatch::Routing-label-Pretty+URLs">Pretty URLs</h2>
+
+<p>Routes can generate pretty URLs. For example:</p>
+
+<pre><code>get &#39;/articles/:year/:month/:day&#39;, to: &#39;articles#find_by_id&#39;, constraints: {
+  year:       /\d{4}/,
+  month:      /\d{1,2}/,
+  day:        /\d{1,2}/
+}
+</code></pre>
+
+<p>Using the route above, the URL “<a href="http://localhost:3000/articles/2005/11/06">localhost:3000/articles/2005/11/06</a>” maps to</p>
+
+<pre><code>params = {year: &#39;2005&#39;, month: &#39;11&#39;, day: &#39;06&#39;}
+</code></pre>
+
+<h2 id="module-ActionDispatch::Routing-label-Regular+Expressions+and+parameters">Regular Expressions and parameters</h2>
+
+<p>You can specify a regular expression to define a format for a parameter.</p>
+
+<pre><code>controller &#39;geocode&#39; do
+  get &#39;geocode/:postalcode&#39;, to: :show, constraints: {
+    postalcode: /\d{5}(-\d{4})?/
+  }
+end
+</code></pre>
+
+<p>Constraints can include the &#39;ignorecase&#39; and &#39;extended syntax&#39; regular expression modifiers:</p>
+
+<pre><code>controller &#39;geocode&#39; do
+  get &#39;geocode/:postalcode&#39;, to: :show, constraints: {
+    postalcode: /hx\d\d\s\d[a-z]{2}/i
+  }
+end
+
+controller &#39;geocode&#39; do
+  get &#39;geocode/:postalcode&#39;, to: :show, constraints: {
+    postalcode: /# Postalcode format
+       \d{5} #Prefix
+       (-\d{4})? #Suffix
+       /x
+  }
+end
+</code></pre>
+
+<p>Using the multiline modifier will raise an <code>ArgumentError</code>. Encoding regular expression modifiers are silently ignored. The match will always use the default encoding or ASCII.</p>
+
+<h2 id="module-ActionDispatch::Routing-label-External+redirects">External redirects</h2>
+
+<p>You can redirect any path to another path using the redirect helper in your router:</p>
+
+<pre><code>get &quot;/stories&quot;, to: redirect(&quot;/posts&quot;)
+</code></pre>
+
+<h2 id="module-ActionDispatch::Routing-label-Unicode+character+routes">Unicode character routes</h2>
+
+<p>You can specify unicode character routes in your router:</p>
+
+<pre><code>get &quot;こんにちは&quot;, to: &quot;welcome#index&quot;
+</code></pre>
+
+<h2 id="module-ActionDispatch::Routing-label-Routing+to+Rack+Applications"><a href="Routing.html"><code>Routing</code></a> to Rack Applications</h2>
+
+<p>Instead of a <a href="../String.html"><code>String</code></a>, like <code>posts#index</code>, which corresponds to the index action in the PostsController, you can specify any Rack application as the endpoint for a matcher:</p>
+
+<pre><code>get &quot;/application.js&quot;, to: Sprockets
+</code></pre>
+
+<h2 id="module-ActionDispatch::Routing-label-Reloading+routes">Reloading routes</h2>
+
+<p>You can reload routes if you feel you must:</p>
+
+<pre><code>Rails.application.reload_routes!
+</code></pre>
+
+<p>This will clear all named routes and reload config/routes.rb if the file has been modified from last load. To absolutely force reloading, use <code>reload!</code>.</p>
+
+<h2 id="module-ActionDispatch::Routing-label-Testing+Routes">Testing Routes</h2>
+
+<p>The two main methods for testing your routes:</p>
+
+<h3 id="module-ActionDispatch::Routing-label-assert_routing"><code>assert_routing</code></h3>
+
+<pre><code>def test_movie_route_properly_splits
+  opts = {controller: &quot;plugin&quot;, action: &quot;checkout&quot;, id: &quot;2&quot;}
+  assert_routing &quot;plugin/checkout/2&quot;, opts
+end
+</code></pre>
+
+<p><code>assert_routing</code> lets you test whether or not the route properly resolves into options.</p>
+
+<h3 id="module-ActionDispatch::Routing-label-assert_recognizes"><code>assert_recognizes</code></h3>
+
+<pre><code>def test_route_has_options
+  opts = {controller: &quot;plugin&quot;, action: &quot;show&quot;, id: &quot;12&quot;}
+  assert_recognizes opts, &quot;/plugins/show/12&quot;
+end
+</code></pre>
+
+<p>Note the subtle difference between the two: <code>assert_routing</code> tests that a URL fits options while <code>assert_recognizes</code> tests that a URL breaks into parameters properly.</p>
+
+<p>In tests you can simply pass the URL or named route to <code>get</code> or <code>post</code>.</p>
+
+<pre><code>def send_to_jail
+  get &#39;/jail&#39;
+  assert_response :success
+end
+
+def goes_to_login
+  get login_url
+  #...
+end
+</code></pre>
+
+<h2 id="module-ActionDispatch::Routing-label-View+a+list+of+all+your+routes">View a list of all your routes</h2>
+
+<pre><code>rails routes
+</code></pre>
+
+<p>Target a specific controller with <code>-c</code>, or grep routes using <code>-g</code>. Useful in conjunction with <code>--expanded</code> which displays routes vertically.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Routing/ConsoleFormatter.html">ActionDispatch::Routing::ConsoleFormatter</a></li>
+      
+        <li><a href="Routing/PolymorphicRoutes.html">ActionDispatch::Routing::PolymorphicRoutes</a></li>
+      
+        <li><a href="Routing/Redirection.html">ActionDispatch::Routing::Redirection</a></li>
+      
+        <li><a href="Routing/UrlFor.html">ActionDispatch::Routing::UrlFor</a></li>
+      
+      </ul>
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Routing/HtmlTableFormatter.html">ActionDispatch::Routing::HtmlTableFormatter</a></li>
+      
+        <li><a href="Routing/Mapper.html">ActionDispatch::Routing::Mapper</a></li>
+      
+        <li><a href="Routing/PathRedirect.html">ActionDispatch::Routing::PathRedirect</a></li>
+      
+        <li><a href="Routing/RouteSet.html">ActionDispatch::Routing::RouteSet</a></li>
+      
+        <li><a href="Routing/RouteWrapper.html">ActionDispatch::Routing::RouteWrapper</a></li>
+      
+      </ul>
+    
+  
+
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+    
+  
+</div>
+
+    </div>
+</div>

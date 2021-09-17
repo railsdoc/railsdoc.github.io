@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -39,6 +39,10 @@ layout: default
   
     <h2 id="methods">Methods</h2>
     <ul>
+      
+        <li>
+          <a href="#method-i-deprecate">deprecate</a>
+        </li>
       
         <li>
           <a href="#method-i-has_many_attached">has_many_attached</a>
@@ -79,6 +83,46 @@ layout: default
     
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
+        <div class="method">
+          <h3 id="method-i-deprecate">
+            
+              deprecate(action)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-deprecate_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 176</span>
+          <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deprecate</span>(<span class="ruby-identifier">action</span>)
+            <span class="ruby-identifier">reflection_name</span> = <span class="ruby-identifier">proxy_association</span>.<span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">name</span>
+            <span class="ruby-identifier">attached_name</span> = <span class="ruby-identifier">reflection_name</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">partition</span>(<span class="ruby-string">&quot;_&quot;</span>).<span class="ruby-identifier">first</span>
+            <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">              Calling `#{action}` from `#{reflection_name}` is deprecated and will be removed in Rails 7.1.
+              To migrate to Rails 7.1&#39;s behavior call `#{action}` from `#{attached_name}` instead: `#{attached_name}.#{action}`.
+</span><span class="ruby-identifier">            MSG</span>
+          <span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
         <div class="method">
           <h3 id="method-i-has_many_attached">
             
@@ -137,7 +181,7 @@ end
                 
               </p>
               <div id="method-i-has_many_attached_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 128</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 129</span>
       <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_many_attached</span>(<span class="ruby-identifier">name</span>, <span class="ruby-value">dependent:</span> <span class="ruby-value">:purge_later</span>, <span class="ruby-value">service:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">strict_loading:</span> <span class="ruby-keyword">false</span>)
         <span class="ruby-identifier">validate_service_configuration</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">service</span>)
 
@@ -157,6 +201,12 @@ end
                   ActiveStorage::Attached::Changes::CreateMany.new(&quot;#{name}&quot;, self, attachables)
                 end
             else
+              ActiveSupport::Deprecation.warn \
+                &quot;config.active_storage.replace_on_assign_to_many is deprecated and will be removed in Rails 7.1. &quot; \
+                &quot;Make sure that your code works well with config.active_storage.replace_on_assign_to_many set to true before upgrading. &quot; \
+                &quot;To append new attachables to the Active Storage association, prefer using `attach`. &quot; \
+                &quot;Using association setter would result in purging the existing attached attachments and replacing them with new ones.&quot;
+
               if Array(attachables).any?
                 attachment_changes[&quot;#{name}&quot;] =
                   ActiveStorage::Attached::Changes::CreateMany.new(&quot;#{name}&quot;, self, #{name}.blobs + attachables)
@@ -167,18 +217,36 @@ end
 
         <span class="ruby-identifier">has_many</span> <span class="ruby-value">:&quot;#{name}_attachments&quot;</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">where</span>(<span class="ruby-value">name:</span> <span class="ruby-identifier">name</span>) }, <span class="ruby-value">as:</span> <span class="ruby-value">:record</span>, <span class="ruby-value">class_name:</span> <span class="ruby-string">&quot;ActiveStorage::Attachment&quot;</span>, <span class="ruby-value">inverse_of:</span> <span class="ruby-value">:record</span>, <span class="ruby-value">dependent:</span> <span class="ruby-value">:destroy</span>, <span class="ruby-value">strict_loading:</span> <span class="ruby-identifier">strict_loading</span> <span class="ruby-keyword">do</span>
           <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge</span>
+            <span class="ruby-identifier">deprecate</span>(<span class="ruby-value">:purge</span>)
             <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge</span>)
             <span class="ruby-identifier">reset</span>
           <span class="ruby-keyword">end</span>
 
           <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge_later</span>
+            <span class="ruby-identifier">deprecate</span>(<span class="ruby-value">:purge_later</span>)
             <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge_later</span>)
             <span class="ruby-identifier">reset</span>
+          <span class="ruby-keyword">end</span>
+
+          <span class="ruby-identifier">private</span>
+          <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deprecate</span>(<span class="ruby-identifier">action</span>)
+            <span class="ruby-identifier">reflection_name</span> = <span class="ruby-identifier">proxy_association</span>.<span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">name</span>
+            <span class="ruby-identifier">attached_name</span> = <span class="ruby-identifier">reflection_name</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">partition</span>(<span class="ruby-string">&quot;_&quot;</span>).<span class="ruby-identifier">first</span>
+            <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">              Calling `#{action}` from `#{reflection_name}` is deprecated and will be removed in Rails 7.1.
+              To migrate to Rails 7.1&#39;s behavior call `#{action}` from `#{attached_name}` instead: `#{attached_name}.#{action}`.
+</span><span class="ruby-identifier">            MSG</span>
           <span class="ruby-keyword">end</span>
         <span class="ruby-keyword">end</span>
         <span class="ruby-identifier">has_many</span> <span class="ruby-value">:&quot;#{name}_blobs&quot;</span>, <span class="ruby-value">through:</span> <span class="ruby-value">:&quot;#{name}_attachments&quot;</span>, <span class="ruby-value">class_name:</span> <span class="ruby-string">&quot;ActiveStorage::Blob&quot;</span>, <span class="ruby-value">source:</span> <span class="ruby-value">:blob</span>, <span class="ruby-value">strict_loading:</span> <span class="ruby-identifier">strict_loading</span>
 
-        <span class="ruby-identifier">scope</span> <span class="ruby-value">:&quot;with_attached_#{name}&quot;</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">includes</span>(<span class="ruby-value">&quot;#{name}_attachments&quot;:</span> <span class="ruby-value">:blob</span>) }
+        <span class="ruby-identifier">scope</span> <span class="ruby-value">:&quot;with_attached_#{name}&quot;</span>, <span class="ruby-operator">-&gt;</span> {
+          <span class="ruby-keyword">if</span> <span class="ruby-constant">ActiveStorage</span>.<span class="ruby-identifier">track_variants</span>
+            <span class="ruby-identifier">includes</span>(<span class="ruby-value">&quot;#{name}_attachments&quot;:</span> { <span class="ruby-value">blob:</span> <span class="ruby-value">:variant_records</span> })
+          <span class="ruby-keyword">else</span>
+            <span class="ruby-identifier">includes</span>(<span class="ruby-value">&quot;#{name}_attachments&quot;:</span> <span class="ruby-value">:blob</span>)
+          <span class="ruby-keyword">end</span>
+        }
 
         <span class="ruby-identifier">after_save</span> { <span class="ruby-identifier">attachment_changes</span>[<span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>]&amp;.<span class="ruby-identifier">save</span> }
 
@@ -191,6 +259,7 @@ end
           { <span class="ruby-value">dependent:</span> <span class="ruby-identifier">dependent</span>, <span class="ruby-value">service_name:</span> <span class="ruby-identifier">service</span> },
           <span class="ruby-keyword">self</span>
         )
+        <span class="ruby-keyword">yield</span> <span class="ruby-identifier">reflection</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
         <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">add_attachment_reflection</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">reflection</span>)
       <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -293,6 +362,7 @@ end
           { <span class="ruby-value">dependent:</span> <span class="ruby-identifier">dependent</span>, <span class="ruby-value">service_name:</span> <span class="ruby-identifier">service</span> },
           <span class="ruby-keyword">self</span>
         )
+        <span class="ruby-keyword">yield</span> <span class="ruby-identifier">reflection</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
         <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">add_attachment_reflection</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">reflection</span>)
       <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -326,8 +396,9 @@ end
                 
               </p>
               <div id="method-i-purge_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 156</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 163</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge</span>
+  <span class="ruby-identifier">deprecate</span>(<span class="ruby-value">:purge</span>)
   <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge</span>)
   <span class="ruby-identifier">reset</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -362,8 +433,9 @@ end
                 
               </p>
               <div id="method-i-purge_later_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 161</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 169</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge_later</span>
+  <span class="ruby-identifier">deprecate</span>(<span class="ruby-value">:purge_later</span>)
   <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge_later</span>)
   <span class="ruby-identifier">reset</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -398,7 +470,7 @@ end
                 
               </p>
               <div id="method-i-validate_service_configuration_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 185</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 211</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">validate_service_configuration</span>(<span class="ruby-identifier">association_name</span>, <span class="ruby-identifier">service</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">service</span>.<span class="ruby-identifier">present?</span>
     <span class="ruby-constant">ActiveStorage</span><span class="ruby-operator">::</span><span class="ruby-constant">Blob</span>.<span class="ruby-identifier">services</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-identifier">service</span>) <span class="ruby-keyword">do</span>

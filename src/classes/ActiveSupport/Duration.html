@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -159,6 +159,10 @@ layout: default
         </li>
       
         <li>
+          <a href="#method-i-parts">parts</a>
+        </li>
+      
+        <li>
           <a href="#method-i-since">since</a>
         </li>
       
@@ -293,6 +297,18 @@ years:   SECONDS_PER_YEAR
             </tr>
           
         
+          <tr valign='top'>
+            <td class="attr-name">VARIABLE_PARTS</td>
+            <td>=</td>
+            <td class="attr-value">[:years, :months, :weeks, :days].freeze</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
       </table>
     
 
@@ -303,15 +319,7 @@ years:   SECONDS_PER_YEAR
         
           <tr valign='top'>
             <td class='attr-rw'>
-              [RW]
-            </td>
-            <td class='attr-name'>parts</td>
-            <td class='attr-desc'></td>
-          </tr>
-        
-          <tr valign='top'>
-            <td class='attr-rw'>
-              [RW]
+              [R]
             </td>
             <td class='attr-name'>value</td>
             <td class='attr-desc'></td>
@@ -354,7 +362,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-c-build_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 183</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 188</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">build</span>(<span class="ruby-identifier">value</span>)
   <span class="ruby-keyword">unless</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-operator">::</span><span class="ruby-constant">Numeric</span>)
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">TypeError</span>, <span class="ruby-node">&quot;can&#39;t build an #{self.name} from a #{value.class.name}&quot;</span>
@@ -362,18 +370,23 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
 
   <span class="ruby-identifier">parts</span> = {}
   <span class="ruby-identifier">remainder</span> = <span class="ruby-identifier">value</span>.<span class="ruby-identifier">round</span>(<span class="ruby-value">9</span>)
+  <span class="ruby-identifier">variable</span> = <span class="ruby-keyword">false</span>
 
   <span class="ruby-constant">PARTS</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">part</span><span class="ruby-operator">|</span>
     <span class="ruby-keyword">unless</span> <span class="ruby-identifier">part</span> <span class="ruby-operator">==</span> <span class="ruby-value">:seconds</span>
       <span class="ruby-identifier">part_in_seconds</span> = <span class="ruby-constant">PARTS_IN_SECONDS</span>[<span class="ruby-identifier">part</span>]
       <span class="ruby-identifier">parts</span>[<span class="ruby-identifier">part</span>] = <span class="ruby-identifier">remainder</span>.<span class="ruby-identifier">div</span>(<span class="ruby-identifier">part_in_seconds</span>)
       <span class="ruby-identifier">remainder</span> <span class="ruby-operator">%=</span> <span class="ruby-identifier">part_in_seconds</span>
+
+      <span class="ruby-keyword">unless</span> <span class="ruby-identifier">parts</span>[<span class="ruby-identifier">part</span>].<span class="ruby-identifier">zero?</span>
+        <span class="ruby-identifier">variable</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">VARIABLE_PARTS</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">part</span>)
+      <span class="ruby-keyword">end</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">value</span> <span class="ruby-operator">==</span> <span class="ruby-value">0</span>
 
   <span class="ruby-identifier">parts</span>[<span class="ruby-value">:seconds</span>] = <span class="ruby-identifier">remainder</span>
 
-  <span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span>, <span class="ruby-identifier">parts</span>)
+  <span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span>, <span class="ruby-identifier">parts</span>, <span class="ruby-identifier">variable</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -408,7 +421,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-c-parse_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 138</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 143</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parse</span>(<span class="ruby-identifier">iso8601duration</span>)
   <span class="ruby-identifier">parts</span> = <span class="ruby-constant">ISO8601Parser</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">iso8601duration</span>).<span class="ruby-identifier">parse!</span>
   <span class="ruby-identifier">new</span>(<span class="ruby-identifier">calculate_total_seconds</span>(<span class="ruby-identifier">parts</span>), <span class="ruby-identifier">parts</span>)
@@ -448,7 +461,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-25_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 284</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 305</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">%</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-constant">Duration</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span> <span class="ruby-operator">||</span> <span class="ruby-constant">Scalar</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span>
     <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">build</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span>)
@@ -489,12 +502,12 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-2A_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 259</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 280</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">*</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-constant">Scalar</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span> <span class="ruby-operator">||</span> <span class="ruby-constant">Duration</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span>
-    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">*</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span>, <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">transform_values</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">number</span><span class="ruby-operator">|</span> <span class="ruby-identifier">number</span> <span class="ruby-operator">*</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span> })
+    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">*</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span>, <span class="ruby-ivar">@parts</span>.<span class="ruby-identifier">transform_values</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">number</span><span class="ruby-operator">|</span> <span class="ruby-identifier">number</span> <span class="ruby-operator">*</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span> }, <span class="ruby-ivar">@variable</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">variable?</span>)
   <span class="ruby-keyword">elsif</span> <span class="ruby-constant">Numeric</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span>
-    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">*</span> <span class="ruby-identifier">other</span>, <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">transform_values</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">number</span><span class="ruby-operator">|</span> <span class="ruby-identifier">number</span> <span class="ruby-operator">*</span> <span class="ruby-identifier">other</span> })
+    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">*</span> <span class="ruby-identifier">other</span>, <span class="ruby-ivar">@parts</span>.<span class="ruby-identifier">transform_values</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">number</span><span class="ruby-operator">|</span> <span class="ruby-identifier">number</span> <span class="ruby-operator">*</span> <span class="ruby-identifier">other</span> }, <span class="ruby-ivar">@variable</span>)
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">raise_type_error</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-keyword">end</span>
@@ -530,16 +543,16 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-2B_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 240</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 261</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">+</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-constant">Duration</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span>
-    <span class="ruby-identifier">parts</span> = <span class="ruby-ivar">@parts</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">other</span>.<span class="ruby-identifier">parts</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">_key</span>, <span class="ruby-identifier">value</span>, <span class="ruby-identifier">other_value</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">parts</span> = <span class="ruby-ivar">@parts</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">other</span>.<span class="ruby-identifier">_parts</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">_key</span>, <span class="ruby-identifier">value</span>, <span class="ruby-identifier">other_value</span><span class="ruby-operator">|</span>
       <span class="ruby-identifier">value</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">other_value</span>
     <span class="ruby-keyword">end</span>
-    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span>, <span class="ruby-identifier">parts</span>)
+    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span>, <span class="ruby-identifier">parts</span>, <span class="ruby-ivar">@variable</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">variable?</span>)
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">seconds</span> = <span class="ruby-ivar">@parts</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-value">:seconds</span>, <span class="ruby-value">0</span>) <span class="ruby-operator">+</span> <span class="ruby-identifier">other</span>
-    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">other</span>, <span class="ruby-ivar">@parts</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-value">seconds:</span> <span class="ruby-identifier">seconds</span>))
+    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">other</span>, <span class="ruby-ivar">@parts</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-value">seconds:</span> <span class="ruby-identifier">seconds</span>), <span class="ruby-ivar">@variable</span>)
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -573,7 +586,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-2D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 254</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 275</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">-</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-keyword">self</span> <span class="ruby-operator">+</span> (<span class="ruby-operator">-</span><span class="ruby-identifier">other</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -608,14 +621,14 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-2F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 270</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 291</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">/</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-constant">Scalar</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span>
-    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">/</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span>, <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">transform_values</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">number</span><span class="ruby-operator">|</span> <span class="ruby-identifier">number</span> <span class="ruby-operator">/</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span> })
+    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">/</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span>, <span class="ruby-ivar">@parts</span>.<span class="ruby-identifier">transform_values</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">number</span><span class="ruby-operator">|</span> <span class="ruby-identifier">number</span> <span class="ruby-operator">/</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span> }, <span class="ruby-ivar">@variable</span>)
   <span class="ruby-keyword">elsif</span> <span class="ruby-constant">Duration</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span>
     <span class="ruby-identifier">value</span> <span class="ruby-operator">/</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span>
   <span class="ruby-keyword">elsif</span> <span class="ruby-constant">Numeric</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span>
-    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">/</span> <span class="ruby-identifier">other</span>, <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">transform_values</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">number</span><span class="ruby-operator">|</span> <span class="ruby-identifier">number</span> <span class="ruby-operator">/</span> <span class="ruby-identifier">other</span> })
+    <span class="ruby-constant">Duration</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">value</span> <span class="ruby-operator">/</span> <span class="ruby-identifier">other</span>, <span class="ruby-ivar">@parts</span>.<span class="ruby-identifier">transform_values</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">number</span><span class="ruby-operator">|</span> <span class="ruby-identifier">number</span> <span class="ruby-operator">/</span> <span class="ruby-identifier">other</span> }, <span class="ruby-ivar">@variable</span>)
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">raise_type_error</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-keyword">end</span>
@@ -651,7 +664,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-3C-3D-3E_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 230</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 251</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">&lt;=&gt;</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-constant">Duration</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span>
     <span class="ruby-identifier">value</span> <span class="ruby-operator">&lt;=&gt;</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span>
@@ -690,7 +703,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-3D-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 313</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 334</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">==</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-constant">Duration</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span>
     <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">value</span>
@@ -757,7 +770,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-ago_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 416</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 437</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">ago</span>(<span class="ruby-identifier">time</span> = <span class="ruby-operator">::</span><span class="ruby-constant">Time</span>.<span class="ruby-identifier">current</span>)
   <span class="ruby-identifier">sum</span>(<span class="ruby-value">-1</span>, <span class="ruby-identifier">time</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -816,7 +829,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-eql-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 398</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 419</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">eql?</span>(<span class="ruby-identifier">other</span>)
   <span class="ruby-constant">Duration</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">other</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">other</span>.<span class="ruby-identifier">value</span>.<span class="ruby-identifier">eql?</span>(<span class="ruby-identifier">value</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -875,7 +888,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-hash_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 402</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 423</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">hash</span>
   <span class="ruby-ivar">@value</span>.<span class="ruby-identifier">hash</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -913,7 +926,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-in_days_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 371</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 392</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">in_days</span>
   <span class="ruby-identifier">in_seconds</span> <span class="ruby-operator">/</span> <span class="ruby-constant">SECONDS_PER_DAY</span>.<span class="ruby-identifier">to_f</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -951,7 +964,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-in_hours_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 364</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 385</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">in_hours</span>
   <span class="ruby-identifier">in_seconds</span> <span class="ruby-operator">/</span> <span class="ruby-constant">SECONDS_PER_HOUR</span>.<span class="ruby-identifier">to_f</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -989,7 +1002,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-in_minutes_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 357</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 378</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">in_minutes</span>
   <span class="ruby-identifier">in_seconds</span> <span class="ruby-operator">/</span> <span class="ruby-constant">SECONDS_PER_MINUTE</span>.<span class="ruby-identifier">to_f</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1027,7 +1040,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-in_months_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 385</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 406</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">in_months</span>
   <span class="ruby-identifier">in_seconds</span> <span class="ruby-operator">/</span> <span class="ruby-constant">SECONDS_PER_MONTH</span>.<span class="ruby-identifier">to_f</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1089,7 +1102,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-in_weeks_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 378</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 399</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">in_weeks</span>
   <span class="ruby-identifier">in_seconds</span> <span class="ruby-operator">/</span> <span class="ruby-constant">SECONDS_PER_WEEK</span>.<span class="ruby-identifier">to_f</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1127,7 +1140,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-in_years_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 392</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 413</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">in_years</span>
   <span class="ruby-identifier">in_seconds</span> <span class="ruby-operator">/</span> <span class="ruby-constant">SECONDS_PER_YEAR</span>.<span class="ruby-identifier">to_f</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1162,9 +1175,44 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-iso8601_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 445</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 466</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">iso8601</span>(<span class="ruby-value">precision:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-constant">ISO8601Serializer</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">self</span>, <span class="ruby-value">precision:</span> <span class="ruby-identifier">precision</span>).<span class="ruby-identifier">serialize</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-parts">
+            
+              parts()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a copy of the parts hash that defines the duration</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-parts_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 234</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parts</span>
+  <span class="ruby-ivar">@parts</span>.<span class="ruby-identifier">dup</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -1201,7 +1249,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-since_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 408</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 429</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">since</span>(<span class="ruby-identifier">time</span> = <span class="ruby-operator">::</span><span class="ruby-constant">Time</span>.<span class="ruby-identifier">current</span>)
   <span class="ruby-identifier">sum</span>(<span class="ruby-value">1</span>, <span class="ruby-identifier">time</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1256,7 +1304,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-to_i_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 349</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 370</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_i</span>
   <span class="ruby-ivar">@value</span>.<span class="ruby-identifier">to_i</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1294,7 +1342,7 @@ ActiveSupport::Duration.build(2716146).parts  # =&gt; {:months=&gt;1, :days=&gt;
                 
               </p>
               <div id="method-i-to_s_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 325</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/duration.rb, line 346</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_s</span>
   <span class="ruby-ivar">@value</span>.<span class="ruby-identifier">to_s</span>
 <span class="ruby-keyword">end</span></code></pre>

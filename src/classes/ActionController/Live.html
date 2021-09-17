@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -93,6 +93,10 @@ end
           <a href="#method-i-response_body-3D">response_body=</a>
         </li>
       
+        <li>
+          <a href="#method-i-send_stream">send_stream</a>
+        </li>
+      
     </ul>
   
 
@@ -138,7 +142,7 @@ end
                 
               </p>
               <div id="method-i-process_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/live.rb, line 235</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/live.rb, line 249</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">process</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">t1</span> = <span class="ruby-constant">Thread</span>.<span class="ruby-identifier">current</span>
   <span class="ruby-identifier">locals</span> = <span class="ruby-identifier">t1</span>.<span class="ruby-identifier">keys</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">key</span><span class="ruby-operator">|</span> [<span class="ruby-identifier">key</span>, <span class="ruby-identifier">t1</span>[<span class="ruby-identifier">key</span>]] }
@@ -214,10 +218,75 @@ end
                 
               </p>
               <div id="method-i-response_body-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/live.rb, line 280</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/live.rb, line 294</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">response_body=</span>(<span class="ruby-identifier">body</span>)
   <span class="ruby-keyword">super</span>
   <span class="ruby-identifier">response</span>.<span class="ruby-identifier">close</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">response</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-send_stream">
+            
+              send_stream(filename:, disposition: &quot;attachment&quot;, type: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sends a stream to the browser, which is helpful when you&#39;re generating exports or other running data where you don&#39;t want the entire file buffered in memory first. Similar to send_data, but where the data is generated live.</p>
+
+<p>Options:</p>
+<ul><li>
+<p><code>:filename</code> - suggests a filename for the browser to use.</p>
+</li><li>
+<p><code>:type</code> - specifies an HTTP content type. You can specify either a string or a symbol for a registered type with <code>Mime::Type.register</code>, for example :json. If omitted, type will be inferred from the file extension specified in <code>:filename</code>. If no content type is registered for the extension, the default type &#39;application/octet-stream&#39; will be used.</p>
+</li><li>
+<p><code>:disposition</code> - specifies whether the file will be shown inline or downloaded. Valid values are &#39;inline&#39; and &#39;attachment&#39; (default).</p>
+</li></ul>
+
+<p>Example of generating a csv export:</p>
+
+<pre><code>send_stream(filename: &quot;subscribers.csv&quot;) do |stream|
+  stream.write &quot;email_address,updated_at\n&quot;
+
+  @subscribers.find_each do |subscriber|
+    stream.write &quot;#{subscriber.email_address},#{subscriber.updated_at}\n&quot;
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-send_stream_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/live.rb, line 320</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">send_stream</span>(<span class="ruby-value">filename:</span>, <span class="ruby-value">disposition:</span> <span class="ruby-string">&quot;attachment&quot;</span>, <span class="ruby-value">type:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">response</span>.<span class="ruby-identifier">headers</span>[<span class="ruby-string">&quot;Content-Type&quot;</span>] =
+    (<span class="ruby-identifier">type</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Symbol</span>) <span class="ruby-operator">?</span> <span class="ruby-constant">Mime</span>[<span class="ruby-identifier">type</span>].<span class="ruby-identifier">to_s</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">type</span>) <span class="ruby-operator">||</span>
+    <span class="ruby-constant">Mime</span><span class="ruby-operator">::</span><span class="ruby-constant">Type</span>.<span class="ruby-identifier">lookup_by_extension</span>(<span class="ruby-constant">File</span>.<span class="ruby-identifier">extname</span>(<span class="ruby-identifier">filename</span>).<span class="ruby-identifier">downcase</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-string">&quot;.&quot;</span>)) <span class="ruby-operator">||</span>
+    <span class="ruby-string">&quot;application/octet-stream&quot;</span>
+
+  <span class="ruby-identifier">response</span>.<span class="ruby-identifier">headers</span>[<span class="ruby-string">&quot;Content-Disposition&quot;</span>] =
+    <span class="ruby-constant">ActionDispatch</span><span class="ruby-operator">::</span><span class="ruby-constant">Http</span><span class="ruby-operator">::</span><span class="ruby-constant">ContentDisposition</span>.<span class="ruby-identifier">format</span>(<span class="ruby-value">disposition:</span> <span class="ruby-identifier">disposition</span>, <span class="ruby-value">filename:</span> <span class="ruby-identifier">filename</span>)
+
+  <span class="ruby-keyword">yield</span> <span class="ruby-identifier">response</span>.<span class="ruby-identifier">stream</span>
+<span class="ruby-keyword">ensure</span>
+  <span class="ruby-identifier">response</span>.<span class="ruby-identifier">stream</span>.<span class="ruby-identifier">close</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

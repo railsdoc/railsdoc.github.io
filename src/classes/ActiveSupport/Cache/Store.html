@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -155,24 +155,6 @@ cache.read(&#39;city&#39;)   # =&gt; &quot;Duckburgh&quot;
     
 
     
-      <!-- Section constants -->
-      <h2 id="constants">Constants</h2>
-      <table border='0' cellpadding='5'>
-        
-          <tr valign='top'>
-            <td class="attr-name">DEFAULT_CODER</td>
-            <td>=</td>
-            <td class="attr-value">Marshal</td>
-          </tr>
-          
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
-          
-        
-      </table>
-    
 
     
       <!-- Section attributes -->
@@ -236,10 +218,14 @@ cache.read(&#39;city&#39;)   # =&gt; &quot;Duckburgh&quot;
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 188</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 203</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
-  <span class="ruby-ivar">@options</span> = <span class="ruby-identifier">options</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">options</span>.<span class="ruby-identifier">dup</span> <span class="ruby-operator">:</span> {}
-  <span class="ruby-ivar">@coder</span> = <span class="ruby-ivar">@options</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-value">:coder</span>) { <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span><span class="ruby-operator">::</span><span class="ruby-constant">DEFAULT_CODER</span> } <span class="ruby-operator">||</span> <span class="ruby-constant">NullCoder</span>
+  <span class="ruby-ivar">@options</span> = <span class="ruby-identifier">options</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">normalize_options</span>(<span class="ruby-identifier">options</span>) <span class="ruby-operator">:</span> {}
+  <span class="ruby-ivar">@options</span>[<span class="ruby-value">:compress</span>] = <span class="ruby-keyword">true</span> <span class="ruby-keyword">unless</span> <span class="ruby-ivar">@options</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:compress</span>)
+  <span class="ruby-ivar">@options</span>[<span class="ruby-value">:compress_threshold</span>] = <span class="ruby-constant">DEFAULT_COMPRESS_LIMIT</span> <span class="ruby-keyword">unless</span> <span class="ruby-ivar">@options</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:compress_threshold</span>)
+
+  <span class="ruby-ivar">@coder</span> = <span class="ruby-ivar">@options</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-value">:coder</span>) { <span class="ruby-identifier">default_coder</span> } <span class="ruby-operator">||</span> <span class="ruby-constant">NullCoder</span>
+  <span class="ruby-ivar">@coder_supports_compression</span> = <span class="ruby-ivar">@coder</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:dump_compressed</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -280,7 +266,7 @@ cache.read(&#39;city&#39;)   # =&gt; &quot;Duckburgh&quot;
                 
               </p>
               <div id="method-i-cleanup_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 541</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 574</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">cleanup</span>(<span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;#{self.class.name} does not support cleanup&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -319,7 +305,7 @@ cache.read(&#39;city&#39;)   # =&gt; &quot;Duckburgh&quot;
                 
               </p>
               <div id="method-i-clear_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 551</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 584</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear</span>(<span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;#{self.class.name} does not support clear&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -358,7 +344,7 @@ cache.read(&#39;city&#39;)   # =&gt; &quot;Duckburgh&quot;
                 
               </p>
               <div id="method-i-decrement_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 532</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 565</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">decrement</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">amount</span> = <span class="ruby-value">1</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;#{self.class.name} does not support decrement&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -395,7 +381,7 @@ cache.read(&#39;city&#39;)   # =&gt; &quot;Duckburgh&quot;
                 
               </p>
               <div id="method-i-delete_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 477</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 506</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
 
@@ -438,7 +424,7 @@ cache.read(&#39;city&#39;)   # =&gt; &quot;Duckburgh&quot;
                 
               </p>
               <div id="method-i-delete_matched_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 514</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 547</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete_matched</span>(<span class="ruby-identifier">matcher</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;#{self.class.name} does not support delete_matched&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -475,7 +461,7 @@ cache.read(&#39;city&#39;)   # =&gt; &quot;Duckburgh&quot;
                 
               </p>
               <div id="method-i-delete_multi_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 488</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 517</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete_multi</span>(<span class="ruby-identifier">names</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">names</span>.<span class="ruby-identifier">map!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">key</span><span class="ruby-operator">|</span> <span class="ruby-identifier">normalize_key</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">options</span>) }
@@ -517,7 +503,7 @@ cache.read(&#39;city&#39;)   # =&gt; &quot;Duckburgh&quot;
                 
               </p>
               <div id="method-i-exist-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 500</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 529</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">exist?</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
 
@@ -573,10 +559,16 @@ cache.exist?(&#39;bar&#39;) # =&gt; false
 
 <p>Setting <code>compress: false</code> disables compression of the cache entry.</p>
 
-<p>Setting <code>:expires_in</code> will set an expiration time on the cache. All caches support auto-expiring content after a specified number of seconds. This value can be specified as an option to the constructor (in which case all entries will be affected), or it can be supplied to the <code>fetch</code> or <code>write</code> method to effect just one entry.</p>
+<p>Setting <code>:expires_in</code> will set an expiration time on the cache. All caches support auto-expiring content after a specified number of seconds. This value can be specified as an option to the constructor (in which case all entries will be affected), or it can be supplied to the <code>fetch</code> or <code>write</code> method to affect just one entry. <code>:expire_in</code> and <code>:expired_in</code> are aliases for <code>:expires_in</code>.</p>
 
 <pre><code>cache = ActiveSupport::Cache::MemoryStore.new(expires_in: 5.minutes)
 cache.write(key, value, expires_in: 1.minute) # Set a lower value for one entry
+</code></pre>
+
+<p>Setting <code>:expires_at</code> will set an absolute expiration time on the cache. All caches support auto-expiring content after a specified number of seconds. This value can only be supplied to the <code>fetch</code> or <code>write</code> method to affect just one entry.</p>
+
+<pre><code>cache = ActiveSupport::Cache::MemoryStore.new
+cache.write(key, value, expires_at: Time.now.at_end_of_hour)
 </code></pre>
 
 <p>Setting <code>:version</code> verifies the cache stored under <code>name</code> is of the same version. nil is returned on mismatches despite contents. This feature is used to support recyclable cache keys.</p>
@@ -639,7 +631,7 @@ cache.fetch(&#39;foo&#39;) # =&gt; &quot;bar&quot;
                 
               </p>
               <div id="method-i-fetch_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 320</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 349</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">fetch</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
     <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
@@ -719,7 +711,7 @@ cache.read(&quot;fizz&quot;)
                 
               </p>
               <div id="method-i-fetch_multi_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 440</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 469</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">fetch_multi</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;Missing block: `Cache#fetch_multi` requires a block.&quot;</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">block_given?</span>
 
@@ -776,7 +768,7 @@ cache.read(&quot;fizz&quot;)
                 
               </p>
               <div id="method-i-increment_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 523</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 556</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">increment</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">amount</span> = <span class="ruby-value">1</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-node">&quot;#{self.class.name} does not support increment&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -811,7 +803,7 @@ cache.read(&quot;fizz&quot;)
                 
               </p>
               <div id="method-i-mute_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 200</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 219</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">mute</span>
   <span class="ruby-identifier">previous_silence</span>, <span class="ruby-ivar">@silence</span> = <span class="ruby-keyword">defined?</span>(<span class="ruby-ivar">@silence</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-ivar">@silence</span>, <span class="ruby-keyword">true</span>
   <span class="ruby-keyword">yield</span>
@@ -853,7 +845,7 @@ cache.read(&quot;fizz&quot;)
                 
               </p>
               <div id="method-i-read_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 355</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 384</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">read</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">key</span>     = <span class="ruby-identifier">normalize_key</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>)
@@ -915,7 +907,7 @@ cache.read(&quot;fizz&quot;)
                 
               </p>
               <div id="method-i-read_multi_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 388</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 417</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">read_multi</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>)
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">names</span>.<span class="ruby-identifier">extract_options!</span>
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
@@ -957,7 +949,7 @@ cache.read(&quot;fizz&quot;)
                 
               </p>
               <div id="method-i-silence-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 194</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 213</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">silence!</span>
   <span class="ruby-ivar">@silence</span> = <span class="ruby-keyword">true</span>
   <span class="ruby-keyword">self</span>
@@ -995,7 +987,7 @@ cache.read(&quot;fizz&quot;)
                 
               </p>
               <div id="method-i-write_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 465</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 494</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">write</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">value</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
 
@@ -1035,7 +1027,7 @@ cache.read(&quot;fizz&quot;)
                 
               </p>
               <div id="method-i-write_multi_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 400</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 429</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">write_multi</span>(<span class="ruby-identifier">hash</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
 
@@ -1081,7 +1073,7 @@ cache.read(&quot;fizz&quot;)
                 
               </p>
               <div id="method-i-key_matcher_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 560</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache.rb, line 597</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">key_matcher</span>(<span class="ruby-identifier">pattern</span>, <span class="ruby-identifier">options</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">prefix</span> = <span class="ruby-identifier">options</span>[<span class="ruby-value">:namespace</span>].<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Proc</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:namespace</span>].<span class="ruby-identifier">call</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:namespace</span>]
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">prefix</span>

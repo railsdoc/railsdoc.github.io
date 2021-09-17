@@ -1,0 +1,155 @@
+---
+title: File
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.1.4</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            File
+            
+                <span class="parent">&lt;
+                    
+                    <a href="Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../files/activesupport/lib/active_support/core_ext/file/atomic_rb.html">activesupport/lib/active_support/core_ext/file/atomic.rb</a></li>
+            
+            <li><a href="../files/railties/lib/rails/commands/credentials/credentials_command/diffing_rb.html">railties/lib/rails/commands/credentials/credentials_command/diffing.rb</a></li>
+            
+            <li><a href="../files/railties/lib/rails/commands/dbconsole/dbconsole_command_rb.html">railties/lib/rails/commands/dbconsole/dbconsole_command.rb</a></li>
+            
+            <li><a href="../files/railties/lib/rails/generators/app_base_rb.html">railties/lib/rails/generators/app_base.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-atomic_write">atomic_write</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-atomic_write">
+            
+              atomic_write(file_name, temp_dir = dirname(file_name))
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Write to a file atomically. Useful for situations where you don&#39;t want other processes or threads to see half-written files.</p>
+
+<pre><code>File.atomic_write(&#39;important.file&#39;) do |file|
+  file.write(&#39;hello&#39;)
+end
+</code></pre>
+
+<p>This method needs to create a temporary file. By default it will create it in the same directory as the destination file. If you don&#39;t like this behavior you can provide a different directory but it must be on the same physical filesystem as the file you&#39;re trying to write.</p>
+
+<pre><code>File.atomic_write(&#39;/data/something.important&#39;, &#39;/data/tmp&#39;) do |file|
+  file.write(&#39;hello&#39;)
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-atomic_write_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/file/atomic.rb, line 21</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">atomic_write</span>(<span class="ruby-identifier">file_name</span>, <span class="ruby-identifier">temp_dir</span> = <span class="ruby-identifier">dirname</span>(<span class="ruby-identifier">file_name</span>))
+  <span class="ruby-identifier">require</span> <span class="ruby-string">&quot;tempfile&quot;</span> <span class="ruby-keyword">unless</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-constant">Tempfile</span>)
+
+  <span class="ruby-constant">Tempfile</span>.<span class="ruby-identifier">open</span>(<span class="ruby-node">&quot;.#{basename(file_name)}&quot;</span>, <span class="ruby-identifier">temp_dir</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">temp_file</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">temp_file</span>.<span class="ruby-identifier">binmode</span>
+    <span class="ruby-identifier">return_val</span> = <span class="ruby-keyword">yield</span> <span class="ruby-identifier">temp_file</span>
+    <span class="ruby-identifier">temp_file</span>.<span class="ruby-identifier">close</span>
+
+    <span class="ruby-identifier">old_stat</span> = <span class="ruby-keyword">if</span> <span class="ruby-identifier">exist?</span>(<span class="ruby-identifier">file_name</span>)
+      <span class="ruby-comment"># Get original file permissions</span>
+      <span class="ruby-identifier">stat</span>(<span class="ruby-identifier">file_name</span>)
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-comment"># If not possible, probe which are the default permissions in the</span>
+      <span class="ruby-comment"># destination directory.</span>
+      <span class="ruby-identifier">probe_stat_in</span>(<span class="ruby-identifier">dirname</span>(<span class="ruby-identifier">file_name</span>))
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">old_stat</span>
+      <span class="ruby-comment"># Set correct permissions on new file</span>
+      <span class="ruby-keyword">begin</span>
+        <span class="ruby-identifier">chown</span>(<span class="ruby-identifier">old_stat</span>.<span class="ruby-identifier">uid</span>, <span class="ruby-identifier">old_stat</span>.<span class="ruby-identifier">gid</span>, <span class="ruby-identifier">temp_file</span>.<span class="ruby-identifier">path</span>)
+        <span class="ruby-comment"># This operation will affect filesystem ACL&#39;s</span>
+        <span class="ruby-identifier">chmod</span>(<span class="ruby-identifier">old_stat</span>.<span class="ruby-identifier">mode</span>, <span class="ruby-identifier">temp_file</span>.<span class="ruby-identifier">path</span>)
+      <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Errno</span><span class="ruby-operator">::</span><span class="ruby-constant">EPERM</span>, <span class="ruby-constant">Errno</span><span class="ruby-operator">::</span><span class="ruby-constant">EACCES</span>
+        <span class="ruby-comment"># Changing file ownership failed, moving on.</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-comment"># Overwrite original file with temp file</span>
+    <span class="ruby-identifier">rename</span>(<span class="ruby-identifier">temp_file</span>.<span class="ruby-identifier">path</span>, <span class="ruby-identifier">file_name</span>)
+    <span class="ruby-identifier">return_val</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+    
+  
+</div>
+
+    </div>
+</div>

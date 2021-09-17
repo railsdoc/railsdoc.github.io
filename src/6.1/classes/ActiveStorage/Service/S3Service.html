@@ -1,0 +1,543 @@
+---
+title: ActiveStorage::Service::S3Service
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.1.4</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveStorage::Service::S3Service
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Service.html">ActiveStorage::Service</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activestorage/lib/active_storage/service/s3_service_rb.html">activestorage/lib/active_storage/service/s3_service.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Wraps the Amazon Simple Storage <a href="../Service.html"><code>Service</code></a> (S3) as an Active Storage service. See <a href="../Service.html"><code>ActiveStorage::Service</code></a> for the generic API documentation that applies to all services.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-delete">delete</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete_prefixed">delete_prefixed</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-download">download</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-download_chunk">download_chunk</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-exist-3F">exist?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-headers_for_direct_upload">headers_for_direct_upload</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-upload">upload</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-url_for_direct_upload">url_for_direct_upload</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">MAXIMUM_UPLOAD_PARTS_COUNT</td>
+            <td>=</td>
+            <td class="attr-value">10000</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MINIMUM_UPLOAD_PART_SIZE</td>
+            <td>=</td>
+            <td class="attr-value">5.megabytes</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>bucket</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>client</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>multipart_upload_threshold</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>upload_options</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(bucket:, upload: {}, public: false, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 15</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-value">bucket:</span>, <span class="ruby-value">upload:</span> {}, <span class="ruby-value">public:</span> <span class="ruby-keyword">false</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-ivar">@client</span> = <span class="ruby-constant">Aws</span><span class="ruby-operator">::</span><span class="ruby-constant">S3</span><span class="ruby-operator">::</span><span class="ruby-constant">Resource</span>.<span class="ruby-identifier">new</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-ivar">@bucket</span> = <span class="ruby-ivar">@client</span>.<span class="ruby-identifier">bucket</span>(<span class="ruby-identifier">bucket</span>)
+
+  <span class="ruby-ivar">@multipart_upload_threshold</span> = <span class="ruby-identifier">upload</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-value">:multipart_threshold</span>) <span class="ruby-operator">||</span> <span class="ruby-value">100</span>.<span class="ruby-identifier">megabytes</span>
+  <span class="ruby-ivar">@public</span> = <span class="ruby-identifier">public</span>
+
+  <span class="ruby-ivar">@upload_options</span> = <span class="ruby-identifier">upload</span>
+  <span class="ruby-ivar">@upload_options</span>[<span class="ruby-value">:acl</span>] = <span class="ruby-string">&quot;public-read&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">public?</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-delete">
+            
+              delete(key)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-delete_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 60</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete</span>(<span class="ruby-identifier">key</span>)
+  <span class="ruby-identifier">instrument</span> <span class="ruby-value">:delete</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">object_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">delete</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete_prefixed">
+            
+              delete_prefixed(prefix)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-delete_prefixed_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 66</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete_prefixed</span>(<span class="ruby-identifier">prefix</span>)
+  <span class="ruby-identifier">instrument</span> <span class="ruby-value">:delete_prefixed</span>, <span class="ruby-value">prefix:</span> <span class="ruby-identifier">prefix</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">bucket</span>.<span class="ruby-identifier">objects</span>(<span class="ruby-value">prefix:</span> <span class="ruby-identifier">prefix</span>).<span class="ruby-identifier">batch_delete!</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-download">
+            
+              download(key, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-download_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 38</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">download</span>(<span class="ruby-identifier">key</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+    <span class="ruby-identifier">instrument</span> <span class="ruby-value">:streaming_download</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">stream</span>(<span class="ruby-identifier">key</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">instrument</span> <span class="ruby-value">:download</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">object_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">get</span>.<span class="ruby-identifier">body</span>.<span class="ruby-identifier">string</span>.<span class="ruby-identifier">force_encoding</span>(<span class="ruby-constant">Encoding</span><span class="ruby-operator">::</span><span class="ruby-constant">BINARY</span>)
+    <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Aws</span><span class="ruby-operator">::</span><span class="ruby-constant">S3</span><span class="ruby-operator">::</span><span class="ruby-constant">Errors</span><span class="ruby-operator">::</span><span class="ruby-constant">NoSuchKey</span>
+      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveStorage</span><span class="ruby-operator">::</span><span class="ruby-constant">FileNotFoundError</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-download_chunk">
+            
+              download_chunk(key, range)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-download_chunk_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 52</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">download_chunk</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">range</span>)
+  <span class="ruby-identifier">instrument</span> <span class="ruby-value">:download_chunk</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">range:</span> <span class="ruby-identifier">range</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">object_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">get</span>(<span class="ruby-value">range:</span> <span class="ruby-node">&quot;bytes=#{range.begin}-#{range.exclude_end? ? range.end - 1 : range.end}&quot;</span>).<span class="ruby-identifier">body</span>.<span class="ruby-identifier">string</span>.<span class="ruby-identifier">force_encoding</span>(<span class="ruby-constant">Encoding</span><span class="ruby-operator">::</span><span class="ruby-constant">BINARY</span>)
+  <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Aws</span><span class="ruby-operator">::</span><span class="ruby-constant">S3</span><span class="ruby-operator">::</span><span class="ruby-constant">Errors</span><span class="ruby-operator">::</span><span class="ruby-constant">NoSuchKey</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveStorage</span><span class="ruby-operator">::</span><span class="ruby-constant">FileNotFoundError</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-exist-3F">
+            
+              exist?(key)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-exist-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 72</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">exist?</span>(<span class="ruby-identifier">key</span>)
+  <span class="ruby-identifier">instrument</span> <span class="ruby-value">:exist</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">payload</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">answer</span> = <span class="ruby-identifier">object_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">exists?</span>
+    <span class="ruby-identifier">payload</span>[<span class="ruby-value">:exist</span>] = <span class="ruby-identifier">answer</span>
+    <span class="ruby-identifier">answer</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-headers_for_direct_upload">
+            
+              headers_for_direct_upload(key, content_type:, checksum:, filename: nil, disposition: nil, **)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-headers_for_direct_upload_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 92</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">headers_for_direct_upload</span>(<span class="ruby-identifier">key</span>, <span class="ruby-value">content_type:</span>, <span class="ruby-value">checksum:</span>, <span class="ruby-value">filename:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">disposition:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span>)
+  <span class="ruby-identifier">content_disposition</span> = <span class="ruby-identifier">content_disposition_with</span>(<span class="ruby-value">type:</span> <span class="ruby-identifier">disposition</span>, <span class="ruby-value">filename:</span> <span class="ruby-identifier">filename</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">filename</span>
+
+  { <span class="ruby-string">&quot;Content-Type&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">content_type</span>, <span class="ruby-string">&quot;Content-MD5&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">checksum</span>, <span class="ruby-string">&quot;Content-Disposition&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">content_disposition</span> }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-upload">
+            
+              upload(key, io, checksum: nil, filename: nil, content_type: nil, disposition: nil, **)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-upload_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 26</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">upload</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">io</span>, <span class="ruby-value">checksum:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">filename:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">content_type:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">disposition:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span>)
+  <span class="ruby-identifier">instrument</span> <span class="ruby-value">:upload</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">checksum:</span> <span class="ruby-identifier">checksum</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">content_disposition</span> = <span class="ruby-identifier">content_disposition_with</span>(<span class="ruby-value">filename:</span> <span class="ruby-identifier">filename</span>, <span class="ruby-value">type:</span> <span class="ruby-identifier">disposition</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">disposition</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">filename</span>
+
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">io</span>.<span class="ruby-identifier">size</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">multipart_upload_threshold</span>
+      <span class="ruby-identifier">upload_with_single_part</span> <span class="ruby-identifier">key</span>, <span class="ruby-identifier">io</span>, <span class="ruby-value">checksum:</span> <span class="ruby-identifier">checksum</span>, <span class="ruby-value">content_type:</span> <span class="ruby-identifier">content_type</span>, <span class="ruby-value">content_disposition:</span> <span class="ruby-identifier">content_disposition</span>
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-identifier">upload_with_multipart</span> <span class="ruby-identifier">key</span>, <span class="ruby-identifier">io</span>, <span class="ruby-value">content_type:</span> <span class="ruby-identifier">content_type</span>, <span class="ruby-value">content_disposition:</span> <span class="ruby-identifier">content_disposition</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-url_for_direct_upload">
+            
+              url_for_direct_upload(key, expires_in:, content_type:, content_length:, checksum:)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-url_for_direct_upload_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/s3_service.rb, line 80</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">url_for_direct_upload</span>(<span class="ruby-identifier">key</span>, <span class="ruby-value">expires_in:</span>, <span class="ruby-value">content_type:</span>, <span class="ruby-value">content_length:</span>, <span class="ruby-value">checksum:</span>)
+  <span class="ruby-identifier">instrument</span> <span class="ruby-value">:url</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">payload</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">generated_url</span> = <span class="ruby-identifier">object_for</span>(<span class="ruby-identifier">key</span>).<span class="ruby-identifier">presigned_url</span> <span class="ruby-value">:put</span>, <span class="ruby-value">expires_in:</span> <span class="ruby-identifier">expires_in</span>.<span class="ruby-identifier">to_i</span>,
+      <span class="ruby-value">content_type:</span> <span class="ruby-identifier">content_type</span>, <span class="ruby-value">content_length:</span> <span class="ruby-identifier">content_length</span>, <span class="ruby-value">content_md5:</span> <span class="ruby-identifier">checksum</span>,
+      <span class="ruby-value">whitelist_headers:</span> [<span class="ruby-string">&quot;content-length&quot;</span>], <span class="ruby-operator">**</span><span class="ruby-identifier">upload_options</span>
+
+    <span class="ruby-identifier">payload</span>[<span class="ruby-value">:url</span>] = <span class="ruby-identifier">generated_url</span>
+
+    <span class="ruby-identifier">generated_url</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

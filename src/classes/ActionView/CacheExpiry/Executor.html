@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -41,11 +41,15 @@ layout: default
     <ul>
       
         <li>
-          <a href="#method-i-before">before</a>
+          <a href="#method-i-complete">complete</a>
         </li>
       
         <li>
           <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-run">run</a>
         </li>
       
     </ul>
@@ -94,7 +98,10 @@ layout: default
               <div id="method-c-new_source">
                 <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/cache_expiry.rb, line 6</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-value">watcher:</span>)
-  <span class="ruby-ivar">@cache_expiry</span> = <span class="ruby-constant">CacheExpiry</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">watcher:</span> <span class="ruby-identifier">watcher</span>)
+  <span class="ruby-ivar">@execution_lock</span> = <span class="ruby-constant">Concurrent</span><span class="ruby-operator">::</span><span class="ruby-constant">ReadWriteLock</span>.<span class="ruby-identifier">new</span>
+  <span class="ruby-ivar">@cache_expiry</span> = <span class="ruby-constant">ViewModificationWatcher</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">watcher:</span> <span class="ruby-identifier">watcher</span>) <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">clear_cache</span>
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -106,9 +113,9 @@ layout: default
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
         <div class="method">
-          <h3 id="method-i-before">
+          <h3 id="method-i-complete">
             
-              before(target)
+              complete(_)
             
           </h3>
 
@@ -130,10 +137,48 @@ layout: default
                 Source:
                 
               </p>
-              <div id="method-i-before_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/cache_expiry.rb, line 10</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">before</span>(<span class="ruby-identifier">target</span>)
-  <span class="ruby-ivar">@cache_expiry</span>.<span class="ruby-identifier">clear_cache_if_necessary</span>
+              <div id="method-i-complete_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/cache_expiry.rb, line 20</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">complete</span>(<span class="ruby-identifier">_</span>)
+  <span class="ruby-ivar">@execution_lock</span>.<span class="ruby-identifier">release_read_lock</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-run">
+            
+              run()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-run_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/cache_expiry.rb, line 13</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">run</span>
+  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Dependencies</span>.<span class="ruby-identifier">interlock</span>.<span class="ruby-identifier">permit_concurrent_loads</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-ivar">@cache_expiry</span>.<span class="ruby-identifier">execute_if_updated</span>
+    <span class="ruby-ivar">@execution_lock</span>.<span class="ruby-identifier">acquire_read_lock</span>
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

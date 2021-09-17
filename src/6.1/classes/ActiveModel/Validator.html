@@ -1,0 +1,343 @@
+---
+title: ActiveModel::Validator
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.1.4</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveModel::Validator
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activemodel/lib/active_model/validator_rb.html">activemodel/lib/active_model/validator.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h2 id="class-ActiveModel::Validator-label-Active+Model+Validator">Active Model Validator</h2>
+
+<p>A simple base class that can be used along with <a href="Validations/ClassMethods.html#method-i-validates_with"><code>ActiveModel::Validations::ClassMethods.validates_with</code></a></p>
+
+<pre><code>class Person
+  include ActiveModel::Validations
+  validates_with MyValidator
+end
+
+class MyValidator &lt; ActiveModel::Validator
+  def validate(record)
+    if some_complex_logic
+      record.errors.add(:base, &quot;This record is invalid&quot;)
+    end
+  end
+
+  private
+    def some_complex_logic
+      # ...
+    end
+end
+</code></pre>
+
+<p>Any class that inherits from <a href="Validator.html"><code>ActiveModel::Validator</code></a> must implement a method called <code>validate</code> which accepts a <code>record</code>.</p>
+
+<pre><code>class Person
+  include ActiveModel::Validations
+  validates_with MyValidator
+end
+
+class MyValidator &lt; ActiveModel::Validator
+  def validate(record)
+    record # =&gt; The person instance being validated
+    options # =&gt; Any non-standard options passed to validates_with
+  end
+end
+</code></pre>
+
+<p>To cause a validation error, you must add to the <code>record</code>&#39;s errors directly from within the validators message.</p>
+
+<pre><code>class MyValidator &lt; ActiveModel::Validator
+  def validate(record)
+    record.errors.add :base, &quot;This is some custom error message&quot;
+    record.errors.add :first_name, &quot;This is some complex validation&quot;
+    # etc...
+  end
+end
+</code></pre>
+
+<p>To add behavior to the initialize method, use the following signature:</p>
+
+<pre><code>class MyValidator &lt; ActiveModel::Validator
+  def initialize(options)
+    super
+    @my_custom_field = options[:field_name] || :first_name
+  end
+end
+</code></pre>
+
+<p>Note that the validator is initialized only once for the whole application life cycle, and not on each validation run.</p>
+
+<p>The easiest way to add custom validators for validating individual attributes is with the convenient <code>ActiveModel::EachValidator</code>.</p>
+
+<pre><code>class TitleValidator &lt; ActiveModel::EachValidator
+  def validate_each(record, attribute, value)
+    record.errors.add attribute, &#39;must be Mr., Mrs., or Dr.&#39; unless %w(Mr. Mrs. Dr.).include?(value)
+  end
+end
+</code></pre>
+
+<p>This can now be used in combination with the <code>validates</code> method (see <code>ActiveModel::Validations::ClassMethods.validates</code> for more on this).</p>
+
+<pre><code>class Person
+  include ActiveModel::Validations
+  attr_accessor :title
+
+  validates :title, presence: true, title: true
+end
+</code></pre>
+
+<p>It can be useful to access the class that is using that validator when there are prerequisites such as an <code>attr_accessor</code> being present. This class is accessible via <code>options[:class]</code> in the constructor. To set up your validator override the constructor.</p>
+
+<pre><code>class MyValidator &lt; ActiveModel::Validator
+  def initialize(options={})
+    super
+    options[:class].attr_accessor :custom_attribute
+  end
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-kind">kind</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-kind">kind</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-validate">validate</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>options</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-kind">
+            
+              kind()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the kind of the validator.</p>
+
+<pre><code>PresenceValidator.kind   # =&gt; :presence
+AcceptanceValidator.kind # =&gt; :acceptance
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-kind_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/validator.rb, line 103</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">kind</span>
+  <span class="ruby-ivar">@kind</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">name</span>.<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;::&quot;</span>).<span class="ruby-identifier">last</span>.<span class="ruby-identifier">underscore</span>.<span class="ruby-identifier">chomp</span>(<span class="ruby-string">&quot;_validator&quot;</span>).<span class="ruby-identifier">to_sym</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">anonymous?</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Accepts options that will be made available through the <code>options</code> reader.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/validator.rb, line 108</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">options</span> = {})
+  <span class="ruby-ivar">@options</span> = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">except</span>(<span class="ruby-value">:class</span>).<span class="ruby-identifier">freeze</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-kind">
+            
+              kind()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the kind for this validator.</p>
+
+<pre><code>PresenceValidator.new(attributes: [:username]).kind # =&gt; :presence
+AcceptanceValidator.new(attributes: [:terms]).kind  # =&gt; :acceptance
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-kind_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/validator.rb, line 116</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">kind</span>
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">kind</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-validate">
+            
+              validate(record)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Override this method in subclasses with validation logic, adding errors to the records <code>errors</code> array where necessary.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-validate_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/validator.rb, line 122</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">validate</span>(<span class="ruby-identifier">record</span>)
+  <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>, <span class="ruby-string">&quot;Subclasses must implement a validate(record) method.&quot;</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
