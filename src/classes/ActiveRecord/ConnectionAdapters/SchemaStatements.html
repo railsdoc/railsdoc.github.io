@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -316,7 +316,7 @@ layout: default
                 
               </p>
               <div id="method-i-add_check_constraint_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1152</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1178</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_check_constraint</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">expression</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">supports_check_constraints?</span>
 
@@ -342,15 +342,21 @@ layout: default
             <div class="description">
               <p>Add a new <code>type</code> column named <code>column_name</code> to <code>table_name</code>.</p>
 
-<p>The <code>type</code> parameter is normally one of the migrations native types, which is one of the following: <code>:primary_key</code>, <code>:string</code>, <code>:text</code>, <code>:integer</code>, <code>:bigint</code>, <code>:float</code>, <code>:decimal</code>, <code>:numeric</code>, <code>:datetime</code>, <code>:time</code>, <code>:date</code>, <code>:binary</code>, <code>:boolean</code>.</p>
+<p>See <a href="TableDefinition.html#method-i-column">ActiveRecord::ConnectionAdapters::TableDefinition.column</a>.</p>
+
+<p>The <code>type</code> parameter is normally one of the migrations native types, which is one of the following: <code>:primary_key</code>, <code>:string</code>, <code>:text</code>, <code>:integer</code>, <code>:bigint</code>, <code>:float</code>, <code>:decimal</code>, <code>:numeric</code>, <code>:datetime</code>, <code>:time</code>, <code>:date</code>, <code>:binary</code>, <code>:blob</code>, <code>:boolean</code>.</p>
 
 <p>You may use a type not in this list as long as it is supported by your database (for example, “polygon” in <a href="MySQL.html"><code>MySQL</code></a>), but this will not be database agnostic and should usually be avoided.</p>
 
 <p>Available options are (none of these exists by default):</p>
 <ul><li>
-<p><code>:limit</code> - Requests a maximum column length. This is the number of characters for a <code>:string</code> column and number of bytes for <code>:text</code>, <code>:binary</code>, and <code>:integer</code> columns. This option is ignored by some backends.</p>
+<p><code>:comment</code> - Specifies the comment for the column. This option is ignored by some backends.</p>
+</li><li>
+<p><code>:collation</code> - Specifies the collation for a <code>:string</code> or <code>:text</code> column. If not specified, the column will have the same collation as the table.</p>
 </li><li>
 <p><code>:default</code> - The column&#39;s default value. Use <code>nil</code> for <code>NULL</code>.</p>
+</li><li>
+<p><code>:limit</code> - Requests a maximum column length. This is the number of characters for a <code>:string</code> column and number of bytes for <code>:text</code>, <code>:binary</code>, <code>:blob</code>, and <code>:integer</code> columns. This option is ignored by some backends.</p>
 </li><li>
 <p><code>:null</code> - Allows or disallows <code>NULL</code> values in the column.</p>
 </li><li>
@@ -428,9 +434,15 @@ add_column(:shapes, :triangle, &#39;polygon&#39;, if_not_exists: true)
                 
               </p>
               <div id="method-i-add_column_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 606</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 613</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_column</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-identifier">type</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
-  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:if_not_exists</span>] <span class="ruby-operator">==</span> <span class="ruby-keyword">true</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">column_exists?</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-identifier">type</span>)
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:if_not_exists</span>] <span class="ruby-operator">==</span> <span class="ruby-keyword">true</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">column_exists?</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>)
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">supports_datetime_with_precision?</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">type</span> <span class="ruby-operator">==</span> <span class="ruby-value">:datetime</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">options</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:precision</span>)
+      <span class="ruby-identifier">options</span>[<span class="ruby-value">:precision</span>] = <span class="ruby-value">6</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
 
   <span class="ruby-identifier">at</span> = <span class="ruby-identifier">create_alter_table</span> <span class="ruby-identifier">table_name</span>
   <span class="ruby-identifier">at</span>.<span class="ruby-identifier">add_column</span>(<span class="ruby-identifier">column_name</span>, <span class="ruby-identifier">type</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
@@ -462,6 +474,11 @@ add_column(:shapes, :triangle, &#39;polygon&#39;, if_not_exists: true)
 <p>generates:</p>
 
 <pre><code>ALTER TABLE &quot;articles&quot; ADD CONSTRAINT fk_rails_e74ce85cbc FOREIGN KEY (&quot;author_id&quot;) REFERENCES &quot;authors&quot; (&quot;id&quot;)
+</code></pre>
+
+<h6 id="method-i-add_foreign_key-label-Creating+a+foreign+key-2C+ignoring+method+call+if+the+foreign+key+exists">Creating a foreign key, ignoring method call if the foreign key exists</h6>
+
+<pre><code>add_foreign_key(:articles, :authors, if_not_exists: true)
 </code></pre>
 
 <h6 id="method-i-add_foreign_key-label-Creating+a+foreign+key+on+a+specific+column">Creating a foreign key on a specific column</h6>
@@ -500,6 +517,9 @@ add_column(:shapes, :triangle, &#39;polygon&#39;, if_not_exists: true)
 </dd><dt><code>:on_update</code>
 <dd>
 <p>Action that happens <code>ON UPDATE</code>. Valid values are <code>:nullify</code>, <code>:cascade</code> and <code>:restrict</code></p>
+</dd><dt><code>:if_not_exists</code>
+<dd>
+<p>Specifies if the foreign key already exists to not try to re-add it. This will avoid duplicate column errors.</p>
 </dd><dt><code>:validate</code>
 <dd>
 <p>(PostgreSQL only) Specify whether or not the constraint should be validated. Defaults to <code>true</code>.</p>
@@ -520,9 +540,10 @@ add_column(:shapes, :triangle, &#39;polygon&#39;, if_not_exists: true)
                 
               </p>
               <div id="method-i-add_foreign_key_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1059</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1078</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_foreign_key</span>(<span class="ruby-identifier">from_table</span>, <span class="ruby-identifier">to_table</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">supports_foreign_keys?</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:if_not_exists</span>] <span class="ruby-operator">==</span> <span class="ruby-keyword">true</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">foreign_key_exists?</span>(<span class="ruby-identifier">from_table</span>, <span class="ruby-identifier">to_table</span>)
 
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">foreign_key_options</span>(<span class="ruby-identifier">from_table</span>, <span class="ruby-identifier">to_table</span>, <span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">at</span> = <span class="ruby-identifier">create_alter_table</span> <span class="ruby-identifier">from_table</span>
@@ -702,7 +723,7 @@ add_index(:developers, [:name, :city], using: &#39;gist&#39;, opclass: :gist_trg
                 
               </p>
               <div id="method-i-add_index_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 835</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 847</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_index</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">index</span>, <span class="ruby-identifier">algorithm</span>, <span class="ruby-identifier">if_not_exists</span> = <span class="ruby-identifier">add_index_options</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
 
@@ -797,7 +818,7 @@ add_index(:developers, [:name, :city], using: &#39;gist&#39;, opclass: :gist_trg
                 
               </p>
               <div id="method-i-add_reference_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 972</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 984</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_reference</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">ref_name</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-constant">ReferenceDefinition</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">ref_name</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>).<span class="ruby-identifier">add_to</span>(<span class="ruby-identifier">update_table_definition</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-keyword">self</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -835,7 +856,7 @@ add_index(:developers, [:name, :city], using: &#39;gist&#39;, opclass: :gist_trg
                 
               </p>
               <div id="method-i-add_timestamps_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1264</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1309</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_timestamps</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">options</span>[<span class="ruby-value">:null</span>] = <span class="ruby-keyword">false</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:null</span>].<span class="ruby-identifier">nil?</span>
 
@@ -877,7 +898,7 @@ add_index(:developers, [:name, :city], using: &#39;gist&#39;, opclass: :gist_trg
                 
               </p>
               <div id="method-i-assume_migrated_upto_version_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1195</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1221</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assume_migrated_upto_version</span>(<span class="ruby-identifier">version</span>)
   <span class="ruby-identifier">version</span> = <span class="ruby-identifier">version</span>.<span class="ruby-identifier">to_i</span>
   <span class="ruby-identifier">sm_table</span> = <span class="ruby-identifier">quote_table_name</span>(<span class="ruby-identifier">schema_migration</span>.<span class="ruby-identifier">table_name</span>)
@@ -932,7 +953,7 @@ change_column(:accounts, :description, :text)
                 
               </p>
               <div id="method-i-change_column_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 663</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 675</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">change_column</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-identifier">type</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>, <span class="ruby-string">&quot;change_column is not implemented&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -972,7 +993,7 @@ change_column(:accounts, :description, :text)
                 
               </p>
               <div id="method-i-change_column_comment_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1347</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1391</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">change_column_comment</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-identifier">comment_or_changes</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>, <span class="ruby-node">&quot;#{self.class} does not support changing column comments&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1021,7 +1042,7 @@ change_column_default(:accounts, :authorized, 1)
                 
               </p>
               <div id="method-i-change_column_default_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 681</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 693</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">change_column_default</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-identifier">default_or_changes</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>, <span class="ruby-string">&quot;change_column_default is not implemented&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1070,7 +1091,7 @@ change_column_default(:accounts, :authorized, 1)
                 
               </p>
               <div id="method-i-change_column_null_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 701</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 713</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">change_column_null</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-identifier">null</span>, <span class="ruby-identifier">default</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>, <span class="ruby-string">&quot;change_column_null is not implemented&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1241,7 +1262,7 @@ end
                 
               </p>
               <div id="method-i-change_table_comment_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1337</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1381</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">change_table_comment</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">comment_or_changes</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>, <span class="ruby-node">&quot;#{self.class} does not support changing table comments&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1276,7 +1297,7 @@ end
                 
               </p>
               <div id="method-i-check_constraints_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1134</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1160</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">check_constraints</span>(<span class="ruby-identifier">table_name</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1746,7 +1767,7 @@ end
 
           
             <div class="description">
-              <p>Returns the relation names useable to back Active Record models. For most adapters this means all <a href="SchemaStatements.html#method-i-tables"><code>tables</code></a> and <a href="SchemaStatements.html#method-i-views"><code>views</code></a>.</p>
+              <p>Returns the relation names usable to back Active Record models. For most adapters this means all <a href="SchemaStatements.html#method-i-tables"><code>tables</code></a> and <a href="SchemaStatements.html#method-i-views"><code>views</code></a>.</p>
             </div>
           
 
@@ -1893,7 +1914,7 @@ foreign_key_exists?(:accounts, name: &quot;special_fk_name&quot;)
                 
               </p>
               <div id="method-i-foreign_key_exists-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1116</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1142</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">foreign_key_exists?</span>(<span class="ruby-identifier">from_table</span>, <span class="ruby-identifier">to_table</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">foreign_key_for</span>(<span class="ruby-identifier">from_table</span>, <span class="ruby-value">to_table:</span> <span class="ruby-identifier">to_table</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>).<span class="ruby-identifier">present?</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1928,7 +1949,7 @@ foreign_key_exists?(:accounts, name: &quot;special_fk_name&quot;)
                 
               </p>
               <div id="method-i-foreign_keys_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1011</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1023</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">foreign_keys</span>(<span class="ruby-identifier">table_name</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>, <span class="ruby-string">&quot;foreign_keys is not implemented&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2021,7 +2042,7 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
                 
               </p>
               <div id="method-i-index_name_exists-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 919</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 931</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">index_name_exists?</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">index_name</span>)
   <span class="ruby-identifier">index_name</span> = <span class="ruby-identifier">index_name</span>.<span class="ruby-identifier">to_s</span>
   <span class="ruby-identifier">indexes</span>(<span class="ruby-identifier">table_name</span>).<span class="ruby-identifier">detect</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">i</span><span class="ruby-operator">|</span> <span class="ruby-identifier">i</span>.<span class="ruby-identifier">name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">index_name</span> }
@@ -2127,7 +2148,7 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
                 
               </p>
               <div id="method-i-options_include_default-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1327</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1371</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">options_include_default?</span>(<span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">options</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-value">:default</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span>(<span class="ruby-identifier">options</span>[<span class="ruby-value">:null</span>] <span class="ruby-operator">==</span> <span class="ruby-keyword">false</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:default</span>].<span class="ruby-identifier">nil?</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -2228,7 +2249,7 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
                 
               </p>
               <div id="method-i-remove_check_constraint_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1175</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1201</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_check_constraint</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">expression</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">supports_check_constraints?</span>
 
@@ -2280,7 +2301,7 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
                 
               </p>
               <div id="method-i-remove_column_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 651</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 663</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_column</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-identifier">type</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:if_exists</span>] <span class="ruby-operator">==</span> <span class="ruby-keyword">true</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">column_exists?</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>)
 
@@ -2325,15 +2346,14 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
                 
               </p>
               <div id="method-i-remove_columns_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 627</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 640</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_columns</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">column_names</span>, <span class="ruby-value">type:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">column_names</span>.<span class="ruby-identifier">empty?</span>
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-string">&quot;You must specify at least one column name. Example: remove_columns(:people, :first_name)&quot;</span>)
   <span class="ruby-keyword">end</span>
 
-  <span class="ruby-identifier">column_names</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">column_name</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">remove_column</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-identifier">type</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
-  <span class="ruby-keyword">end</span>
+  <span class="ruby-identifier">remove_column_fragments</span> = <span class="ruby-identifier">remove_columns_for_alter</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">column_names</span>, <span class="ruby-value">type:</span> <span class="ruby-identifier">type</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-identifier">execute</span> <span class="ruby-node">&quot;ALTER TABLE #{quote_table_name(table_name)} #{remove_column_fragments.join(&#39;, &#39;)}&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -2371,6 +2391,11 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
 <pre><code>remove_foreign_key :accounts, name: :special_fk_name
 </code></pre>
 
+<p>Checks if the foreign key exists before trying to remove it. Will silently ignore indexes that don&#39;t exist.</p>
+
+<pre><code>remove_foreign_key :accounts, :branches, if_exists: true
+</code></pre>
+
 <p>The <code>options</code> hash accepts the same keys as <a href="SchemaStatements.html#method-i-add_foreign_key"><code>SchemaStatements#add_foreign_key</code></a> with an addition of</p>
 <dl class="rdoc-list label-list"><dt><code>:to_table</code>
 <dd>
@@ -2392,9 +2417,10 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
                 
               </p>
               <div id="method-i-remove_foreign_key_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1094</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1119</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_foreign_key</span>(<span class="ruby-identifier">from_table</span>, <span class="ruby-identifier">to_table</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">supports_foreign_keys?</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:if_exists</span>] <span class="ruby-operator">==</span> <span class="ruby-keyword">true</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">foreign_key_exists?</span>(<span class="ruby-identifier">from_table</span>, <span class="ruby-identifier">to_table</span>)
 
   <span class="ruby-identifier">fk_name_to_delete</span> = <span class="ruby-identifier">foreign_key_for!</span>(<span class="ruby-identifier">from_table</span>, <span class="ruby-value">to_table:</span> <span class="ruby-identifier">to_table</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>).<span class="ruby-identifier">name</span>
 
@@ -2475,7 +2501,7 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
                 
               </p>
               <div id="method-i-remove_index_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 878</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 890</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_index</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:if_exists</span>] <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">index_exists?</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
 
@@ -2533,7 +2559,7 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
                 
               </p>
               <div id="method-i-remove_reference_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 992</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1004</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_reference</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">ref_name</span>, <span class="ruby-value">foreign_key:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">polymorphic:</span> <span class="ruby-keyword">false</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">foreign_key</span>
     <span class="ruby-identifier">reference_name</span> = <span class="ruby-constant">Base</span>.<span class="ruby-identifier">pluralize_table_names</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">ref_name</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">pluralize</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">ref_name</span>
@@ -2583,10 +2609,9 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
                 
               </p>
               <div id="method-i-remove_timestamps_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1279</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1324</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_timestamps</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
-  <span class="ruby-identifier">remove_column</span> <span class="ruby-identifier">table_name</span>, <span class="ruby-value">:updated_at</span>
-  <span class="ruby-identifier">remove_column</span> <span class="ruby-identifier">table_name</span>, <span class="ruby-value">:created_at</span>
+  <span class="ruby-identifier">remove_columns</span> <span class="ruby-identifier">table_name</span>, <span class="ruby-value">:updated_at</span>, <span class="ruby-value">:created_at</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -2622,7 +2647,7 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
                 
               </p>
               <div id="method-i-rename_column_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 709</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 721</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">rename_column</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">column_name</span>, <span class="ruby-identifier">new_column_name</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">NotImplementedError</span>, <span class="ruby-string">&quot;rename_column is not implemented&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2662,7 +2687,7 @@ index_exists?(:suppliers, :company_id, name: &quot;idx_company_id&quot;)
                 
               </p>
               <div id="method-i-rename_index_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 892</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 904</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">rename_index</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">old_name</span>, <span class="ruby-identifier">new_name</span>)
   <span class="ruby-identifier">old_name</span> = <span class="ruby-identifier">old_name</span>.<span class="ruby-identifier">to_s</span>
   <span class="ruby-identifier">new_name</span> = <span class="ruby-identifier">new_name</span>.<span class="ruby-identifier">to_s</span>

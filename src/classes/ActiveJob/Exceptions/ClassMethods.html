@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -104,7 +104,7 @@ end
                 
               </p>
               <div id="method-i-discard_on_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 92</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 94</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">discard_on</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>)
   <span class="ruby-identifier">rescue_from</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">error</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">instrument</span> <span class="ruby-value">:discard</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span> <span class="ruby-keyword">do</span>
@@ -134,7 +134,7 @@ end
 <ul><li>
 <p><code>:wait</code> - Re-enqueues the job with a delay specified either in seconds (default: 3 seconds), as a computing proc that takes the number of executions so far as an argument, or as a symbol reference of <code>:exponentially_longer</code>, which applies the wait algorithm of <code>((executions**4) + (Kernel.rand * (executions**4) * jitter)) + 2</code> (first wait ~3s, then ~18s, then ~83s, etc)</p>
 </li><li>
-<p><code>:attempts</code> - Re-enqueues the job the specified number of times (default: 5 attempts)</p>
+<p><code>:attempts</code> - Re-enqueues the job the specified number of times (default: 5 attempts) or a symbol reference of <code>:unlimited</code> to retry the job until it succeeds</p>
 </li><li>
 <p><code>:queue</code> - Re-enqueues the job on a different queue</p>
 </li><li>
@@ -148,6 +148,7 @@ end
 <pre><code>class RemoteServiceJob &lt; ActiveJob::Base
   retry_on CustomAppException # defaults to ~3s wait, 5 attempts
   retry_on AnotherCustomAppException, wait: -&gt;(executions) { executions * 2 }
+  retry_on CustomInfrastructureException, wait: 5.minutes, attempts: :unlimited
 
   retry_on ActiveRecord::Deadlocked, wait: 5.seconds, attempts: 3
   retry_on Net::OpenTimeout, Timeout::Error, wait: :exponentially_longer, attempts: 10 # retries at most 10 times for Net::OpenTimeout and Timeout::Error combined
@@ -183,11 +184,11 @@ end
                 
               </p>
               <div id="method-i-retry_on_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 56</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 58</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retry_on</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>, <span class="ruby-value">wait:</span> <span class="ruby-value">3</span>.<span class="ruby-identifier">seconds</span>, <span class="ruby-value">attempts:</span> <span class="ruby-value">5</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">priority:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">jitter:</span> <span class="ruby-constant">JITTER_DEFAULT</span>)
   <span class="ruby-identifier">rescue_from</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">error</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">executions</span> = <span class="ruby-identifier">executions_for</span>(<span class="ruby-identifier">exceptions</span>)
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">executions</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">attempts</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">attempts</span> <span class="ruby-operator">==</span> <span class="ruby-value">:unlimited</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">executions</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">attempts</span>
       <span class="ruby-identifier">retry_job</span> <span class="ruby-value">wait:</span> <span class="ruby-identifier">determine_delay</span>(<span class="ruby-value">seconds_or_duration_or_algorithm:</span> <span class="ruby-identifier">wait</span>, <span class="ruby-value">executions:</span> <span class="ruby-identifier">executions</span>, <span class="ruby-value">jitter:</span> <span class="ruby-identifier">jitter</span>), <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-value">priority:</span> <span class="ruby-identifier">priority</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span>
     <span class="ruby-keyword">else</span>
       <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>

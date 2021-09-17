@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -152,14 +152,36 @@ person.nickname_short? # =&gt; true
                 
               </p>
               <div id="method-i-alias_attribute_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 208</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 209</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">alias_attribute</span>(<span class="ruby-identifier">new_name</span>, <span class="ruby-identifier">old_name</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">attribute_aliases</span> = <span class="ruby-identifier">attribute_aliases</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">new_name</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">old_name</span>.<span class="ruby-identifier">to_s</span>)
-  <span class="ruby-constant">CodeGenerator</span>.<span class="ruby-identifier">batch</span>(<span class="ruby-keyword">self</span>, <span class="ruby-keyword">__FILE__</span>, <span class="ruby-keyword">__LINE__</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">owner</span><span class="ruby-operator">|</span>
+  <span class="ruby-constant">CodeGenerator</span>.<span class="ruby-identifier">batch</span>(<span class="ruby-keyword">self</span>, <span class="ruby-keyword">__FILE__</span>, <span class="ruby-keyword">__LINE__</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">code_generator</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">attribute_method_matchers</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">matcher</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">matcher_new</span> = <span class="ruby-identifier">matcher</span>.<span class="ruby-identifier">method_name</span>(<span class="ruby-identifier">new_name</span>).<span class="ruby-identifier">to_s</span>
-      <span class="ruby-identifier">matcher_old</span> = <span class="ruby-identifier">matcher</span>.<span class="ruby-identifier">method_name</span>(<span class="ruby-identifier">old_name</span>).<span class="ruby-identifier">to_s</span>
-      <span class="ruby-identifier">define_proxy_call</span> <span class="ruby-keyword">false</span>, <span class="ruby-identifier">owner</span>, <span class="ruby-identifier">matcher_new</span>, <span class="ruby-identifier">matcher_old</span>
+      <span class="ruby-identifier">method_name</span> = <span class="ruby-identifier">matcher</span>.<span class="ruby-identifier">method_name</span>(<span class="ruby-identifier">new_name</span>).<span class="ruby-identifier">to_s</span>
+      <span class="ruby-identifier">target_name</span> = <span class="ruby-identifier">matcher</span>.<span class="ruby-identifier">method_name</span>(<span class="ruby-identifier">old_name</span>).<span class="ruby-identifier">to_s</span>
+      <span class="ruby-identifier">parameters</span> = <span class="ruby-identifier">matcher</span>.<span class="ruby-identifier">parameters</span>
+
+      <span class="ruby-identifier">mangled_name</span> = <span class="ruby-identifier">target_name</span>
+      <span class="ruby-keyword">unless</span> <span class="ruby-constant">NAME_COMPILABLE_REGEXP</span>.<span class="ruby-identifier">match?</span>(<span class="ruby-identifier">target_name</span>)
+        <span class="ruby-identifier">mangled_name</span> = <span class="ruby-node">&quot;__temp__#{target_name.unpack1(&quot;h*&quot;)}&quot;</span>
+      <span class="ruby-keyword">end</span>
+
+      <span class="ruby-identifier">code_generator</span>.<span class="ruby-identifier">define_cached_method</span>(<span class="ruby-identifier">method_name</span>, <span class="ruby-value">as:</span> <span class="ruby-identifier">mangled_name</span>, <span class="ruby-value">namespace:</span> <span class="ruby-value">:alias_attribute</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">batch</span><span class="ruby-operator">|</span>
+        <span class="ruby-identifier">body</span> = <span class="ruby-keyword">if</span> <span class="ruby-constant">CALL_COMPILABLE_REGEXP</span>.<span class="ruby-identifier">match?</span>(<span class="ruby-identifier">target_name</span>)
+          <span class="ruby-node">&quot;self.#{target_name}(#{parameters || &#39;&#39;})&quot;</span>
+        <span class="ruby-keyword">else</span>
+          <span class="ruby-identifier">call_args</span> = [<span class="ruby-node">&quot;:&#39;#{target_name}&#39;&quot;</span>]
+          <span class="ruby-identifier">call_args</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">parameters</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">parameters</span>
+          <span class="ruby-node">&quot;send(#{call_args.join(&quot;, &quot;)})&quot;</span>
+        <span class="ruby-keyword">end</span>
+
+        <span class="ruby-identifier">modifier</span> = <span class="ruby-identifier">matcher</span>.<span class="ruby-identifier">parameters</span> <span class="ruby-operator">==</span> <span class="ruby-constant">FORWARD_PARAMETERS</span> <span class="ruby-operator">?</span> <span class="ruby-string">&quot;ruby2_keywords &quot;</span> <span class="ruby-operator">:</span> <span class="ruby-string">&quot;&quot;</span>
+
+        <span class="ruby-identifier">batch</span> <span class="ruby-operator">&lt;&lt;</span>
+          <span class="ruby-node">&quot;#{modifier}def #{mangled_name}(#{parameters || &#39;&#39;})&quot;</span> <span class="ruby-operator">&lt;&lt;</span>
+          <span class="ruby-identifier">body</span> <span class="ruby-operator">&lt;&lt;</span>
+          <span class="ruby-string">&quot;end&quot;</span>
+      <span class="ruby-keyword">end</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -194,7 +216,7 @@ person.nickname_short? # =&gt; true
                 
               </p>
               <div id="method-i-attribute_alias_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 225</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 248</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_alias</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">attribute_aliases</span>[<span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>]
 <span class="ruby-keyword">end</span></code></pre>
@@ -229,7 +251,7 @@ person.nickname_short? # =&gt; true
                 
               </p>
               <div id="method-i-attribute_alias-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 220</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 243</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_alias?</span>(<span class="ruby-identifier">new_name</span>)
   <span class="ruby-identifier">attribute_aliases</span>.<span class="ruby-identifier">key?</span> <span class="ruby-identifier">new_name</span>.<span class="ruby-identifier">to_s</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -294,9 +316,9 @@ person.name                         # =&gt; &#39;Default Name&#39;
                 
               </p>
               <div id="method-i-attribute_method_affix_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 179</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 180</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_method_affix</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">affixes</span>)
-  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">attribute_method_matchers</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">affixes</span>.<span class="ruby-identifier">map!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">affix</span><span class="ruby-operator">|</span> <span class="ruby-constant">AttributeMethodMatcher</span>.<span class="ruby-identifier">new</span> <span class="ruby-value">prefix:</span> <span class="ruby-identifier">affix</span>[<span class="ruby-value">:prefix</span>], <span class="ruby-value">suffix:</span> <span class="ruby-identifier">affix</span>[<span class="ruby-value">:suffix</span>] }
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">attribute_method_matchers</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">affixes</span>.<span class="ruby-identifier">map!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">affix</span><span class="ruby-operator">|</span> <span class="ruby-constant">AttributeMethodMatcher</span>.<span class="ruby-identifier">new</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">affix</span>) }
   <span class="ruby-identifier">undefine_attribute_methods</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -307,7 +329,7 @@ person.name                         # =&gt; &#39;Default Name&#39;
         <div class="method">
           <h3 id="method-i-attribute_method_prefix">
             
-              attribute_method_prefix(*prefixes)
+              attribute_method_prefix(*prefixes, parameters: nil)
             
           </h3>
 
@@ -361,9 +383,9 @@ person.name          # =&gt; nil
                 
               </p>
               <div id="method-i-attribute_method_prefix_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 108</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_method_prefix</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">prefixes</span>)
-  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">attribute_method_matchers</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">prefixes</span>.<span class="ruby-identifier">map!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">prefix</span><span class="ruby-operator">|</span> <span class="ruby-constant">AttributeMethodMatcher</span>.<span class="ruby-identifier">new</span> <span class="ruby-value">prefix:</span> <span class="ruby-identifier">prefix</span> }
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 109</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_method_prefix</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">prefixes</span>, <span class="ruby-value">parameters:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">attribute_method_matchers</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">prefixes</span>.<span class="ruby-identifier">map!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">prefix</span><span class="ruby-operator">|</span> <span class="ruby-constant">AttributeMethodMatcher</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">prefix:</span> <span class="ruby-identifier">prefix</span>, <span class="ruby-value">parameters:</span> <span class="ruby-identifier">parameters</span>) }
   <span class="ruby-identifier">undefine_attribute_methods</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -374,7 +396,7 @@ person.name          # =&gt; nil
         <div class="method">
           <h3 id="method-i-attribute_method_suffix">
             
-              attribute_method_suffix(*suffixes)
+              attribute_method_suffix(*suffixes, parameters: nil)
             
           </h3>
 
@@ -427,9 +449,9 @@ person.name_short?   # =&gt; true
                 
               </p>
               <div id="method-i-attribute_method_suffix_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 143</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_method_suffix</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">suffixes</span>)
-  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">attribute_method_matchers</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">suffixes</span>.<span class="ruby-identifier">map!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">suffix</span><span class="ruby-operator">|</span> <span class="ruby-constant">AttributeMethodMatcher</span>.<span class="ruby-identifier">new</span> <span class="ruby-value">suffix:</span> <span class="ruby-identifier">suffix</span> }
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 144</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_method_suffix</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">suffixes</span>, <span class="ruby-value">parameters:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">attribute_method_matchers</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">suffixes</span>.<span class="ruby-identifier">map!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">suffix</span><span class="ruby-operator">|</span> <span class="ruby-constant">AttributeMethodMatcher</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">suffix:</span> <span class="ruby-identifier">suffix</span>, <span class="ruby-value">parameters:</span> <span class="ruby-identifier">parameters</span>) }
   <span class="ruby-identifier">undefine_attribute_methods</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -489,7 +511,7 @@ person.name_short? # =&gt; true
                 
               </p>
               <div id="method-i-define_attribute_method_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 288</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 311</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">define_attribute_method</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-value">_owner:</span> <span class="ruby-identifier">generated_attribute_methods</span>)
   <span class="ruby-constant">CodeGenerator</span>.<span class="ruby-identifier">batch</span>(<span class="ruby-identifier">_owner</span>, <span class="ruby-keyword">__FILE__</span>, <span class="ruby-keyword">__LINE__</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">owner</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">attribute_method_matchers</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">matcher</span><span class="ruby-operator">|</span>
@@ -501,7 +523,7 @@ person.name_short? # =&gt; true
         <span class="ruby-keyword">if</span> <span class="ruby-identifier">respond_to?</span>(<span class="ruby-identifier">generate_method</span>, <span class="ruby-keyword">true</span>)
           <span class="ruby-identifier">send</span>(<span class="ruby-identifier">generate_method</span>, <span class="ruby-identifier">attr_name</span>.<span class="ruby-identifier">to_s</span>, <span class="ruby-value">owner:</span> <span class="ruby-identifier">owner</span>)
         <span class="ruby-keyword">else</span>
-          <span class="ruby-identifier">define_proxy_call</span> <span class="ruby-keyword">true</span>, <span class="ruby-identifier">owner</span>, <span class="ruby-identifier">method_name</span>, <span class="ruby-identifier">matcher</span>.<span class="ruby-identifier">target</span>, <span class="ruby-identifier">attr_name</span>.<span class="ruby-identifier">to_s</span>
+          <span class="ruby-identifier">define_proxy_call</span>(<span class="ruby-identifier">owner</span>, <span class="ruby-identifier">method_name</span>, <span class="ruby-identifier">matcher</span>.<span class="ruby-identifier">target</span>, <span class="ruby-identifier">matcher</span>.<span class="ruby-identifier">parameters</span>, <span class="ruby-identifier">attr_name</span>.<span class="ruby-identifier">to_s</span>, <span class="ruby-value">namespace:</span> <span class="ruby-value">:active_model</span>)
         <span class="ruby-keyword">end</span>
       <span class="ruby-keyword">end</span>
     <span class="ruby-keyword">end</span>
@@ -560,7 +582,7 @@ end
                 
               </p>
               <div id="method-i-define_attribute_methods_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 253</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 276</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">define_attribute_methods</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">attr_names</span>)
   <span class="ruby-constant">CodeGenerator</span>.<span class="ruby-identifier">batch</span>(<span class="ruby-identifier">generated_attribute_methods</span>, <span class="ruby-keyword">__FILE__</span>, <span class="ruby-keyword">__LINE__</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">owner</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">attr_names</span>.<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">attr_name</span><span class="ruby-operator">|</span> <span class="ruby-identifier">define_attribute_method</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-value">_owner:</span> <span class="ruby-identifier">owner</span>) }
@@ -620,7 +642,7 @@ person.name_short? # =&gt; NoMethodError
                 
               </p>
               <div id="method-i-undefine_attribute_methods_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 330</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/attribute_methods.rb, line 353</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">undefine_attribute_methods</span>
   <span class="ruby-identifier">generated_attribute_methods</span>.<span class="ruby-identifier">module_eval</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">undef_method</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">instance_methods</span>)

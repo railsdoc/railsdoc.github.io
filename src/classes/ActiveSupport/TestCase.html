@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -129,7 +129,7 @@ layout: default
         <div class="method">
           <h3 id="method-c-parallelize">
             
-              parallelize(workers: :number_of_processors, with: :processes)
+              parallelize(workers: :number_of_processors, with: :processes, threshold: ActiveSupport.test_parallelization_threshold)
             
           </h3>
 
@@ -155,6 +155,8 @@ test-database-1
 </code></pre>
 
 <p>The threaded parallelization uses minitest&#39;s parallel executor directly. The processes parallelization uses a Ruby DRb server.</p>
+
+<p>Because parallelization presents an overhead, it is only enabled when the number of tests to run is above the <code>threshold</code> param. The default value is 50, and it&#39;s configurable via <code>config.active_support.test_parallelization_threshold</code>.</p>
             </div>
           
 
@@ -171,27 +173,14 @@ test-database-1
                 
               </p>
               <div id="method-c-parallelize_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 74</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parallelize</span>(<span class="ruby-value">workers:</span> <span class="ruby-value">:number_of_processors</span>, <span class="ruby-value">with:</span> <span class="ruby-value">:processes</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 79</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parallelize</span>(<span class="ruby-value">workers:</span> <span class="ruby-value">:number_of_processors</span>, <span class="ruby-value">with:</span> <span class="ruby-value">:processes</span>, <span class="ruby-value">threshold:</span> <span class="ruby-constant">ActiveSupport</span>.<span class="ruby-identifier">test_parallelization_threshold</span>)
   <span class="ruby-identifier">workers</span> = <span class="ruby-constant">Concurrent</span>.<span class="ruby-identifier">physical_processor_count</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">workers</span> <span class="ruby-operator">==</span> <span class="ruby-value">:number_of_processors</span>
   <span class="ruby-identifier">workers</span> = <span class="ruby-constant">ENV</span>[<span class="ruby-string">&quot;PARALLEL_WORKERS&quot;</span>].<span class="ruby-identifier">to_i</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">ENV</span>[<span class="ruby-string">&quot;PARALLEL_WORKERS&quot;</span>]
 
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">workers</span> <span class="ruby-operator">&lt;=</span> <span class="ruby-value">1</span>
 
-  <span class="ruby-identifier">executor</span> = <span class="ruby-keyword">case</span> <span class="ruby-identifier">with</span>
-             <span class="ruby-keyword">when</span> <span class="ruby-value">:processes</span>
-               <span class="ruby-constant">Testing</span><span class="ruby-operator">::</span><span class="ruby-constant">Parallelization</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">workers</span>)
-             <span class="ruby-keyword">when</span> <span class="ruby-value">:threads</span>
-               <span class="ruby-constant">Minitest</span><span class="ruby-operator">::</span><span class="ruby-constant">Parallel</span><span class="ruby-operator">::</span><span class="ruby-constant">Executor</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">workers</span>)
-             <span class="ruby-keyword">else</span>
-               <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;#{with} is not a supported parallelization executor.&quot;</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">lock_threads</span> = <span class="ruby-keyword">false</span> <span class="ruby-keyword">if</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-keyword">self</span>.<span class="ruby-identifier">lock_threads</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">with</span> <span class="ruby-operator">==</span> <span class="ruby-value">:threads</span>
-
-  <span class="ruby-constant">Minitest</span>.<span class="ruby-identifier">parallel_executor</span> = <span class="ruby-identifier">executor</span>
-
-  <span class="ruby-identifier">parallelize_me!</span>
+  <span class="ruby-constant">Minitest</span>.<span class="ruby-identifier">parallel_executor</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Testing</span><span class="ruby-operator">::</span><span class="ruby-constant">ParallelizeExecutor</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">size:</span> <span class="ruby-identifier">workers</span>, <span class="ruby-value">with:</span> <span class="ruby-identifier">with</span>, <span class="ruby-value">threshold:</span> <span class="ruby-identifier">threshold</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -235,11 +224,9 @@ end
                 
               </p>
               <div id="method-c-parallelize_setup_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 109</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 101</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parallelize_setup</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Testing</span><span class="ruby-operator">::</span><span class="ruby-constant">Parallelization</span>.<span class="ruby-identifier">after_fork_hook</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">worker</span><span class="ruby-operator">|</span>
-    <span class="ruby-keyword">yield</span> <span class="ruby-identifier">worker</span>
-  <span class="ruby-keyword">end</span>
+  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Testing</span><span class="ruby-operator">::</span><span class="ruby-constant">Parallelization</span>.<span class="ruby-identifier">after_fork_hook</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -283,11 +270,9 @@ end
                 
               </p>
               <div id="method-c-parallelize_teardown_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 128</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 118</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parallelize_teardown</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Testing</span><span class="ruby-operator">::</span><span class="ruby-constant">Parallelization</span>.<span class="ruby-identifier">run_cleanup_hook</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">worker</span><span class="ruby-operator">|</span>
-    <span class="ruby-keyword">yield</span> <span class="ruby-identifier">worker</span>
-  <span class="ruby-keyword">end</span>
+  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Testing</span><span class="ruby-operator">::</span><span class="ruby-constant">Parallelization</span>.<span class="ruby-identifier">run_cleanup_hook</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -325,7 +310,7 @@ end
                 
               </p>
               <div id="method-c-test_order_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 41</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 42</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">test_order</span>
   <span class="ruby-constant">ActiveSupport</span>.<span class="ruby-identifier">test_order</span> <span class="ruby-operator">||=</span> <span class="ruby-value">:random</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -374,7 +359,7 @@ end
                 
               </p>
               <div id="method-c-test_order-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 31</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 32</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">test_order=</span>(<span class="ruby-identifier">new_order</span>)
   <span class="ruby-constant">ActiveSupport</span>.<span class="ruby-identifier">test_order</span> = <span class="ruby-identifier">new_order</span>
 <span class="ruby-keyword">end</span></code></pre>

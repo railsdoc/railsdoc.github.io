@@ -5,7 +5,7 @@ layout: default
 <div>
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <h1>
             README.md
@@ -57,7 +57,7 @@ layout: default
 end
 
 # Attach an avatar to the user.
-user.avatar.attach(io: File.open(&quot;/path/to/face.jpg&quot;), filename: &quot;face.jpg&quot;, content_type: &quot;image/jpg&quot;)
+user.avatar.attach(io: File.open(&quot;/path/to/face.jpg&quot;), filename: &quot;face.jpg&quot;, content_type: &quot;image/jpeg&quot;)
 
 # Does the user have an avatar?
 user.avatar.attached? # =&gt; true
@@ -110,8 +110,7 @@ end
   end
 
   def create
-    message = Message.create! params.require(:message).permit(:title, :content)
-    message.images.attach(params[:message][:images])
+    message = Message.create! params.require(:message).permit(:title, :content, images: [])
     redirect_to message
   end
 
@@ -144,15 +143,15 @@ end
 
 <p>Optionally, files can be proxied instead. This means that your application servers will download file data from the storage service in response to requests. This can be useful for serving files from a CDN.</p>
 
-<p>Explicitly proxy attachments using the <code>rails_storage_proxy_path</code> and <code>_url</code> route helpers:</p>
-
-<pre><code>&lt;%= image_tag rails_storage_proxy_path(@user.avatar) %&gt;
-</code></pre>
-
-<p>Or configure Active Storage to use proxying by default:</p>
+<p>You can configure Active Storage to use proxying by default:</p>
 
 <pre><code># config/initializers/active_storage.rb
 Rails.application.config.active_storage.resolve_model_to_route = :rails_storage_proxy
+</code></pre>
+
+<p>Or if you want to explicitly proxy specific attachments there are URL helpers you can use in the form of <code>rails_storage_proxy_path</code> and <code>rails_storage_proxy_url</code>.</p>
+
+<pre><code>&lt;%= image_tag rails_storage_proxy_path(@user.avatar) %&gt;
 </code></pre>
 
 <h2 id="label-Direct+uploads">Direct uploads</h2>
@@ -161,7 +160,24 @@ Rails.application.config.active_storage.resolve_model_to_route = :rails_storage_
 
 <h3 id="label-Direct+upload+installation">Direct upload installation</h3>
 <ol><li>
-<p>Include <code>activestorage.js</code> in your application&#39;s JavaScript bundle.</p>
+<p>Include the Active Storage JavaScript in your application&#39;s JavaScript bundle or reference it directly.</p>
+
+<p>Requiring directly without bundling through the asset pipeline in the application html with autostart:</p>
+
+<pre><code>&lt;%= javascript_include_tag &quot;activestorage&quot; %&gt;
+</code></pre>
+
+<p>Requiring via importmap-rails without bundling through the asset pipeline in the application html without autostart as ESM:</p>
+
+<pre><code># config/importmap.rb
+pin &quot;@rails/activestorage&quot;, to: &quot;activestorage.esm.js&quot;
+</code></pre>
+
+<pre><code>&lt;script type=&quot;module-shim&quot;&gt;
+  import * as ActiveStorage from &quot;@rails/activestorage&quot;
+  ActiveStorage.start()
+&lt;/script&gt;
+</code></pre>
 
 <p>Using the asset pipeline:</p>
 
