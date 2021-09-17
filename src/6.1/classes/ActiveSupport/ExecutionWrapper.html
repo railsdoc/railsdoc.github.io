@@ -1,0 +1,368 @@
+---
+title: ActiveSupport::ExecutionWrapper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.1.4</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::ExecutionWrapper
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/execution_wrapper_rb.html">activesupport/lib/active_support/execution_wrapper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-complete-21">complete!</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-register_hook">register_hook</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-run-21">run!</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-to_complete">to_complete</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-to_run">to_run</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-wrap">wrap</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="Callbacks.html">
+              ActiveSupport::Callbacks
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>active</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-register_hook">
+            
+              register_hook(hook, outer: false)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Register an object to be invoked during both the <code>run</code> and <code>complete</code> steps.</p>
+
+<p><code>hook.complete</code> will be passed the value returned from <code>hook.run</code>, and will only be invoked if <code>run</code> has previously been called. (Mostly, this means it won&#39;t be invoked if an exception occurs in a preceding <code>to_run</code> block; all ordinary <code>to_complete</code> blocks are invoked in that situation.)</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-register_hook_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/execution_wrapper.rb, line 50</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">register_hook</span>(<span class="ruby-identifier">hook</span>, <span class="ruby-value">outer:</span> <span class="ruby-keyword">false</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">outer</span>
+    <span class="ruby-identifier">to_run</span> <span class="ruby-constant">RunHook</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">hook</span>), <span class="ruby-value">prepend:</span> <span class="ruby-keyword">true</span>
+    <span class="ruby-identifier">to_complete</span> <span class="ruby-value">:after</span>, <span class="ruby-constant">CompleteHook</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">hook</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">to_run</span> <span class="ruby-constant">RunHook</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">hook</span>)
+    <span class="ruby-identifier">to_complete</span> <span class="ruby-constant">CompleteHook</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">hook</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-run-21">
+            
+              run!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Run this execution.</p>
+
+<p>Returns an instance, whose <code>complete!</code> method <strong>must</strong> be invoked after the work has been performed.</p>
+
+<p>Where possible, prefer <code>wrap</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-run-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/execution_wrapper.rb, line 66</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">run!</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">active?</span>
+    <span class="ruby-constant">Null</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">new</span>.<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">instance</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">success</span> = <span class="ruby-keyword">nil</span>
+      <span class="ruby-keyword">begin</span>
+        <span class="ruby-identifier">instance</span>.<span class="ruby-identifier">run!</span>
+        <span class="ruby-identifier">success</span> = <span class="ruby-keyword">true</span>
+      <span class="ruby-keyword">ensure</span>
+        <span class="ruby-identifier">instance</span>.<span class="ruby-identifier">complete!</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">success</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-to_complete">
+            
+              to_complete(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-to_complete_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/execution_wrapper.rb, line 21</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">to_complete</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">set_callback</span>(<span class="ruby-value">:complete</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-to_run">
+            
+              to_run(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-to_run_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/execution_wrapper.rb, line 17</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">to_run</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">set_callback</span>(<span class="ruby-value">:run</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-wrap">
+            
+              wrap()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Perform the work in the supplied block as an execution.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-wrap_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/execution_wrapper.rb, line 83</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">wrap</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">yield</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">active?</span>
+
+  <span class="ruby-identifier">instance</span> = <span class="ruby-identifier">run!</span>
+  <span class="ruby-keyword">begin</span>
+    <span class="ruby-keyword">yield</span>
+  <span class="ruby-keyword">ensure</span>
+    <span class="ruby-identifier">instance</span>.<span class="ruby-identifier">complete!</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-complete-21">
+            
+              complete!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Complete this in-flight execution. This method <strong>must</strong> be called exactly once on the result of any call to <code>run!</code>.</p>
+
+<p>Where possible, prefer <code>wrap</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-complete-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/execution_wrapper.rb, line 118</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">complete!</span>
+  <span class="ruby-identifier">run_callbacks</span>(<span class="ruby-value">:complete</span>)
+<span class="ruby-keyword">ensure</span>
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">active</span>.<span class="ruby-identifier">delete</span> <span class="ruby-constant">Thread</span>.<span class="ruby-identifier">current</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,393 @@
+---
+title: ActiveSupport::TestCase
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.1.4</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::TestCase
+            
+                <span class="parent">&lt;
+                    
+                    Minitest::Test
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/test_case_rb.html">activesupport/lib/active_support/test_case.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-parallelize">parallelize</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-parallelize_setup">parallelize_setup</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-parallelize_teardown">parallelize_teardown</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-test_order">test_order</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-test_order-3D">test_order=</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="Testing/Assertions.html">
+              ActiveSupport::Testing::Assertions
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="Testing/TimeHelpers.html">
+              ActiveSupport::Testing::TimeHelpers
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="Testing/FileFixtures.html">
+              ActiveSupport::Testing::FileFixtures
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">Assertion</td>
+            <td>=</td>
+            <td class="attr-value">Minitest::Assertion</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-parallelize">
+            
+              parallelize(workers: :number_of_processors, with: :processes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Parallelizes the test suite.</p>
+
+<p>Takes a <code>workers</code> argument that controls how many times the process is forked. For each process a new database will be created suffixed with the worker number.</p>
+
+<pre><code>test-database-0
+test-database-1
+</code></pre>
+
+<p>If <code>ENV[&quot;PARALLEL_WORKERS&quot;]</code> is set the workers argument will be ignored and the environment variable will be used instead. This is useful for CI environments, or other environments where you may need more workers than you do for local testing.</p>
+
+<p>If the number of workers is set to <code>1</code> or fewer, the tests will not be parallelized.</p>
+
+<p>If <code>workers</code> is set to <code>:number_of_processors</code>, the number of workers will be set to the actual core count on the machine you are on.</p>
+
+<p>The default parallelization method is to fork processes. If you&#39;d like to use threads instead you can pass <code>with: :threads</code> to the <code>parallelize</code> method. Note the threaded parallelization does not create multiple database and will not work with system tests at this time.</p>
+
+<pre><code>parallelize(workers: :number_of_processors, with: :threads)
+</code></pre>
+
+<p>The threaded parallelization uses minitest&#39;s parallel executor directly. The processes parallelization uses a Ruby DRb server.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-parallelize_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 74</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parallelize</span>(<span class="ruby-value">workers:</span> <span class="ruby-value">:number_of_processors</span>, <span class="ruby-value">with:</span> <span class="ruby-value">:processes</span>)
+  <span class="ruby-identifier">workers</span> = <span class="ruby-constant">Concurrent</span>.<span class="ruby-identifier">physical_processor_count</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">workers</span> <span class="ruby-operator">==</span> <span class="ruby-value">:number_of_processors</span>
+  <span class="ruby-identifier">workers</span> = <span class="ruby-constant">ENV</span>[<span class="ruby-string">&quot;PARALLEL_WORKERS&quot;</span>].<span class="ruby-identifier">to_i</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">ENV</span>[<span class="ruby-string">&quot;PARALLEL_WORKERS&quot;</span>]
+
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">workers</span> <span class="ruby-operator">&lt;=</span> <span class="ruby-value">1</span>
+
+  <span class="ruby-identifier">executor</span> = <span class="ruby-keyword">case</span> <span class="ruby-identifier">with</span>
+             <span class="ruby-keyword">when</span> <span class="ruby-value">:processes</span>
+               <span class="ruby-constant">Testing</span><span class="ruby-operator">::</span><span class="ruby-constant">Parallelization</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">workers</span>)
+             <span class="ruby-keyword">when</span> <span class="ruby-value">:threads</span>
+               <span class="ruby-constant">Minitest</span><span class="ruby-operator">::</span><span class="ruby-constant">Parallel</span><span class="ruby-operator">::</span><span class="ruby-constant">Executor</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">workers</span>)
+             <span class="ruby-keyword">else</span>
+               <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;#{with} is not a supported parallelization executor.&quot;</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">lock_threads</span> = <span class="ruby-keyword">false</span> <span class="ruby-keyword">if</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-keyword">self</span>.<span class="ruby-identifier">lock_threads</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">with</span> <span class="ruby-operator">==</span> <span class="ruby-value">:threads</span>
+
+  <span class="ruby-constant">Minitest</span>.<span class="ruby-identifier">parallel_executor</span> = <span class="ruby-identifier">executor</span>
+
+  <span class="ruby-identifier">parallelize_me!</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-parallelize_setup">
+            
+              parallelize_setup(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Set up hook for parallel testing. This can be used if you have multiple databases or any behavior that needs to be run after the process is forked but before the tests run.</p>
+
+<p>Note: this feature is not available with the threaded parallelization.</p>
+
+<p>In your <code>test_helper.rb</code> add the following:</p>
+
+<pre><code>class ActiveSupport::TestCase
+  parallelize_setup do
+    # create databases
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-parallelize_setup_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 109</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parallelize_setup</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Testing</span><span class="ruby-operator">::</span><span class="ruby-constant">Parallelization</span>.<span class="ruby-identifier">after_fork_hook</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">worker</span><span class="ruby-operator">|</span>
+    <span class="ruby-keyword">yield</span> <span class="ruby-identifier">worker</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-parallelize_teardown">
+            
+              parallelize_teardown(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Clean up hook for parallel testing. This can be used to drop databases if your app uses multiple write/read databases or other clean up before the tests finish. This runs before the forked process is closed.</p>
+
+<p>Note: this feature is not available with the threaded parallelization.</p>
+
+<p>In your <code>test_helper.rb</code> add the following:</p>
+
+<pre><code>class ActiveSupport::TestCase
+  parallelize_teardown do
+    # drop databases
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-parallelize_teardown_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 128</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">parallelize_teardown</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Testing</span><span class="ruby-operator">::</span><span class="ruby-constant">Parallelization</span>.<span class="ruby-identifier">run_cleanup_hook</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">worker</span><span class="ruby-operator">|</span>
+    <span class="ruby-keyword">yield</span> <span class="ruby-identifier">worker</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-test_order">
+            
+              test_order()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the order in which test cases are run.</p>
+
+<pre><code>ActiveSupport::TestCase.test_order # =&gt; :random
+</code></pre>
+
+<p>Possible values are <code>:random</code>, <code>:parallel</code>, <code>:alpha</code>, <code>:sorted</code>. Defaults to <code>:random</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-test_order_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 41</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">test_order</span>
+  <span class="ruby-constant">ActiveSupport</span>.<span class="ruby-identifier">test_order</span> <span class="ruby-operator">||=</span> <span class="ruby-value">:random</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-test_order-3D">
+            
+              test_order=(new_order)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets the order in which test cases are run.</p>
+
+<pre><code>ActiveSupport::TestCase.test_order = :random # =&gt; :random
+</code></pre>
+
+<p>Valid values are:</p>
+<ul><li>
+<p><code>:random</code>   (to run tests in random order)</p>
+</li><li>
+<p><code>:parallel</code> (to run tests in parallel)</p>
+</li><li>
+<p><code>:sorted</code>   (to run tests alphabetically by method name)</p>
+</li><li>
+<p><code>:alpha</code>    (equivalent to <code>:sorted</code>)</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-test_order-3D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/test_case.rb, line 31</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">test_order=</span>(<span class="ruby-identifier">new_order</span>)
+  <span class="ruby-constant">ActiveSupport</span>.<span class="ruby-identifier">test_order</span> = <span class="ruby-identifier">new_order</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+    
+  
+</div>
+
+    </div>
+</div>

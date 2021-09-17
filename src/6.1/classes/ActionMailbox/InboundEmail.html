@@ -1,0 +1,237 @@
+---
+title: ActionMailbox::InboundEmail
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.1.4</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionMailbox::InboundEmail
+            
+                <span class="parent">&lt;
+                    
+                    Record
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionmailbox/app/models/action_mailbox/inbound_email_rb.html">actionmailbox/app/models/action_mailbox/inbound_email.rb</a></li>
+            
+            <li><a href="../../files/actionmailbox/app/models/action_mailbox/inbound_email/incineratable_rb.html">actionmailbox/app/models/action_mailbox/inbound_email/incineratable.rb</a></li>
+            
+            <li><a href="../../files/actionmailbox/app/models/action_mailbox/inbound_email/incineratable/incineration_rb.html">actionmailbox/app/models/action_mailbox/inbound_email/incineratable/incineration.rb</a></li>
+            
+            <li><a href="../../files/actionmailbox/app/models/action_mailbox/inbound_email/message_id_rb.html">actionmailbox/app/models/action_mailbox/inbound_email/message_id.rb</a></li>
+            
+            <li><a href="../../files/actionmailbox/app/models/action_mailbox/inbound_email/routable_rb.html">actionmailbox/app/models/action_mailbox/inbound_email/routable.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>The <code>InboundEmail</code> is an Active Record that keeps a reference to the raw email stored in Active Storage and tracks the status of processing. By default, incoming emails will go through the following lifecycle:</p>
+<ul><li>
+<p>Pending: Just received by one of the ingress controllers and scheduled for routing.</p>
+</li><li>
+<p>Processing: During active processing, while a specific mailbox is running its process method.</p>
+</li><li>
+<p>Delivered: Successfully processed by the specific mailbox.</p>
+</li><li>
+<p>Failed: An exception was raised during the specific mailbox&#39;s execution of the <code>#process</code> method.</p>
+</li><li>
+<p>Bounced: Rejected processing by the specific mailbox and bounced to sender.</p>
+</li></ul>
+
+<p>Once the <code>InboundEmail</code> has reached the status of being either <code>delivered</code>, <code>failed</code>, or <code>bounced</code>, it&#39;ll count as having been <code>#processed?</code>. Once processed, the <code>InboundEmail</code> will be scheduled for automatic incineration at a later point.</p>
+
+<p>When working with an <code>InboundEmail</code>, you&#39;ll usually interact with the parsed version of the source, which is available as a <code>Mail</code> object from <code>#mail</code>. But you can also access the raw source directly using the <code>#source</code> method.</p>
+
+<p>Examples:</p>
+
+<pre><code>inbound_email.mail.from # =&gt; &#39;david@loudthinking.com&#39;
+inbound_email.source # Returns the full rfc822 source of the email as text
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="InboundEmail/Incineratable.html">ActionMailbox::InboundEmail::Incineratable</a></li>
+      
+        <li><a href="InboundEmail/MessageId.html">ActionMailbox::InboundEmail::MessageId</a></li>
+      
+        <li><a href="InboundEmail/Routable.html">ActionMailbox::InboundEmail::Routable</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-mail">mail</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-processed-3F">processed?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-source">source</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-mail">
+            
+              mail()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-mail_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailbox/app/models/action_mailbox/inbound_email.rb, line 35</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">mail</span>
+  <span class="ruby-ivar">@mail</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">Mail</span>.<span class="ruby-identifier">from_source</span>(<span class="ruby-identifier">source</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-processed-3F">
+            
+              processed?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-processed-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailbox/app/models/action_mailbox/inbound_email.rb, line 43</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">processed?</span>
+  <span class="ruby-identifier">delivered?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">failed?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">bounced?</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-source">
+            
+              source()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-source_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailbox/app/models/action_mailbox/inbound_email.rb, line 39</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">source</span>
+  <span class="ruby-ivar">@source</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">raw_email</span>.<span class="ruby-identifier">download</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

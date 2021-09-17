@@ -1,0 +1,323 @@
+---
+title: ActiveRecord::AttributeMethods::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.1.4</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::AttributeMethods::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/attribute_methods_rb.html">activerecord/lib/active_record/attribute_methods.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-attribute_method-3F">attribute_method?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attribute_names">attribute_names</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-dangerous_class_method-3F">dangerous_class_method?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-has_attribute-3F">has_attribute?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-instance_method_already_implemented-3F">instance_method_already_implemented?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-attribute_method-3F">
+            
+              attribute_method?(attribute)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns <code>true</code> if <code>attribute</code> is an attribute method and table exists, <code>false</code> otherwise.</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+end
+
+Person.attribute_method?(&#39;name&#39;)   # =&gt; true
+Person.attribute_method?(:age=)    # =&gt; true
+Person.attribute_method?(:nothing) # =&gt; false
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-attribute_method-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 150</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_method?</span>(<span class="ruby-identifier">attribute</span>)
+  <span class="ruby-keyword">super</span> <span class="ruby-operator">||</span> (<span class="ruby-identifier">table_exists?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">column_names</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">attribute</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">delete_suffix</span>(<span class="ruby-string">&quot;=&quot;</span>)))
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-attribute_names">
+            
+              attribute_names()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns an array of column names as strings if it&#39;s not an abstract class and table exists. Otherwise it returns an empty array.</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+end
+
+Person.attribute_names
+# =&gt; [&quot;id&quot;, &quot;created_at&quot;, &quot;updated_at&quot;, &quot;name&quot;, &quot;age&quot;]
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-attribute_names_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 162</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_names</span>
+  <span class="ruby-ivar">@attribute_names</span> <span class="ruby-operator">||=</span> <span class="ruby-keyword">if</span> <span class="ruby-operator">!</span><span class="ruby-identifier">abstract_class?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">table_exists?</span>
+    <span class="ruby-identifier">attribute_types</span>.<span class="ruby-identifier">keys</span>
+  <span class="ruby-keyword">else</span>
+    []
+  <span class="ruby-keyword">end</span>.<span class="ruby-identifier">freeze</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-dangerous_class_method-3F">
+            
+              dangerous_class_method?(method_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>A class method is &#39;dangerous&#39; if it is already (re)defined by Active Record, but not by any ancestors. (So &#39;puts&#39; is not dangerous but &#39;new&#39; is.)</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-dangerous_class_method-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 127</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">dangerous_class_method?</span>(<span class="ruby-identifier">method_name</span>)
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">true</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">RESTRICTED_CLASS_METHODS</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">method_name</span>.<span class="ruby-identifier">to_s</span>)
+
+  <span class="ruby-keyword">if</span> <span class="ruby-constant">Base</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-identifier">method_name</span>, <span class="ruby-keyword">true</span>)
+    <span class="ruby-keyword">if</span> <span class="ruby-constant">Object</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-identifier">method_name</span>, <span class="ruby-keyword">true</span>)
+      <span class="ruby-constant">Base</span>.<span class="ruby-identifier">method</span>(<span class="ruby-identifier">method_name</span>).<span class="ruby-identifier">owner</span> <span class="ruby-operator">!=</span> <span class="ruby-constant">Object</span>.<span class="ruby-identifier">method</span>(<span class="ruby-identifier">method_name</span>).<span class="ruby-identifier">owner</span>
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-keyword">true</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-keyword">false</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-has_attribute-3F">
+            
+              has_attribute?(attr_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if the given attribute exists, otherwise false.</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+  alias_attribute :new_name, :name
+end
+
+Person.has_attribute?(&#39;name&#39;)     # =&gt; true
+Person.has_attribute?(&#39;new_name&#39;) # =&gt; true
+Person.has_attribute?(:age)       # =&gt; true
+Person.has_attribute?(:nothing)   # =&gt; false
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-has_attribute-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 180</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_attribute?</span>(<span class="ruby-identifier">attr_name</span>)
+  <span class="ruby-identifier">attr_name</span> = <span class="ruby-identifier">attr_name</span>.<span class="ruby-identifier">to_s</span>
+  <span class="ruby-identifier">attr_name</span> = <span class="ruby-identifier">attribute_aliases</span>[<span class="ruby-identifier">attr_name</span>] <span class="ruby-operator">||</span> <span class="ruby-identifier">attr_name</span>
+  <span class="ruby-identifier">attribute_types</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-identifier">attr_name</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-instance_method_already_implemented-3F">
+            
+              instance_method_already_implemented?(method_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Raises an <a href="../DangerousAttributeError.html"><code>ActiveRecord::DangerousAttributeError</code></a> exception when an Active Record method is defined in the model, otherwise <code>false</code>.</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+  def save
+    &#39;already defined by Active Record&#39;
+  end
+end
+
+Person.instance_method_already_implemented?(:save)
+# =&gt; ActiveRecord::DangerousAttributeError: save is defined by Active Record. Check to make sure that you don&#39;t have an attribute or method with the same name.
+
+Person.instance_method_already_implemented?(:name)
+# =&gt; false
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-instance_method_already_implemented-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 91</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">instance_method_already_implemented?</span>(<span class="ruby-identifier">method_name</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">dangerous_attribute_method?</span>(<span class="ruby-identifier">method_name</span>)
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">DangerousAttributeError</span>, <span class="ruby-node">&quot;#{method_name} is defined by Active Record. Check to make sure that you don&#39;t have an attribute or method with the same name.&quot;</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">superclass</span> <span class="ruby-operator">==</span> <span class="ruby-constant">Base</span>
+    <span class="ruby-keyword">super</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-comment"># If ThisClass &lt; ... &lt; SomeSuperClass &lt; ... &lt; Base and SomeSuperClass</span>
+    <span class="ruby-comment"># defines its own attribute method, then we don&#39;t want to overwrite that.</span>
+    <span class="ruby-identifier">defined</span> = <span class="ruby-identifier">method_defined_within?</span>(<span class="ruby-identifier">method_name</span>, <span class="ruby-identifier">superclass</span>, <span class="ruby-constant">Base</span>) <span class="ruby-operator">&amp;&amp;</span>
+      <span class="ruby-operator">!</span> <span class="ruby-identifier">superclass</span>.<span class="ruby-identifier">instance_method</span>(<span class="ruby-identifier">method_name</span>).<span class="ruby-identifier">owner</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">GeneratedAttributeMethods</span>)
+    <span class="ruby-identifier">defined</span> <span class="ruby-operator">||</span> <span class="ruby-keyword">super</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

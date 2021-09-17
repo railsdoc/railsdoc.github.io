@@ -1,0 +1,200 @@
+---
+title: ActiveStorage::Blob::Analyzable
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 6.1.4</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveStorage::Blob::Analyzable
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activestorage/app/models/active_storage/blob/analyzable_rb.html">activestorage/app/models/active_storage/blob/analyzable.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-analyze">analyze</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-analyze_later">analyze_later</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-analyzed-3F">analyzed?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-analyze">
+            
+              analyze()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Extracts and stores metadata from the file associated with this blob using a relevant analyzer. Active Storage comes with built-in analyzers for images and videos. See <a href="../Analyzer/ImageAnalyzer.html"><code>ActiveStorage::Analyzer::ImageAnalyzer</code></a> and <a href="../Analyzer/VideoAnalyzer.html"><code>ActiveStorage::Analyzer::VideoAnalyzer</code></a> for information about the specific attributes they extract and the third-party libraries they require.</p>
+
+<p>To choose the analyzer for a blob, Active Storage calls <code>accept?</code> on each registered analyzer in order. It uses the first analyzer for which <code>accept?</code> returns true when given the blob. If no registered analyzer accepts the blob, no metadata is extracted from it.</p>
+
+<p>In a Rails application, add or remove analyzers by manipulating <code>Rails.application.config.active_storage.analyzers</code> in an initializer:</p>
+
+<pre><code># Add a custom analyzer for Microsoft Office documents:
+Rails.application.config.active_storage.analyzers.append DOCXAnalyzer
+
+# Remove the built-in video analyzer:
+Rails.application.config.active_storage.analyzers.delete ActiveStorage::Analyzer::VideoAnalyzer
+</code></pre>
+
+<p>Outside of a Rails application, manipulate <code>ActiveStorage.analyzers</code> instead.</p>
+
+<p>You won&#39;t ordinarily need to call this method from a Rails application. New blobs are automatically and asynchronously analyzed via <a href="Analyzable.html#method-i-analyze_later"><code>analyze_later</code></a> when they&#39;re attached for the first time.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-analyze_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/blob/analyzable.rb, line 28</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">analyze</span>
+  <span class="ruby-identifier">update!</span> <span class="ruby-value">metadata:</span> <span class="ruby-identifier">metadata</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">extract_metadata_via_analyzer</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-analyze_later">
+            
+              analyze_later()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Enqueues an <a href="../AnalyzeJob.html"><code>ActiveStorage::AnalyzeJob</code></a> which calls <a href="Analyzable.html#method-i-analyze"><code>analyze</code></a>, or calls <a href="Analyzable.html#method-i-analyze"><code>analyze</code></a> inline based on analyzer class configuration.</p>
+
+<p>This method is automatically called for a blob when it&#39;s attached for the first time. You can call it to analyze a blob again (e.g. if you add a new analyzer or modify an existing one).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-analyze_later_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/blob/analyzable.rb, line 36</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">analyze_later</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">analyzer_class</span>.<span class="ruby-identifier">analyze_later?</span>
+    <span class="ruby-constant">ActiveStorage</span><span class="ruby-operator">::</span><span class="ruby-constant">AnalyzeJob</span>.<span class="ruby-identifier">perform_later</span>(<span class="ruby-keyword">self</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">analyze</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-analyzed-3F">
+            
+              analyzed?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if the blob has been analyzed.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-analyzed-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/app/models/active_storage/blob/analyzable.rb, line 45</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">analyzed?</span>
+  <span class="ruby-identifier">analyzed</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
