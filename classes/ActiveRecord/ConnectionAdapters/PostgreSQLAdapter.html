@@ -53,12 +53,20 @@
       <li class="nav-item text-nowrap p-1">
         <div class="dropdown">
           <a class="dropdown-toggle nav-link" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            v6.1
+            v7.0
           </a>
           <div class="dropdown-menu dropdown-menu-md-right" aria-labelledby="dropdownMenuLink">
-            <a class="dropdown-item" href="/">v6.1</a>
-            <a class="dropdown-item" href="/6.0/">v6.0</a>
-            <a class="dropdown-item" href="/5.2/">v5.2</a>
+            <a class="dropdown-item" href="/">v7.0</a>
+            
+              
+              <a class="dropdown-item" href="/6.1/">v6.1</a>
+            
+              
+              <a class="dropdown-item" href="/6.0/">v6.0</a>
+            
+              
+              <a class="dropdown-item" href="/5.2/">v5.2</a>
+            
           </div>
         </div>
       </li>
@@ -90,6 +98,11 @@
 <li class="toc-entry toc-h3"><a href="#method-c-database_exists-3F">
             
               database_exists?(config)
+            
+          </a></li>
+<li class="toc-entry toc-h3"><a href="#method-c-datetime_type">
+            
+              datetime_type
             
           </a></li>
 <li class="toc-entry toc-h3"><a href="#method-c-new">
@@ -330,7 +343,7 @@
         <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.3.2</span><br />
+            <span>Ruby on Rails 7.0.0.alpha2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -366,7 +379,7 @@
 </li><li>
 <p><code>:password</code> - Password to be used if the server demands password authentication.</p>
 </li><li>
-<p><code>:database</code> - Defaults to be the same as the user name.</p>
+<p><code>:database</code> - Defaults to be the same as the username.</p>
 </li><li>
 <p><code>:schema_search_path</code> - An optional schema search path for the connection given as a string of comma-separated schema names. This is backward-compatible with the <code>:schema_order</code> option.</p>
 </li><li>
@@ -408,6 +421,10 @@
       
         <li>
           <a href="#method-c-database_exists-3F">database_exists?</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-datetime_type">datetime_type</a>
         </li>
       
         <li>
@@ -701,7 +718,9 @@ text:        { name: &quot;text&quot; },
 integer:     { name: &quot;integer&quot;, limit: 4 },
 float:       { name: &quot;float&quot; },
 decimal:     { name: &quot;decimal&quot; },
-datetime:    { name: &quot;timestamp&quot; },
+datetime:    {}, # set dynamically based on datetime_type
+timestamp:   { name: &quot;timestamp&quot; },
+timestamptz: { name: &quot;timestamptz&quot; },
 time:        { name: &quot;time&quot; },
 date:        { name: &quot;date&quot; },
 daterange:   { name: &quot;daterange&quot; },
@@ -854,7 +873,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-c-create_unlogged_tables_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 99</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 103</span>
 <span class="ruby-identifier">class_attribute</span> <span class="ruby-value">:create_unlogged_tables</span>, <span class="ruby-value">default:</span> <span class="ruby-keyword">false</span>
 </code></pre>
               </div>
@@ -888,12 +907,57 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-c-database_exists-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 266</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 290</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">database_exists?</span>(<span class="ruby-identifier">config</span>)
   <span class="ruby-operator">!</span><span class="ruby-operator">!</span><span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">postgresql_connection</span>(<span class="ruby-identifier">config</span>)
 <span class="ruby-keyword">rescue</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">NoDatabaseError</span>
   <span class="ruby-keyword">false</span>
 <span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-datetime_type">
+            
+              datetime_type
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>PostgreSQL supports multiple types for DateTimes. By default if you use `datetime` in migrations, Rails will translate this to a PostgreSQL “timestamp without time zone”. Change this in an initializer to use another <a href="PostgreSQLAdapter.html#NATIVE_DATABASE_TYPES"><code>NATIVE_DATABASE_TYPES</code></a>. For example, to store DateTimes as “timestamp with time zone”:</p>
+
+<pre><code>ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :timestamptz
+</code></pre>
+
+<p>Or if you are adding a custom type:</p>
+
+<pre><code>ActiveRecord::ConnectionAdapters::PostgreSQLAdapter::NATIVE_DATABASE_TYPES[:my_custom_type] = { name: &quot;my_custom_type_name&quot; }
+ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_type
+</code></pre>
+
+<p>If you&#39;re using :ruby as your config.active_record.schema_format and you change this setting, you should immediately run bin/rails db:migrate to update the types in your schema.rb.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-datetime_type_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 121</span>
+<span class="ruby-identifier">class_attribute</span> <span class="ruby-value">:datetime_type</span>, <span class="ruby-value">default:</span> <span class="ruby-value">:timestamp</span>
+</code></pre>
               </div>
             </div>
             
@@ -925,7 +989,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 247</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 271</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">connection</span>, <span class="ruby-identifier">logger</span>, <span class="ruby-identifier">connection_parameters</span>, <span class="ruby-identifier">config</span>)
   <span class="ruby-keyword">super</span>(<span class="ruby-identifier">connection</span>, <span class="ruby-identifier">logger</span>, <span class="ruby-identifier">config</span>)
 
@@ -980,7 +1044,11 @@ oid:         { name: &quot;oid&quot; },
   <span class="ruby-constant">PG</span>.<span class="ruby-identifier">connect</span>(<span class="ruby-identifier">conn_params</span>)
 <span class="ruby-keyword">rescue</span> <span class="ruby-operator">::</span><span class="ruby-constant">PG</span><span class="ruby-operator">::</span><span class="ruby-constant">Error</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">error</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">conn_params</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:dbname</span>] <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">error</span>.<span class="ruby-identifier">message</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:dbname</span>])
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">NoDatabaseError</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">NoDatabaseError</span>.<span class="ruby-identifier">db_error</span>(<span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:dbname</span>])
+  <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">conn_params</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:user</span>] <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">error</span>.<span class="ruby-identifier">message</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:user</span>])
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">DatabaseConnectionError</span>.<span class="ruby-identifier">username_error</span>(<span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:user</span>])
+  <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">conn_params</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:hostname</span>] <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">error</span>.<span class="ruby-identifier">message</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:hostname</span>])
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">DatabaseConnectionError</span>.<span class="ruby-identifier">hostname_error</span>(<span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:hostname</span>])
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">ConnectionNotEstablished</span>, <span class="ruby-identifier">error</span>.<span class="ruby-identifier">message</span>
   <span class="ruby-keyword">end</span>
@@ -1020,10 +1088,10 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-active-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 273</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 297</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">active?</span>
   <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-ivar">@connection</span>.<span class="ruby-identifier">query</span> <span class="ruby-string">&quot;SELECT 1&quot;</span>
+    <span class="ruby-ivar">@connection</span>.<span class="ruby-identifier">query</span> <span class="ruby-string">&quot;;&quot;</span>
   <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">rescue</span> <span class="ruby-constant">PG</span><span class="ruby-operator">::</span><span class="ruby-constant">Error</span>
@@ -1060,7 +1128,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-disable_extension_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 391</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 429</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">disable_extension</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">exec_query</span>(<span class="ruby-node">&quot;DROP EXTENSION IF EXISTS \&quot;#{name}\&quot; CASCADE&quot;</span>).<span class="ruby-identifier">tap</span> {
     <span class="ruby-identifier">reload_type_map</span>
@@ -1097,7 +1165,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-disconnect-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 307</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 337</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">disconnect!</span>
   <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-keyword">super</span>
@@ -1135,7 +1203,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-enable_extension_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 385</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 423</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">enable_extension</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">exec_query</span>(<span class="ruby-node">&quot;CREATE EXTENSION IF NOT EXISTS \&quot;#{name}\&quot;&quot;</span>).<span class="ruby-identifier">tap</span> {
     <span class="ruby-identifier">reload_type_map</span>
@@ -1172,7 +1240,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-extension_available-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 397</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 435</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">extension_available?</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">query_value</span>(<span class="ruby-node">&quot;SELECT true FROM pg_available_extensions WHERE name = #{quote(name)}&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1207,7 +1275,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-extension_enabled-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 401</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 439</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">extension_enabled?</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">query_value</span>(<span class="ruby-node">&quot;SELECT installed_version IS NOT NULL FROM pg_available_extensions WHERE name = #{quote(name)}&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1242,7 +1310,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-extensions_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 405</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 443</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">extensions</span>
   <span class="ruby-identifier">exec_query</span>(<span class="ruby-string">&quot;SELECT extname FROM pg_extension&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>).<span class="ruby-identifier">cast_values</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1277,7 +1345,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-index_algorithms_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 218</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 242</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">index_algorithms</span>
   { <span class="ruby-value">concurrently:</span> <span class="ruby-string">&quot;CONCURRENTLY&quot;</span> }
 <span class="ruby-keyword">end</span></code></pre>
@@ -1312,7 +1380,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-max_identifier_length_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 410</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 448</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">max_identifier_length</span>
   <span class="ruby-ivar">@max_identifier_length</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">query_value</span>(<span class="ruby-string">&quot;SHOW max_identifier_length&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>).<span class="ruby-identifier">to_i</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1347,12 +1415,13 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-reconnect-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 283</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 312</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reconnect!</span>
   <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-keyword">super</span>
     <span class="ruby-ivar">@connection</span>.<span class="ruby-identifier">reset</span>
     <span class="ruby-identifier">configure_connection</span>
+    <span class="ruby-identifier">reload_type_map</span>
   <span class="ruby-keyword">rescue</span> <span class="ruby-constant">PG</span><span class="ruby-operator">::</span><span class="ruby-constant">ConnectionBad</span>
     <span class="ruby-identifier">connect</span>
   <span class="ruby-keyword">end</span>
@@ -1388,7 +1457,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-reset-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 293</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 323</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reset!</span>
   <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">clear_cache!</span>
@@ -1431,7 +1500,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-session_auth-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 415</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 453</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">session_auth=</span>(<span class="ruby-identifier">user</span>)
   <span class="ruby-identifier">clear_cache!</span>
   <span class="ruby-identifier">execute</span>(<span class="ruby-node">&quot;SET SESSION AUTHORIZATION #{user}&quot;</span>)
@@ -1467,7 +1536,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-set_standard_conforming_strings_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 324</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 362</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">set_standard_conforming_strings</span>
   <span class="ruby-identifier">execute</span>(<span class="ruby-string">&quot;SET standard_conforming_strings = on&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1502,7 +1571,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_advisory_locks-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 332</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 370</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_advisory_locks?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1537,7 +1606,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_bulk_alter-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 151</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 175</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_bulk_alter?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1572,7 +1641,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_check_constraints-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 179</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 203</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_check_constraints?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1607,7 +1676,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_comments-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 199</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 223</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_comments?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1642,7 +1711,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_common_table_expressions-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 363</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 401</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_common_table_expressions?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1677,7 +1746,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_datetime_with_precision-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 191</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 215</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_datetime_with_precision?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1712,7 +1781,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_ddl_transactions-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 328</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 366</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_ddl_transactions?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1747,7 +1816,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_explain-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 336</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 374</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_explain?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1782,7 +1851,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_expression_index-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 167</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 191</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_expression_index?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1817,7 +1886,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_extensions-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 340</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 378</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_extensions?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1852,7 +1921,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_foreign_keys-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 175</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 199</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_foreign_keys?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1887,7 +1956,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_foreign_tables-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 348</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 386</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_foreign_tables?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1922,7 +1991,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_index_sort_order-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 155</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 179</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_index_sort_order?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1985,7 +2054,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_insert_on_conflict-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 211</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 235</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_insert_on_conflict?</span>
   <span class="ruby-identifier">database_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">90500</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2068,7 +2137,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_insert_returning-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 207</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 231</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_insert_returning?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2103,7 +2172,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_json-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 195</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 219</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_json?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2138,7 +2207,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_lazy_transactions-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 367</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 405</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_lazy_transactions?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2173,7 +2242,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_materialized_views-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 344</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 382</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_materialized_views?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2208,7 +2277,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_optimizer_hints-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 356</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 394</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_optimizer_hints?</span>
   <span class="ruby-keyword">unless</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-ivar">@has_pg_hint_plan</span>)
     <span class="ruby-ivar">@has_pg_hint_plan</span> = <span class="ruby-identifier">extension_available?</span>(<span class="ruby-string">&quot;pg_hint_plan&quot;</span>)
@@ -2246,7 +2315,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_partial_index-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 163</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 187</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_partial_index?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2281,7 +2350,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_partitioned_indexes-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 159</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 183</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_partitioned_indexes?</span>
   <span class="ruby-identifier">database_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">110_000</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2316,7 +2385,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_pgcrypto_uuid-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 352</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 390</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_pgcrypto_uuid?</span>
   <span class="ruby-identifier">database_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">90400</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2351,7 +2420,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_savepoints-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 203</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 227</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_savepoints?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2386,7 +2455,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_transaction_isolation-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 171</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 195</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_transaction_isolation?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2421,7 +2490,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_validate_constraints-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 183</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 207</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_validate_constraints?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2456,7 +2525,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-supports_views-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 187</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 211</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_views?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2491,7 +2560,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-i-use_insert_returning-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 420</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 458</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">use_insert_returning?</span>
   <span class="ruby-ivar">@use_insert_returning</span>
 <span class="ruby-keyword">end</span></code></pre>
