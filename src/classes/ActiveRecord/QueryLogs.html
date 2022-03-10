@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.0.alpha2</span><br />
+            <span>Ruby on Rails 7.0.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -66,25 +66,25 @@ layout: default
 <pre><code>tags = [
   :application,
   {
-    custom_tag: -&gt;(context) { context[:controller].controller_name },
+    custom_tag: -&gt;(context) { context[:controller]&amp;.controller_name },
     custom_value: -&gt; { Custom.value },
   }
 ]
 ActiveRecord::QueryLogs.tags = tags
 </code></pre>
 
-<p>The <a href="QueryLogs.html"><code>QueryLogs</code></a> <code>context</code> can be manipulated via <code>update_context</code> &amp; <code>set_context</code> methods.</p>
-
-<p>Direct updates to a context value:</p>
-
-<pre><code>ActiveRecord::QueryLogs.update_context(foo: Bar.new)
-</code></pre>
+<p>The <a href="QueryLogs.html"><code>QueryLogs</code></a> <code>context</code> can be manipulated via the <code>ActiveSupport::ExecutionContext.set</code> method.</p>
 
 <p>Temporary updates limited to the execution of a block:</p>
 
-<pre><code>ActiveRecord::QueryLogs.set_context(foo: Bar.new) do
+<pre><code>ActiveSupport::ExecutionContext.set(foo: Bar.new) do
   posts = Post.all
 end
+</code></pre>
+
+<p>Direct updates to a context value:</p>
+
+<pre><code>ActiveSupport::ExecutionContext[:foo] = Bar.new
 </code></pre>
 
 <p>Tag comments can be prepended to the query:</p>
@@ -114,23 +114,6 @@ end
   
 
   
-    <h2 id="methods">Methods</h2>
-    <ul>
-      
-        <li>
-          <a href="#method-c-set_context">set_context</a>
-        </li>
-      
-        <li>
-          <a href="#method-c-update_context">update_context</a>
-        </li>
-      
-        <li>
-          <a href="#method-c-with_tag">with_tag</a>
-        </li>
-      
-    </ul>
-  
 
   
 
@@ -145,123 +128,6 @@ end
 
     <!-- Methods -->
     
-      <h2 id="class-public-methods">Class Public methods</h2>
-      
-        <div class="method">
-          <h3 id="method-c-set_context">
-            
-              set_context(**options)
-            
-          </h3>
-
-          
-            <div class="description">
-              <p>Updates the context used to construct tags in the SQL comment during execution of the provided block. Resets the provided keys to their previous value once the block exits.</p>
-            </div>
-          
-
-          
-
-          
-
-          
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-set_context_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/query_logs.rb, line 104</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">set_context</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
-  <span class="ruby-identifier">keys</span> = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">keys</span>
-  <span class="ruby-identifier">previous_context</span> = <span class="ruby-identifier">keys</span>.<span class="ruby-identifier">zip</span>(<span class="ruby-identifier">context</span>.<span class="ruby-identifier">values_at</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">keys</span>)).<span class="ruby-identifier">to_h</span>
-  <span class="ruby-identifier">update_context</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
-  <span class="ruby-keyword">yield</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
-<span class="ruby-keyword">ensure</span>
-  <span class="ruby-identifier">update_context</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">previous_context</span>)
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
-        
-        <div class="method">
-          <h3 id="method-c-update_context">
-            
-              update_context(**options)
-            
-          </h3>
-
-          
-            <div class="description">
-              <p>Updates the context used to construct tags in the SQL comment. Resets the cached comment if <code>cache_query_log_tags</code> is <code>true</code>.</p>
-            </div>
-          
-
-          
-
-          
-
-          
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-update_context_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/query_logs.rb, line 96</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">update_context</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
-  <span class="ruby-identifier">context</span>.<span class="ruby-identifier">merge!</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">options</span>.<span class="ruby-identifier">symbolize_keys</span>)
-  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">cached_comment</span> = <span class="ruby-keyword">nil</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
-        
-        <div class="method">
-          <h3 id="method-c-with_tag">
-            
-              with_tag(tag, &amp;block)
-            
-          </h3>
-
-          
-            <div class="description">
-              <p>Temporarily tag any query executed within `&amp;block`. Can be nested.</p>
-            </div>
-          
-
-          
-
-          
-
-          
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-with_tag_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/query_logs.rb, line 114</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">with_tag</span>(<span class="ruby-identifier">tag</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">inline_tags</span>.<span class="ruby-identifier">push</span>(<span class="ruby-identifier">tag</span>)
-  <span class="ruby-keyword">yield</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
-<span class="ruby-keyword">ensure</span>
-  <span class="ruby-identifier">inline_tags</span>.<span class="ruby-identifier">pop</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
-        
-      
     
     
   

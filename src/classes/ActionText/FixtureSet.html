@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.0.alpha2</span><br />
+            <span>Ruby on Rails 7.0.2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -35,21 +35,24 @@ layout: default
 
 <h3 id="class-ActionText::FixtureSet-label-YAML">YAML</h3>
 
-<p>Like other Active Record-backed models, <a href="RichText.html"><code>ActionText::RichText</code></a> records inherit from <a href="../ActiveRecord/Base.html"><code>ActiveRecord::Base</code></a> instances and therefore can be populated by fixtures.</p>
+<p>Like other Active Record-backed models, <a href="RichText.html"><code>ActionText::RichText</code></a> records inherit from <a href="../ActiveRecord/Base.html"><code>ActiveRecord::Base</code></a> instances and can therefore be populated by fixtures.</p>
 
-<p>Consider a hypothetical <code>Article</code> model class, its related fixture data, as well as fixture data for related <a href="RichText.html"><code>ActionText::RichText</code></a> records:</p>
+<p>Consider an <code>Article</code> class:</p>
 
-<pre><code># app/models/article.rb
-class Article &lt; ApplicationRecord
+<pre><code>class Article &lt; ApplicationRecord
   has_rich_text :content
 end
+</code></pre>
 
-# tests/fixtures/articles.yml
-first:
+<p>To declare fixture data for the related <code>content</code>, first declare fixture data for <code>Article</code> instances in <code>test/fixtures/articles.yml</code>:</p>
+
+<pre><code>first:
   title: An Article
+</code></pre>
 
-# tests/fixtures/action_text/rich_texts.yml
-first_content:
+<p>Then declare the <code>ActionText::RichText</code> fixture data in <code>test/fixtures/action_text/rich_texts.yml</code>, making sure to declare each entry&#39;s <code>record:</code> key as a polymorphic relationship:</p>
+
+<pre><code>first:
   record: first (Article)
   name: content
   body: &lt;div&gt;Hello, world.&lt;/div&gt;
@@ -107,14 +110,15 @@ first_content:
 
 <h3 id="method-c-attachment-label-Examples">Examples</h3>
 
-<p>For example, consider a second <code>Article</code> record that mentions the first as part of its <code>content</code> HTML:</p>
+<p>For example, consider a second <code>Article</code> fixture declared in <code>test/fixtures/articles.yml</code>:</p>
 
-<pre><code># tests/fixtures/articles.yml
-second:
+<pre><code>second:
   title: Another Article
+</code></pre>
 
-# tests/fixtures/action_text/rich_texts.yml
-second_content:
+<p>You can attach a mention of <code>articles(:first)</code> to <code>second</code>&#39;s <code>content</code> by embedding a call to <code>ActionText::FixtureSet.attachment</code> in the <code>body:</code> value in <code>test/fixtures/action_text/rich_texts.yml</code>:</p>
+
+<pre><code>second:
   record: second (Article)
   name: content
   body: &lt;div&gt;Hello, &lt;%= ActionText::FixtureSet.attachment(&quot;articles&quot;, :first) %&gt;&lt;/div&gt;
@@ -135,7 +139,7 @@ second_content:
                 
               </p>
               <div id="method-c-attachment_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/fixture_set.rb, line 54</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/fixture_set.rb, line 60</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">attachment</span>(<span class="ruby-identifier">fixture_set_name</span>, <span class="ruby-identifier">label</span>, <span class="ruby-value">column_type:</span> <span class="ruby-value">:integer</span>)
   <span class="ruby-identifier">signed_global_id</span> = <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">FixtureSet</span>.<span class="ruby-identifier">signed_global_id</span> <span class="ruby-identifier">fixture_set_name</span>, <span class="ruby-identifier">label</span>,
     <span class="ruby-value">column_type:</span> <span class="ruby-identifier">column_type</span>, <span class="ruby-value">for:</span> <span class="ruby-constant">ActionText</span><span class="ruby-operator">::</span><span class="ruby-constant">Attachable</span><span class="ruby-operator">::</span><span class="ruby-constant">LOCATOR_NAME</span>

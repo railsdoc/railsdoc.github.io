@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.0.alpha2</span><br />
+            <span>Ruby on Rails 7.0.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -820,7 +820,7 @@ rakefile(&#39;seed.rake&#39;, &#39;puts &quot;Planting seeds&quot;&#39;)
                 
               </p>
               <div id="method-i-readme_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 308</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 314</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">readme</span>(<span class="ruby-identifier">path</span>)
   <span class="ruby-identifier">log</span> <span class="ruby-constant">File</span>.<span class="ruby-identifier">read</span>(<span class="ruby-identifier">find_in_source_paths</span>(<span class="ruby-identifier">path</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -861,26 +861,32 @@ route &quot;root &#39;admin#index&#39;&quot;, namespace: :admin
               <div id="method-i-route_source">
                 <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 281</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">route</span>(<span class="ruby-identifier">routing_code</span>, <span class="ruby-value">namespace:</span> <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">routing_code</span> = <span class="ruby-constant">Array</span>(<span class="ruby-identifier">namespace</span>).<span class="ruby-identifier">reverse</span>.<span class="ruby-identifier">reduce</span>(<span class="ruby-identifier">routing_code</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">code</span>, <span class="ruby-identifier">ns</span><span class="ruby-operator">|</span>
-    <span class="ruby-node">&quot;namespace :#{ns} do\n#{optimize_indentation(code, 2)}end&quot;</span>
+  <span class="ruby-identifier">namespace</span> = <span class="ruby-constant">Array</span>(<span class="ruby-identifier">namespace</span>)
+  <span class="ruby-identifier">namespace_pattern</span> = <span class="ruby-identifier">route_namespace_pattern</span>(<span class="ruby-identifier">namespace</span>)
+  <span class="ruby-identifier">routing_code</span> = <span class="ruby-identifier">namespace</span>.<span class="ruby-identifier">reverse</span>.<span class="ruby-identifier">reduce</span>(<span class="ruby-identifier">routing_code</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">code</span>, <span class="ruby-identifier">name</span><span class="ruby-operator">|</span>
+    <span class="ruby-node">&quot;namespace :#{name} do\n#{rebase_indentation(code, 2)}end&quot;</span>
   <span class="ruby-keyword">end</span>
 
   <span class="ruby-identifier">log</span> <span class="ruby-value">:route</span>, <span class="ruby-identifier">routing_code</span>
 
-  <span class="ruby-identifier">after_pattern</span> = <span class="ruby-constant">Array</span>(<span class="ruby-identifier">namespace</span>).<span class="ruby-identifier">each_with_index</span>.<span class="ruby-identifier">reverse_each</span>.<span class="ruby-identifier">reduce</span>(<span class="ruby-keyword">nil</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">pattern</span>, (<span class="ruby-identifier">ns</span>, <span class="ruby-identifier">i</span>)<span class="ruby-operator">|</span>
-    <span class="ruby-identifier">margin</span> = <span class="ruby-node">&quot;\\#{i + 1}[ ]{2}&quot;</span>
-    <span class="ruby-node">&quot;(?:(?:^[ ]*\n|^#{margin}.*\n)*?^(#{margin})namespace :#{ns} do\n#{pattern})?&quot;</span>
-  <span class="ruby-keyword">end</span>.<span class="ruby-identifier">then</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">pattern</span><span class="ruby-operator">|</span>
-    <span class="ruby-regexp">/^([ ]*).+\.routes\.draw do[ ]*\n#{pattern}/</span>
-  <span class="ruby-keyword">end</span>
-
   <span class="ruby-identifier">in_root</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">existing</span> = <span class="ruby-identifier">match_file</span>(<span class="ruby-string">&quot;config/routes.rb&quot;</span>, <span class="ruby-identifier">after_pattern</span>)
-      <span class="ruby-identifier">base_indent</span>, <span class="ruby-operator">*</span>, <span class="ruby-identifier">prev_indent</span> = <span class="ruby-identifier">existing</span>.<span class="ruby-identifier">captures</span>.<span class="ruby-identifier">compact</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:length</span>)
-      <span class="ruby-identifier">routing_code</span> = <span class="ruby-identifier">optimize_indentation</span>(<span class="ruby-identifier">routing_code</span>, <span class="ruby-identifier">base_indent</span> <span class="ruby-operator">+</span> <span class="ruby-value">2</span>).<span class="ruby-identifier">lines</span>.<span class="ruby-identifier">grep_v</span>(<span class="ruby-regexp">/^[ ]{,#{prev_indent}}\S/</span>).<span class="ruby-identifier">join</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">namespace_match</span> = <span class="ruby-identifier">match_file</span>(<span class="ruby-string">&quot;config/routes.rb&quot;</span>, <span class="ruby-identifier">namespace_pattern</span>)
+      <span class="ruby-identifier">base_indent</span>, <span class="ruby-operator">*</span>, <span class="ruby-identifier">existing_block_indent</span> = <span class="ruby-identifier">namespace_match</span>.<span class="ruby-identifier">captures</span>.<span class="ruby-identifier">compact</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:length</span>)
+      <span class="ruby-identifier">existing_line_pattern</span> = <span class="ruby-regexp">/^[ ]{,#{existing_block_indent}}\S.+\n?/</span>
+      <span class="ruby-identifier">routing_code</span> = <span class="ruby-identifier">rebase_indentation</span>(<span class="ruby-identifier">routing_code</span>, <span class="ruby-identifier">base_indent</span> <span class="ruby-operator">+</span> <span class="ruby-value">2</span>).<span class="ruby-identifier">gsub</span>(<span class="ruby-identifier">existing_line_pattern</span>, <span class="ruby-string">&quot;&quot;</span>)
+      <span class="ruby-identifier">namespace_pattern</span> = <span class="ruby-regexp">/#{Regexp.escape namespace_match.to_s}/</span>
     <span class="ruby-keyword">end</span>
 
-    <span class="ruby-identifier">inject_into_file</span> <span class="ruby-string">&quot;config/routes.rb&quot;</span>, <span class="ruby-identifier">routing_code</span>, <span class="ruby-value">after:</span> <span class="ruby-identifier">after_pattern</span>, <span class="ruby-value">verbose:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">force:</span> <span class="ruby-keyword">false</span>
+    <span class="ruby-identifier">inject_into_file</span> <span class="ruby-string">&quot;config/routes.rb&quot;</span>, <span class="ruby-identifier">routing_code</span>, <span class="ruby-value">after:</span> <span class="ruby-identifier">namespace_pattern</span>, <span class="ruby-value">verbose:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">force:</span> <span class="ruby-keyword">false</span>
+
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">behavior</span> <span class="ruby-operator">==</span> <span class="ruby-value">:revoke</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">namespace</span>.<span class="ruby-identifier">any?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">namespace_match</span>
+      <span class="ruby-identifier">empty_block_pattern</span> = <span class="ruby-regexp">/(#{namespace_pattern})((?:\s*end\n){1,#{namespace.size}})/</span>
+      <span class="ruby-identifier">gsub_file</span> <span class="ruby-string">&quot;config/routes.rb&quot;</span>, <span class="ruby-identifier">empty_block_pattern</span>, <span class="ruby-value">verbose:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">force:</span> <span class="ruby-keyword">true</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">matched</span><span class="ruby-operator">|</span>
+        <span class="ruby-identifier">beginning</span>, <span class="ruby-identifier">ending</span> = <span class="ruby-identifier">empty_block_pattern</span>.<span class="ruby-identifier">match</span>(<span class="ruby-identifier">matched</span>).<span class="ruby-identifier">captures</span>
+        <span class="ruby-identifier">ending</span>.<span class="ruby-identifier">sub!</span>(<span class="ruby-regexp">/\A\s*end\n/</span>, <span class="ruby-string">&quot;&quot;</span>) <span class="ruby-keyword">while</span> <span class="ruby-operator">!</span><span class="ruby-identifier">ending</span>.<span class="ruby-identifier">empty?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">beginning</span>.<span class="ruby-identifier">sub!</span>(<span class="ruby-regexp">/^[ ]*namespace .+ do\n\s*\z/</span>, <span class="ruby-string">&quot;&quot;</span>)
+        <span class="ruby-identifier">beginning</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">ending</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -962,7 +968,7 @@ vendor(&quot;foreign.rb&quot;, &quot;# Foreign code is fun&quot;)
                 
               </p>
               <div id="method-i-execute_command_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 327</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 333</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">execute_command</span>(<span class="ruby-identifier">executor</span>, <span class="ruby-identifier">command</span>, <span class="ruby-identifier">options</span> = {}) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">log</span> <span class="ruby-identifier">executor</span>, <span class="ruby-identifier">command</span>
   <span class="ruby-identifier">sudo</span> = <span class="ruby-identifier">options</span>[<span class="ruby-value">:sudo</span>] <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-constant">Gem</span>.<span class="ruby-identifier">win_platform?</span> <span class="ruby-operator">?</span> <span class="ruby-string">&quot;sudo &quot;</span> <span class="ruby-operator">:</span> <span class="ruby-string">&quot;&quot;</span>
@@ -1006,7 +1012,7 @@ vendor(&quot;foreign.rb&quot;, &quot;# Foreign code is fun&quot;)
                 
               </p>
               <div id="method-i-extify_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 341</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 347</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">extify</span>(<span class="ruby-identifier">name</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-keyword">if</span> <span class="ruby-constant">Gem</span>.<span class="ruby-identifier">win_platform?</span>
     <span class="ruby-node">&quot;#{name}.bat&quot;</span>
@@ -1045,7 +1051,7 @@ vendor(&quot;foreign.rb&quot;, &quot;# Foreign code is fun&quot;)
                 
               </p>
               <div id="method-i-indentation_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 368</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 375</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">indentation</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-string">&quot;  &quot;</span> <span class="ruby-operator">*</span> <span class="ruby-ivar">@indentation</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1080,7 +1086,7 @@ vendor(&quot;foreign.rb&quot;, &quot;# Foreign code is fun&quot;)
                 
               </p>
               <div id="method-i-log_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 316</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 322</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">log</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">args</span>.<span class="ruby-identifier">size</span> <span class="ruby-operator">==</span> <span class="ruby-value">1</span>
     <span class="ruby-identifier">say</span> <span class="ruby-identifier">args</span>.<span class="ruby-identifier">first</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">options</span>.<span class="ruby-identifier">quiet?</span>
@@ -1108,6 +1114,10 @@ vendor(&quot;foreign.rb&quot;, &quot;# Foreign code is fun&quot;)
           
 
           
+            <div class="aka">
+              Also aliased as: <a href="Actions.html#method-i-rebase_indentation">rebase_indentation</a>
+            </div>
+          
 
           
 
@@ -1120,7 +1130,7 @@ vendor(&quot;foreign.rb&quot;, &quot;# Foreign code is fun&quot;)
                 
               </p>
               <div id="method-i-optimize_indentation_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 362</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 368</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">optimize_indentation</span>(<span class="ruby-identifier">value</span>, <span class="ruby-identifier">amount</span> = <span class="ruby-value">0</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-keyword">return</span> <span class="ruby-node">&quot;#{value}\n&quot;</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">String</span>)
   <span class="ruby-node">&quot;#{value.strip_heredoc.indent(amount).chomp}\n&quot;</span>
@@ -1156,7 +1166,7 @@ vendor(&quot;foreign.rb&quot;, &quot;# Foreign code is fun&quot;)
                 
               </p>
               <div id="method-i-quote_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 350</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 356</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">quote</span>(<span class="ruby-identifier">value</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">respond_to?</span> <span class="ruby-value">:each_pair</span>
     <span class="ruby-keyword">return</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">k</span>, <span class="ruby-identifier">v</span><span class="ruby-operator">|</span>
@@ -1198,7 +1208,7 @@ vendor(&quot;foreign.rb&quot;, &quot;# Foreign code is fun&quot;)
                 
               </p>
               <div id="method-i-with_indentation_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 373</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/actions.rb, line 380</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">with_indentation</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-ivar">@indentation</span> <span class="ruby-operator">+=</span> <span class="ruby-value">1</span>
   <span class="ruby-identifier">instance_eval</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)

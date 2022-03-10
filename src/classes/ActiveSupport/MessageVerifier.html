@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.0.alpha2</span><br />
+            <span>Ruby on Rails 7.0.2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -209,11 +209,11 @@ verifier.rotate serializer: Marshal # Fallback to an old serializer instead of J
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 106</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 110</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">secret</span>, <span class="ruby-value">digest:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">serializer:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;Secret should not be nil.&quot;</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">secret</span>
   <span class="ruby-ivar">@secret</span> = <span class="ruby-identifier">secret</span>
-  <span class="ruby-ivar">@digest</span> = <span class="ruby-identifier">digest</span> <span class="ruby-operator">||</span> <span class="ruby-string">&quot;SHA1&quot;</span>
+  <span class="ruby-ivar">@digest</span> = <span class="ruby-identifier">digest</span>&amp;.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">||</span> <span class="ruby-string">&quot;SHA1&quot;</span>
   <span class="ruby-ivar">@serializer</span> = <span class="ruby-identifier">serializer</span> <span class="ruby-operator">||</span> <span class="ruby-constant">Marshal</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -257,10 +257,10 @@ verifier.generate &#39;a private message&#39; # =&gt; &quot;BAhJIhRwcml2YXRlLW1l
                 
               </p>
               <div id="method-i-generate_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 186</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 188</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">generate</span>(<span class="ruby-identifier">value</span>, <span class="ruby-value">expires_at:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">expires_in:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">purpose:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">data</span> = <span class="ruby-identifier">encode</span>(<span class="ruby-constant">Messages</span><span class="ruby-operator">::</span><span class="ruby-constant">Metadata</span>.<span class="ruby-identifier">wrap</span>(<span class="ruby-ivar">@serializer</span>.<span class="ruby-identifier">dump</span>(<span class="ruby-identifier">value</span>), <span class="ruby-value">expires_at:</span> <span class="ruby-identifier">expires_at</span>, <span class="ruby-value">expires_in:</span> <span class="ruby-identifier">expires_in</span>, <span class="ruby-value">purpose:</span> <span class="ruby-identifier">purpose</span>))
-  <span class="ruby-node">&quot;#{data}--#{generate_digest(data)}&quot;</span>
+  <span class="ruby-node">&quot;#{data}#{SEPARATOR}#{generate_digest(data)}&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -301,12 +301,10 @@ verifier.valid_message?(tampered_message) # =&gt; false
                 
               </p>
               <div id="method-i-valid_message-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 122</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 126</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">valid_message?</span>(<span class="ruby-identifier">signed_message</span>)
-  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">signed_message</span>.<span class="ruby-identifier">nil?</span> <span class="ruby-operator">||</span> <span class="ruby-operator">!</span><span class="ruby-identifier">signed_message</span>.<span class="ruby-identifier">valid_encoding?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">signed_message</span>.<span class="ruby-identifier">blank?</span>
-
-  <span class="ruby-identifier">data</span>, <span class="ruby-identifier">digest</span> = <span class="ruby-identifier">signed_message</span>.<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;--&quot;</span>)
-  <span class="ruby-identifier">data</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">digest</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">SecurityUtils</span>.<span class="ruby-identifier">secure_compare</span>(<span class="ruby-identifier">digest</span>, <span class="ruby-identifier">generate_digest</span>(<span class="ruby-identifier">data</span>))
+  <span class="ruby-identifier">data</span>, <span class="ruby-identifier">digest</span> = <span class="ruby-identifier">get_data_and_digest_from</span>(<span class="ruby-identifier">signed_message</span>)
+  <span class="ruby-identifier">digest_matches_data?</span>(<span class="ruby-identifier">digest</span>, <span class="ruby-identifier">data</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -363,11 +361,11 @@ verifier.verified(incompatible_message) # =&gt; TypeError: incompatible marshal 
                 
               </p>
               <div id="method-i-verified_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 150</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 152</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">verified</span>(<span class="ruby-identifier">signed_message</span>, <span class="ruby-value">purpose:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span>)
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">valid_message?</span>(<span class="ruby-identifier">signed_message</span>)
+  <span class="ruby-identifier">data</span>, <span class="ruby-identifier">digest</span> = <span class="ruby-identifier">get_data_and_digest_from</span>(<span class="ruby-identifier">signed_message</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">digest_matches_data?</span>(<span class="ruby-identifier">digest</span>, <span class="ruby-identifier">data</span>)
     <span class="ruby-keyword">begin</span>
-      <span class="ruby-identifier">data</span> = <span class="ruby-identifier">signed_message</span>.<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;--&quot;</span>)[<span class="ruby-value">0</span>]
       <span class="ruby-identifier">message</span> = <span class="ruby-constant">Messages</span><span class="ruby-operator">::</span><span class="ruby-constant">Metadata</span>.<span class="ruby-identifier">verify</span>(<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">data</span>), <span class="ruby-identifier">purpose</span>)
       <span class="ruby-ivar">@serializer</span>.<span class="ruby-identifier">load</span>(<span class="ruby-identifier">message</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">message</span>
     <span class="ruby-keyword">rescue</span> <span class="ruby-constant">ArgumentError</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">argument_error</span>
@@ -419,7 +417,7 @@ other_verifier.verify(signed_message) # =&gt; ActiveSupport::MessageVerifier::In
                 
               </p>
               <div id="method-i-verify_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 175</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 177</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">verify</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">verified</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">raise</span>(<span class="ruby-constant">InvalidSignature</span>)
 <span class="ruby-keyword">end</span></code></pre>
