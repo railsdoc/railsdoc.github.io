@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.0.alpha2</span><br />
+            <span>Ruby on Rails 7.0.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -263,20 +263,28 @@ end
 
 <p>Similar to the normal callbacks that hook into the life cycle of an Active Record object, you can also define callbacks that get triggered when you add an object to or remove an object from an association collection.</p>
 
-<pre><code>class Project
-  has_and_belongs_to_many :developers, after_add: :evaluate_velocity
+<pre><code>class Firm &lt; ActiveRecord::Base
+  has_many :clients,
+           dependent: :destroy,
+           after_add: :congratulate_client,
+           after_remove: :log_after_remove
 
-  def evaluate_velocity(developer)
-    ...
+  def congratulate_client(record)
+    # ...
   end
-end
+
+  def log_after_remove(record)
+    # ...
+  end
 </code></pre>
 
 <p>It&#39;s possible to stack callbacks by passing them as an array. Example:</p>
 
-<pre><code>class Project
-  has_and_belongs_to_many :developers,
-                          after_add: [:evaluate_velocity, Proc.new { |p, d| p.shipping_date = Time.now}]
+<pre><code>class Firm &lt; ActiveRecord::Base
+  has_many :clients,
+           dependent: :destroy,
+           after_add: [:congratulate_client, -&gt; (firm, record) { firm.log &lt;&lt; &quot;after_adding#{record.id}&quot; }],
+           after_remove: :log_after_remove
 end
 </code></pre>
 
@@ -285,6 +293,20 @@ end
 <p>If any of the <code>before_add</code> callbacks throw an exception, the object will not be added to the collection.</p>
 
 <p>Similarly, if any of the <code>before_remove</code> callbacks throw an exception, the object will not be removed from the collection.</p>
+
+<p>Note: To trigger remove callbacks, you must use <code>destroy</code> / <code>destroy_all</code> methods. For example:</p>
+
+<pre><code>* &lt;tt&gt;firm.clients.destroy(client)&lt;/tt&gt;
+* &lt;tt&gt;firm.clients.destroy(*clients)&lt;/tt&gt;
+* &lt;tt&gt;firm.clients.destroy_all&lt;/tt&gt;
+</code></pre>
+
+<p><code>delete</code> / <code>delete_all</code> methods like the following do <strong>not</strong> trigger remove callbacks:</p>
+
+<pre><code>* &lt;tt&gt;firm.clients.delete(client)&lt;/tt&gt;
+* &lt;tt&gt;firm.clients.delete(*clients)&lt;/tt&gt;
+* &lt;tt&gt;firm.clients.delete_all&lt;/tt&gt;
+</code></pre>
 
 <h2 id="module-ActiveRecord::Associations::ClassMethods-label-Association+extensions">Association extensions</h2>
 
@@ -419,7 +441,7 @@ end
 
 <p>If you do not set the <code>:inverse_of</code> record, the association will do its best to match itself up with the correct inverse. Automatic inverse detection only works on <a href="ClassMethods.html#method-i-has_many"><code>has_many</code></a>, <a href="ClassMethods.html#method-i-has_one"><code>has_one</code></a>, and <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a> associations.</p>
 
-<p><code>:foreign_key</code> and <code>:through</code> options on the associations, or a custom scope, will also prevent the association&#39;s inverse from being found automatically.</p>
+<p><code>:foreign_key</code> and <code>:through</code> options on the associations will also prevent the association&#39;s inverse from being found automatically, as will a custom scopes in some cases. See further details in the <a href="https://guides.rubyonrails.org/association_basics.html#bi-directional-associations">Active Record Associations guide</a>.</p>
 
 <p>The automatic guessing of the inverse association uses a heuristic based on the name of the class, so it may not work for all associations, especially the ones with non-standard names.</p>
 
@@ -999,7 +1021,7 @@ belongs_to :account, strict_loading: true
                 
               </p>
               <div id="method-i-belongs_to_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1756</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1790</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">belongs_to</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">reflection</span> = <span class="ruby-constant">Builder</span><span class="ruby-operator">::</span><span class="ruby-constant">BelongsTo</span>.<span class="ruby-identifier">build</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span>, <span class="ruby-identifier">options</span>)
   <span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">add_reflection</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">reflection</span>
@@ -1197,7 +1219,7 @@ has_and_belongs_to_many :categories, strict_loading: true
                 
               </p>
               <div id="method-i-has_and_belongs_to_many_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1928</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1962</span>
         <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_and_belongs_to_many</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">extension</span>)
           <span class="ruby-identifier">habtm_reflection</span> = <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Reflection</span><span class="ruby-operator">::</span><span class="ruby-constant">HasAndBelongsToManyReflection</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span>, <span class="ruby-identifier">options</span>, <span class="ruby-keyword">self</span>)
 
@@ -1480,7 +1502,7 @@ has_many :comments, strict_loading: true
                 
               </p>
               <div id="method-i-has_many_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1432</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1466</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_many</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">extension</span>)
   <span class="ruby-identifier">reflection</span> = <span class="ruby-constant">Builder</span><span class="ruby-operator">::</span><span class="ruby-constant">HasMany</span>.<span class="ruby-identifier">build</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span>, <span class="ruby-identifier">options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">extension</span>)
   <span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">add_reflection</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">reflection</span>
@@ -1663,7 +1685,7 @@ has_one :credit_card, strict_loading: true
                 
               </p>
               <div id="method-i-has_one_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1596</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/associations.rb, line 1630</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_one</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">reflection</span> = <span class="ruby-constant">Builder</span><span class="ruby-operator">::</span><span class="ruby-constant">HasOne</span>.<span class="ruby-identifier">build</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">scope</span>, <span class="ruby-identifier">options</span>)
   <span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">add_reflection</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">reflection</span>

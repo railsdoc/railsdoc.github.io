@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.0.alpha2</span><br />
+            <span>Ruby on Rails 7.0.2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -78,6 +78,10 @@ layout: default
         </li>
       
         <li>
+          <a href="#method-i-create_enum">create_enum</a>
+        </li>
+      
+        <li>
           <a href="#method-c-create_unlogged_tables">create_unlogged_tables</a>
         </li>
       
@@ -99,6 +103,10 @@ layout: default
       
         <li>
           <a href="#method-i-enable_extension">enable_extension</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-enum_types">enum_types</a>
         </li>
       
         <li>
@@ -171,6 +179,10 @@ layout: default
       
         <li>
           <a href="#method-i-supports_ddl_transactions-3F">supports_ddl_transactions?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-supports_deferrable_constraints-3F">supports_deferrable_constraints?</a>
         </li>
       
         <li>
@@ -259,6 +271,10 @@ layout: default
       
         <li>
           <a href="#method-i-supports_views-3F">supports_views?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-supports_virtual_columns-3F">supports_virtual_columns?</a>
         </li>
       
         <li>
@@ -378,6 +394,7 @@ primary_key: &quot;bigserial primary key&quot;,
 string:      { name: &quot;character varying&quot; },
 text:        { name: &quot;text&quot; },
 integer:     { name: &quot;integer&quot;, limit: 4 },
+bigint:      { name: &quot;bigint&quot; },
 float:       { name: &quot;float&quot; },
 decimal:     { name: &quot;decimal&quot; },
 datetime:    {}, # set dynamically based on datetime_type
@@ -416,6 +433,7 @@ bit_varying: { name: &quot;bit varying&quot; },
 money:       { name: &quot;money&quot; },
 interval:    { name: &quot;interval&quot; },
 oid:         { name: &quot;oid&quot; },
+enum:        {} # special type https://www.postgresql.org/docs/current/datatype-enum.html
 }</td>
           </tr>
           
@@ -569,7 +587,7 @@ oid:         { name: &quot;oid&quot; },
                 
               </p>
               <div id="method-c-database_exists-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 290</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 300</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">database_exists?</span>(<span class="ruby-identifier">config</span>)
   <span class="ruby-operator">!</span><span class="ruby-operator">!</span><span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">postgresql_connection</span>(<span class="ruby-identifier">config</span>)
 <span class="ruby-keyword">rescue</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">NoDatabaseError</span>
@@ -651,11 +669,11 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 271</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 281</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">connection</span>, <span class="ruby-identifier">logger</span>, <span class="ruby-identifier">connection_parameters</span>, <span class="ruby-identifier">config</span>)
   <span class="ruby-keyword">super</span>(<span class="ruby-identifier">connection</span>, <span class="ruby-identifier">logger</span>, <span class="ruby-identifier">config</span>)
 
-  <span class="ruby-ivar">@connection_parameters</span> = <span class="ruby-identifier">connection_parameters</span>
+  <span class="ruby-ivar">@connection_parameters</span> = <span class="ruby-identifier">connection_parameters</span> <span class="ruby-operator">||</span> {}
 
   <span class="ruby-comment"># @local_tz is initialized as nil to avoid warnings when connect tries to use it</span>
   <span class="ruby-ivar">@local_tz</span> = <span class="ruby-keyword">nil</span>
@@ -703,7 +721,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
               <div id="method-c-new_client_source">
                 <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 77</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">new_client</span>(<span class="ruby-identifier">conn_params</span>)
-  <span class="ruby-constant">PG</span>.<span class="ruby-identifier">connect</span>(<span class="ruby-identifier">conn_params</span>)
+  <span class="ruby-constant">PG</span>.<span class="ruby-identifier">connect</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">conn_params</span>)
 <span class="ruby-keyword">rescue</span> <span class="ruby-operator">::</span><span class="ruby-constant">PG</span><span class="ruby-operator">::</span><span class="ruby-constant">Error</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">error</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">conn_params</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:dbname</span>] <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">error</span>.<span class="ruby-identifier">message</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:dbname</span>])
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">NoDatabaseError</span>.<span class="ruby-identifier">db_error</span>(<span class="ruby-identifier">conn_params</span>[<span class="ruby-value">:dbname</span>])
@@ -750,7 +768,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-active-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 297</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 307</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">active?</span>
   <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-ivar">@connection</span>.<span class="ruby-identifier">query</span> <span class="ruby-string">&quot;;&quot;</span>
@@ -759,6 +777,54 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
 <span class="ruby-keyword">rescue</span> <span class="ruby-constant">PG</span><span class="ruby-operator">::</span><span class="ruby-constant">Error</span>
   <span class="ruby-keyword">false</span>
 <span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-create_enum">
+            
+              create_enum(name, values)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Given a name and an array of values, creates an enum type.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-create_enum_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 472</span>
+      <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">create_enum</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">values</span>)
+        <span class="ruby-identifier">sql_values</span> = <span class="ruby-identifier">values</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">s</span><span class="ruby-operator">|</span> <span class="ruby-node">&quot;&#39;#{s}&#39;&quot;</span> }.<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;, &quot;</span>)
+        <span class="ruby-identifier">query</span> = <span class="ruby-identifier">&lt;&lt;~SQL</span>
+<span class="ruby-value">          DO $$
+          BEGIN
+              IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                WHERE t.typname = &#39;#{name}&#39;
+              ) THEN
+                  CREATE TYPE \&quot;#{name}\&quot; AS ENUM (#{sql_values});
+              END IF;
+          END
+          $$;
+</span><span class="ruby-identifier">        SQL</span>
+        <span class="ruby-identifier">exec_query</span>(<span class="ruby-identifier">query</span>)
+      <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
@@ -790,7 +856,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-disable_extension_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 429</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 439</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">disable_extension</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">exec_query</span>(<span class="ruby-node">&quot;DROP EXTENSION IF EXISTS \&quot;#{name}\&quot; CASCADE&quot;</span>).<span class="ruby-identifier">tap</span> {
     <span class="ruby-identifier">reload_type_map</span>
@@ -827,7 +893,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-disconnect-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 337</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 347</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">disconnect!</span>
   <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-keyword">super</span>
@@ -865,12 +931,56 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-enable_extension_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 423</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 433</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">enable_extension</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">exec_query</span>(<span class="ruby-node">&quot;CREATE EXTENSION IF NOT EXISTS \&quot;#{name}\&quot;&quot;</span>).<span class="ruby-identifier">tap</span> {
     <span class="ruby-identifier">reload_type_map</span>
   }
 <span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-enum_types">
+            
+              enum_types()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a list of defined enum types, and their values.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-enum_types_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 458</span>
+      <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">enum_types</span>
+        <span class="ruby-identifier">query</span> = <span class="ruby-identifier">&lt;&lt;~SQL</span>
+<span class="ruby-value">          SELECT
+            type.typname AS name,
+            string_agg(enum.enumlabel, &#39;,&#39; ORDER BY enum.enumsortorder) AS value
+          FROM pg_enum AS enum
+          JOIN pg_type AS type
+            ON (type.oid = enum.enumtypid)
+          GROUP BY type.typname;
+</span><span class="ruby-identifier">        SQL</span>
+        <span class="ruby-identifier">exec_query</span>(<span class="ruby-identifier">query</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>).<span class="ruby-identifier">cast_values</span>
+      <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
@@ -902,7 +1012,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-extension_available-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 435</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 445</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">extension_available?</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">query_value</span>(<span class="ruby-node">&quot;SELECT true FROM pg_available_extensions WHERE name = #{quote(name)}&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -937,7 +1047,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-extension_enabled-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 439</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 449</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">extension_enabled?</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">query_value</span>(<span class="ruby-node">&quot;SELECT installed_version IS NOT NULL FROM pg_available_extensions WHERE name = #{quote(name)}&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -972,7 +1082,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-extensions_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 443</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 453</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">extensions</span>
   <span class="ruby-identifier">exec_query</span>(<span class="ruby-string">&quot;SELECT extname FROM pg_extension&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>).<span class="ruby-identifier">cast_values</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1007,7 +1117,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-index_algorithms_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 242</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 252</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">index_algorithms</span>
   { <span class="ruby-value">concurrently:</span> <span class="ruby-string">&quot;CONCURRENTLY&quot;</span> }
 <span class="ruby-keyword">end</span></code></pre>
@@ -1042,7 +1152,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-max_identifier_length_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 448</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 490</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">max_identifier_length</span>
   <span class="ruby-ivar">@max_identifier_length</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">query_value</span>(<span class="ruby-string">&quot;SHOW max_identifier_length&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>).<span class="ruby-identifier">to_i</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1077,7 +1187,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-reconnect-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 312</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 322</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reconnect!</span>
   <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-keyword">super</span>
@@ -1119,7 +1229,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-reset-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 323</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 333</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reset!</span>
   <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">clear_cache!</span>
@@ -1162,7 +1272,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-session_auth-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 453</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 495</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">session_auth=</span>(<span class="ruby-identifier">user</span>)
   <span class="ruby-identifier">clear_cache!</span>
   <span class="ruby-identifier">execute</span>(<span class="ruby-node">&quot;SET SESSION AUTHORIZATION #{user}&quot;</span>)
@@ -1198,7 +1308,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-set_standard_conforming_strings_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 362</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 372</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">set_standard_conforming_strings</span>
   <span class="ruby-identifier">execute</span>(<span class="ruby-string">&quot;SET standard_conforming_strings = on&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1233,7 +1343,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_advisory_locks-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 370</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 380</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_advisory_locks?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1268,7 +1378,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_bulk_alter-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 175</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 177</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_bulk_alter?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1303,7 +1413,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_check_constraints-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 203</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 205</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_check_constraints?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1338,7 +1448,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_comments-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 223</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 229</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_comments?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1373,7 +1483,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_common_table_expressions-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 401</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 411</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_common_table_expressions?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1408,7 +1518,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_datetime_with_precision-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 215</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 221</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_datetime_with_precision?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1443,8 +1553,43 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_ddl_transactions-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 366</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 376</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_ddl_transactions?</span>
+  <span class="ruby-keyword">true</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-supports_deferrable_constraints-3F">
+            
+              supports_deferrable_constraints?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-supports_deferrable_constraints-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 213</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_deferrable_constraints?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -1478,7 +1623,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_explain-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 374</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 384</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_explain?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1513,7 +1658,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_expression_index-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 191</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 193</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_expression_index?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1548,7 +1693,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_extensions-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 378</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 388</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_extensions?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1583,7 +1728,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_foreign_keys-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 199</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 201</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_foreign_keys?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1618,7 +1763,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_foreign_tables-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 386</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 396</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_foreign_tables?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1653,7 +1798,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_index_sort_order-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 179</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 181</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_index_sort_order?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1716,9 +1861,9 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_insert_on_conflict-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 235</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 241</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_insert_on_conflict?</span>
-  <span class="ruby-identifier">database_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">90500</span>
+  <span class="ruby-identifier">database_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">90500</span> <span class="ruby-comment"># &gt;= 9.5</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -1799,7 +1944,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_insert_returning-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 231</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 237</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_insert_returning?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1834,7 +1979,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_json-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 219</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 225</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_json?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1869,7 +2014,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_lazy_transactions-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 405</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 415</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_lazy_transactions?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1904,7 +2049,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_materialized_views-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 382</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 392</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_materialized_views?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1939,7 +2084,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_optimizer_hints-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 394</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 404</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_optimizer_hints?</span>
   <span class="ruby-keyword">unless</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-ivar">@has_pg_hint_plan</span>)
     <span class="ruby-ivar">@has_pg_hint_plan</span> = <span class="ruby-identifier">extension_available?</span>(<span class="ruby-string">&quot;pg_hint_plan&quot;</span>)
@@ -1977,7 +2122,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_partial_index-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 187</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 189</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_partial_index?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2012,9 +2157,9 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_partitioned_indexes-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 183</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 185</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_partitioned_indexes?</span>
-  <span class="ruby-identifier">database_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">110_000</span>
+  <span class="ruby-identifier">database_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">110_000</span> <span class="ruby-comment"># &gt;= 11.0</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -2047,9 +2192,9 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_pgcrypto_uuid-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 390</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 400</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_pgcrypto_uuid?</span>
-  <span class="ruby-identifier">database_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">90400</span>
+  <span class="ruby-identifier">database_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">90400</span> <span class="ruby-comment"># &gt;= 9.4</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -2082,7 +2227,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_savepoints-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 227</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 233</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_savepoints?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2117,7 +2262,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_transaction_isolation-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 195</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 197</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_transaction_isolation?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2152,7 +2297,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_validate_constraints-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 207</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 209</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_validate_constraints?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2187,9 +2332,44 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-supports_views-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 211</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 217</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_views?</span>
   <span class="ruby-keyword">true</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-supports_virtual_columns-3F">
+            
+              supports_virtual_columns?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-supports_virtual_columns-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 248</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_virtual_columns?</span>
+  <span class="ruby-identifier">database_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">120_000</span> <span class="ruby-comment"># &gt;= 12.0</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -2222,7 +2402,7 @@ ActiveRecord::ConnectionAdapters::PostgreSQLAdapter.datetime_type = :my_custom_t
                 
               </p>
               <div id="method-i-use_insert_returning-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 458</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 500</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">use_insert_returning?</span>
   <span class="ruby-ivar">@use_insert_returning</span>
 <span class="ruby-keyword">end</span></code></pre>

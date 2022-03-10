@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.0.alpha2</span><br />
+            <span>Ruby on Rails 7.0.2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -141,6 +141,10 @@ end
       
         <li>
           <a href="#method-i-field_id">field_id</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-field_name">field_name</a>
         </li>
       
         <li>
@@ -361,7 +365,7 @@ end
                 
               </p>
               <div id="method-c-_to_partial_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1668</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1683</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">_to_partial_path</span>
   <span class="ruby-ivar">@_to_partial_path</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">name</span>.<span class="ruby-identifier">demodulize</span>.<span class="ruby-identifier">underscore</span>.<span class="ruby-identifier">sub!</span>(<span class="ruby-regexp">/_builder$/</span>, <span class="ruby-string">&quot;&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -396,7 +400,7 @@ end
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1680</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1695</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">object_name</span>, <span class="ruby-identifier">object</span>, <span class="ruby-identifier">template</span>, <span class="ruby-identifier">options</span>)
   <span class="ruby-ivar">@nested_child_index</span> = {}
   <span class="ruby-ivar">@object_name</span>, <span class="ruby-ivar">@object</span>, <span class="ruby-ivar">@template</span>, <span class="ruby-ivar">@options</span> = <span class="ruby-identifier">object_name</span>, <span class="ruby-identifier">object</span>, <span class="ruby-identifier">template</span>, <span class="ruby-identifier">options</span>
@@ -466,6 +470,9 @@ end
 <pre><code>button(&quot;Create post&quot;)
 # =&gt; &lt;button name=&#39;button&#39; type=&#39;submit&#39;&gt;Create post&lt;/button&gt;
 
+button(:draft, value: true)
+# =&gt; &lt;button id=&quot;post_draft&quot; name=&quot;post[draft]&quot; value=&quot;true&quot; type=&quot;submit&quot;&gt;Create post&lt;/button&gt;
+
 button do
   content_tag(:strong, &#39;Ask me!&#39;)
 end
@@ -479,6 +486,13 @@ end
 # =&gt; &lt;button name=&#39;button&#39; type=&#39;submit&#39;&gt;
 #      &lt;strong&gt;Create post&lt;/strong&gt;
 #    &lt;/button&gt;
+
+button(:draft, value: true) do
+  content_tag(:strong, &quot;Save as draft&quot;)
+end
+# =&gt;  &lt;button id=&quot;post_draft&quot; name=&quot;post[draft]&quot; value=&quot;true&quot; type=&quot;submit&quot;&gt;
+#       &lt;strong&gt;Save as draft&lt;/strong&gt;
+#     &lt;/button&gt;
 </code></pre>
             </div>
           
@@ -496,9 +510,14 @@ end
                 
               </p>
               <div id="method-i-button_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2553</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2609</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">button</span>(<span class="ruby-identifier">value</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">value</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">value</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>)
+  <span class="ruby-keyword">case</span> <span class="ruby-identifier">value</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-constant">Hash</span>
+    <span class="ruby-identifier">value</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">value</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-constant">Symbol</span>
+    <span class="ruby-identifier">value</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>, { <span class="ruby-value">name:</span> <span class="ruby-identifier">field_name</span>(<span class="ruby-identifier">value</span>), <span class="ruby-value">id:</span> <span class="ruby-identifier">field_id</span>(<span class="ruby-identifier">value</span>) }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>.<span class="ruby-identifier">to_h</span>)
+  <span class="ruby-keyword">end</span>
   <span class="ruby-identifier">value</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">submit_default_value</span>
 
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
@@ -528,6 +547,15 @@ end
             <div class="description">
               <p>Returns a checkbox tag tailored for accessing a specified attribute (identified by <code>method</code>) on an object assigned to the template (identified by <code>object</code>). This object must be an instance object (@object) and not a local object. It&#39;s intended that <code>method</code> returns an integer and if that integer is above zero, then the checkbox is checked. Additional options on the input tag can be passed as a hash with <code>options</code>. The <code>checked_value</code> defaults to 1 while the default <code>unchecked_value</code> is set to 0 which is convenient for boolean values.</p>
 
+<h4 id="method-i-check_box-label-Options">Options</h4>
+<ul><li>
+<p>Any standard HTML attributes for the tag can be passed in, for example <code>:class</code>.</p>
+</li><li>
+<p><code>:checked</code> - <code>true</code> or <code>false</code> forces the state of the checkbox to be checked or not.</p>
+</li><li>
+<p><code>:include_hidden</code> - If set to false, the auxiliary hidden field described below will not be generated.</p>
+</li></ul>
+
 <h4 id="method-i-check_box-label-Gotcha">Gotcha</h4>
 
 <p>The HTML specification says unchecked check boxes are not successful, and thus web browsers do not send them. Unfortunately this introduces a gotcha: if an <code>Invoice</code> model has a <code>paid</code> flag, and in the form that edits a paid invoice the user unchecks its check box, no <code>paid</code> parameter is sent. So, any mass-assignment idiom like</p>
@@ -537,7 +565,7 @@ end
 
 <p>wouldn&#39;t update the flag.</p>
 
-<p>To prevent this the helper generates an auxiliary hidden field before the very check box. The hidden field has the same name and its attributes mimic an unchecked check box.</p>
+<p>To prevent this the helper generates an auxiliary hidden field before every check box. The hidden field has the same name and its attributes mimic an unchecked check box.</p>
 
 <p>This way, the client either sends only the hidden field (representing the check box is unchecked), or both fields. Since the HTML specification says key/value pairs have to be sent in the same order they appear in the form, and parameters extraction gets the last occurrence of any repeated key in the query string, that works for ordinary forms.</p>
 
@@ -552,6 +580,8 @@ end
 <p>because parameter name repetition is precisely what Rails seeks to distinguish the elements of the array. For each item with a checked check box you get an extra ghost item with only that attribute, assigned to “0”.</p>
 
 <p>In that case it is preferable to either use <code>check_box_tag</code> or to use hashes instead of arrays.</p>
+
+<h4 id="method-i-check_box-label-Examples">Examples</h4>
 
 <pre><code># Let&#39;s say that @post.validated? is 1:
 check_box(&quot;validated&quot;)
@@ -584,7 +614,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-check_box_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2388</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2433</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">check_box</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-identifier">checked_value</span> = <span class="ruby-string">&quot;1&quot;</span>, <span class="ruby-identifier">unchecked_value</span> = <span class="ruby-string">&quot;0&quot;</span>)
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">check_box</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-identifier">checked_value</span>, <span class="ruby-identifier">unchecked_value</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -627,7 +657,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-collection_check_boxes_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 902</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 905</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">collection_check_boxes</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">collection</span>, <span class="ruby-identifier">value_method</span>, <span class="ruby-identifier">text_method</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-identifier">html_options</span> = {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">collection_check_boxes</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">collection</span>, <span class="ruby-identifier">value_method</span>, <span class="ruby-identifier">text_method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-ivar">@default_html_options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">html_options</span>), <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -670,7 +700,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-collection_radio_buttons_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 914</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 917</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">collection_radio_buttons</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">collection</span>, <span class="ruby-identifier">value_method</span>, <span class="ruby-identifier">text_method</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-identifier">html_options</span> = {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">collection_radio_buttons</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">collection</span>, <span class="ruby-identifier">value_method</span>, <span class="ruby-identifier">text_method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-ivar">@default_html_options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">html_options</span>), <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -713,7 +743,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-collection_select_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 854</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 857</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">collection_select</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">collection</span>, <span class="ruby-identifier">value_method</span>, <span class="ruby-identifier">text_method</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-identifier">html_options</span> = {})
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">collection_select</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">collection</span>, <span class="ruby-identifier">value_method</span>, <span class="ruby-identifier">text_method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-ivar">@default_html_options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">html_options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -756,7 +786,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-color_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1781</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1818</span>
       </code></pre>
               </div>
             </div>
@@ -797,7 +827,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-date_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1833</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1870</span>
       </code></pre>
               </div>
             </div>
@@ -838,7 +868,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-date_select_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/date_helper.rb, line 1170</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/date_helper.rb, line 1225</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">date_select</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-identifier">html_options</span> = {})
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">date_select</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-identifier">html_options</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -881,7 +911,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-datetime_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1859</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1896</span>
       </code></pre>
               </div>
             </div>
@@ -922,7 +952,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-datetime_local_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1872</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1909</span>
       </code></pre>
               </div>
             </div>
@@ -963,7 +993,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-datetime_select_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/date_helper.rb, line 1194</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/date_helper.rb, line 1249</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">datetime_select</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-identifier">html_options</span> = {})
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">datetime_select</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-identifier">html_options</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1006,7 +1036,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-email_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1924</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1961</span>
       </code></pre>
               </div>
             </div>
@@ -1016,7 +1046,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
         <div class="method">
           <h3 id="method-i-field_id">
             
-              field_id(method, *suffixes, index: @index)
+              field_id(method, *suffixes, namespace: @options[:namespace], index: @index)
             
           </h3>
 
@@ -1050,9 +1080,59 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-field_id_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1737</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">field_id</span>(<span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">suffixes</span>, <span class="ruby-value">index:</span> <span class="ruby-ivar">@index</span>)
-  <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">field_id</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">suffixes</span>, <span class="ruby-value">index:</span> <span class="ruby-identifier">index</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1752</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">field_id</span>(<span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">suffixes</span>, <span class="ruby-value">namespace:</span> <span class="ruby-ivar">@options</span>[<span class="ruby-value">:namespace</span>], <span class="ruby-value">index:</span> <span class="ruby-ivar">@index</span>)
+  <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">field_id</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">suffixes</span>, <span class="ruby-value">namespace:</span> <span class="ruby-identifier">namespace</span>, <span class="ruby-value">index:</span> <span class="ruby-identifier">index</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-field_name">
+            
+              field_name(method, *methods, multiple: false, index: @index)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Generate an HTML <code>name</code> attribute value for the given name and field combination</p>
+
+<p>Return the value generated by the <code>FormBuilder</code> for the given attribute name.</p>
+
+<pre><code>&lt;%= form_for @post do |f| %&gt;
+  &lt;%= f.text_field :title, name: f.field_name(:title, :subtitle) %&gt;
+  &lt;%# =&gt; &lt;input type=&quot;text&quot; name=&quot;post[title][subtitle]&quot;&gt;
+&lt;% end %&gt;
+
+&lt;%= form_for @post do |f| %&gt;
+  &lt;%= f.field_tag :tag, name: f.field_name(:tag, multiple: true) %&gt;
+  &lt;%# =&gt; &lt;input type=&quot;text&quot; name=&quot;post[tag][]&quot;&gt;
+&lt;% end %&gt;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-field_name_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1772</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">field_name</span>(<span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">methods</span>, <span class="ruby-value">multiple:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">index:</span> <span class="ruby-ivar">@index</span>)
+  <span class="ruby-identifier">object_name</span> = <span class="ruby-ivar">@options</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-value">:as</span>) { <span class="ruby-ivar">@object_name</span> }
+
+  <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">field_name</span>(<span class="ruby-identifier">object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">methods</span>, <span class="ruby-value">index:</span> <span class="ruby-identifier">index</span>, <span class="ruby-value">multiple:</span> <span class="ruby-identifier">multiple</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -1085,7 +1165,7 @@ check_box(&quot;accepted&quot;, { class: &#39;eula_check&#39; }, &quot;yes&quot;
                 
               </p>
               <div id="method-i-fields_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2252</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2289</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">fields</span>(<span class="ruby-identifier">scope</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-value">model:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">options</span>[<span class="ruby-value">:allow_method_names_outside_object</span>] = <span class="ruby-keyword">true</span>
   <span class="ruby-identifier">options</span>[<span class="ruby-value">:skip_default_ids</span>] = <span class="ruby-operator">!</span><span class="ruby-constant">FormHelper</span>.<span class="ruby-identifier">form_with_generates_ids</span>
@@ -1321,7 +1401,7 @@ end
                 
               </p>
               <div id="method-i-fields_for_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2215</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2252</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">fields_for</span>(<span class="ruby-identifier">record_name</span>, <span class="ruby-identifier">record_object</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">fields_options</span> = {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">fields_options</span>, <span class="ruby-identifier">record_object</span> = <span class="ruby-identifier">record_object</span>, <span class="ruby-keyword">nil</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">record_object</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">record_object</span>.<span class="ruby-identifier">extractable_options?</span>
   <span class="ruby-identifier">fields_options</span>[<span class="ruby-value">:builder</span>] <span class="ruby-operator">||=</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:builder</span>]
@@ -1334,7 +1414,7 @@ end
       <span class="ruby-keyword">return</span> <span class="ruby-identifier">fields_for_with_nested_attributes</span>(<span class="ruby-identifier">record_name</span>, <span class="ruby-identifier">record_object</span>, <span class="ruby-identifier">fields_options</span>, <span class="ruby-identifier">block</span>)
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">record_object</span> = <span class="ruby-identifier">record_name</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Array</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">record_name</span>.<span class="ruby-identifier">last</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">record_name</span>
+    <span class="ruby-identifier">record_object</span> = <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">_object_for_form_builder</span>(<span class="ruby-identifier">record_name</span>)
     <span class="ruby-identifier">record_name</span>   = <span class="ruby-identifier">model_name_from_record_or_class</span>(<span class="ruby-identifier">record_object</span>).<span class="ruby-identifier">param_key</span>
   <span class="ruby-keyword">end</span>
 
@@ -1383,6 +1463,8 @@ end
 </li><li>
 <p><code>:multiple</code> - If set to true, *in most updated browsers* the user will be allowed to select multiple files.</p>
 </li><li>
+<p><code>:include_hidden</code> - When <code>multiple: true</code> and <code>include_hidden: true</code>, the field will be prefixed with an <code>&lt;input type=&quot;hidden&quot;&gt;</code> field with an empty value to support submitting an empty collection of files.</p>
+</li><li>
 <p><code>:accept</code> - If set to one or multiple mime-types, the user will be suggested a filter when choosing a file. You still need to set up model validations.</p>
 </li></ul>
 
@@ -1424,7 +1506,7 @@ file_field(:file, class: &#39;file_input&#39;)
                 
               </p>
               <div id="method-i-file_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2470</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2516</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">file_field</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">multipart</span> = <span class="ruby-keyword">true</span>
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">file_field</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>))
@@ -1468,7 +1550,7 @@ file_field(:file, class: &#39;file_input&#39;)
                 
               </p>
               <div id="method-i-grouped_collection_select_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 866</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 869</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">grouped_collection_select</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">collection</span>, <span class="ruby-identifier">group_method</span>, <span class="ruby-identifier">group_label_method</span>, <span class="ruby-identifier">option_key_method</span>, <span class="ruby-identifier">option_value_method</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-identifier">html_options</span> = {})
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">grouped_collection_select</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">collection</span>, <span class="ruby-identifier">group_method</span>, <span class="ruby-identifier">group_label_method</span>, <span class="ruby-identifier">option_key_method</span>, <span class="ruby-identifier">option_value_method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-ivar">@default_html_options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">html_options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -1518,7 +1600,7 @@ hidden_field(:token)
                 
               </p>
               <div id="method-i-hidden_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2432</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2477</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">hidden_field</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-ivar">@emitted_hidden_id</span> = <span class="ruby-keyword">true</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">method</span> <span class="ruby-operator">==</span> <span class="ruby-value">:id</span>
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">hidden_field</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>))
@@ -1567,7 +1649,7 @@ hidden_field(:token)
                 
               </p>
               <div id="method-i-id_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1717</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1732</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">id</span>
   <span class="ruby-identifier">options</span>.<span class="ruby-identifier">dig</span>(<span class="ruby-value">:html</span>, <span class="ruby-value">:id</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1665,7 +1747,7 @@ end
                 
               </p>
               <div id="method-i-label_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2327</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2364</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">label</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">text</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">label</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">text</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1708,7 +1790,7 @@ end
                 
               </p>
               <div id="method-i-month_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1885</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1922</span>
       </code></pre>
               </div>
             </div>
@@ -1741,7 +1823,7 @@ end
                 
               </p>
               <div id="method-i-multipart-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1660</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1675</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">multipart=</span>(<span class="ruby-identifier">multipart</span>)
   <span class="ruby-ivar">@multipart</span> = <span class="ruby-identifier">multipart</span>
 
@@ -1788,7 +1870,7 @@ end
                 
               </p>
               <div id="method-i-number_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1937</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1974</span>
       </code></pre>
               </div>
             </div>
@@ -1829,7 +1911,7 @@ end
                 
               </p>
               <div id="method-i-password_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1755</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1792</span>
       </code></pre>
               </div>
             </div>
@@ -1870,7 +1952,7 @@ end
                 
               </p>
               <div id="method-i-phone_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1820</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1857</span>
       </code></pre>
               </div>
             </div>
@@ -1918,7 +2000,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-radio_button_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2410</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2455</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">radio_button</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">tag_value</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">radio_button</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">tag_value</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -1961,7 +2043,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-range_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1950</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1987</span>
       </code></pre>
               </div>
             </div>
@@ -1994,7 +2076,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-rich_text_area_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/app/helpers/action_text/tag_helper.rb, line 81</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/app/helpers/action_text/tag_helper.rb, line 85</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">rich_text_area</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">rich_text_area</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -2037,7 +2119,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-search_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1794</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1831</span>
       </code></pre>
               </div>
             </div>
@@ -2078,7 +2160,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-select_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 842</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 845</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">select</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">choices</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-identifier">html_options</span> = {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">select</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">choices</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-ivar">@default_html_options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">html_options</span>), <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -2138,7 +2220,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-submit_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2502</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 2548</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">submit</span>(<span class="ruby-identifier">value</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">value</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">value</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>)
   <span class="ruby-identifier">value</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">submit_default_value</span>
@@ -2183,7 +2265,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-telephone_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1807</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1844</span>
       </code></pre>
               </div>
             </div>
@@ -2224,7 +2306,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-text_area_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1768</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1805</span>
       </code></pre>
               </div>
             </div>
@@ -2265,7 +2347,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-text_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1742</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1779</span>
       </code></pre>
               </div>
             </div>
@@ -2306,7 +2388,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-time_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1846</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1883</span>
       </code></pre>
               </div>
             </div>
@@ -2347,7 +2429,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-time_select_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/date_helper.rb, line 1182</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/date_helper.rb, line 1237</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">time_select</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-identifier">html_options</span> = {})
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">time_select</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-identifier">html_options</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -2390,7 +2472,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-time_zone_select_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 878</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 881</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">time_zone_select</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">priority_zones</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-identifier">html_options</span> = {})
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">time_zone_select</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">priority_zones</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-ivar">@default_html_options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">html_options</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -2425,7 +2507,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-to_model_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1676</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1691</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_model</span>
   <span class="ruby-keyword">self</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2460,7 +2542,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-to_partial_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1672</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1687</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_partial_path</span>
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">_to_partial_path</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -2503,7 +2585,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-url_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1911</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1948</span>
       </code></pre>
               </div>
             </div>
@@ -2544,7 +2626,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-week_field_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1898</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_helper.rb, line 1935</span>
       </code></pre>
               </div>
             </div>
@@ -2585,7 +2667,7 @@ radio_button(&quot;receive_newsletter&quot;, &quot;no&quot;)
                 
               </p>
               <div id="method-i-weekday_select_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 890</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 893</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">weekday_select</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-identifier">html_options</span> = {})
   <span class="ruby-ivar">@template</span>.<span class="ruby-identifier">weekday_select</span>(<span class="ruby-ivar">@object_name</span>, <span class="ruby-identifier">method</span>, <span class="ruby-identifier">objectify_options</span>(<span class="ruby-identifier">options</span>), <span class="ruby-ivar">@default_html_options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">html_options</span>))
 <span class="ruby-keyword">end</span></code></pre>

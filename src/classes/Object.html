@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.0.alpha2</span><br />
+            <span>Ruby on Rails 7.0.2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -200,7 +200,28 @@ layout: default
 
           
             <div class="description">
-              <p>A duck-type assistant method. For example, Active Support extends <a href="Date.html"><code>Date</code></a> to define an <code>acts_like_date?</code> method, and extends <a href="Time.html"><code>Time</code></a> to define <code>acts_like_time?</code>. As a result, we can do <code>x.acts_like?(:time)</code> and <code>x.acts_like?(:date)</code> to do duck-type-safe comparisons, since classes that we want to act like <a href="Time.html"><code>Time</code></a> simply need to define an <code>acts_like_time?</code> method.</p>
+              <p>Provides a way to check whether some class acts like some other class based on the existence of an appropriately-named marker method.</p>
+
+<p>A class that provides the same interface as <code>SomeClass</code> may define a marker method named <code>acts_like_some_class?</code> to signal its compatibility to callers of <code>acts_like?(:some_class)</code>.</p>
+
+<p>For example, Active Support extends <code>Date</code> to define an <code>acts_like_date?</code> method, and extends <code>Time</code> to define <code>acts_like_time?</code>. As a result, developers can call <code>x.acts_like?(:time)</code> and <code>x.acts_like?(:date)</code> to test duck-type compatibility, and classes that are able to act like <code>Time</code> can also define an <code>acts_like_time?</code> method to interoperate.</p>
+
+<p>Note that the marker method is only expected to exist. It isn&#39;t called, so its body or return value are irrelevant.</p>
+
+<h4 id="method-i-acts_like-3F-label-Example-3A+A+class+that+provides+the+same+interface+as+String">Example: A class that provides the same interface as <code>String</code></h4>
+
+<p>This class may define:</p>
+
+<pre><code>class Stringish
+  def acts_like_string?
+  end
+end
+</code></pre>
+
+<p>Then client code can query for duck-type-safeness this way:</p>
+
+<pre><code>Stringish.new.acts_like?(:string) # =&gt; true
+</code></pre>
             </div>
           
 
@@ -217,7 +238,7 @@ layout: default
                 
               </p>
               <div id="method-i-acts_like-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/acts_like.rb, line 9</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/acts_like.rb, line 33</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">acts_like?</span>(<span class="ruby-identifier">duck</span>)
   <span class="ruby-keyword">case</span> <span class="ruby-identifier">duck</span>
   <span class="ruby-keyword">when</span> <span class="ruby-value">:time</span>
@@ -941,6 +962,21 @@ end
   end
 end
 </code></pre>
+
+<p>When the block argument is omitted, the decorated <a href="Object.html"><code>Object</code></a> instance is returned:</p>
+
+<pre><code>module MyStyledHelpers
+  def styled
+    with_options style: &quot;color: red;&quot;
+  end
+end
+
+# styled.link_to &quot;I&#39;m red&quot;, &quot;/&quot;
+# #=&gt; &lt;a href=&quot;/&quot; style=&quot;color: red;&quot;&gt;I&#39;m red&lt;/a&gt;
+
+# styled.button_tag &quot;I&#39;m red too!&quot;
+# #=&gt; &lt;button style=&quot;color: red;&quot;&gt;I&#39;m red too!&lt;/button&gt;
+</code></pre>
             </div>
           
 
@@ -957,10 +993,15 @@ end
                 
               </p>
               <div id="method-i-with_options_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/with_options.rb, line 78</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/with_options.rb, line 92</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">with_options</span>(<span class="ruby-identifier">options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">option_merger</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">OptionMerger</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">options</span>)
-  <span class="ruby-identifier">block</span>.<span class="ruby-identifier">arity</span>.<span class="ruby-identifier">zero?</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">option_merger</span>.<span class="ruby-identifier">instance_eval</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) <span class="ruby-operator">:</span> <span class="ruby-identifier">block</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">option_merger</span>)
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">block</span>
+    <span class="ruby-identifier">block</span>.<span class="ruby-identifier">arity</span>.<span class="ruby-identifier">zero?</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">option_merger</span>.<span class="ruby-identifier">instance_eval</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) <span class="ruby-operator">:</span> <span class="ruby-identifier">block</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">option_merger</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">option_merger</span>
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
