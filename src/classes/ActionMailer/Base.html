@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.2</span><br />
+            <span>Ruby on Rails 7.0.3</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -118,7 +118,7 @@ Thanks for joining our service! Please check back often.
 &lt;%= truncate(@note.body, length: 25) %&gt;
 </code></pre>
 
-<p>If you need to access the subject, from or the recipients in the view, you can do that through message object:</p>
+<p>If you need to access the subject, from, or the recipients in the view, you can do that through message object:</p>
 
 <pre><code>You got a new note from &lt;%= message.from %&gt;!
 &lt;%= truncate(@note.body, length: 25) %&gt;
@@ -158,7 +158,7 @@ mail = NotifierMailer.welcome(User.first)      # =&gt; an ActionMailer::MessageD
 mail.deliver_now                               # generates and sends the email now
 </code></pre>
 
-<p>The <code>ActionMailer::MessageDelivery</code> class is a wrapper around a delegate that will call your method to generate the mail. If you want direct access to the delegator, or <code>Mail::Message</code>, you can call the <code>message</code> method on the <code>ActionMailer::MessageDelivery</code> object.</p>
+<p>The <a href="MessageDelivery.html"><code>ActionMailer::MessageDelivery</code></a> class is a wrapper around a delegate that will call your method to generate the mail. If you want direct access to the delegator, or <code>Mail::Message</code>, you can call the <code>message</code> method on the <a href="MessageDelivery.html"><code>ActionMailer::MessageDelivery</code></a> object.</p>
 
 <pre><code>NotifierMailer.welcome(User.first).message     # =&gt; a Mail::Message object
 </code></pre>
@@ -329,9 +329,30 @@ end
 end
 </code></pre>
 
-<p>Callbacks in Action Mailer are implemented using <code>AbstractController::Callbacks</code>, so you can define and configure callbacks in the same manner that you would use callbacks in classes that inherit from <code>ActionController::Base</code>.</p>
+<p>Callbacks in Action Mailer are implemented using <a href="../AbstractController/Callbacks.html"><code>AbstractController::Callbacks</code></a>, so you can define and configure callbacks in the same manner that you would use callbacks in classes that inherit from <a href="../ActionController/Base.html"><code>ActionController::Base</code></a>.</p>
 
 <p>Note that unless you have a specific reason to do so, you should prefer using <code>before_action</code> rather than <code>after_action</code> in your Action Mailer classes so that headers are parsed properly.</p>
+
+<h1 id="class-ActionMailer::Base-label-Rescuing+Errors">Rescuing Errors</h1>
+
+<p><code>rescue</code> blocks inside of a mailer method cannot rescue errors that occur outside of rendering – for example, record deserialization errors in a background job, or errors from a third-party mail delivery service.</p>
+
+<p>To rescue errors that occur during any part of the mailing process, use <a href="../ActiveSupport/Rescuable/ClassMethods.html#method-i-rescue_from">rescue_from</a>:</p>
+
+<pre><code>class NotifierMailer &lt; ApplicationMailer
+  rescue_from ActiveJob::DeserializationError do
+    # ...
+  end
+
+  rescue_from &quot;SomeThirdPartyService::ApiError&quot; do
+    # ...
+  end
+
+  def notify(recipient)
+    mail(to: recipient, subject: &quot;Notification&quot;)
+  end
+end
+</code></pre>
 
 <h1 id="class-ActionMailer::Base-label-Previewing+emails">Previewing emails</h1>
 
@@ -735,7 +756,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-default_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 547</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 570</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">default</span>(<span class="ruby-identifier">value</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">default_params</span> = <span class="ruby-identifier">default_params</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">value</span>).<span class="ruby-identifier">freeze</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">value</span>
   <span class="ruby-identifier">default_params</span>
@@ -800,7 +821,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-email_address_with_name_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 572</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 595</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">email_address_with_name</span>(<span class="ruby-identifier">address</span>, <span class="ruby-identifier">name</span>)
   <span class="ruby-constant">Mail</span><span class="ruby-operator">::</span><span class="ruby-constant">Address</span>.<span class="ruby-identifier">new</span>.<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">builder</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">builder</span>.<span class="ruby-identifier">address</span> = <span class="ruby-identifier">address</span>
@@ -842,7 +863,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-mailer_name_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 535</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 558</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">mailer_name</span>
   <span class="ruby-ivar">@mailer_name</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">anonymous?</span> <span class="ruby-operator">?</span> <span class="ruby-string">&quot;anonymous&quot;</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">name</span>.<span class="ruby-identifier">underscore</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -877,7 +898,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 609</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 632</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>
   <span class="ruby-keyword">super</span>()
   <span class="ruby-ivar">@_mail_was_called</span> = <span class="ruby-keyword">false</span>
@@ -897,7 +918,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
 
           
             <div class="description">
-              <p>Register an Interceptor which will be called before mail is sent. Either a class, string or symbol can be passed in as the Interceptor. If a string or symbol is passed in it will be camelized and constantized.</p>
+              <p>Register an Interceptor which will be called before mail is sent. Either a class, string, or symbol can be passed in as the Interceptor. If a string or symbol is passed in it will be camelized and constantized.</p>
             </div>
           
 
@@ -914,7 +935,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-register_interceptor_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 512</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 535</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">register_interceptor</span>(<span class="ruby-identifier">interceptor</span>)
   <span class="ruby-constant">Mail</span>.<span class="ruby-identifier">register_interceptor</span>(<span class="ruby-identifier">observer_class_for</span>(<span class="ruby-identifier">interceptor</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -949,7 +970,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-register_interceptors_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 486</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 509</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">register_interceptors</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">interceptors</span>)
   <span class="ruby-identifier">interceptors</span>.<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">compact</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">interceptor</span><span class="ruby-operator">|</span> <span class="ruby-identifier">register_interceptor</span>(<span class="ruby-identifier">interceptor</span>) }
 <span class="ruby-keyword">end</span></code></pre>
@@ -967,7 +988,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
 
           
             <div class="description">
-              <p>Register an Observer which will be notified when mail is delivered. Either a class, string or symbol can be passed in as the Observer. If a string or symbol is passed in it will be camelized and constantized.</p>
+              <p>Register an Observer which will be notified when mail is delivered. Either a class, string, or symbol can be passed in as the Observer. If a string or symbol is passed in it will be camelized and constantized.</p>
             </div>
           
 
@@ -984,7 +1005,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-register_observer_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 498</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 521</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">register_observer</span>(<span class="ruby-identifier">observer</span>)
   <span class="ruby-constant">Mail</span>.<span class="ruby-identifier">register_observer</span>(<span class="ruby-identifier">observer_class_for</span>(<span class="ruby-identifier">observer</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -1019,7 +1040,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-register_observers_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 476</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 499</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">register_observers</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">observers</span>)
   <span class="ruby-identifier">observers</span>.<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">compact</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">observer</span><span class="ruby-operator">|</span> <span class="ruby-identifier">register_observer</span>(<span class="ruby-identifier">observer</span>) }
 <span class="ruby-keyword">end</span></code></pre>
@@ -1037,7 +1058,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
 
           
             <div class="description">
-              <p>Unregister a previously registered Interceptor. Either a class, string or symbol can be passed in as the Interceptor. If a string or symbol is passed in it will be camelized and constantized.</p>
+              <p>Unregister a previously registered Interceptor. Either a class, string, or symbol can be passed in as the Interceptor. If a string or symbol is passed in it will be camelized and constantized.</p>
             </div>
           
 
@@ -1054,7 +1075,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-unregister_interceptor_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 519</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 542</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">unregister_interceptor</span>(<span class="ruby-identifier">interceptor</span>)
   <span class="ruby-constant">Mail</span>.<span class="ruby-identifier">unregister_interceptor</span>(<span class="ruby-identifier">observer_class_for</span>(<span class="ruby-identifier">interceptor</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -1089,7 +1110,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-unregister_interceptors_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 491</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 514</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">unregister_interceptors</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">interceptors</span>)
   <span class="ruby-identifier">interceptors</span>.<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">compact</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">interceptor</span><span class="ruby-operator">|</span> <span class="ruby-identifier">unregister_interceptor</span>(<span class="ruby-identifier">interceptor</span>) }
 <span class="ruby-keyword">end</span></code></pre>
@@ -1107,7 +1128,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
 
           
             <div class="description">
-              <p>Unregister a previously registered Observer. Either a class, string or symbol can be passed in as the Observer. If a string or symbol is passed in it will be camelized and constantized.</p>
+              <p>Unregister a previously registered Observer. Either a class, string, or symbol can be passed in as the Observer. If a string or symbol is passed in it will be camelized and constantized.</p>
             </div>
           
 
@@ -1124,7 +1145,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-unregister_observer_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 505</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 528</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">unregister_observer</span>(<span class="ruby-identifier">observer</span>)
   <span class="ruby-constant">Mail</span>.<span class="ruby-identifier">unregister_observer</span>(<span class="ruby-identifier">observer_class_for</span>(<span class="ruby-identifier">observer</span>))
 <span class="ruby-keyword">end</span></code></pre>
@@ -1159,7 +1180,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-unregister_observers_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 481</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 504</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">unregister_observers</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">observers</span>)
   <span class="ruby-identifier">observers</span>.<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">compact</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">observer</span><span class="ruby-operator">|</span> <span class="ruby-identifier">unregister_observer</span>(<span class="ruby-identifier">observer</span>) }
 <span class="ruby-keyword">end</span></code></pre>
@@ -1197,7 +1218,7 @@ config.action_mailer.preview_interceptors :css_inline_styler
                 
               </p>
               <div id="method-c-supports_path-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 907</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 931</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">supports_path?</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-keyword">false</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1264,7 +1285,7 @@ mail.attachments[0]                # =&gt; Mail::Part (first attachment)
                 
               </p>
               <div id="method-i-attachments_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 725</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 749</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attachments</span>
   <span class="ruby-keyword">if</span> <span class="ruby-ivar">@_mail_was_called</span>
     <span class="ruby-constant">LateAttachmentsProxy</span>.<span class="ruby-identifier">new</span>(<span class="ruby-ivar">@_message</span>.<span class="ruby-identifier">attachments</span>)
@@ -1305,7 +1326,7 @@ mail.attachments[0]                # =&gt; Mail::Part (first attachment)
                 
               </p>
               <div id="method-i-email_address_with_name_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 649</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 673</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">email_address_with_name</span>(<span class="ruby-identifier">address</span>, <span class="ruby-identifier">name</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">email_address_with_name</span>(<span class="ruby-identifier">address</span>, <span class="ruby-identifier">name</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1381,7 +1402,7 @@ mail.attachments[0]                # =&gt; Mail::Part (first attachment)
                 
               </p>
               <div id="method-i-headers_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 687</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 711</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">headers</span>(<span class="ruby-identifier">args</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">args</span>
     <span class="ruby-ivar">@_message</span>.<span class="ruby-identifier">headers</span>(<span class="ruby-identifier">args</span>)
@@ -1498,7 +1519,7 @@ end
                 
               </p>
               <div id="method-i-mail_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 834</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 858</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">mail</span>(<span class="ruby-identifier">headers</span> = {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-identifier">message</span> <span class="ruby-keyword">if</span> <span class="ruby-ivar">@_mail_was_called</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">headers</span>.<span class="ruby-identifier">blank?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">block</span>
 
@@ -1564,7 +1585,7 @@ end
                 
               </p>
               <div id="method-i-mailer_name_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 642</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 666</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">mailer_name</span>
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">mailer_name</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1602,7 +1623,7 @@ end
                 
               </p>
               <div id="method-i-default_i18n_subject_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 901</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 925</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">default_i18n_subject</span>(<span class="ruby-identifier">interpolations</span> = {}) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">mailer_scope</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">mailer_name</span>.<span class="ruby-identifier">tr</span>(<span class="ruby-string">&quot;/&quot;</span>, <span class="ruby-string">&quot;.&quot;</span>)
   <span class="ruby-constant">I18n</span>.<span class="ruby-identifier">t</span>(<span class="ruby-value">:subject</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">interpolations</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-value">scope:</span> [<span class="ruby-identifier">mailer_scope</span>, <span class="ruby-identifier">action_name</span>], <span class="ruby-value">default:</span> <span class="ruby-identifier">action_name</span>.<span class="ruby-identifier">humanize</span>))
@@ -1642,7 +1663,7 @@ end
                 
               </p>
               <div id="method-i-set_content_type_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 879</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/base.rb, line 903</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">set_content_type</span>(<span class="ruby-identifier">m</span>, <span class="ruby-identifier">user_content_type</span>, <span class="ruby-identifier">class_default</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">params</span> = <span class="ruby-identifier">m</span>.<span class="ruby-identifier">content_type_parameters</span> <span class="ruby-operator">||</span> {}
   <span class="ruby-keyword">case</span>

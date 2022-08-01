@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.2</span><br />
+            <span>Ruby on Rails 7.0.3</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -70,80 +70,71 @@ layout: default
 
 <p>The serialization format may be YAML, JSON, or any custom format using a custom coder class.</p>
 
-<h3 id="method-i-serialize-label-Serialization+formats"><a href="../Serialization.html"><code>Serialization</code></a> formats</h3>
-
-<pre><code>serialize attr_name [, class_name_or_coder]
-
-                     |                           |  database storage   |
-class_name_or_coder  | attribute read/write type | serialized | NULL   |
----------------------+---------------------------+------------+--------+
-  &lt;not given&gt;        | any value that supports   |    YAML    |        |
-                     |   .to_yaml                |            |        |
-                     |                           |            |        |
-Array                | Array **                  |    YAML    |  []    |
-                     |                           |            |        |
-Hash                 | Hash **                   |    YAML    |  {}    |
-                     |                           |            |        |
-JSON                 | any value that supports   |    JSON    |        |
-                     |   .to_json                |            |        |
-                     |                           |            |        |
-&lt;custom coder class&gt; | any value supported by    |   custom   | custom |
-                     | the custom coder class    |            |        |
-</code></pre>
-
-<p>** If <code>class_name_or_coder</code> is <code>Array</code> or <code>Hash</code>, values retrieved will always be of that type, and any value assigned must be of that type or <code>SerializationTypeMismatch</code> will be raised.</p>
-
-<h4 id="method-i-serialize-label-Custom+coders">Custom coders</h4>
-
-<p>A custom coder class or module may be given. This must have <code>self.load</code> and <code>self.dump</code> class/module methods. <code>self.dump(object)</code> will be called to serialize an object and should return the serialized value to be stored in the database (<code>nil</code> to store as <code>NULL</code>). <code>self.load(string)</code> will be called to reverse the process and load (unserialize) from the database.</p>
-
 <p>Keep in mind that database adapters handle certain serialization tasks for you. For instance: <code>json</code> and <code>jsonb</code> types in PostgreSQL will be converted between JSON object/array syntax and Ruby <code>Hash</code> or <code>Array</code> objects transparently. There is no need to use <a href="ClassMethods.html#method-i-serialize"><code>serialize</code></a> in this case.</p>
 
 <p>For more complex cases, such as conversion to or from your application domain objects, consider using the <a href="../../Attributes.html"><code>ActiveRecord::Attributes</code></a> API.</p>
 
 <h4 id="method-i-serialize-label-Parameters">Parameters</h4>
 <ul><li>
-<p><code>attr_name</code> - The field name that should be serialized.</p>
+<p><code>attr_name</code> - The name of the attribute to serialize.</p>
 </li><li>
-<p><code>class_name_or_coder</code> - Optional, may be be <code>Array</code> or <code>Hash</code> or <code>JSON</code> or a custom coder class or module which responds to <code>.load</code> and <code>.dump</code>. See table above.</p>
+<p><code>class_name_or_coder</code> - Optional. May be one of the following:</p>
+<ul><li>
+<p><em>default</em> - The attribute value will be serialized as YAML. The attribute value must respond to <code>to_yaml</code>.</p>
+</li><li>
+<p><code>Array</code> - The attribute value will be serialized as YAML, but an empty <code>Array</code> will be serialized as <code>NULL</code>. The attribute value must be an <code>Array</code>.</p>
+</li><li>
+<p><code>Hash</code> - The attribute value will be serialized as YAML, but an empty <code>Hash</code> will be serialized as <code>NULL</code>. The attribute value must be a <code>Hash</code>.</p>
+</li><li>
+<p><code>JSON</code> - The attribute value will be serialized as JSON. The attribute value must respond to <code>to_json</code>.</p>
+</li><li>
+<p><em>custom coder</em> - The attribute value will be serialized using the coder&#39;s <code>dump(value)</code> method, and will be deserialized using the coder&#39;s <code>load(string)</code> method. The <code>dump</code> method may return <code>nil</code> to serialize the value as <code>NULL</code>.</p>
+</li></ul>
 </li></ul>
 
 <h4 id="method-i-serialize-label-Options">Options</h4>
+<ul><li>
+<p><code>:default</code> - The default value to use when no value is provided. If this option is not passed, the previous default value (if any) will be used. Otherwise, the default will be <code>nil</code>.</p>
+</li></ul>
 
-<p><code>default</code> The default value to use when no value is provided. If this option is not passed, the previous default value (if any) will be used. Otherwise, the default will be <code>nil</code>.</p>
+<h4 id="method-i-serialize-label-Examples">Examples</h4>
 
-<h4 id="method-i-serialize-label-Example">Example</h4>
+<h5 id="method-i-serialize-label-Serialize+the+preferences+attribute+using+YAML">Serialize the <code>preferences</code> attribute using YAML</h5>
 
-<pre><code># Serialize a preferences attribute using YAML coder.
-class User &lt; ActiveRecord::Base
+<pre><code>class User &lt; ActiveRecord::Base
   serialize :preferences
 end
+</code></pre>
 
-# Serialize preferences using JSON as coder.
-class User &lt; ActiveRecord::Base
+<h5 id="method-i-serialize-label-Serialize+the+preferences+attribute+using+JSON">Serialize the <code>preferences</code> attribute using JSON</h5>
+
+<pre><code>class User &lt; ActiveRecord::Base
   serialize :preferences, JSON
 end
+</code></pre>
 
-# Serialize preferences as Hash using YAML coder.
-class User &lt; ActiveRecord::Base
+<h5 id="method-i-serialize-label-Serialize+the+preferences+Hash+using+YAML">Serialize the <code>preferences</code> <code>Hash</code> using YAML</h5>
+
+<pre><code>class User &lt; ActiveRecord::Base
   serialize :preferences, Hash
 end
+</code></pre>
 
-# Serialize preferences using a custom coder.
-class Rot13JSON
+<h5 id="method-i-serialize-label-Serialize+the+preferences+attribute+using+a+custom+coder">Serialize the <code>preferences</code> attribute using a custom coder</h5>
+
+<pre><code>class Rot13JSON
   def self.rot13(string)
     string.tr(&quot;a-zA-Z&quot;, &quot;n-za-mN-ZA-M&quot;)
   end
 
-  # returns serialized string that will be stored in the database
-  def self.dump(object)
-    ActiveSupport::JSON.encode(object).rot13
+  # Serializes an attribute value to a string that will be stored in the database.
+  def self.dump(value)
+    rot13(ActiveSupport::JSON.dump(value))
   end
 
-  # reverses the above, turning the serialized string from the database
-  # back into its original value
+  # Deserializes a string from the database to an attribute value.
   def self.load(string)
-    ActiveSupport::JSON.decode(string.rot13)
+    ActiveSupport::JSON.load(rot13(string))
   end
 end
 
@@ -167,7 +158,7 @@ end
                 
               </p>
               <div id="method-i-serialize_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/serialization.rb, line 119</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/serialization.rb, line 103</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">serialize</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-identifier">class_name_or_coder</span> = <span class="ruby-constant">Object</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-comment"># When ::JSON is used, force it to go through the Active Support JSON encoder</span>
   <span class="ruby-comment"># to ensure special objects (e.g. Active Record models) are dumped correctly</span>

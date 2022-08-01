@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 6.1.4</span><br />
+            <span>Ruby on Rails 6.1.6</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -22,6 +22,8 @@ layout: default
             
             <li><a href="../../files/actionpack/lib/action_dispatch/middleware/host_authorization_rb.html">actionpack/lib/action_dispatch/middleware/host_authorization.rb</a></li>
             
+            <li><a href="../../files/railties/lib/rails/application/configuration_rb.html">railties/lib/rails/application/configuration.rb</a></li>
+            
         </ul>
     </div>
     <div id="bodyContent">
@@ -36,7 +38,7 @@ layout: default
 <pre><code>config.host_authorization = { exclude: -&gt;(request) { request.path =~ /healthcheck/ } }
 </code></pre>
 
-<p>When a request comes to an unauthorized host, the <code>response_app</code> application will be executed and rendered. If no <code>response_app</code> is given, a default one will run, which responds with <code>403 Forbidden</code>.</p>
+<p>When a request comes to an unauthorized host, the <code>response_app</code> application will be executed and rendered. If no <code>response_app</code> is given, a default one will run. The default response app logs blocked host info with level &#39;error&#39; and responds with <code>403 Forbidden</code>. The body of the response contains debug info if <code>config.consider_all_requests_local</code> is set to true, otherwise the body is empty.</p>
 
     </div>
   
@@ -77,20 +79,9 @@ layout: default
       <table border='0' cellpadding='5'>
         
           <tr valign='top'>
-            <td class="attr-name">DEFAULT_RESPONSE_APP</td>
+            <td class="attr-name">ALLOWED_HOSTS_IN_DEVELOPMENT</td>
             <td>=</td>
-            <td class="attr-value">-&gt; env do
-request = Request.new(env)
-
-format = request.xhr? ? &quot;text/plain&quot; : &quot;text/html&quot;
-template = DebugView.new(host: request.host)
-body = template.render(template: &quot;rescues/blocked_host&quot;, layout: &quot;rescues/layout&quot;)
-
-[403, {
-&quot;Content-Type&quot; =&gt; &quot;#{format}; charset=#{Response.default_charset}&quot;,
-&quot;Content-Length&quot; =&gt; body.bytesize.to_s,
-}, [body]]
-end</td>
+            <td class="attr-value">[&quot;.localhost&quot;, IPAddr.new(&quot;0.0.0.0/0&quot;), IPAddr.new(&quot;::/0&quot;)]</td>
           </tr>
           
             <tr valign='top'>
@@ -134,7 +125,7 @@ end</td>
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 74</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 124</span>
     <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">app</span>, <span class="ruby-identifier">hosts</span>, <span class="ruby-identifier">deprecated_response_app</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-value">exclude:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">response_app:</span> <span class="ruby-keyword">nil</span>)
       <span class="ruby-ivar">@app</span> = <span class="ruby-identifier">app</span>
       <span class="ruby-ivar">@permissions</span> = <span class="ruby-constant">Permissions</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">hosts</span>)
@@ -142,14 +133,14 @@ end</td>
 
       <span class="ruby-keyword">unless</span> <span class="ruby-identifier">deprecated_response_app</span>.<span class="ruby-identifier">nil?</span>
         <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>)
-<span class="ruby-value">          `action_dispatch.hosts_response_app` is deprecated and will be ignored in Rails 6.2.
+<span class="ruby-value">          `action_dispatch.hosts_response_app` is deprecated and will be ignored in Rails 7.0.
           Use the Host Authorization `response_app` setting instead.
 </span><span class="ruby-identifier">        MSG</span>
 
         <span class="ruby-identifier">response_app</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">deprecated_response_app</span>
       <span class="ruby-keyword">end</span>
 
-      <span class="ruby-ivar">@response_app</span> = <span class="ruby-identifier">response_app</span> <span class="ruby-operator">||</span> <span class="ruby-constant">DEFAULT_RESPONSE_APP</span>
+      <span class="ruby-ivar">@response_app</span> = <span class="ruby-identifier">response_app</span> <span class="ruby-operator">||</span> <span class="ruby-constant">DefaultResponseApp</span>.<span class="ruby-identifier">new</span>
     <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -186,7 +177,7 @@ end</td>
                 
               </p>
               <div id="method-i-call_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 91</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 141</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">call</span>(<span class="ruby-identifier">env</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-ivar">@app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>) <span class="ruby-keyword">if</span> <span class="ruby-ivar">@permissions</span>.<span class="ruby-identifier">empty?</span>
 
