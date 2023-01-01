@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.3</span><br />
+            <span>Ruby on Rails 7.0.4</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -41,6 +41,17 @@ end
 </code></pre>
 
 <p><a href="LazyLoadHooks.html#method-i-run_load_hooks"><code>run_load_hooks</code></a> will then execute all the hooks that were registered with the <a href="LazyLoadHooks.html#method-i-on_load"><code>on_load</code></a> method. In the case of the above example, it will execute the block of code that is in the <code>initializer</code>.</p>
+
+<p>Registering a hook that has already run results in that hook executing immediately. This allows hooks to be nested for code that relies on multiple lazily loaded components:</p>
+
+<pre><code>initializer &quot;action_text.renderer&quot; do
+  ActiveSupport.on_load(:action_controller_base) do
+    ActiveSupport.on_load(:action_text_content) do
+      self.default_renderer = Class.new(ActionController::Base).renderer
+    end
+  end
+end
+</code></pre>
 
     </div>
   
@@ -93,7 +104,7 @@ end
 
           
             <div class="description">
-              <p>Declares a block that will be executed when a Rails component is fully loaded.</p>
+              <p>Declares a block that will be executed when a Rails component is fully loaded. If the component has already loaded, the block is executed immediately.</p>
 
 <p>Options:</p>
 <ul><li>
@@ -117,7 +128,7 @@ end
                 
               </p>
               <div id="method-i-on_load_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/lazy_load_hooks.rb, line 45</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/lazy_load_hooks.rb, line 58</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">on_load</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span> = {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-ivar">@loaded</span>[<span class="ruby-identifier">name</span>].<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">base</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">execute_hook</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">base</span>, <span class="ruby-identifier">options</span>, <span class="ruby-identifier">block</span>)
@@ -161,7 +172,7 @@ end
                 
               </p>
               <div id="method-i-run_load_hooks_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/lazy_load_hooks.rb, line 60</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/lazy_load_hooks.rb, line 73</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">run_load_hooks</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">base</span> = <span class="ruby-constant">Object</span>)
   <span class="ruby-ivar">@loaded</span>[<span class="ruby-identifier">name</span>] <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">base</span>
   <span class="ruby-ivar">@load_hooks</span>[<span class="ruby-identifier">name</span>].<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">hook</span>, <span class="ruby-identifier">options</span><span class="ruby-operator">|</span>

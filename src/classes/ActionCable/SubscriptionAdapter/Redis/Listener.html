@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.3</span><br />
+            <span>Ruby on Rails 7.0.4</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -34,6 +34,19 @@ layout: default
   
 
 
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Listener/SubscribedClient.html">ActionCable::SubscriptionAdapter::Redis::Listener::SubscribedClient</a></li>
+      
+      </ul>
+    
   
 
   
@@ -118,7 +131,7 @@ layout: default
   <span class="ruby-ivar">@subscribe_callbacks</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">h</span>, <span class="ruby-identifier">k</span><span class="ruby-operator">|</span> <span class="ruby-identifier">h</span>[<span class="ruby-identifier">k</span>] = [] }
   <span class="ruby-ivar">@subscription_lock</span> = <span class="ruby-constant">Mutex</span>.<span class="ruby-identifier">new</span>
 
-  <span class="ruby-ivar">@raw_client</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-ivar">@subscribed_client</span> = <span class="ruby-keyword">nil</span>
 
   <span class="ruby-ivar">@when_connected</span> = []
 
@@ -164,7 +177,7 @@ layout: default
   <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">ensure_listener_running</span>
     <span class="ruby-ivar">@subscribe_callbacks</span>[<span class="ruby-identifier">channel</span>] <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">on_success</span>
-    <span class="ruby-identifier">when_connected</span> { <span class="ruby-identifier">send_command</span>(<span class="ruby-string">&quot;subscribe&quot;</span>, <span class="ruby-identifier">channel</span>) }
+    <span class="ruby-identifier">when_connected</span> { <span class="ruby-ivar">@subscribed_client</span>.<span class="ruby-identifier">subscribe</span>(<span class="ruby-identifier">channel</span>) }
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -236,13 +249,13 @@ layout: default
                 <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 79</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">listen</span>(<span class="ruby-identifier">conn</span>)
   <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">without_reconnect</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-identifier">original_client</span> = <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:_client</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">_client</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">client</span>
+    <span class="ruby-identifier">original_client</span> = <span class="ruby-identifier">extract_subscribed_client</span>(<span class="ruby-identifier">conn</span>)
 
     <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">subscribe</span>(<span class="ruby-string">&quot;_action_cable_internal&quot;</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">on</span><span class="ruby-operator">|</span>
       <span class="ruby-identifier">on</span>.<span class="ruby-identifier">subscribe</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">chan</span>, <span class="ruby-identifier">count</span><span class="ruby-operator">|</span>
         <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
           <span class="ruby-keyword">if</span> <span class="ruby-identifier">count</span> <span class="ruby-operator">==</span> <span class="ruby-value">1</span>
-            <span class="ruby-ivar">@raw_client</span> = <span class="ruby-identifier">original_client</span>
+            <span class="ruby-ivar">@subscribed_client</span> = <span class="ruby-identifier">original_client</span>
 
             <span class="ruby-keyword">until</span> <span class="ruby-ivar">@when_connected</span>.<span class="ruby-identifier">empty?</span>
               <span class="ruby-ivar">@when_connected</span>.<span class="ruby-identifier">shift</span>.<span class="ruby-identifier">call</span>
@@ -264,7 +277,7 @@ layout: default
       <span class="ruby-identifier">on</span>.<span class="ruby-identifier">unsubscribe</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">chan</span>, <span class="ruby-identifier">count</span><span class="ruby-operator">|</span>
         <span class="ruby-keyword">if</span> <span class="ruby-identifier">count</span> <span class="ruby-operator">==</span> <span class="ruby-value">0</span>
           <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
-            <span class="ruby-ivar">@raw_client</span> = <span class="ruby-keyword">nil</span>
+            <span class="ruby-ivar">@subscribed_client</span> = <span class="ruby-keyword">nil</span>
           <span class="ruby-keyword">end</span>
         <span class="ruby-keyword">end</span>
       <span class="ruby-keyword">end</span>
@@ -305,7 +318,7 @@ layout: default
                 <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 138</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_channel</span>(<span class="ruby-identifier">channel</span>)
   <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-identifier">when_connected</span> { <span class="ruby-identifier">send_command</span>(<span class="ruby-string">&quot;unsubscribe&quot;</span>, <span class="ruby-identifier">channel</span>) }
+    <span class="ruby-identifier">when_connected</span> { <span class="ruby-ivar">@subscribed_client</span>.<span class="ruby-identifier">unsubscribe</span>(<span class="ruby-identifier">channel</span>) }
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -345,8 +358,8 @@ layout: default
     <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-ivar">@thread</span>.<span class="ruby-identifier">nil?</span>
 
     <span class="ruby-identifier">when_connected</span> <span class="ruby-keyword">do</span>
-      <span class="ruby-identifier">send_command</span>(<span class="ruby-string">&quot;unsubscribe&quot;</span>)
-      <span class="ruby-ivar">@raw_client</span> = <span class="ruby-keyword">nil</span>
+      <span class="ruby-ivar">@subscribed_client</span>.<span class="ruby-identifier">unsubscribe</span>
+      <span class="ruby-ivar">@subscribed_client</span> = <span class="ruby-keyword">nil</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 
