@@ -47,7 +47,7 @@ def generate_rails_rdoc
   cd 'rails' do
     Bundler.with_unbundled_env do
       # TODO: use `BUNDLE_ONLY`(require bundler 2.3.19+).
-      ENV['BUNDLE_WITHOUT'] = 'db:job:storage'
+      ENV['BUNDLE_WITHOUT'] = 'db:job:storage:cable:ujs:test'
 
       # replace sdoc gem
       gemfile = File.read('Gemfile')
