@@ -50,7 +50,7 @@ def generate_rails_rdoc
 
       # replace sdoc gem
       gemfile = File.read('Gemfile')
-      gemfile.gsub!(/"sdoc.*$/, '"sdoc", github: "toshimaru/sdoc", branch: "railsdoc"')
+      gemfile.gsub!(/"sdoc".*$/, '"sdoc", github: "toshimaru/sdoc", branch: "railsdoc"')
       File.write('Gemfile', gemfile)
 
       sh 'bundle install && bundle update sdoc'
