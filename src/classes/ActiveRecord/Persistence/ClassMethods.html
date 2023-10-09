@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -33,6 +33,10 @@ layout: default
   
     <h2 id="methods">Methods</h2>
     <ul>
+      
+        <li>
+          <a href="#method-i-build">build</a>
+        </li>
       
         <li>
           <a href="#method-i-create">create</a>
@@ -71,6 +75,10 @@ layout: default
         </li>
       
         <li>
+          <a href="#method-i-query_constraints">query_constraints</a>
+        </li>
+      
+        <li>
           <a href="#method-i-update">update</a>
         </li>
       
@@ -105,6 +113,66 @@ layout: default
     
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
+        <div class="method">
+          <h3 id="method-i-build">
+            
+              build(attributes = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Builds an object (or multiple objects) and returns either the built object or a list of built objects.</p>
+
+<p>The <code>attributes</code> parameter can be either a <a href="../../Hash.html"><code>Hash</code></a> or an <a href="../../Array.html"><code>Array</code></a> of Hashes. These Hashes describe the attributes on the objects that are to be built.</p>
+
+<h4 id="method-i-build-label-Examples">Examples</h4>
+
+<pre><code># Build a single new object
+User.build(first_name: &#39;Jamie&#39;)
+
+# Build an Array of new objects
+User.build([{ first_name: &#39;Jamie&#39; }, { first_name: &#39;Jeremy&#39; }])
+
+# Build a single object and pass it into a block to set other attributes.
+User.build(first_name: &#39;Jamie&#39;) do |u|
+  u.is_admin = false
+end
+
+# Building an Array of new objects using a block, where the block is executed for each object:
+User.build([{ first_name: &#39;Jamie&#39; }, { first_name: &#39;Jeremy&#39; }]) do |u|
+  u.is_admin = false
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-build_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 82</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">build</span>(<span class="ruby-identifier">attributes</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">attributes</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Array</span>)
+    <span class="ruby-identifier">attributes</span>.<span class="ruby-identifier">collect</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">attr</span><span class="ruby-operator">|</span> <span class="ruby-identifier">build</span>(<span class="ruby-identifier">attr</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) }
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">new</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
         <div class="method">
           <h3 id="method-i-create">
             
@@ -219,7 +287,7 @@ end
 
           
             <div class="description">
-              <p>Deletes the row with a primary key matching the <code>id</code> argument, using an SQL <code>DELETE</code> statement, and returns the number of rows deleted. Active Record objects are not instantiated, so the object&#39;s callbacks are not executed, including any <code>:dependent</code> association options.</p>
+              <p>Deletes the row with a primary key matching the <code>id</code> argument, using an SQL <code>DELETE</code> statement, and returns the number of rows deleted. Active Record objects are not instantiated, so the object’s callbacks are not executed, including any <code>:dependent</code> association options.</p>
 
 <p>You can delete multiple rows at once by passing an <a href="../../Array.html"><code>Array</code></a> of <code>id</code>s.</p>
 
@@ -249,7 +317,7 @@ Todo.delete([2,3,4])
                 
               </p>
               <div id="method-i-delete_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 473</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 565</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete</span>(<span class="ruby-identifier">id_or_array</span>)
   <span class="ruby-identifier">delete_by</span>(<span class="ruby-identifier">primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">id_or_array</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -301,9 +369,15 @@ Todo.destroy(todos)
                 
               </p>
               <div id="method-i-destroy_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 447</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 533</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">destroy</span>(<span class="ruby-identifier">id</span>)
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">id</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Array</span>)
+  <span class="ruby-identifier">multiple_ids</span> = <span class="ruby-keyword">if</span> <span class="ruby-identifier">composite_primary_key?</span>
+    <span class="ruby-identifier">id</span>.<span class="ruby-identifier">first</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Array</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">id</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Array</span>)
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">multiple_ids</span>
     <span class="ruby-identifier">find</span>(<span class="ruby-identifier">id</span>).<span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:destroy</span>)
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">find</span>(<span class="ruby-identifier">id</span>).<span class="ruby-identifier">destroy</span>
@@ -323,7 +397,7 @@ Todo.destroy(todos)
 
           
             <div class="description">
-              <p>Inserts a single record into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record&#39;s type casting and serialization.</p>
+              <p>Inserts a single record into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record’s type casting and serialization.</p>
 
 <p>See <a href="ClassMethods.html#method-i-insert_all"><code>insert_all</code></a> for documentation.</p>
             </div>
@@ -342,7 +416,7 @@ Todo.destroy(todos)
                 
               </p>
               <div id="method-i-insert_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 66</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 96</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">insert</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-value">returning:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">unique_by:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">insert_all</span>([ <span class="ruby-identifier">attributes</span> ], <span class="ruby-value">returning:</span> <span class="ruby-identifier">returning</span>, <span class="ruby-value">unique_by:</span> <span class="ruby-identifier">unique_by</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-identifier">record_timestamps</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -360,7 +434,7 @@ Todo.destroy(todos)
 
           
             <div class="description">
-              <p>Inserts a single record into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record&#39;s type casting and serialization.</p>
+              <p>Inserts a single record into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record’s type casting and serialization.</p>
 
 <p>See <a href="ClassMethods.html#method-i-insert_all-21"><code>insert_all!</code></a> for more.</p>
             </div>
@@ -379,7 +453,7 @@ Todo.destroy(todos)
                 
               </p>
               <div id="method-i-insert-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 155</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 185</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">insert!</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-value">returning:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">insert_all!</span>([ <span class="ruby-identifier">attributes</span> ], <span class="ruby-value">returning:</span> <span class="ruby-identifier">returning</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-identifier">record_timestamps</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -397,7 +471,7 @@ Todo.destroy(todos)
 
           
             <div class="description">
-              <p>Inserts multiple records into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record&#39;s type casting and serialization.</p>
+              <p>Inserts multiple records into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record’s type casting and serialization.</p>
 
 <p>The <code>attributes</code> parameter is an <a href="../../Array.html"><code>Array</code></a> of Hashes. Every <a href="../../Hash.html"><code>Hash</code></a> determines the attributes for a single row and must have the same keys.</p>
 
@@ -410,14 +484,14 @@ Todo.destroy(todos)
 <dd>
 <p>(PostgreSQL only) An array of attributes to return for all successfully inserted records, which by default is the primary key. Pass <code>returning: %w[ id name ]</code> for both id and name or <code>returning: false</code> to omit the underlying <code>RETURNING</code> SQL clause entirely.</p>
 
-<p>You can also pass an SQL string if you need more control on the return values (for example, <code>returning: &quot;id, name as new_name&quot;</code>).</p>
+<p>You can also pass an SQL string if you need more control on the return values (for example, <code>returning: Arel.sql(&quot;id, name as new_name&quot;)</code>).</p>
 </dd><dt>:unique_by
 <dd>
 <p>(PostgreSQL and SQLite only) By default rows are considered to be unique by every unique index on the table. Any duplicate rows are skipped.</p>
 
 <p>To skip rows according to just one unique index pass <code>:unique_by</code>.</p>
 
-<p>Consider a Book model where no duplicate ISBNs make sense, but if any row has an existing id, or is not unique by another unique index, <code>ActiveRecord::RecordNotUnique</code> is raised.</p>
+<p>Consider a Book model where no duplicate ISBNs make sense, but if any row has an existing id, or is not unique by another unique index, <a href="../RecordNotUnique.html"><code>ActiveRecord::RecordNotUnique</code></a> is raised.</p>
 
 <p>Unique indexes can be identified by columns or name:</p>
 
@@ -427,7 +501,7 @@ unique_by: :index_books_on_isbn
 </code></pre>
 </dd><dt>:record_timestamps
 <dd>
-<p>By default, automatic setting of timestamp columns is controlled by the model&#39;s <code>record_timestamps</code> config, matching typical behavior.</p>
+<p>By default, automatic setting of timestamp columns is controlled by the model’s <code>record_timestamps</code> config, matching typical behavior.</p>
 
 <p>To override this and force automatic setting of timestamp columns one way or the other, pass <code>:record_timestamps</code>:</p>
 
@@ -436,7 +510,7 @@ record_timestamps: false # Never set timestamps automatically
 </code></pre>
 </dd></dl>
 
-<p>Because it relies on the index information from the database <code>:unique_by</code> is recommended to be paired with Active Record&#39;s schema_cache.</p>
+<p>Because it relies on the index information from the database <code>:unique_by</code> is recommended to be paired with Active Record’s schema_cache.</p>
 
 <h4 id="method-i-insert_all-label-Example">Example</h4>
 
@@ -472,7 +546,7 @@ author.books.create_with(created_at: Time.now).insert_all([
                 
               </p>
               <div id="method-i-insert_all_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 145</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 175</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">insert_all</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-value">returning:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">unique_by:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-constant">InsertAll</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">attributes</span>, <span class="ruby-value">on_duplicate:</span> <span class="ruby-value">:skip</span>, <span class="ruby-value">returning:</span> <span class="ruby-identifier">returning</span>, <span class="ruby-value">unique_by:</span> <span class="ruby-identifier">unique_by</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-identifier">record_timestamps</span>).<span class="ruby-identifier">execute</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -490,11 +564,11 @@ author.books.create_with(created_at: Time.now).insert_all([
 
           
             <div class="description">
-              <p>Inserts multiple records into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record&#39;s type casting and serialization.</p>
+              <p>Inserts multiple records into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record’s type casting and serialization.</p>
 
 <p>The <code>attributes</code> parameter is an <a href="../../Array.html"><code>Array</code></a> of Hashes. Every <a href="../../Hash.html"><code>Hash</code></a> determines the attributes for a single row and must have the same keys.</p>
 
-<p>Raises <code>ActiveRecord::RecordNotUnique</code> if any rows violate a unique index on the table. In that case, no rows are inserted.</p>
+<p>Raises <a href="../RecordNotUnique.html"><code>ActiveRecord::RecordNotUnique</code></a> if any rows violate a unique index on the table. In that case, no rows are inserted.</p>
 
 <p>To skip duplicate rows, see <a href="ClassMethods.html#method-i-insert_all"><code>insert_all</code></a>. To replace them, see <a href="ClassMethods.html#method-i-upsert_all"><code>upsert_all</code></a>.</p>
 
@@ -505,10 +579,10 @@ author.books.create_with(created_at: Time.now).insert_all([
 <dd>
 <p>(PostgreSQL only) An array of attributes to return for all successfully inserted records, which by default is the primary key. Pass <code>returning: %w[ id name ]</code> for both id and name or <code>returning: false</code> to omit the underlying <code>RETURNING</code> SQL clause entirely.</p>
 
-<p>You can also pass an SQL string if you need more control on the return values (for example, <code>returning: &quot;id, name as new_name&quot;</code>).</p>
+<p>You can also pass an SQL string if you need more control on the return values (for example, <code>returning: Arel.sql(&quot;id, name as new_name&quot;)</code>).</p>
 </dd><dt>:record_timestamps
 <dd>
-<p>By default, automatic setting of timestamp columns is controlled by the model&#39;s <code>record_timestamps</code> config, matching typical behavior.</p>
+<p>By default, automatic setting of timestamp columns is controlled by the model’s <code>record_timestamps</code> config, matching typical behavior.</p>
 
 <p>To override this and force automatic setting of timestamp columns one way or the other, pass <code>:record_timestamps</code>:</p>
 
@@ -548,7 +622,7 @@ Book.insert_all!([
                 
               </p>
               <div id="method-i-insert_all-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 212</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 242</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">insert_all!</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-value">returning:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-constant">InsertAll</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">attributes</span>, <span class="ruby-value">on_duplicate:</span> <span class="ruby-value">:raise</span>, <span class="ruby-value">returning:</span> <span class="ruby-identifier">returning</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-identifier">record_timestamps</span>).<span class="ruby-identifier">execute</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -568,7 +642,7 @@ Book.insert_all!([
             <div class="description">
               <p>Given an attributes hash, <code>instantiate</code> returns a new instance of the appropriate class. Accepts only keys as strings.</p>
 
-<p>For example, <code>Post.all</code> may return Comments, Messages, and Emails by storing the record&#39;s subclass in a <code>type</code> attribute. By calling <code>instantiate</code> instead of <code>new</code>, finder methods ensure they get new instances of the appropriate class for each record.</p>
+<p>For example, <code>Post.all</code> may return Comments, Messages, and Emails by storing the record’s subclass in a <code>type</code> attribute. By calling <code>instantiate</code> instead of <code>new</code>, finder methods ensure they get new instances of the appropriate class for each record.</p>
 
 <p>See <code>ActiveRecord::Inheritance#discriminate_class_for_record</code> to see how this “single-table” inheritance mapping is implemented.</p>
             </div>
@@ -587,10 +661,77 @@ Book.insert_all!([
                 
               </p>
               <div id="method-i-instantiate_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 346</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 376</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">instantiate</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-identifier">column_types</span> = {}, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">klass</span> = <span class="ruby-identifier">discriminate_class_for_record</span>(<span class="ruby-identifier">attributes</span>)
   <span class="ruby-identifier">instantiate_instance_of</span>(<span class="ruby-identifier">klass</span>, <span class="ruby-identifier">attributes</span>, <span class="ruby-identifier">column_types</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-query_constraints">
+            
+              query_constraints(*columns_list)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Accepts a list of attribute names to be used in the WHERE clause of SELECT / UPDATE / DELETE queries and in the ORDER BY clause for ‘#first` and `#last` finder methods.</p>
+
+<pre><code>class Developer &lt; ActiveRecord::Base
+  query_constraints :company_id, :id
+end
+
+developer = Developer.first
+# SELECT &quot;developers&quot;.* FROM &quot;developers&quot; ORDER BY &quot;developers&quot;.&quot;company_id&quot; ASC, &quot;developers&quot;.&quot;id&quot; ASC LIMIT 1
+developer.inspect # =&gt; #&lt;Developer id: 1, company_id: 1, ...&gt;
+
+developer.update!(name: &quot;Nikita&quot;)
+# UPDATE &quot;developers&quot; SET &quot;name&quot; = &#39;Nikita&#39; WHERE &quot;developers&quot;.&quot;company_id&quot; = 1 AND &quot;developers&quot;.&quot;id&quot; = 1
+
+It is possible to update attribute used in the query_by clause:
+developer.update!(company_id: 2)
+# UPDATE &quot;developers&quot; SET &quot;company_id&quot; = 2 WHERE &quot;developers&quot;.&quot;company_id&quot; = 1 AND &quot;developers&quot;.&quot;id&quot; = 1
+
+developer.name = &quot;Bob&quot;
+developer.save!
+# UPDATE &quot;developers&quot; SET &quot;name&quot; = &#39;Bob&#39; WHERE &quot;developers&quot;.&quot;company_id&quot; = 1 AND &quot;developers&quot;.&quot;id&quot; = 1
+
+developer.destroy!
+# DELETE FROM &quot;developers&quot; WHERE &quot;developers&quot;.&quot;company_id&quot; = 1 AND &quot;developers&quot;.&quot;id&quot; = 1
+
+developer.delete
+# DELETE FROM &quot;developers&quot; WHERE &quot;developers&quot;.&quot;company_id&quot; = 1 AND &quot;developers&quot;.&quot;id&quot; = 1
+
+developer.reload
+# SELECT &quot;developers&quot;.* FROM &quot;developers&quot; WHERE &quot;developers&quot;.&quot;company_id&quot; = 1 AND &quot;developers&quot;.&quot;id&quot; = 1 LIMIT 1
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-query_constraints_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 488</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">query_constraints</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">columns_list</span>)
+  <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;You must specify at least one column to be used in querying&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">columns_list</span>.<span class="ruby-identifier">empty?</span>
+
+  <span class="ruby-ivar">@query_constraints_list</span> = <span class="ruby-identifier">columns_list</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:to_s</span>)
+  <span class="ruby-ivar">@has_query_constraints</span> = <span class="ruby-ivar">@query_constraints_list</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -646,7 +787,7 @@ people.update(group: &quot;masters&quot;)
                 
               </p>
               <div id="method-i-update_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 378</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 408</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">update</span>(<span class="ruby-identifier">id</span> = <span class="ruby-value">:all</span>, <span class="ruby-identifier">attributes</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">id</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Array</span>)
     <span class="ruby-keyword">if</span> <span class="ruby-identifier">id</span>.<span class="ruby-identifier">any?</span>(<span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>)
@@ -701,7 +842,7 @@ people.update(group: &quot;masters&quot;)
                 
               </p>
               <div id="method-i-update-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 404</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 434</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">update!</span>(<span class="ruby-identifier">id</span> = <span class="ruby-value">:all</span>, <span class="ruby-identifier">attributes</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">id</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Array</span>)
     <span class="ruby-keyword">if</span> <span class="ruby-identifier">id</span>.<span class="ruby-identifier">any?</span>(<span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>)
@@ -733,13 +874,13 @@ people.update(group: &quot;masters&quot;)
         <div class="method">
           <h3 id="method-i-upsert">
             
-              upsert(attributes, on_duplicate: :update, returning: nil, unique_by: nil, record_timestamps: nil)
+              upsert(attributes, **kwargs)
             
           </h3>
 
           
             <div class="description">
-              <p>Updates or inserts (upserts) a single record into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record&#39;s type casting and serialization.</p>
+              <p>Updates or inserts (upserts) a single record into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record’s type casting and serialization.</p>
 
 <p>See <a href="ClassMethods.html#method-i-upsert_all"><code>upsert_all</code></a> for documentation.</p>
             </div>
@@ -758,9 +899,9 @@ people.update(group: &quot;masters&quot;)
                 
               </p>
               <div id="method-i-upsert_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 222</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">upsert</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-value">on_duplicate:</span> <span class="ruby-value">:update</span>, <span class="ruby-value">returning:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">unique_by:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">upsert_all</span>([ <span class="ruby-identifier">attributes</span> ], <span class="ruby-value">on_duplicate:</span> <span class="ruby-identifier">on_duplicate</span>, <span class="ruby-value">returning:</span> <span class="ruby-identifier">returning</span>, <span class="ruby-value">unique_by:</span> <span class="ruby-identifier">unique_by</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-identifier">record_timestamps</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 252</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">upsert</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">kwargs</span>)
+  <span class="ruby-identifier">upsert_all</span>([ <span class="ruby-identifier">attributes</span> ], <span class="ruby-operator">**</span><span class="ruby-identifier">kwargs</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -776,7 +917,7 @@ people.update(group: &quot;masters&quot;)
 
           
             <div class="description">
-              <p>Updates or inserts (upserts) multiple records into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record&#39;s type casting and serialization.</p>
+              <p>Updates or inserts (upserts) multiple records into the database in a single SQL INSERT statement. It does not instantiate any models nor does it trigger Active Record callbacks or validations. Though passed values go through Active Record’s type casting and serialization.</p>
 
 <p>The <code>attributes</code> parameter is an <a href="../../Array.html"><code>Array</code></a> of Hashes. Every <a href="../../Hash.html"><code>Hash</code></a> determines the attributes for a single row and must have the same keys.</p>
 
@@ -789,14 +930,14 @@ people.update(group: &quot;masters&quot;)
 <dd>
 <p>(PostgreSQL only) An array of attributes to return for all successfully inserted records, which by default is the primary key. Pass <code>returning: %w[ id name ]</code> for both id and name or <code>returning: false</code> to omit the underlying <code>RETURNING</code> SQL clause entirely.</p>
 
-<p>You can also pass an SQL string if you need more control on the return values (for example, <code>returning: &quot;id, name as new_name&quot;</code>).</p>
+<p>You can also pass an SQL string if you need more control on the return values (for example, <code>returning: Arel.sql(&quot;id, name as new_name&quot;)</code>).</p>
 </dd><dt>:unique_by
 <dd>
 <p>(PostgreSQL and SQLite only) By default rows are considered to be unique by every unique index on the table. Any duplicate rows are skipped.</p>
 
 <p>To skip rows according to just one unique index pass <code>:unique_by</code>.</p>
 
-<p>Consider a Book model where no duplicate ISBNs make sense, but if any row has an existing id, or is not unique by another unique index, <code>ActiveRecord::RecordNotUnique</code> is raised.</p>
+<p>Consider a Book model where no duplicate ISBNs make sense, but if any row has an existing id, or is not unique by another unique index, <a href="../RecordNotUnique.html"><code>ActiveRecord::RecordNotUnique</code></a> is raised.</p>
 
 <p>Unique indexes can be identified by columns or name:</p>
 
@@ -806,7 +947,7 @@ unique_by: :index_books_on_isbn
 </code></pre>
 </dd></dl>
 
-<p>Because it relies on the index information from the database <code>:unique_by</code> is recommended to be paired with Active Record&#39;s schema_cache.</p>
+<p>Because it relies on the index information from the database <code>:unique_by</code> is recommended to be paired with Active Record’s schema_cache.</p>
 <dl class="rdoc-list label-list"><dt>:on_duplicate
 <dd>
 <p>Configure the SQL update sentence that will be used in case of conflict.</p>
@@ -825,7 +966,7 @@ unique_by: :index_books_on_isbn
 )
 </code></pre>
 
-<p>See the related <code>:update_only</code> option. Both options can&#39;t be used at the same time.</p>
+<p>See the related <code>:update_only</code> option. Both options can’t be used at the same time.</p>
 </dd><dt>:update_only
 <dd>
 <p>Provide a list of column names that will be updated in case of conflict. If not provided, <code>upsert_all</code> will update all the columns that can be updated. These are all the columns except primary keys, read-only columns, and columns covered by the optional <code>unique_by</code></p>
@@ -842,10 +983,10 @@ unique_by: :index_books_on_isbn
 )
 </code></pre>
 
-<p>See the related <code>:on_duplicate</code> option. Both options can&#39;t be used at the same time.</p>
+<p>See the related <code>:on_duplicate</code> option. Both options can’t be used at the same time.</p>
 </dd><dt>:record_timestamps
 <dd>
-<p>By default, automatic setting of timestamp columns is controlled by the model&#39;s <code>record_timestamps</code> config, matching typical behavior.</p>
+<p>By default, automatic setting of timestamp columns is controlled by the model’s <code>record_timestamps</code> config, matching typical behavior.</p>
 
 <p>To override this and force automatic setting of timestamp columns one way or the other, pass <code>:record_timestamps</code>:</p>
 
@@ -882,7 +1023,7 @@ Book.find_by(isbn: &quot;1&quot;).title # =&gt; &quot;Eloquent Ruby&quot;
                 
               </p>
               <div id="method-i-upsert_all_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 332</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/persistence.rb, line 362</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">upsert_all</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-value">on_duplicate:</span> <span class="ruby-value">:update</span>, <span class="ruby-value">update_only:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">returning:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">unique_by:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-constant">InsertAll</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">attributes</span>, <span class="ruby-value">on_duplicate:</span> <span class="ruby-identifier">on_duplicate</span>, <span class="ruby-value">update_only:</span> <span class="ruby-identifier">update_only</span>, <span class="ruby-value">returning:</span> <span class="ruby-identifier">returning</span>, <span class="ruby-value">unique_by:</span> <span class="ruby-identifier">unique_by</span>, <span class="ruby-value">record_timestamps:</span> <span class="ruby-identifier">record_timestamps</span>).<span class="ruby-identifier">execute</span>
 <span class="ruby-keyword">end</span></code></pre>

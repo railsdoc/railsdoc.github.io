@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -20,6 +20,12 @@ layout: default
     </div>
     <div id="bodyContent">
         <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveRecord::ConnectionAdapters::Quoting-label-Active+Record+Connection+Adapters+Quoting">Active Record Connection Adapters Quoting</h1>
+
+    </div>
   
 
   
@@ -127,7 +133,7 @@ layout: default
                 
               </p>
               <div id="method-i-quote_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 11</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 12</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">quote</span>(<span class="ruby-identifier">value</span>)
   <span class="ruby-keyword">case</span> <span class="ruby-identifier">value</span>
   <span class="ruby-keyword">when</span> <span class="ruby-constant">String</span>, <span class="ruby-constant">Symbol</span>, <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Multibyte</span><span class="ruby-operator">::</span><span class="ruby-constant">Chars</span>
@@ -137,11 +143,14 @@ layout: default
   <span class="ruby-keyword">when</span> <span class="ruby-keyword">nil</span>        <span class="ruby-keyword">then</span> <span class="ruby-string">&quot;NULL&quot;</span>
   <span class="ruby-comment"># BigDecimals need to be put in a non-normalized form and quoted.</span>
   <span class="ruby-keyword">when</span> <span class="ruby-constant">BigDecimal</span> <span class="ruby-keyword">then</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">to_s</span>(<span class="ruby-string">&quot;F&quot;</span>)
-  <span class="ruby-keyword">when</span> <span class="ruby-constant">Numeric</span>, <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Duration</span> <span class="ruby-keyword">then</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">to_s</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-constant">Numeric</span> <span class="ruby-keyword">then</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">to_s</span>
   <span class="ruby-keyword">when</span> <span class="ruby-constant">Type</span><span class="ruby-operator">::</span><span class="ruby-constant">Binary</span><span class="ruby-operator">::</span><span class="ruby-constant">Data</span> <span class="ruby-keyword">then</span> <span class="ruby-identifier">quoted_binary</span>(<span class="ruby-identifier">value</span>)
   <span class="ruby-keyword">when</span> <span class="ruby-constant">Type</span><span class="ruby-operator">::</span><span class="ruby-constant">Time</span><span class="ruby-operator">::</span><span class="ruby-constant">Value</span> <span class="ruby-keyword">then</span> <span class="ruby-node">&quot;&#39;#{quoted_time(value)}&#39;&quot;</span>
   <span class="ruby-keyword">when</span> <span class="ruby-constant">Date</span>, <span class="ruby-constant">Time</span> <span class="ruby-keyword">then</span> <span class="ruby-node">&quot;&#39;#{quoted_date(value)}&#39;&quot;</span>
   <span class="ruby-keyword">when</span> <span class="ruby-constant">Class</span>      <span class="ruby-keyword">then</span> <span class="ruby-node">&quot;&#39;#{value}&#39;&quot;</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Duration</span>
+    <span class="ruby-identifier">warn_quote_duration_deprecated</span>
+    <span class="ruby-identifier">value</span>.<span class="ruby-identifier">to_s</span>
   <span class="ruby-keyword">else</span> <span class="ruby-identifier">raise</span> <span class="ruby-constant">TypeError</span>, <span class="ruby-node">&quot;can&#39;t quote #{value.class.name}&quot;</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -160,6 +169,8 @@ layout: default
           
             <div class="description">
               <p>Quote a value to be used as a bound parameter of unknown type. For example, <a href="MySQL.html"><code>MySQL</code></a> might perform dangerous castings when comparing a string to a number, so this method will cast numbers to string.</p>
+
+<p>Deprecated: Consider ‘Arel.sql(“… ? …”, value)` or <code>sanitize_sql</code> instead.</p>
             </div>
           
 
@@ -176,10 +187,15 @@ layout: default
                 
               </p>
               <div id="method-i-quote_bound_value_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 50</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">quote_bound_value</span>(<span class="ruby-identifier">value</span>)
-  <span class="ruby-identifier">quote</span>(<span class="ruby-identifier">value</span>)
-<span class="ruby-keyword">end</span></code></pre>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 57</span>
+      <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">quote_bound_value</span>(<span class="ruby-identifier">value</span>)
+        <span class="ruby-constant">ActiveRecord</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;~MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">          #quote_bound_value is deprecated and will be removed in Rails 7.2.
+          Consider Arel.sql(&quot;.. ? ..&quot;, value) or #sanitize_sql instead.
+</span><span class="ruby-identifier">        MSG</span>
+
+        <span class="ruby-identifier">quote</span>(<span class="ruby-identifier">cast_bound_value</span>(<span class="ruby-identifier">value</span>))
+      <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
@@ -211,7 +227,7 @@ layout: default
                 
               </p>
               <div id="method-i-quote_column_name_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 74</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 93</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">quote_column_name</span>(<span class="ruby-identifier">column_name</span>)
   <span class="ruby-identifier">column_name</span>.<span class="ruby-identifier">to_s</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -229,7 +245,7 @@ layout: default
 
           
             <div class="description">
-              <p>Quotes a string, escaping any &#39; (single quote) and \ (backslash) characters.</p>
+              <p>Quotes a string, escaping any ‘ (single quote) and \ (backslash) characters.</p>
             </div>
           
 
@@ -246,7 +262,7 @@ layout: default
                 
               </p>
               <div id="method-i-quote_string_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 69</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 88</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">quote_string</span>(<span class="ruby-identifier">s</span>)
   <span class="ruby-identifier">s</span>.<span class="ruby-identifier">gsub</span>(<span class="ruby-string">&quot;\\&quot;</span>, <span class="ruby-string">&#39;\&amp;\&amp;&#39;</span>).<span class="ruby-identifier">gsub</span>(<span class="ruby-string">&quot;&#39;&quot;</span>, <span class="ruby-string">&quot;&#39;&#39;&quot;</span>) <span class="ruby-comment"># &#39; (for ruby-mode)</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -281,7 +297,7 @@ layout: default
                 
               </p>
               <div id="method-i-quote_table_name_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 79</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 98</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">quote_table_name</span>(<span class="ruby-identifier">table_name</span>)
   <span class="ruby-identifier">quote_column_name</span>(<span class="ruby-identifier">table_name</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -301,7 +317,7 @@ layout: default
             <div class="description">
               <p>Override to return the quoted table name for assignment. Defaults to table quoting.</p>
 
-<p>This works for mysql2 where table.column can be used to resolve ambiguity.</p>
+<p>This works for <a href="MySQL.html"><code>MySQL</code></a> where table.column can be used to resolve ambiguity.</p>
 
 <p>We override this in the sqlite3 and postgresql adapters to use only the column name (as per syntax requirements).</p>
             </div>
@@ -320,7 +336,7 @@ layout: default
                 
               </p>
               <div id="method-i-quote_table_name_for_assignment_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 91</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 110</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">quote_table_name_for_assignment</span>(<span class="ruby-identifier">table</span>, <span class="ruby-identifier">attr</span>)
   <span class="ruby-identifier">quote_table_name</span>(<span class="ruby-node">&quot;#{table}.#{attr}&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -355,10 +371,10 @@ layout: default
                 
               </p>
               <div id="method-i-quoted_date_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 122</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 141</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">quoted_date</span>(<span class="ruby-identifier">value</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">acts_like?</span>(<span class="ruby-value">:time</span>)
-    <span class="ruby-keyword">if</span> <span class="ruby-constant">ActiveRecord</span>.<span class="ruby-identifier">default_timezone</span> <span class="ruby-operator">==</span> <span class="ruby-value">:utc</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">default_timezone</span> <span class="ruby-operator">==</span> <span class="ruby-value">:utc</span>
       <span class="ruby-identifier">value</span> = <span class="ruby-identifier">value</span>.<span class="ruby-identifier">getutc</span> <span class="ruby-keyword">if</span> <span class="ruby-operator">!</span><span class="ruby-identifier">value</span>.<span class="ruby-identifier">utc?</span>
     <span class="ruby-keyword">else</span>
       <span class="ruby-identifier">value</span> = <span class="ruby-identifier">value</span>.<span class="ruby-identifier">getlocal</span>
@@ -403,7 +419,7 @@ layout: default
                 
               </p>
               <div id="method-i-quoted_false_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 112</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 131</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">quoted_false</span>
   <span class="ruby-string">&quot;FALSE&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -438,7 +454,7 @@ layout: default
                 
               </p>
               <div id="method-i-quoted_true_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 104</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 123</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">quoted_true</span>
   <span class="ruby-string">&quot;TRUE&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -473,7 +489,7 @@ layout: default
                 
               </p>
               <div id="method-i-type_cast_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 32</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 36</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">type_cast</span>(<span class="ruby-identifier">value</span>)
   <span class="ruby-keyword">case</span> <span class="ruby-identifier">value</span>
   <span class="ruby-keyword">when</span> <span class="ruby-constant">Symbol</span>, <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Multibyte</span><span class="ruby-operator">::</span><span class="ruby-constant">Chars</span>, <span class="ruby-constant">Type</span><span class="ruby-operator">::</span><span class="ruby-constant">Binary</span><span class="ruby-operator">::</span><span class="ruby-constant">Data</span>
@@ -519,7 +535,7 @@ layout: default
                 
               </p>
               <div id="method-i-unquoted_false_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 116</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 135</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">unquoted_false</span>
   <span class="ruby-keyword">false</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -554,7 +570,7 @@ layout: default
                 
               </p>
               <div id="method-i-unquoted_true_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 108</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 127</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">unquoted_true</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -110,7 +110,7 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 100</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 99</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">req</span>, <span class="ruby-identifier">check_ip</span>, <span class="ruby-identifier">proxies</span>)
   <span class="ruby-ivar">@req</span>      = <span class="ruby-identifier">req</span>
   <span class="ruby-ivar">@check_ip</span> = <span class="ruby-identifier">check_ip</span>
@@ -136,9 +136,9 @@ layout: default
             <div class="description">
               <p>Sort through the various IP address headers, looking for the IP most likely to be the address of the actual remote client making this request.</p>
 
-<p>REMOTE_ADDR will be correct if the request is made directly against the Ruby process, on e.g. Heroku. When the request is proxied by another server like HAProxy or NGINX, the IP address that made the original request will be put in an X-Forwarded-For header. If there are multiple proxies, that header may contain a list of IPs. Other proxy services set the Client-Ip header instead, so we check that too.</p>
+<p>REMOTE_ADDR will be correct if the request is made directly against the Ruby process, on e.g. Heroku. When the request is proxied by another server like HAProxy or NGINX, the IP address that made the original request will be put in an <code>X-Forwarded-For</code> header. If there are multiple proxies, that header may contain a list of IPs. Other proxy services set the <code>Client-Ip</code> header instead, so we check that too.</p>
 
-<p>As discussed in <a href="https://blog.gingerlime.com/2012/rails-ip-spoofing-vulnerabilities-and-protection/">this post about Rails IP Spoofing</a>, while the first IP in the list is likely to be the “originating” IP, it could also have been set by the client maliciously.</p>
+<p>As discussed in <a href="https://web.archive.org/web/20170626095448/https://blog.gingerlime.com/2012/rails-ip-spoofing-vulnerabilities-and-protection/">this post about Rails IP Spoofing</a>, while the first IP in the list is likely to be the “originating” IP, it could also have been set by the client maliciously.</p>
 
 <p>In order to find the first address that is (probably) accurate, we take the list of IPs, remove known and trusted proxies, and then take the last address left, which was presumably set by one of those proxies.</p>
             </div>
@@ -157,14 +157,14 @@ layout: default
                 
               </p>
               <div id="method-i-calculate_ip_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 124</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 123</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">calculate_ip</span>
   <span class="ruby-comment"># Set by the Rack web server, this is a single value.</span>
   <span class="ruby-identifier">remote_addr</span> = <span class="ruby-identifier">ips_from</span>(<span class="ruby-ivar">@req</span>.<span class="ruby-identifier">remote_addr</span>).<span class="ruby-identifier">last</span>
 
   <span class="ruby-comment"># Could be a CSV list and/or repeated headers that were concatenated.</span>
-  <span class="ruby-identifier">client_ips</span>    = <span class="ruby-identifier">ips_from</span>(<span class="ruby-ivar">@req</span>.<span class="ruby-identifier">client_ip</span>).<span class="ruby-identifier">reverse</span>
-  <span class="ruby-identifier">forwarded_ips</span> = <span class="ruby-identifier">ips_from</span>(<span class="ruby-ivar">@req</span>.<span class="ruby-identifier">x_forwarded_for</span>).<span class="ruby-identifier">reverse</span>
+  <span class="ruby-identifier">client_ips</span>    = <span class="ruby-identifier">ips_from</span>(<span class="ruby-ivar">@req</span>.<span class="ruby-identifier">client_ip</span>).<span class="ruby-identifier">reverse!</span>
+  <span class="ruby-identifier">forwarded_ips</span> = <span class="ruby-identifier">ips_from</span>(<span class="ruby-ivar">@req</span>.<span class="ruby-identifier">x_forwarded_for</span>).<span class="ruby-identifier">reverse!</span>
 
   <span class="ruby-comment"># +Client-Ip+ and +X-Forwarded-For+ should not, generally, both be set.</span>
   <span class="ruby-comment"># If they are both set, it means that either:</span>
@@ -192,7 +192,8 @@ layout: default
   <span class="ruby-comment">#   - X-Forwarded-For will be a list of IPs, one per proxy, or blank</span>
   <span class="ruby-comment">#   - Client-Ip is propagated from the outermost proxy, or is blank</span>
   <span class="ruby-comment">#   - REMOTE_ADDR will be the IP that made the request to Rack</span>
-  <span class="ruby-identifier">ips</span> = [<span class="ruby-identifier">forwarded_ips</span>, <span class="ruby-identifier">client_ips</span>].<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">compact</span>
+  <span class="ruby-identifier">ips</span> = <span class="ruby-identifier">forwarded_ips</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">client_ips</span>
+  <span class="ruby-identifier">ips</span>.<span class="ruby-identifier">compact!</span>
 
   <span class="ruby-comment"># If every single IP option is in the trusted list, return the IP</span>
   <span class="ruby-comment"># that&#39;s furthest away</span>
@@ -267,7 +268,7 @@ layout: default
                 
               </p>
               <div id="method-i-filter_proxies_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 186</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 187</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">filter_proxies</span>(<span class="ruby-identifier">ips</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">ips</span>.<span class="ruby-identifier">reject</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">ip</span><span class="ruby-operator">|</span>
     <span class="ruby-ivar">@proxies</span>.<span class="ruby-identifier">any?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">proxy</span><span class="ruby-operator">|</span> <span class="ruby-identifier">proxy</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">ip</span> }
@@ -309,7 +310,7 @@ layout: default
   <span class="ruby-keyword">return</span> [] <span class="ruby-keyword">unless</span> <span class="ruby-identifier">header</span>
   <span class="ruby-comment"># Split the comma-separated list into an array of strings.</span>
   <span class="ruby-identifier">ips</span> = <span class="ruby-identifier">header</span>.<span class="ruby-identifier">strip</span>.<span class="ruby-identifier">split</span>(<span class="ruby-regexp">/[,\s]+/</span>)
-  <span class="ruby-identifier">ips</span>.<span class="ruby-identifier">select</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">ip</span><span class="ruby-operator">|</span>
+  <span class="ruby-identifier">ips</span>.<span class="ruby-identifier">select!</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">ip</span><span class="ruby-operator">|</span>
     <span class="ruby-comment"># Only return IPs that are valid according to the IPAddr#new method.</span>
     <span class="ruby-identifier">range</span> = <span class="ruby-constant">IPAddr</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">ip</span>).<span class="ruby-identifier">to_range</span>
     <span class="ruby-comment"># We want to make sure nobody is sneaking a netmask in.</span>
@@ -317,6 +318,7 @@ layout: default
   <span class="ruby-keyword">rescue</span> <span class="ruby-constant">ArgumentError</span>
     <span class="ruby-keyword">nil</span>
   <span class="ruby-keyword">end</span>
+  <span class="ruby-identifier">ips</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

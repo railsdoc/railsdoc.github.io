@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -58,6 +58,14 @@ layout: default
       
         <li>
           <a href="#method-i-assert_no_enqueued_emails">assert_no_enqueued_emails</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-capture_emails">capture_emails</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-deliver_enqueued_emails">deliver_enqueued_emails</a>
         </li>
       
     </ul>
@@ -142,13 +150,11 @@ end
                 
               </p>
               <div id="method-i-assert_emails_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 34</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 35</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_emails</span>(<span class="ruby-identifier">number</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
-    <span class="ruby-identifier">original_count</span> = <span class="ruby-constant">ActionMailer</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">deliveries</span>.<span class="ruby-identifier">size</span>
-    <span class="ruby-identifier">perform_enqueued_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-operator">-&gt;</span>(<span class="ruby-identifier">job</span>) { <span class="ruby-identifier">delivery_job_filter</span>(<span class="ruby-identifier">job</span>) }, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-    <span class="ruby-identifier">new_count</span> = <span class="ruby-constant">ActionMailer</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">deliveries</span>.<span class="ruby-identifier">size</span>
-    <span class="ruby-identifier">assert_equal</span> <span class="ruby-identifier">number</span>, <span class="ruby-identifier">new_count</span> <span class="ruby-operator">-</span> <span class="ruby-identifier">original_count</span>, <span class="ruby-node">&quot;#{number} emails expected, but #{new_count - original_count} were sent&quot;</span>
+    <span class="ruby-identifier">diff</span> = <span class="ruby-identifier">capture_emails</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>).<span class="ruby-identifier">length</span>
+    <span class="ruby-identifier">assert_equal</span> <span class="ruby-identifier">number</span>, <span class="ruby-identifier">diff</span>, <span class="ruby-node">&quot;#{number} emails expected, but #{diff} were sent&quot;</span>
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">assert_equal</span> <span class="ruby-identifier">number</span>, <span class="ruby-constant">ActionMailer</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">deliveries</span>.<span class="ruby-identifier">size</span>
   <span class="ruby-keyword">end</span>
@@ -161,22 +167,54 @@ end
         <div class="method">
           <h3 id="method-i-assert_enqueued_email_with">
             
-              assert_enqueued_email_with(mailer, method, args: nil, queue: ActionMailer::Base.deliver_later_queue_name || &quot;default&quot;, &amp;block)
+              assert_enqueued_email_with(mailer, method, params: nil, args: nil, queue: nil, &amp;block)
             
           </h3>
 
           
             <div class="description">
-              <p>Asserts that a specific email has been enqueued, optionally matching arguments.</p>
+              <p>Asserts that a specific email has been enqueued, optionally matching arguments and/or params.</p>
 
 <pre><code>def test_email
   ContactMailer.welcome.deliver_later
   assert_enqueued_email_with ContactMailer, :welcome
 end
 
+def test_email_with_parameters
+  ContactMailer.with(greeting: &quot;Hello&quot;).welcome.deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome, args: { greeting: &quot;Hello&quot; }
+end
+
 def test_email_with_arguments
   ContactMailer.welcome(&quot;Hello&quot;, &quot;Goodbye&quot;).deliver_later
   assert_enqueued_email_with ContactMailer, :welcome, args: [&quot;Hello&quot;, &quot;Goodbye&quot;]
+end
+
+def test_email_with_named_arguments
+  ContactMailer.welcome(greeting: &quot;Hello&quot;, farewell: &quot;Goodbye&quot;).deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome, args: [{ greeting: &quot;Hello&quot;, farewell: &quot;Goodbye&quot; }]
+end
+
+def test_email_with_parameters_and_arguments
+  ContactMailer.with(greeting: &quot;Hello&quot;).welcome(&quot;Cheers&quot;, &quot;Goodbye&quot;).deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome, params: { greeting: &quot;Hello&quot; }, args: [&quot;Cheers&quot;, &quot;Goodbye&quot;]
+end
+
+def test_email_with_parameters_and_named_arguments
+  ContactMailer.with(greeting: &quot;Hello&quot;).welcome(farewell: &quot;Goodbye&quot;).deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome, params: { greeting: &quot;Hello&quot; }, args: [{farewell: &quot;Goodbye&quot;}]
+end
+
+def test_email_with_parameterized_mailer
+  ContactMailer.with(greeting: &quot;Hello&quot;).welcome.deliver_later
+  assert_enqueued_email_with ContactMailer.with(greeting: &quot;Hello&quot;), :welcome
+end
+
+def test_email_with_matchers
+  ContactMailer.with(greeting: &quot;Hello&quot;).welcome(&quot;Cheers&quot;, &quot;Goodbye&quot;).deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome,
+    params: -&gt;(params) { /hello/i.match?(params[:greeting]) },
+    args: -&gt;(args) { /cheers/i.match?(args[0]) }
 end
 </code></pre>
 
@@ -214,15 +252,45 @@ end
                 
               </p>
               <div id="method-i-assert_enqueued_email_with_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 126</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_enqueued_email_with</span>(<span class="ruby-identifier">mailer</span>, <span class="ruby-identifier">method</span>, <span class="ruby-value">args:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-constant">ActionMailer</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">deliver_later_queue_name</span> <span class="ruby-operator">||</span> <span class="ruby-string">&quot;default&quot;</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">args</span> = <span class="ruby-keyword">if</span> <span class="ruby-identifier">args</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>)
-    [<span class="ruby-identifier">mailer</span>.<span class="ruby-identifier">to_s</span>, <span class="ruby-identifier">method</span>.<span class="ruby-identifier">to_s</span>, <span class="ruby-string">&quot;deliver_now&quot;</span>, <span class="ruby-value">params:</span> <span class="ruby-identifier">args</span>, <span class="ruby-value">args:</span> []]
-  <span class="ruby-keyword">else</span>
-    [<span class="ruby-identifier">mailer</span>.<span class="ruby-identifier">to_s</span>, <span class="ruby-identifier">method</span>.<span class="ruby-identifier">to_s</span>, <span class="ruby-string">&quot;deliver_now&quot;</span>, <span class="ruby-value">args:</span> <span class="ruby-constant">Array</span>(<span class="ruby-identifier">args</span>)]
-  <span class="ruby-keyword">end</span>
-  <span class="ruby-identifier">assert_enqueued_with</span>(<span class="ruby-value">job:</span> <span class="ruby-identifier">mailer</span>.<span class="ruby-identifier">delivery_job</span>, <span class="ruby-value">args:</span> <span class="ruby-identifier">args</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>.<span class="ruby-identifier">to_s</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-<span class="ruby-keyword">end</span></code></pre>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 157</span>
+    <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_enqueued_email_with</span>(<span class="ruby-identifier">mailer</span>, <span class="ruby-identifier">method</span>, <span class="ruby-value">params:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">args:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">mailer</span>.<span class="ruby-identifier">is_a?</span> <span class="ruby-constant">ActionMailer</span><span class="ruby-operator">::</span><span class="ruby-constant">Parameterized</span><span class="ruby-operator">::</span><span class="ruby-constant">Mailer</span>
+        <span class="ruby-identifier">params</span> = <span class="ruby-identifier">mailer</span>.<span class="ruby-identifier">instance_variable_get</span>(<span class="ruby-value">:@params</span>)
+        <span class="ruby-identifier">mailer</span> = <span class="ruby-identifier">mailer</span>.<span class="ruby-identifier">instance_variable_get</span>(<span class="ruby-value">:@mailer</span>)
+      <span class="ruby-keyword">end</span>
+
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">args</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Hash</span>)
+        <span class="ruby-constant">ActionMailer</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span> <span class="ruby-identifier">&lt;&lt;~MSG</span>
+<span class="ruby-value">          Passing a Hash to the assert_enqueued_email_with :args kwarg causes the
+          Hash to be treated as params. This behavior is deprecated and will be
+          removed in Rails 7.2.
+
+          To specify a params Hash, use the :params kwarg:
+
+            assert_enqueued_email_with MyMailer, :my_method, params: { my_param: &quot;value&quot; }
+
+          Or, to specify named mailer args as a Hash, wrap the Hash in an array:
+
+            assert_enqueued_email_with MyMailer, :my_method, args: [{ my_arg: &quot;value&quot; }]
+            # OR
+            assert_enqueued_email_with MyMailer, :my_method, args: [my_arg: &quot;value&quot;]
+</span><span class="ruby-identifier">        MSG</span>
+
+        <span class="ruby-identifier">params</span>, <span class="ruby-identifier">args</span> = <span class="ruby-identifier">args</span>, <span class="ruby-keyword">nil</span>
+      <span class="ruby-keyword">end</span>
+
+      <span class="ruby-identifier">args</span> = <span class="ruby-constant">Array</span>(<span class="ruby-identifier">args</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">args</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Proc</span>)
+      <span class="ruby-identifier">queue</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">mailer</span>.<span class="ruby-identifier">deliver_later_queue_name</span> <span class="ruby-operator">||</span> <span class="ruby-constant">ActiveJob</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">default_queue_name</span>
+
+      <span class="ruby-identifier">expected</span> = <span class="ruby-operator">-&gt;</span>(<span class="ruby-identifier">job_args</span>) <span class="ruby-keyword">do</span>
+        <span class="ruby-identifier">job_kwargs</span> = <span class="ruby-identifier">job_args</span>.<span class="ruby-identifier">extract_options!</span>
+
+        [<span class="ruby-identifier">mailer</span>.<span class="ruby-identifier">to_s</span>, <span class="ruby-identifier">method</span>.<span class="ruby-identifier">to_s</span>, <span class="ruby-string">&quot;deliver_now&quot;</span>] <span class="ruby-operator">==</span> <span class="ruby-identifier">job_args</span> <span class="ruby-operator">&amp;&amp;</span>
+          <span class="ruby-identifier">params</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">job_kwargs</span>[<span class="ruby-value">:params</span>] <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">args</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">job_kwargs</span>[<span class="ruby-value">:args</span>]
+      <span class="ruby-keyword">end</span>
+
+      <span class="ruby-identifier">assert_enqueued_with</span>(<span class="ruby-value">job:</span> <span class="ruby-identifier">mailer</span>.<span class="ruby-identifier">delivery_job</span>, <span class="ruby-value">args:</span> <span class="ruby-identifier">expected</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>.<span class="ruby-identifier">to_s</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+    <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
@@ -277,7 +345,7 @@ end
                 
               </p>
               <div id="method-i-assert_enqueued_emails_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 92</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 91</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_enqueued_emails</span>(<span class="ruby-identifier">number</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">assert_enqueued_jobs</span>(<span class="ruby-identifier">number</span>, <span class="ruby-value">only:</span> <span class="ruby-operator">-&gt;</span>(<span class="ruby-identifier">job</span>) { <span class="ruby-identifier">delivery_job_filter</span>(<span class="ruby-identifier">job</span>) }, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -333,7 +401,7 @@ end
                 
               </p>
               <div id="method-i-assert_no_emails_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 64</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 63</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_no_emails</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">assert_emails</span> <span class="ruby-value">0</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -384,9 +452,130 @@ end
                 
               </p>
               <div id="method-i-assert_no_enqueued_emails_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 150</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 211</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_no_enqueued_emails</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">assert_enqueued_emails</span> <span class="ruby-value">0</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-capture_emails">
+            
+              capture_emails(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns any emails that are sent in the block.</p>
+
+<pre><code>def test_emails
+  emails = capture_emails do
+    ContactMailer.welcome.deliver_now
+  end
+  assert_equal &quot;Hi there&quot;, emails.first.subject
+
+  emails = capture_emails do
+    ContactMailer.welcome.deliver_now
+    ContactMailer.welcome.deliver_later
+  end
+  assert_equal &quot;Hi there&quot;, emails.first.subject
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-capture_emails_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 269</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">capture_emails</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">original_count</span> = <span class="ruby-constant">ActionMailer</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">deliveries</span>.<span class="ruby-identifier">size</span>
+  <span class="ruby-identifier">deliver_enqueued_emails</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">new_count</span> = <span class="ruby-constant">ActionMailer</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">deliveries</span>.<span class="ruby-identifier">size</span>
+  <span class="ruby-identifier">diff</span> = <span class="ruby-identifier">new_count</span> <span class="ruby-operator">-</span> <span class="ruby-identifier">original_count</span>
+  <span class="ruby-constant">ActionMailer</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">deliveries</span>.<span class="ruby-identifier">last</span>(<span class="ruby-identifier">diff</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-deliver_enqueued_emails">
+            
+              deliver_enqueued_emails(queue: nil, at: nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Delivers all enqueued emails. If a block is given, delivers all of the emails that were enqueued throughout the duration of the block. If a block is not given, delivers all the enqueued emails up to this point in the test.</p>
+
+<pre><code>def test_deliver_enqueued_emails
+  deliver_enqueued_emails do
+    ContactMailer.welcome.deliver_later
+  end
+
+  assert_emails 1
+end
+
+def test_deliver_enqueued_emails_without_block
+  ContactMailer.welcome.deliver_later
+
+  deliver_enqueued_emails
+
+  assert_emails 1
+end
+</code></pre>
+
+<p>If the <code>:queue</code> option is specified, then only the emails(s) enqueued to a specific queue will be performed.</p>
+
+<pre><code>def test_deliver_enqueued_emails_with_queue
+  deliver_enqueued_emails queue: :external_mailers do
+    CustomerMailer.deliver_later_queue_name = :external_mailers
+    CustomerMailer.welcome.deliver_later # will be performed
+    EmployeeMailer.deliver_later_queue_name = :internal_mailers
+    EmployeeMailer.welcome.deliver_later # will not be performed
+  end
+
+  assert_emails 1
+end
+</code></pre>
+
+<p>If the <code>:at</code> option is specified, then only delivers emails enqueued to deliver immediately or before the given time.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-deliver_enqueued_emails_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionmailer/lib/action_mailer/test_helper.rb, line 251</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deliver_enqueued_emails</span>(<span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">at:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">perform_enqueued_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-operator">-&gt;</span>(<span class="ruby-identifier">job</span>) { <span class="ruby-identifier">delivery_job_filter</span>(<span class="ruby-identifier">job</span>) }, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-value">at:</span> <span class="ruby-identifier">at</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

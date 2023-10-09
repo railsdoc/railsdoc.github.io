@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -161,21 +161,27 @@ layout: default
               <div id="method-i-bind_locals_source">
                 <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/unbound_template.rb, line 20</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">bind_locals</span>(<span class="ruby-identifier">locals</span>)
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">template</span> = <span class="ruby-ivar">@templates</span>[<span class="ruby-identifier">locals</span>]
-    <span class="ruby-identifier">template</span>
-  <span class="ruby-keyword">else</span>
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">template</span> = <span class="ruby-ivar">@templates</span>[<span class="ruby-identifier">locals</span>]
     <span class="ruby-ivar">@write_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
       <span class="ruby-identifier">normalized_locals</span> = <span class="ruby-identifier">normalize_locals</span>(<span class="ruby-identifier">locals</span>)
 
       <span class="ruby-comment"># We need ||=, both to dedup on the normalized locals and to check</span>
       <span class="ruby-comment"># while holding the lock.</span>
-      <span class="ruby-ivar">@templates</span>[<span class="ruby-identifier">normalized_locals</span>] <span class="ruby-operator">||=</span> <span class="ruby-identifier">build_template</span>(<span class="ruby-identifier">normalized_locals</span>)
+      <span class="ruby-identifier">template</span> = (<span class="ruby-ivar">@templates</span>[<span class="ruby-identifier">normalized_locals</span>] <span class="ruby-operator">||=</span> <span class="ruby-identifier">build_template</span>(<span class="ruby-identifier">normalized_locals</span>))
 
       <span class="ruby-comment"># This may have already been assigned, but we&#39;ve already de-dup&#39;d so</span>
       <span class="ruby-comment"># reassignment is fine.</span>
-      <span class="ruby-ivar">@templates</span>[<span class="ruby-identifier">locals</span>.<span class="ruby-identifier">dup</span>] = <span class="ruby-ivar">@templates</span>[<span class="ruby-identifier">normalized_locals</span>]
+      <span class="ruby-ivar">@templates</span>[<span class="ruby-identifier">locals</span>.<span class="ruby-identifier">dup</span>] = <span class="ruby-identifier">template</span>
+
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">template</span>.<span class="ruby-identifier">strict_locals?</span>
+        <span class="ruby-comment"># Under strict locals, we only need one template.</span>
+        <span class="ruby-comment"># This replaces the @templates Concurrent::Map with a hash which</span>
+        <span class="ruby-comment"># returns this template for every key.</span>
+        <span class="ruby-ivar">@templates</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">template</span>).<span class="ruby-identifier">freeze</span>
+      <span class="ruby-keyword">end</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
+  <span class="ruby-identifier">template</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

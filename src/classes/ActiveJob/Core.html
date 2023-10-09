@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -23,6 +23,8 @@ layout: default
   
     <div class="description">
       
+<h1 id="module-ActiveJob::Core-label-Active+Job+Core">Active Job Core</h1>
+
 <p>Provides general behavior that will be included into every Active Job object that inherits from <a href="Base.html"><code>ActiveJob::Base</code></a>.</p>
 
     </div>
@@ -59,6 +61,10 @@ layout: default
       
         <li>
           <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-scheduled_at-3D">scheduled_at=</a>
         </li>
       
         <li>
@@ -168,10 +174,10 @@ layout: default
         
           <tr valign='top'>
             <td class='attr-rw'>
-              [RW]
+              [R]
             </td>
             <td class='attr-name'>scheduled_at</td>
-            <td class='attr-desc'><p>Timestamp when the job should be performed</p></td>
+            <td class='attr-desc'><p><a href="../Time.html"><code>Time</code></a> when the job should be performed</p></td>
           </tr>
         
           <tr valign='top'>
@@ -223,11 +229,13 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 91</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 95</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">arguments</span>)
   <span class="ruby-ivar">@arguments</span>  = <span class="ruby-identifier">arguments</span>
   <span class="ruby-ivar">@job_id</span>     = <span class="ruby-constant">SecureRandom</span>.<span class="ruby-identifier">uuid</span>
   <span class="ruby-ivar">@queue_name</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">queue_name</span>
+  <span class="ruby-ivar">@scheduled_at</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-ivar">@_scheduled_at_time</span> = <span class="ruby-keyword">nil</span>
   <span class="ruby-ivar">@priority</span>   = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">priority</span>
   <span class="ruby-ivar">@executions</span> = <span class="ruby-value">0</span>
   <span class="ruby-ivar">@exception_executions</span> = {}
@@ -293,7 +301,7 @@ end
                 
               </p>
               <div id="method-i-deserialize_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 146</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 153</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deserialize</span>(<span class="ruby-identifier">job_data</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">job_id</span>               = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;job_id&quot;</span>]
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">provider_job_id</span>      = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;provider_job_id&quot;</span>]
@@ -304,8 +312,52 @@ end
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">exception_executions</span> = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;exception_executions&quot;</span>]
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">locale</span>               = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;locale&quot;</span>] <span class="ruby-operator">||</span> <span class="ruby-constant">I18n</span>.<span class="ruby-identifier">locale</span>.<span class="ruby-identifier">to_s</span>
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">timezone</span>             = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;timezone&quot;</span>] <span class="ruby-operator">||</span> <span class="ruby-constant">Time</span>.<span class="ruby-identifier">zone</span>&amp;.<span class="ruby-identifier">name</span>
-  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">enqueued_at</span>          = <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;enqueued_at&quot;</span>]
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">enqueued_at</span>          = <span class="ruby-constant">Time</span>.<span class="ruby-identifier">iso8601</span>(<span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;enqueued_at&quot;</span>]) <span class="ruby-keyword">if</span> <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;enqueued_at&quot;</span>]
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">scheduled_at</span>         = <span class="ruby-constant">Time</span>.<span class="ruby-identifier">iso8601</span>(<span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;scheduled_at&quot;</span>]) <span class="ruby-keyword">if</span> <span class="ruby-identifier">job_data</span>[<span class="ruby-string">&quot;scheduled_at&quot;</span>]
 <span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-scheduled_at-3D">
+            
+              scheduled_at=(value)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-scheduled_at-3D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 177</span>
+    <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">scheduled_at=</span>(<span class="ruby-identifier">value</span>)
+      <span class="ruby-ivar">@_scheduled_at_time</span> = <span class="ruby-keyword">if</span> <span class="ruby-identifier">value</span>&amp;.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Numeric</span>)
+        <span class="ruby-constant">ActiveJob</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;~MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">          Assigning a numeric/epoch value to scheduled_at is deprecated. Use a Time object instead.
+</span><span class="ruby-identifier">        MSG</span>
+        <span class="ruby-constant">Time</span>.<span class="ruby-identifier">at</span>(<span class="ruby-identifier">value</span>)
+      <span class="ruby-keyword">else</span>
+        <span class="ruby-identifier">value</span>
+      <span class="ruby-keyword">end</span>
+      <span class="ruby-ivar">@scheduled_at</span> = <span class="ruby-identifier">value</span>
+    <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             
@@ -337,7 +389,7 @@ end
                 
               </p>
               <div id="method-i-serialize_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 104</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 110</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">serialize</span>
   {
     <span class="ruby-string">&quot;job_class&quot;</span>  <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">name</span>,
@@ -350,7 +402,8 @@ end
     <span class="ruby-string">&quot;exception_executions&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">exception_executions</span>,
     <span class="ruby-string">&quot;locale&quot;</span>     <span class="ruby-operator">=&gt;</span> <span class="ruby-constant">I18n</span>.<span class="ruby-identifier">locale</span>.<span class="ruby-identifier">to_s</span>,
     <span class="ruby-string">&quot;timezone&quot;</span>   <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">timezone</span>,
-    <span class="ruby-string">&quot;enqueued_at&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-constant">Time</span>.<span class="ruby-identifier">now</span>.<span class="ruby-identifier">utc</span>.<span class="ruby-identifier">iso8601</span>
+    <span class="ruby-string">&quot;enqueued_at&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-constant">Time</span>.<span class="ruby-identifier">now</span>.<span class="ruby-identifier">utc</span>.<span class="ruby-identifier">iso8601</span>(<span class="ruby-value">9</span>),
+    <span class="ruby-string">&quot;scheduled_at&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">_scheduled_at_time</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">_scheduled_at_time</span>.<span class="ruby-identifier">utc</span>.<span class="ruby-identifier">iso8601</span>(<span class="ruby-value">9</span>) <span class="ruby-operator">:</span> <span class="ruby-keyword">nil</span>,
   }
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -384,7 +437,7 @@ end
                 
               </p>
               <div id="method-i-successfully_enqueued-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 49</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/core.rb, line 53</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">successfully_enqueued?</span>
   <span class="ruby-ivar">@successfully_enqueued</span>
 <span class="ruby-keyword">end</span></code></pre>

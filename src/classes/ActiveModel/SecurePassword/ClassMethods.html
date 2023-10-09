@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -80,7 +80,7 @@ layout: default
 
           
             <div class="description">
-              <p>Adds methods to set and authenticate against a BCrypt password. This mechanism requires you to have a <code>XXX_digest</code> attribute. Where <code>XXX</code> is the attribute name of your desired password.</p>
+              <p>Adds methods to set and authenticate against a BCrypt password. This mechanism requires you to have a <code>XXX_digest</code> attribute, where <code>XXX</code> is the attribute name of your desired password.</p>
 
 <p>The following validations are added automatically:</p>
 <ul><li>
@@ -91,11 +91,13 @@ layout: default
 <p>Confirmation of password (using a <code>XXX_confirmation</code> attribute)</p>
 </li></ul>
 
-<p>If confirmation validation is not needed, simply leave out the value for <code>XXX_confirmation</code> (i.e. don&#39;t provide a form field for it). When this attribute has a <code>nil</code> value, the validation will not be triggered.</p>
+<p>If confirmation validation is not needed, simply leave out the value for <code>XXX_confirmation</code> (i.e. don’t provide a form field for it). When this attribute has a <code>nil</code> value, the validation will not be triggered.</p>
 
-<p>For further customizability, it is possible to suppress the default validations by passing <code>validations: false</code> as an argument.</p>
+<p>Additionally, a <code>XXX_challenge</code> attribute is created. When set to a value other than <code>nil</code>, it will validate against the currently persisted password. This validation relies on dirty tracking, as provided by <a href="../Dirty.html"><code>ActiveModel::Dirty</code></a>; if dirty tracking methods are not defined, this validation will fail.</p>
 
-<p>Add bcrypt (~&gt; 3.1.7) to Gemfile to use <a href="ClassMethods.html#method-i-has_secure_password"><code>has_secure_password</code></a>:</p>
+<p>All of the above validations can be omitted by passing <code>validations: false</code> as an argument. This allows complete customizability of validation behavior.</p>
+
+<p>To use <code>has_secure_password</code>, add bcrypt (~&gt; 3.1.7) to your Gemfile:</p>
 
 <pre><code>gem &#39;bcrypt&#39;, &#39;~&gt; 3.1.7&#39;
 </code></pre>
@@ -110,20 +112,30 @@ class User &lt; ActiveRecord::Base
   has_secure_password :recovery_password, validations: false
 end
 
-user = User.new(name: &#39;david&#39;, password: &#39;&#39;, password_confirmation: &#39;nomatch&#39;)
-user.save                                                  # =&gt; false, password required
-user.password = &#39;mUc3m00RsqyRe&#39;
-user.save                                                  # =&gt; false, confirmation doesn&#39;t match
-user.password_confirmation = &#39;mUc3m00RsqyRe&#39;
-user.save                                                  # =&gt; true
+user = User.new(name: &quot;david&quot;, password: &quot;&quot;, password_confirmation: &quot;nomatch&quot;)
+
+user.save                                                      # =&gt; false, password required
+user.password = &quot;vr00m&quot;
+user.save                                                      # =&gt; false, confirmation doesn&#39;t match
+user.password_confirmation = &quot;vr00m&quot;
+user.save                                                      # =&gt; true
+
+user.authenticate(&quot;notright&quot;)                                  # =&gt; false
+user.authenticate(&quot;vr00m&quot;)                                     # =&gt; user
+User.find_by(name: &quot;david&quot;)&amp;.authenticate(&quot;notright&quot;)          # =&gt; false
+User.find_by(name: &quot;david&quot;)&amp;.authenticate(&quot;vr00m&quot;)             # =&gt; user
+
 user.recovery_password = &quot;42password&quot;
-user.recovery_password_digest                              # =&gt; &quot;$2a$04$iOfhwahFymCs5weB3BNH/uXkTG65HR.qpW.bNhEjFP3ftli3o5DQC&quot;
-user.save                                                  # =&gt; true
-user.authenticate(&#39;notright&#39;)                              # =&gt; false
-user.authenticate(&#39;mUc3m00RsqyRe&#39;)                         # =&gt; user
-user.authenticate_recovery_password(&#39;42password&#39;)          # =&gt; user
-User.find_by(name: &#39;david&#39;)&amp;.authenticate(&#39;notright&#39;)      # =&gt; false
-User.find_by(name: &#39;david&#39;)&amp;.authenticate(&#39;mUc3m00RsqyRe&#39;) # =&gt; user
+user.recovery_password_digest                                  # =&gt; &quot;$2a$04$iOfhwahFymCs5weB3BNH/uXkTG65HR.qpW.bNhEjFP3ftli3o5DQC&quot;
+user.save                                                      # =&gt; true
+
+user.authenticate_recovery_password(&quot;42password&quot;)              # =&gt; user
+
+user.update(password: &quot;pwn3d&quot;, password_challenge: &quot;&quot;)         # =&gt; false, challenge doesn&#39;t authenticate
+user.update(password: &quot;nohack4u&quot;, password_challenge: &quot;vr00m&quot;) # =&gt; true
+
+user.authenticate(&quot;vr00m&quot;)                                     # =&gt; false, old password
+user.authenticate(&quot;nohack4u&quot;)                                  # =&gt; user
 </code></pre>
 
 <h5 id="method-i-has_secure_password-label-Conditionally+requiring+a+password">Conditionally requiring a password</h5>
@@ -162,7 +174,7 @@ account.valid? # =&gt; true
                 
               </p>
               <div id="method-i-has_secure_password_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/secure_password.rb, line 84</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/secure_password.rb, line 101</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_secure_password</span>(<span class="ruby-identifier">attribute</span> = <span class="ruby-value">:password</span>, <span class="ruby-value">validations:</span> <span class="ruby-keyword">true</span>)
   <span class="ruby-comment"># Load bcrypt gem only when has_secure_password is used.</span>
   <span class="ruby-comment"># This is to avoid ActiveModel (and by extension the entire framework)</span>
@@ -170,7 +182,7 @@ account.valid? # =&gt; true
   <span class="ruby-keyword">begin</span>
     <span class="ruby-identifier">require</span> <span class="ruby-string">&quot;bcrypt&quot;</span>
   <span class="ruby-keyword">rescue</span> <span class="ruby-constant">LoadError</span>
-    <span class="ruby-identifier">$stderr</span>.<span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;You don&#39;t have bcrypt installed in your application. Please add it to your Gemfile and run bundle install&quot;</span>
+    <span class="ruby-identifier">warn</span> <span class="ruby-string">&quot;You don&#39;t have bcrypt installed in your application. Please add it to your Gemfile and run bundle install.&quot;</span>
     <span class="ruby-identifier">raise</span>
   <span class="ruby-keyword">end</span>
 
@@ -187,7 +199,24 @@ account.valid? # =&gt; true
       <span class="ruby-identifier">record</span>.<span class="ruby-identifier">errors</span>.<span class="ruby-identifier">add</span>(<span class="ruby-identifier">attribute</span>, <span class="ruby-value">:blank</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{attribute}_digest&quot;</span>).<span class="ruby-identifier">present?</span>
     <span class="ruby-keyword">end</span>
 
-    <span class="ruby-identifier">validates_length_of</span> <span class="ruby-identifier">attribute</span>, <span class="ruby-value">maximum:</span> <span class="ruby-constant">ActiveModel</span><span class="ruby-operator">::</span><span class="ruby-constant">SecurePassword</span><span class="ruby-operator">::</span><span class="ruby-constant">MAX_PASSWORD_LENGTH_ALLOWED</span>
+    <span class="ruby-identifier">validate</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">record</span><span class="ruby-operator">|</span>
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">challenge</span> = <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-value">:&quot;#{attribute}_challenge&quot;</span>)
+        <span class="ruby-identifier">digest_was</span> = <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-value">:&quot;#{attribute}_digest_was&quot;</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:&quot;#{attribute}_digest_was&quot;</span>)
+
+        <span class="ruby-keyword">unless</span> <span class="ruby-identifier">digest_was</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-constant">BCrypt</span><span class="ruby-operator">::</span><span class="ruby-constant">Password</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">digest_was</span>).<span class="ruby-identifier">is_password?</span>(<span class="ruby-identifier">challenge</span>)
+          <span class="ruby-identifier">record</span>.<span class="ruby-identifier">errors</span>.<span class="ruby-identifier">add</span>(<span class="ruby-value">:&quot;#{attribute}_challenge&quot;</span>)
+        <span class="ruby-keyword">end</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-comment"># Validates that the password does not exceed the maximum allowed bytes for BCrypt (72 bytes).</span>
+    <span class="ruby-identifier">validate</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">record</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">password_value</span> = <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">attribute</span>)
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">password_value</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">password_value</span>.<span class="ruby-identifier">bytesize</span> <span class="ruby-operator">&gt;</span> <span class="ruby-constant">ActiveModel</span><span class="ruby-operator">::</span><span class="ruby-constant">SecurePassword</span><span class="ruby-operator">::</span><span class="ruby-constant">MAX_PASSWORD_LENGTH_ALLOWED</span>
+        <span class="ruby-identifier">record</span>.<span class="ruby-identifier">errors</span>.<span class="ruby-identifier">add</span>(<span class="ruby-identifier">attribute</span>, <span class="ruby-value">:password_too_long</span>)
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+
     <span class="ruby-identifier">validates_confirmation_of</span> <span class="ruby-identifier">attribute</span>, <span class="ruby-value">allow_blank:</span> <span class="ruby-keyword">true</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>

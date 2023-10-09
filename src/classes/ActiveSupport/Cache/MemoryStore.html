@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -29,7 +29,9 @@ layout: default
   
     <div class="description">
       
-<p>A cache store implementation which stores everything into memory in the same process. If you&#39;re running multiple Ruby on Rails server processes (which is the case if you&#39;re using Phusion Passenger or puma clustered mode), then this means that Rails server process instances won&#39;t be able to share cache data with each other and this may not be the most appropriate cache in that scenario.</p>
+<h1 id="class-ActiveSupport::Cache::MemoryStore-label-Memory+Cache+Store">Memory Cache Store</h1>
+
+<p>A cache store implementation which stores everything into memory in the same process. If you’re running multiple Ruby on Rails server processes (which is the case if you’re using Phusion Passenger or puma clustered mode), then this means that Rails server process instances won’t be able to share cache data with each other and this may not be the most appropriate cache in that scenario.</p>
 
 <p>This cache has a bounded size specified by the <code>:size</code> options to the initializer (default is 32Mb). When the cache exceeds the allotted size, a cleanup will occur which tries to prune the cache down to three quarters of the maximum size by removing the least recently used entries.</p>
 
@@ -150,9 +152,10 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 48</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 73</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">options</span> <span class="ruby-operator">||=</span> {}
+  <span class="ruby-identifier">options</span>[<span class="ruby-value">:coder</span>] = <span class="ruby-constant">DupCoder</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">options</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:coder</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">options</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:serializer</span>)
   <span class="ruby-comment"># Disable compression by default.</span>
   <span class="ruby-identifier">options</span>[<span class="ruby-value">:compress</span>] <span class="ruby-operator">||=</span> <span class="ruby-keyword">false</span>
   <span class="ruby-keyword">super</span>(<span class="ruby-identifier">options</span>)
@@ -194,7 +197,7 @@ layout: default
                 
               </p>
               <div id="method-c-supports_cache_versioning-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 62</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 88</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">supports_cache_versioning?</span>
   <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -233,10 +236,10 @@ layout: default
                 
               </p>
               <div id="method-i-cleanup_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 75</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 101</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">cleanup</span>(<span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
-  <span class="ruby-identifier">instrument</span>(<span class="ruby-value">:cleanup</span>, <span class="ruby-value">size:</span> <span class="ruby-ivar">@data</span>.<span class="ruby-identifier">size</span>) <span class="ruby-keyword">do</span>
+  <span class="ruby-identifier">_instrument</span>(<span class="ruby-value">:cleanup</span>, <span class="ruby-value">size:</span> <span class="ruby-ivar">@data</span>.<span class="ruby-identifier">size</span>) <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">keys</span> = <span class="ruby-identifier">synchronize</span> { <span class="ruby-ivar">@data</span>.<span class="ruby-identifier">keys</span> }
     <span class="ruby-identifier">keys</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">key</span><span class="ruby-operator">|</span>
       <span class="ruby-identifier">entry</span> = <span class="ruby-ivar">@data</span>[<span class="ruby-identifier">key</span>]
@@ -275,7 +278,7 @@ layout: default
                 
               </p>
               <div id="method-i-clear_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 67</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 93</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear</span>(<span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-ivar">@data</span>.<span class="ruby-identifier">clear</span>
@@ -296,7 +299,18 @@ layout: default
 
           
             <div class="description">
-              <p>Decrement an integer value in the cache.</p>
+              <p>Decrement a cached integer value. Returns the updated value.</p>
+
+<p>If the key is unset or has expired, it will be set to <code>-amount</code>.</p>
+
+<pre><code>cache.decrement(&quot;foo&quot;) # =&gt; -1
+</code></pre>
+
+<p>To set a specific value, call <a href="Store.html#method-i-write"><code>write</code></a>:</p>
+
+<pre><code>cache.write(&quot;baz&quot;, 5)
+cache.decrement(&quot;baz&quot;) # =&gt; 4
+</code></pre>
             </div>
           
 
@@ -313,7 +327,7 @@ layout: default
                 
               </p>
               <div id="method-i-decrement_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 117</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 164</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">decrement</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">amount</span> = <span class="ruby-value">1</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">modify_value</span>(<span class="ruby-identifier">name</span>, <span class="ruby-operator">-</span><span class="ruby-identifier">amount</span>, <span class="ruby-identifier">options</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -348,7 +362,7 @@ layout: default
                 
               </p>
               <div id="method-i-delete_matched_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 122</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 169</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete_matched</span>(<span class="ruby-identifier">matcher</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">instrument</span>(<span class="ruby-value">:delete_matched</span>, <span class="ruby-identifier">matcher</span>.<span class="ruby-identifier">inspect</span>) <span class="ruby-keyword">do</span>
@@ -373,7 +387,19 @@ layout: default
 
           
             <div class="description">
-              <p>Increment an integer value in the cache.</p>
+              <p>Increment a cached integer value. Returns the updated value.</p>
+
+<p>If the key is unset, it will be set to <code>amount</code>:</p>
+
+<pre><code>cache.increment(&quot;foo&quot;) # =&gt; 1
+cache.increment(&quot;bar&quot;, 100) # =&gt; 100
+</code></pre>
+
+<p>To set a specific value, call <a href="Store.html#method-i-write"><code>write</code></a>:</p>
+
+<pre><code>cache.write(&quot;baz&quot;, 5)
+cache.increment(&quot;baz&quot;) # =&gt; 6
+</code></pre>
             </div>
           
 
@@ -390,7 +416,7 @@ layout: default
                 
               </p>
               <div id="method-i-increment_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 112</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 149</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">increment</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">amount</span> = <span class="ruby-value">1</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-identifier">modify_value</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">amount</span>, <span class="ruby-identifier">options</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -425,7 +451,7 @@ layout: default
                 
               </p>
               <div id="method-i-prune_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 88</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 114</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">prune</span>(<span class="ruby-identifier">target_size</span>, <span class="ruby-identifier">max_time</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">pruning?</span>
   <span class="ruby-ivar">@pruning</span> = <span class="ruby-keyword">true</span>
@@ -474,7 +500,7 @@ layout: default
                 
               </p>
               <div id="method-i-pruning-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 107</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/memory_store.rb, line 133</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">pruning?</span>
   <span class="ruby-ivar">@pruning</span>
 <span class="ruby-keyword">end</span></code></pre>

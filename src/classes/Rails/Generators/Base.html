@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -200,7 +200,7 @@ layout: default
                 
               </p>
               <div id="method-c-base_root_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 228</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 236</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">base_root</span>
   <span class="ruby-identifier">__dir__</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -235,7 +235,7 @@ layout: default
                 
               </p>
               <div id="method-c-default_source_root_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 219</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 227</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">default_source_root</span>
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">base_name</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">generator_name</span>
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">default_generator_root</span>
@@ -355,13 +355,13 @@ end
 <pre><code>&quot;rails:test_unit&quot;, &quot;test_unit:controller&quot;, &quot;test_unit&quot;
 </code></pre>
 
-<p>Notice that “rails:generators:test_unit” could be loaded as well, what <a href="../Rails.html"><code>Rails</code></a> looks for is the first and last parts of the namespace. This is what allows any test framework to hook into <a href="../Rails.html"><code>Rails</code></a> as long as it provides any of the hooks above.</p>
+<p>Notice that “rails:generators:test_unit” could be loaded as well, what Rails looks for is the first and last parts of the namespace. This is what allows any test framework to hook into Rails as long as it provides any of the hooks above.</p>
 
 <h4 id="method-c-hook_for-label-Options">Options</h4>
 
 <p>The first and last part used to find the generator to be invoked are guessed based on class invokes <a href="Base.html#method-c-hook_for"><code>hook_for</code></a>, as noticed in the example above. This can be customized with two options: <code>:in</code> and <code>:as</code>.</p>
 
-<p>Let&#39;s suppose you are creating a generator that needs to invoke the controller generator from test unit. Your first attempt is:</p>
+<p>Let’s suppose you are creating a generator that needs to invoke the controller generator from test unit. Your first attempt is:</p>
 
 <pre><code>class AwesomeGenerator &lt; Rails::Generators::Base
   hook_for :test_framework
@@ -471,6 +471,13 @@ end
       <span class="ruby-identifier">class_option</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">defaults</span>.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>))
     <span class="ruby-keyword">end</span>
 
+    <span class="ruby-identifier">klass</span> = <span class="ruby-keyword">self</span>
+
+    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">define_method</span>(<span class="ruby-node">&quot;#{name}_generator&quot;</span>) <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">value</span> = <span class="ruby-identifier">class_options</span>[<span class="ruby-identifier">name</span>].<span class="ruby-identifier">default</span>
+      <span class="ruby-constant">Rails</span><span class="ruby-operator">::</span><span class="ruby-constant">Generators</span>.<span class="ruby-identifier">find_by_namespace</span>(<span class="ruby-identifier">klass</span>.<span class="ruby-identifier">generator_name</span>, <span class="ruby-identifier">value</span>)
+    <span class="ruby-keyword">end</span>
+
     <span class="ruby-identifier">hooks</span>[<span class="ruby-identifier">name</span>] = [ <span class="ruby-identifier">in_base</span>, <span class="ruby-identifier">as_hook</span> ]
     <span class="ruby-identifier">invoke_from_option</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">end</span>
@@ -489,7 +496,7 @@ end
 
           
             <div class="description">
-              <p>Convenience method to get the namespace from the class name. It&#39;s the same as Thor default except that the Generator at the end of the class is removed.</p>
+              <p>Convenience method to get the namespace from the class name. It’s the same as Thor default except that the Generator at the end of the class is removed.</p>
             </div>
           
 
@@ -545,11 +552,12 @@ end
                 
               </p>
               <div id="method-c-remove_hook_for_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 200</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 207</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">remove_hook_for</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>)
   <span class="ruby-identifier">remove_invocation</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>)
 
   <span class="ruby-identifier">names</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">undef_method</span>(<span class="ruby-node">&quot;#{name}_generator&quot;</span>)
     <span class="ruby-identifier">hooks</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -623,7 +631,7 @@ end
                 
               </p>
               <div id="method-c-add_shebang_option-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 388</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 396</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">add_shebang_option!</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">class_option</span> <span class="ruby-value">:ruby</span>, <span class="ruby-value">type:</span> <span class="ruby-value">:string</span>, <span class="ruby-value">aliases:</span> <span class="ruby-string">&quot;-r&quot;</span>, <span class="ruby-value">default:</span> <span class="ruby-constant">Thor</span><span class="ruby-operator">::</span><span class="ruby-constant">Util</span>.<span class="ruby-identifier">ruby_command</span>,
                       <span class="ruby-value">desc:</span> <span class="ruby-string">&quot;Path to the Ruby binary of your choice&quot;</span>, <span class="ruby-value">banner:</span> <span class="ruby-string">&quot;PATH&quot;</span>
@@ -655,7 +663,7 @@ end
 
           
             <div class="description">
-              <p>Use <a href="../Rails.html"><code>Rails</code></a> default banner.</p>
+              <p>Use Rails default banner.</p>
             </div>
           
 
@@ -672,9 +680,9 @@ end
                 
               </p>
               <div id="method-c-banner_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 321</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 329</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">banner</span> <span class="ruby-comment"># :doc:</span>
-  <span class="ruby-node">&quot;rails generate #{namespace.delete_prefix(&quot;rails:&quot;)} #{arguments.map(&amp;:usage).join(&#39; &#39;)} [options]&quot;</span>.<span class="ruby-identifier">gsub</span>(<span class="ruby-regexp">/\s+/</span>, <span class="ruby-string">&quot; &quot;</span>)
+  <span class="ruby-node">&quot;bin/rails generate #{namespace.delete_prefix(&quot;rails:&quot;)} #{arguments.map(&amp;:usage).join(&#39; &#39;)} [options]&quot;</span>.<span class="ruby-identifier">gsub</span>(<span class="ruby-regexp">/\s+/</span>, <span class="ruby-string">&quot; &quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -707,7 +715,7 @@ end
                 
               </p>
               <div id="method-c-base_name_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 326</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 334</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">base_name</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-ivar">@base_name</span> <span class="ruby-operator">||=</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">base</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;::&quot;</span>).<span class="ruby-identifier">first</span>
     <span class="ruby-identifier">base</span>.<span class="ruby-identifier">underscore</span>
@@ -744,7 +752,7 @@ end
                 
               </p>
               <div id="method-c-default_aliases_for_option_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 349</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 357</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">default_aliases_for_option</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">default_for_option</span>(<span class="ruby-constant">Rails</span><span class="ruby-operator">::</span><span class="ruby-constant">Generators</span>.<span class="ruby-identifier">aliases</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>, <span class="ruby-identifier">options</span>[<span class="ruby-value">:aliases</span>])
 <span class="ruby-keyword">end</span></code></pre>
@@ -779,7 +787,7 @@ end
                 
               </p>
               <div id="method-c-default_for_option_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 354</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 362</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">default_for_option</span>(<span class="ruby-identifier">config</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>, <span class="ruby-identifier">default</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">generator_name</span> <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-identifier">c</span> = <span class="ruby-identifier">config</span>[<span class="ruby-identifier">generator_name</span>.<span class="ruby-identifier">to_sym</span>]) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">c</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-identifier">name</span>)
     <span class="ruby-identifier">c</span>[<span class="ruby-identifier">name</span>]
@@ -822,7 +830,7 @@ end
                 
               </p>
               <div id="method-c-default_generator_root_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 414</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 422</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">default_generator_root</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">path</span> = <span class="ruby-constant">File</span>.<span class="ruby-identifier">expand_path</span>(<span class="ruby-constant">File</span>.<span class="ruby-identifier">join</span>(<span class="ruby-identifier">base_name</span>, <span class="ruby-identifier">generator_name</span>), <span class="ruby-identifier">base_root</span>)
   <span class="ruby-identifier">path</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">File</span>.<span class="ruby-identifier">exist?</span>(<span class="ruby-identifier">path</span>)
@@ -858,7 +866,7 @@ end
                 
               </p>
               <div id="method-c-default_value_for_option_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 343</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 351</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">default_value_for_option</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">default_for_option</span>(<span class="ruby-constant">Rails</span><span class="ruby-operator">::</span><span class="ruby-constant">Generators</span>.<span class="ruby-identifier">options</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>, <span class="ruby-identifier">options</span>[<span class="ruby-value">:default</span>])
 <span class="ruby-keyword">end</span></code></pre>
@@ -893,7 +901,7 @@ end
                 
               </p>
               <div id="method-c-generator_name_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 334</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 342</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">generator_name</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-ivar">@generator_name</span> <span class="ruby-operator">||=</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">generator</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;::&quot;</span>).<span class="ruby-identifier">last</span>
     <span class="ruby-identifier">generator</span>.<span class="ruby-identifier">delete_suffix!</span>(<span class="ruby-string">&quot;Generator&quot;</span>)
@@ -931,7 +939,7 @@ end
                 
               </p>
               <div id="method-c-usage_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 406</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 414</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">usage_path</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">paths</span> = [
     <span class="ruby-identifier">source_root</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-constant">File</span>.<span class="ruby-identifier">expand_path</span>(<span class="ruby-string">&quot;../USAGE&quot;</span>, <span class="ruby-identifier">source_root</span>),
@@ -974,7 +982,7 @@ end
                 
               </p>
               <div id="method-i-extract_last_module_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 279</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 287</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">extract_last_module</span>(<span class="ruby-identifier">nesting</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">nesting</span>.<span class="ruby-identifier">inject</span>(<span class="ruby-constant">Object</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">last_module</span>, <span class="ruby-identifier">nest</span><span class="ruby-operator">|</span>
     <span class="ruby-keyword">break</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">last_module</span>.<span class="ruby-identifier">const_defined?</span>(<span class="ruby-identifier">nest</span>, <span class="ruby-keyword">false</span>)
@@ -1012,7 +1020,7 @@ end
                 
               </p>
               <div id="method-i-indent_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 294</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 302</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">indent</span>(<span class="ruby-identifier">content</span>, <span class="ruby-identifier">multiplier</span> = <span class="ruby-value">2</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">spaces</span> = <span class="ruby-string">&quot; &quot;</span> <span class="ruby-operator">*</span> <span class="ruby-identifier">multiplier</span>
   <span class="ruby-identifier">content</span>.<span class="ruby-identifier">each_line</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">line</span><span class="ruby-operator">|</span> <span class="ruby-identifier">line</span>.<span class="ruby-identifier">blank?</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">line</span> <span class="ruby-operator">:</span> <span class="ruby-node">&quot;#{spaces}#{line}&quot;</span> }.<span class="ruby-identifier">join</span>
@@ -1048,7 +1056,7 @@ end
                 
               </p>
               <div id="method-i-module_namespacing_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 288</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 296</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">module_namespacing</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">content</span> = <span class="ruby-identifier">capture</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">content</span> = <span class="ruby-identifier">wrap_with_namespace</span>(<span class="ruby-identifier">content</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">namespaced?</span>
@@ -1085,7 +1093,7 @@ end
                 
               </p>
               <div id="method-i-namespace_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 304</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 312</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">namespace</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-constant">Rails</span><span class="ruby-operator">::</span><span class="ruby-constant">Generators</span>.<span class="ruby-identifier">namespace</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1120,7 +1128,7 @@ end
                 
               </p>
               <div id="method-i-namespaced-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 308</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 316</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">namespaced?</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-operator">!</span><span class="ruby-identifier">options</span>[<span class="ruby-value">:skip_namespace</span>] <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">namespace</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -1155,7 +1163,7 @@ end
                 
               </p>
               <div id="method-i-namespaced_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 316</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 324</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">namespaced_path</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-ivar">@namespaced_path</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">namespace_dirs</span>.<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;/&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -1190,7 +1198,7 @@ end
                 
               </p>
               <div id="method-i-wrap_with_namespace_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 299</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/generators/base.rb, line 307</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">wrap_with_namespace</span>(<span class="ruby-identifier">content</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">content</span> = <span class="ruby-identifier">indent</span>(<span class="ruby-identifier">content</span>).<span class="ruby-identifier">chomp</span>
   <span class="ruby-node">&quot;module #{namespace.name}\n#{content}\nend\n&quot;</span>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -57,7 +57,7 @@ Conversation.archived
 Conversation.not_archived
 </code></pre>
 
-<p>Of course, you can also query them directly if the scopes don&#39;t fit your needs:</p>
+<p>Of course, you can also query them directly if the scopes don’t fit your needs:</p>
 
 <pre><code>Conversation.where(status: [:active, :archived])
 Conversation.where.not(status: :active)
@@ -80,21 +80,21 @@ conversation = Conversation.new
 conversation.status # =&gt; &quot;active&quot;
 </code></pre>
 
-<p>It&#39;s possible to explicitly map the relation between attribute and database integer with a hash:</p>
+<p>It’s possible to explicitly map the relation between attribute and database integer with a hash:</p>
 
 <pre><code>class Conversation &lt; ActiveRecord::Base
   enum :status, active: 0, archived: 1
 end
 </code></pre>
 
-<p>Finally it&#39;s also possible to use a string column to persist the enumerated value. Note that this will likely lead to slower database queries:</p>
+<p>Finally it’s also possible to use a string column to persist the enumerated value. Note that this will likely lead to slower database queries:</p>
 
 <pre><code>class Conversation &lt; ActiveRecord::Base
   enum :status, active: &quot;active&quot;, archived: &quot;archived&quot;
 end
 </code></pre>
 
-<p>Note that when an array is used, the implicit mapping from the values to database integers is derived from the order the values appear in the array. In the example, <code>:active</code> is mapped to <code>0</code> as it&#39;s the first element, and <code>:archived</code> is mapped to <code>1</code>. In general, the <code>i</code>-th element is mapped to <code>i-1</code> in the database.</p>
+<p>Note that when an array is used, the implicit mapping from the values to database integers is derived from the order the values appear in the array. In the example, <code>:active</code> is mapped to <code>0</code> as it’s the first element, and <code>:archived</code> is mapped to <code>1</code>. In general, the <code>i</code>-th element is mapped to <code>i-1</code> in the database.</p>
 
 <p>Therefore, once a value is added to the enum array, its position in the array must be maintained, and new values should only be added to the end of the array. To remove unused values, the explicit hash syntax should be used.</p>
 
@@ -124,6 +124,60 @@ conversation.archived_status? # =&gt; false
 
 conversation.comments_inactive!
 conversation.comments_active? # =&gt; false
+</code></pre>
+
+<p>If you want to disable the auto-generated methods on the model, you can do so by setting the <code>:instance_methods</code> option to false:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], instance_methods: false
+end
+</code></pre>
+
+<p>If you want the enum value to be validated before saving, use the option <code>:validate</code>:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], validate: true
+end
+
+conversation = Conversation.new
+
+conversation.status = :unknown
+conversation.valid? # =&gt; false
+
+conversation.status = nil
+conversation.valid? # =&gt; false
+
+conversation.status = :active
+conversation.valid? # =&gt; true
+</code></pre>
+
+<p>It is also possible to pass additional validation options:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], validate: { allow_nil: true }
+end
+
+conversation = Conversation.new
+
+conversation.status = :unknown
+conversation.valid? # =&gt; false
+
+conversation.status = nil
+conversation.valid? # =&gt; true
+
+conversation.status = :active
+conversation.valid? # =&gt; true
+</code></pre>
+
+<p>Otherwise <code>ArgumentError</code> will raise:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ]
+end
+
+conversation = Conversation.new
+
+conversation.status = :unknown # &#39;unknown&#39; is not a valid status (ArgumentError)
 </code></pre>
 
     </div>
@@ -190,14 +244,14 @@ conversation.comments_active? # =&gt; false
                 
               </p>
               <div id="method-i-enum_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/enum.rb, line 167</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/enum.rb, line 225</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">enum</span>(<span class="ruby-identifier">name</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">values</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">name</span>
     <span class="ruby-identifier">values</span>, <span class="ruby-identifier">options</span> = <span class="ruby-identifier">options</span>, {} <span class="ruby-keyword">unless</span> <span class="ruby-identifier">values</span>
     <span class="ruby-keyword">return</span> <span class="ruby-identifier">_enum</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">values</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">end</span>
 
-  <span class="ruby-identifier">definitions</span> = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">slice!</span>(<span class="ruby-value">:_prefix</span>, <span class="ruby-value">:_suffix</span>, <span class="ruby-value">:_scopes</span>, <span class="ruby-value">:_default</span>)
+  <span class="ruby-identifier">definitions</span> = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">slice!</span>(<span class="ruby-value">:_prefix</span>, <span class="ruby-value">:_suffix</span>, <span class="ruby-value">:_scopes</span>, <span class="ruby-value">:_default</span>, <span class="ruby-value">:_instance_methods</span>)
   <span class="ruby-identifier">options</span>.<span class="ruby-identifier">transform_keys!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">key</span><span class="ruby-operator">|</span> <span class="ruby-value">:&quot;#{key[1..-1]}&quot;</span> }
 
   <span class="ruby-identifier">definitions</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">name</span>, <span class="ruby-identifier">values</span><span class="ruby-operator">|</span> <span class="ruby-identifier">_enum</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">values</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>) }

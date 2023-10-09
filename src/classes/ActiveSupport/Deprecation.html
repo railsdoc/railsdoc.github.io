@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -26,6 +26,8 @@ layout: default
             
             <li><a href="../../files/activesupport/lib/active_support/deprecation/constant_accessor_rb.html">activesupport/lib/active_support/deprecation/constant_accessor.rb</a></li>
             
+            <li><a href="../../files/activesupport/lib/active_support/deprecation/deprecators_rb.html">activesupport/lib/active_support/deprecation/deprecators.rb</a></li>
+            
             <li><a href="../../files/activesupport/lib/active_support/deprecation/disallowed_rb.html">activesupport/lib/active_support/deprecation/disallowed.rb</a></li>
             
             <li><a href="../../files/activesupport/lib/active_support/deprecation/instance_delegator_rb.html">activesupport/lib/active_support/deprecation/instance_delegator.rb</a></li>
@@ -36,6 +38,8 @@ layout: default
             
             <li><a href="../../files/activesupport/lib/active_support/deprecation/reporting_rb.html">activesupport/lib/active_support/deprecation/reporting.rb</a></li>
             
+            <li><a href="../../files/railties/lib/rails/application_rb.html">railties/lib/rails/application.rb</a></li>
+            
         </ul>
     </div>
     <div id="bodyContent">
@@ -43,7 +47,35 @@ layout: default
   
     <div class="description">
       
-<p>Deprecation specifies the API used by Rails to deprecate methods, instance variables, objects, and constants.</p>
+<h1 id="class-ActiveSupport::Deprecation-label-Active+Support+Deprecation">Active Support Deprecation</h1>
+
+<p>Deprecation specifies the API used by Rails to deprecate methods, instance variables, objects, and constants. It’s also available for gems or applications.</p>
+
+<p>For a gem, use <a href="Deprecation.html#method-c-new"><code>Deprecation.new</code></a> to create a <a href="Deprecation.html"><code>Deprecation</code></a> object and store it in your module or class (in order for users to be able to configure it).</p>
+
+<pre><code>module MyLibrary
+  def self.deprecator
+    @deprecator ||= ActiveSupport::Deprecation.new(&quot;2.0&quot;, &quot;MyLibrary&quot;)
+  end
+end
+</code></pre>
+
+<p>For a Railtie or Engine, you may also want to add it to the application’s deprecators, so that the application’s configuration can be applied to it.</p>
+
+<pre><code>module MyLibrary
+  class Railtie &lt; Rails::Railtie
+    initializer &quot;my_library.deprecator&quot; do |app|
+      app.deprecators[:my_library] = MyLibrary.deprecator
+    end
+  end
+end
+</code></pre>
+
+<p>With the above initializer, configuration settings like the following will affect <code>MyLibrary.deprecator</code>:</p>
+
+<pre><code># in config/environments/test.rb
+config.active_support.deprecation = :raise
+</code></pre>
 
     </div>
   
@@ -84,6 +116,8 @@ layout: default
       
         <li><a href="Deprecation/DeprecatedObjectProxy.html">ActiveSupport::Deprecation::DeprecatedObjectProxy</a></li>
       
+        <li><a href="Deprecation/Deprecators.html">ActiveSupport::Deprecation::Deprecators</a></li>
+      
       </ul>
     
   
@@ -103,14 +137,6 @@ layout: default
     <!-- Includes -->
     <h2 id="included-modules">Included Modules</h2>
     <ul>
-      
-        <li>
-          
-            <a href="../Singleton.html">
-              Singleton
-            </a>
-          
-        </li>
       
         <li>
           
@@ -161,18 +187,18 @@ layout: default
             <td class="attr-name">DEFAULT_BEHAVIORS</td>
             <td>=</td>
             <td class="attr-value">{
-raise: -&gt;(message, callstack, deprecation_horizon, gem_name) {
+raise: -&gt;(message, callstack, deprecator) do
 e = DeprecationException.new(message)
 e.set_backtrace(callstack.map(&amp;:to_s))
 raise e
-},
+end,
 
-stderr: -&gt;(message, callstack, deprecation_horizon, gem_name) {
+stderr: -&gt;(message, callstack, deprecator) do
 $stderr.puts(message)
-$stderr.puts callstack.join(&quot;\n  &quot;) if debug
-},
+$stderr.puts callstack.join(&quot;\n  &quot;) if deprecator.debug
+end,
 
-log: -&gt;(message, callstack, deprecation_horizon, gem_name) {
+log: -&gt;(message, callstack, deprecator) do
 logger =
 if defined?(Rails.logger) &amp;&amp; Rails.logger
 Rails.logger
@@ -181,19 +207,26 @@ require &quot;active_support/logger&quot;
 ActiveSupport::Logger.new($stderr)
 end
 logger.warn message
-logger.debug callstack.join(&quot;\n  &quot;) if debug
-},
+logger.debug callstack.join(&quot;\n  &quot;) if deprecator.debug
+end,
 
-notify: -&gt;(message, callstack, deprecation_horizon, gem_name) {
-notification_name = &quot;deprecation.#{gem_name.underscore.tr(&#39;/&#39;, &#39;_&#39;)}&quot;
-ActiveSupport::Notifications.instrument(notification_name,
+notify: -&gt;(message, callstack, deprecator) do
+ActiveSupport::Notifications.instrument(
+&quot;deprecation.#{deprecator.gem_name.underscore.tr(&quot;/&quot;, &quot;_&quot;)}&quot;,
 message: message,
 callstack: callstack,
-gem_name: gem_name,
-deprecation_horizon: deprecation_horizon)
-},
+gem_name: deprecator.gem_name,
+deprecation_horizon: deprecator.deprecation_horizon,
+)
+end,
 
-silence: -&gt;(message, callstack, deprecation_horizon, gem_name) { },
+silence: -&gt;(message, callstack, deprecator) { },
+
+report: -&gt;(message, callstack, deprecator) do
+error = DeprecationException.new(message)
+error.set_backtrace(callstack.map(&amp;:to_s))
+ActiveSupport.error_reporter.report(error)
+end
 }</td>
           </tr>
           
@@ -229,7 +262,7 @@ silence: -&gt;(message, callstack, deprecation_horizon, gem_name) { },
         <div class="method">
           <h3 id="method-c-new">
             
-              new(deprecation_horizon = &quot;7.1&quot;, gem_name = &quot;Rails&quot;)
+              new(deprecation_horizon = &quot;7.2&quot;, gem_name = &quot;Rails&quot;)
             
           </h3>
 
@@ -255,14 +288,14 @@ silence: -&gt;(message, callstack, deprecation_horizon, gem_name) { },
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/deprecation.rb, line 41</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">deprecation_horizon</span> = <span class="ruby-string">&quot;7.1&quot;</span>, <span class="ruby-identifier">gem_name</span> = <span class="ruby-string">&quot;Rails&quot;</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/deprecation.rb, line 68</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">deprecation_horizon</span> = <span class="ruby-string">&quot;7.2&quot;</span>, <span class="ruby-identifier">gem_name</span> = <span class="ruby-string">&quot;Rails&quot;</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">gem_name</span> = <span class="ruby-identifier">gem_name</span>
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">deprecation_horizon</span> = <span class="ruby-identifier">deprecation_horizon</span>
   <span class="ruby-comment"># By default, warnings are not silenced and debugging is off.</span>
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">silenced</span> = <span class="ruby-keyword">false</span>
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">debug</span> = <span class="ruby-keyword">false</span>
-  <span class="ruby-ivar">@silenced_thread</span> = <span class="ruby-constant">Concurrent</span><span class="ruby-operator">::</span><span class="ruby-constant">ThreadLocalVar</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">false</span>)
+  <span class="ruby-ivar">@silence_counter</span> = <span class="ruby-constant">Concurrent</span><span class="ruby-operator">::</span><span class="ruby-constant">ThreadLocalVar</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">0</span>)
   <span class="ruby-ivar">@explicitly_allowed_warnings</span> = <span class="ruby-constant">Concurrent</span><span class="ruby-operator">::</span><span class="ruby-constant">ThreadLocalVar</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">nil</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>

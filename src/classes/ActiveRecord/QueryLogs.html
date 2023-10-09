@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -16,6 +16,8 @@ layout: default
             
             <li><a href="../../files/activerecord/lib/active_record/query_logs_rb.html">activerecord/lib/active_record/query_logs.rb</a></li>
             
+            <li><a href="../../files/activerecord/lib/active_record/query_logs_formatter_rb.html">activerecord/lib/active_record/query_logs_formatter.rb</a></li>
+            
         </ul>
     </div>
     <div id="bodyContent">
@@ -25,9 +27,19 @@ layout: default
       
 <h1 id="module-ActiveRecord::QueryLogs-label-Active+Record+Query+Logs">Active Record Query Logs</h1>
 
-<p>Automatically tag SQL queries with runtime information.</p>
+<p>Automatically append comments to SQL queries with runtime information tags. This can be used to trace troublesome SQL statements back to the application code that generated these statements.</p>
 
-<p>Default tags available for use:</p>
+<p>Query logs can be enabled via Rails configuration in <code>config/application.rb</code> or an initializer:</p>
+
+<pre><code>config.active_record.query_log_tags_enabled = true
+</code></pre>
+
+<p>By default the name of the application, the name and action of the controller, or the name of the job are logged. The default format is <a href="https://open-telemetry.github.io/opentelemetry-sqlcommenter/">SQLCommenter</a>. The tags shown in a query comment can be configured via Rails configuration:</p>
+
+<pre><code>config.active_record.query_log_tags = [ :application, :controller, :action, :job ]
+</code></pre>
+
+<p>Active Record defines default tags available for use:</p>
 <ul><li>
 <p><code>application</code></p>
 </li><li>
@@ -40,52 +52,40 @@ layout: default
 <p><code>database</code></p>
 </li></ul>
 
-<p>_Action Controller and Active Job tags are also defined when used in Rails:_</p>
+<p>Action Controller adds default tags when loaded:</p>
 <ul><li>
 <p><code>controller</code></p>
 </li><li>
 <p><code>action</code></p>
 </li><li>
+<p><code>namespaced_controller</code></p>
+</li></ul>
+
+<p>Active Job adds default tags when loaded:</p>
+<ul><li>
 <p><code>job</code></p>
 </li></ul>
 
-<p>The tags used in a query can be configured directly:</p>
+<p>New comment tags can be defined by adding them in a <code>Hash</code> to the tags <code>Array</code>. Tags can have dynamic content by setting a <code>Proc</code> or lambda value in the <code>Hash</code>, and can reference any value stored by Rails in the <code>context</code> object. <a href="../ActiveSupport/CurrentAttributes.html"><code>ActiveSupport::CurrentAttributes</code></a> can be used to store application values. Tags with <code>nil</code> values are omitted from the query comment.</p>
 
-<pre><code>ActiveRecord::QueryLogs.tags = [ :application, :controller, :action, :job ]
-</code></pre>
-
-<p>or via Rails configuration:</p>
-
-<pre><code>config.active_record.query_log_tags = [ :application, :controller, :action, :job ]
-</code></pre>
-
-<p>To add new comment tags, add a hash to the tags array containing the keys and values you want to add to the comment. Dynamic content can be created by setting a proc or lambda value in a hash, and can reference any value stored in the <code>context</code> object.</p>
+<p>Escaping is performed on the string returned, however untrusted user input should not be used.</p>
 
 <p>Example:</p>
 
-<pre><code>tags = [
-  :application,
+<pre><code>config.active_record.query_log_tags = [
+  :namespaced_controller,
+  :action,
+  :job,
   {
-    custom_tag: -&gt;(context) { context[:controller]&amp;.controller_name },
-    custom_value: -&gt; { Custom.value },
-  }
+    request_id: -&gt;(context) { context[:controller]&amp;.request&amp;.request_id },
+    job_id: -&gt;(context) { context[:job]&amp;.job_id },
+    tenant_id: -&gt; { Current.tenant&amp;.id },
+    static: &quot;value&quot;,
+  },
 ]
-ActiveRecord::QueryLogs.tags = tags
 </code></pre>
 
-<p>The <a href="QueryLogs.html"><code>QueryLogs</code></a> <code>context</code> can be manipulated via the <code>ActiveSupport::ExecutionContext.set</code> method.</p>
-
-<p>Temporary updates limited to the execution of a block:</p>
-
-<pre><code>ActiveSupport::ExecutionContext.set(foo: Bar.new) do
-  posts = Post.all
-end
-</code></pre>
-
-<p>Direct updates to a context value:</p>
-
-<pre><code>ActiveSupport::ExecutionContext[:foo] = Bar.new
-</code></pre>
+<p>By default the name of the application, the name and action of the controller, or the name of the job are logged using the <a href="https://open-telemetry.github.io/opentelemetry-sqlcommenter/">SQLCommenter</a> format. This can be changed via <a href="https://guides.rubyonrails.org/configuring.html#config-active-record-query-log-tags-format">config.active_record.query_log_tags_format</a></p>
 
 <p>Tag comments can be prepended to the query:</p>
 
@@ -93,11 +93,6 @@ end
 </code></pre>
 
 <p>For applications where the content will not change during the lifetime of the request or job execution, the tags can be cached for reuse in every query:</p>
-
-<pre><code>ActiveRecord::QueryLogs.cache_query_log_tags = true
-</code></pre>
-
-<p>This option can be set during application configuration or in a Rails initializer:</p>
 
 <pre><code>config.active_record.cache_query_log_tags = true
 </code></pre>
@@ -114,6 +109,15 @@ end
   
 
   
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-update_formatter">update_formatter</a>
+        </li>
+      
+    </ul>
+  
 
   
 
@@ -128,6 +132,52 @@ end
 
     <!-- Methods -->
     
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-update_formatter">
+            
+              update_formatter(format)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Updates the formatter to be what the passed in format is.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-update_formatter_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/query_logs.rb, line 99</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">update_formatter</span>(<span class="ruby-identifier">format</span>)
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">tags_formatter</span> =
+    <span class="ruby-keyword">case</span> <span class="ruby-identifier">format</span>
+    <span class="ruby-keyword">when</span> <span class="ruby-value">:legacy</span>
+      <span class="ruby-constant">LegacyFormatter</span>.<span class="ruby-identifier">new</span>
+    <span class="ruby-keyword">when</span> <span class="ruby-value">:sqlcommenter</span>
+      <span class="ruby-constant">SQLCommenter</span>.<span class="ruby-identifier">new</span>
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;Formatter is unsupported: #{formatter}&quot;</span>
+    <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
     
     
   

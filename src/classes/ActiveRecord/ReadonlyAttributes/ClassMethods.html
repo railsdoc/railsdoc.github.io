@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -70,9 +70,9 @@ layout: default
 
           
             <div class="description">
-              <p><a href="../Attributes.html"><code>Attributes</code></a> listed as readonly will be used to create a new record but update operations will ignore these fields.</p>
+              <p><a href="../Attributes.html"><code>Attributes</code></a> listed as readonly will be used to create a new record. Assigning a new value to a readonly attribute on a persisted record raises an error.</p>
 
-<p>You can assign a new value to a readonly attribute, but it will be ignored when the record is updated.</p>
+<p>By setting <code>config.active_record.raise_on_assign_to_attr_readonly</code> to <code>false</code>, it will not raise. The value will change in memory, but will not be persisted on <code>save</code>.</p>
 
 <h4 id="method-i-attr_readonly-label-Examples">Examples</h4>
 
@@ -81,7 +81,8 @@ layout: default
 end
 
 post = Post.create!(title: &quot;Introducing Ruby on Rails!&quot;)
-post.update(title: &quot;a different title&quot;) # change to title will be ignored
+post.title = &quot;a different title&quot; # raises ActiveRecord::ReadonlyAttributeError
+post.update(title: &quot;a different title&quot;) # raises ActiveRecord::ReadonlyAttributeError
 </code></pre>
             </div>
           
@@ -99,9 +100,13 @@ post.update(title: &quot;a different title&quot;) # change to title will be igno
                 
               </p>
               <div id="method-i-attr_readonly_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/readonly_attributes.rb, line 25</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/readonly_attributes.rb, line 30</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attr_readonly</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">attributes</span>)
-  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_attr_readonly</span> = <span class="ruby-constant">Set</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">attributes</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:to_s</span>)) <span class="ruby-operator">+</span> (<span class="ruby-identifier">_attr_readonly</span> <span class="ruby-operator">||</span> [])
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_attr_readonly</span> <span class="ruby-operator">|=</span> <span class="ruby-identifier">attributes</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:to_s</span>)
+
+  <span class="ruby-keyword">if</span> <span class="ruby-constant">ActiveRecord</span>.<span class="ruby-identifier">raise_on_assign_to_attr_readonly</span>
+    <span class="ruby-identifier">include</span>(<span class="ruby-constant">HasReadonlyAttributes</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -134,7 +139,7 @@ post.update(title: &quot;a different title&quot;) # change to title will be igno
                 
               </p>
               <div id="method-i-readonly_attributes_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/readonly_attributes.rb, line 30</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/readonly_attributes.rb, line 39</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">readonly_attributes</span>
   <span class="ruby-identifier">_attr_readonly</span>
 <span class="ruby-keyword">end</span></code></pre>

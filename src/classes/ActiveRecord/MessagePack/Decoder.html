@@ -1,0 +1,243 @@
+---
+title: ActiveRecord::MessagePack::Decoder
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.0</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::MessagePack::Decoder
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/message_pack_rb.html">activerecord/lib/active_record/message_pack.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-build_record">build_record</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-decode">decode</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-resolve_cached_associations">resolve_cached_associations</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(entries)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/message_pack.rb, line 91</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">entries</span>)
+  <span class="ruby-ivar">@records</span> = <span class="ruby-identifier">entries</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">entry</span><span class="ruby-operator">|</span> <span class="ruby-identifier">build_record</span>(<span class="ruby-identifier">entry</span>) }
+  <span class="ruby-ivar">@records</span>.<span class="ruby-identifier">zip</span>(<span class="ruby-identifier">entries</span>) { <span class="ruby-operator">|</span><span class="ruby-identifier">record</span>, <span class="ruby-identifier">entry</span><span class="ruby-operator">|</span> <span class="ruby-identifier">resolve_cached_associations</span>(<span class="ruby-identifier">record</span>, <span class="ruby-identifier">entry</span>) }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-build_record">
+            
+              build_record(entry)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-build_record_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/message_pack.rb, line 104</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">build_record</span>(<span class="ruby-identifier">entry</span>)
+  <span class="ruby-identifier">class_name</span>, <span class="ruby-identifier">attributes_hash</span>, <span class="ruby-identifier">is_new_record</span>, <span class="ruby-operator">*</span> = <span class="ruby-identifier">entry</span>
+  <span class="ruby-identifier">klass</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">MessagePack</span><span class="ruby-operator">::</span><span class="ruby-constant">Extensions</span>.<span class="ruby-identifier">load_class</span>(<span class="ruby-identifier">class_name</span>)
+  <span class="ruby-identifier">attributes</span> = <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">attributes_builder</span>.<span class="ruby-identifier">build_from_database</span>(<span class="ruby-identifier">attributes_hash</span>)
+  <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">allocate</span>.<span class="ruby-identifier">init_with_attributes</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-identifier">is_new_record</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-decode">
+            
+              decode(ref)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-decode_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/message_pack.rb, line 96</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">decode</span>(<span class="ruby-identifier">ref</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">ref</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Array</span>)
+    <span class="ruby-identifier">ref</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">r</span><span class="ruby-operator">|</span> <span class="ruby-ivar">@records</span>[<span class="ruby-identifier">r</span>] }
+  <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">ref</span>
+    <span class="ruby-ivar">@records</span>[<span class="ruby-identifier">ref</span>]
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-resolve_cached_associations">
+            
+              resolve_cached_associations(record, entry)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-resolve_cached_associations_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/message_pack.rb, line 111</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">resolve_cached_associations</span>(<span class="ruby-identifier">record</span>, <span class="ruby-identifier">entry</span>)
+  <span class="ruby-identifier">i</span> = <span class="ruby-value">3</span> <span class="ruby-comment"># entry == [class_name, attributes_hash, is_new_record, *associations]</span>
+  <span class="ruby-keyword">while</span> <span class="ruby-identifier">i</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">entry</span>.<span class="ruby-identifier">length</span>
+    <span class="ruby-keyword">begin</span>
+      <span class="ruby-identifier">record</span>.<span class="ruby-identifier">association</span>(<span class="ruby-identifier">entry</span>[<span class="ruby-identifier">i</span>]).<span class="ruby-identifier">target</span> = <span class="ruby-identifier">decode</span>(<span class="ruby-identifier">entry</span>[<span class="ruby-identifier">i</span> <span class="ruby-operator">+</span> <span class="ruby-value">1</span>])
+    <span class="ruby-keyword">rescue</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">AssociationNotFoundError</span>
+      <span class="ruby-comment"># The association no longer exists, so just skip it.</span>
+    <span class="ruby-keyword">end</span>
+    <span class="ruby-identifier">i</span> <span class="ruby-operator">+=</span> <span class="ruby-value">2</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

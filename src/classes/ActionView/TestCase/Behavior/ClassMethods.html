@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -48,6 +48,10 @@ layout: default
       
         <li>
           <a href="#method-i-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-register_parser">register_parser</a>
         </li>
       
         <li>
@@ -113,7 +117,7 @@ layout: default
                 
               </p>
               <div id="method-i-determine_default_helper_class_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/test_case.rb, line 72</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/test_case.rb, line 162</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">determine_default_helper_class</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">determine_constant_from_test_name</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">constant</span><span class="ruby-operator">|</span>
     <span class="ruby-constant">Module</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">constant</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span>(<span class="ruby-constant">Class</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">constant</span>)
@@ -150,7 +154,7 @@ layout: default
                 
               </p>
               <div id="method-i-helper_class_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/test_case.rb, line 92</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/test_case.rb, line 182</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">helper_class</span>
   <span class="ruby-ivar">@helper_class</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">determine_default_helper_class</span>(<span class="ruby-identifier">name</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -185,7 +189,7 @@ layout: default
                 
               </p>
               <div id="method-i-helper_method_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/test_case.rb, line 78</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/test_case.rb, line 168</span>
         <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">helper_method</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">methods</span>)
           <span class="ruby-comment"># Almost a duplicate from ActionController::Helpers</span>
           <span class="ruby-identifier">methods</span>.<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">method</span><span class="ruby-operator">|</span>
@@ -228,10 +232,119 @@ layout: default
                 
               </p>
               <div id="method-i-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/test_case.rb, line 96</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/test_case.rb, line 186</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">new</span>(<span class="ruby-operator">*</span>)
   <span class="ruby-identifier">include_helper_modules!</span>
   <span class="ruby-keyword">super</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-register_parser">
+            
+              register_parser(format, callable = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Register a callable to parse rendered content for a given template format.</p>
+
+<p>Each registered parser will also define a <code>#rendered.[FORMAT]</code> helper method, where <code>[FORMAT]</code> corresponds to the value of the <code>format</code> argument.</p>
+
+<h3 id="method-i-register_parser-label-Arguments">Arguments</h3>
+
+<p><code>format</code> - <a href="../../../Symbol.html"><code>Symbol</code></a> the name of the format used to render view’s content <code>callable</code> - Callable to parse the <a href="../../../String.html"><code>String</code></a>. Accepts the <a href="../../../String.html"><code>String</code></a>.</p>
+
+<pre><code>value as its only argument.
+</code></pre>
+
+<p><code>block</code> - Block serves as the parser when the</p>
+
+<pre><code>&lt;tt&gt;callable&lt;/tt&gt; is omitted.
+</code></pre>
+
+<p>By default, <a href="../../TestCase.html"><code>ActionView::TestCase</code></a> defines a parser for:</p>
+
+<pre><code>* :html - returns an instance of Nokogiri::XML::Node
+* :json - returns an instance of ActiveSupport::HashWithIndifferentAccess
+</code></pre>
+
+<p>Each pre-registered parser also defines a corresponding helper:</p>
+
+<pre><code>* :html - defines `rendered.html`
+* :json - defines `rendered.json`
+</code></pre>
+
+<h3 id="method-i-register_parser-label-Examples">Examples</h3>
+
+<pre><code>test &quot;renders HTML&quot; do
+  article = Article.create!(title: &quot;Hello, world&quot;)
+
+  render partial: &quot;articles/article&quot;, locals: { article: article }
+
+  assert_pattern { rendered.html.at(&quot;main h1&quot;) =&gt; { content: &quot;Hello, world&quot; } }
+end
+
+test &quot;renders JSON&quot; do
+  article = Article.create!(title: &quot;Hello, world&quot;)
+
+  render formats: :json, partial: &quot;articles/article&quot;, locals: { article: article }
+
+  assert_pattern { rendered.json =&gt; { title: &quot;Hello, world&quot; } }
+end
+</code></pre>
+
+<p>To parse the rendered content into RSS, register a call to <code>RSS::Parser.parse</code>:</p>
+
+<pre><code>register_parser :rss, -&gt; rendered { RSS::Parser.parse(rendered) }
+
+test &quot;renders RSS&quot; do
+  article = Article.create!(title: &quot;Hello, world&quot;)
+
+  render formats: :rss, partial: article
+
+  assert_equal &quot;Hello, world&quot;, rendered.rss.items.last.title
+end
+</code></pre>
+
+<p>To parse the rendered content into a Capybara::Simple::Node, re-register an <code>:html</code> parser with a call to <code>Capybara.string</code>:</p>
+
+<pre><code>register_parser :html, -&gt; rendered { Capybara.string(rendered) }
+
+test &quot;renders HTML&quot; do
+  article = Article.create!(title: &quot;Hello, world&quot;)
+
+  render partial: article
+
+  rendered.html.assert_css &quot;h1&quot;, text: &quot;Hello, world&quot;
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-register_parser_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/test_case.rb, line 146</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">register_parser</span>(<span class="ruby-identifier">format</span>, <span class="ruby-identifier">callable</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">parser</span> = <span class="ruby-identifier">callable</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">block</span> <span class="ruby-operator">||</span> <span class="ruby-value">:itself</span>.<span class="ruby-identifier">to_proc</span>
+  <span class="ruby-identifier">content_class</span>.<span class="ruby-identifier">redefine_method</span>(<span class="ruby-identifier">format</span>) <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">parser</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">to_s</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -264,7 +377,7 @@ layout: default
                 
               </p>
               <div id="method-i-tests_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/test_case.rb, line 63</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/test_case.rb, line 153</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">tests</span>(<span class="ruby-identifier">helper_class</span>)
   <span class="ruby-keyword">case</span> <span class="ruby-identifier">helper_class</span>
   <span class="ruby-keyword">when</span> <span class="ruby-constant">String</span>, <span class="ruby-constant">Symbol</span>

@@ -1,0 +1,192 @@
+---
+title: ActiveRecord::Normalization::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.0</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Normalization::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/normalization_rb.html">activerecord/lib/active_record/normalization.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-normalize_value_for">normalize_value_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-normalizes">normalizes</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-normalize_value_for">
+            
+              normalize_value_for(name, value)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Normalizes a given <code>value</code> using normalizations declared for <code>name</code>.</p>
+
+<h4 id="method-i-normalize_value_for-label-Examples">Examples</h4>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  normalizes :email, with: -&gt; email { email.strip.downcase }
+end
+
+User.normalize_value_for(:email, &quot; CRUISE-CONTROL@EXAMPLE.COM\n&quot;)
+# =&gt; &quot;cruise-control@example.com&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-normalize_value_for_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/normalization.rb, line 100</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">normalize_value_for</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">value</span>)
+  <span class="ruby-identifier">type_for_attribute</span>(<span class="ruby-identifier">name</span>).<span class="ruby-identifier">cast</span>(<span class="ruby-identifier">value</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-normalizes">
+            
+              normalizes(*names, with:, apply_to_nil: false)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Declares a normalization for one or more attributes. The normalization is applied when the attribute is assigned or updated, and the normalized value will be persisted to the database. The normalization is also applied to the corresponding keyword argument of query methods. This allows a record to be created and later queried using unnormalized values.</p>
+
+<p>However, to prevent confusion, the normalization will not be applied when the attribute is fetched from the database. This means that if a record was persisted before the normalization was declared, the record’s attribute will not be normalized until either it is assigned a new value, or it is explicitly migrated via <a href="../Normalization.html#method-i-normalize_attribute"><code>Normalization#normalize_attribute</code></a>.</p>
+
+<p>Because the normalization may be applied multiple times, it should be <em>idempotent</em>. In other words, applying the normalization more than once should have the same result as applying it only once.</p>
+
+<p>By default, the normalization will not be applied to <code>nil</code> values. This behavior can be changed with the <code>:apply_to_nil</code> option.</p>
+
+<h4 id="method-i-normalizes-label-Options">Options</h4>
+<ul><li>
+<p><code>:with</code> - Any callable object that accepts the attribute’s value as its sole argument, and returns it normalized.</p>
+</li><li>
+<p><code>:apply_to_nil</code> - Whether to apply the normalization to <code>nil</code> values. Defaults to <code>false</code>.</p>
+</li></ul>
+
+<h4 id="method-i-normalizes-label-Examples">Examples</h4>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  normalizes :email, with: -&gt; email { email.strip.downcase }
+  normalizes :phone, with: -&gt; phone { phone.delete(&quot;^0-9&quot;).delete_prefix(&quot;1&quot;) }
+end
+
+user = User.create(email: &quot; CRUISE-CONTROL@EXAMPLE.COM\n&quot;)
+user.email                  # =&gt; &quot;cruise-control@example.com&quot;
+
+user = User.find_by(email: &quot;\tCRUISE-CONTROL@EXAMPLE.COM &quot;)
+user.email                  # =&gt; &quot;cruise-control@example.com&quot;
+user.email_before_type_cast # =&gt; &quot;cruise-control@example.com&quot;
+
+User.where(email: &quot;\tCRUISE-CONTROL@EXAMPLE.COM &quot;).count         # =&gt; 1
+User.where([&quot;email = ?&quot;, &quot;\tCRUISE-CONTROL@EXAMPLE.COM &quot;]).count # =&gt; 0
+
+User.exists?(email: &quot;\tCRUISE-CONTROL@EXAMPLE.COM &quot;)         # =&gt; true
+User.exists?([&quot;email = ?&quot;, &quot;\tCRUISE-CONTROL@EXAMPLE.COM &quot;]) # =&gt; false
+
+User.normalize_value_for(:phone, &quot;+1 (555) 867-5309&quot;) # =&gt; &quot;5558675309&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-normalizes_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/normalization.rb, line 80</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">normalizes</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>, <span class="ruby-value">with:</span>, <span class="ruby-value">apply_to_nil:</span> <span class="ruby-keyword">false</span>)
+  <span class="ruby-identifier">names</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">attribute</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">cast_type</span><span class="ruby-operator">|</span>
+      <span class="ruby-constant">NormalizedValueType</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">cast_type:</span> <span class="ruby-identifier">cast_type</span>, <span class="ruby-value">normalizer:</span> <span class="ruby-identifier">with</span>, <span class="ruby-value">normalize_nil:</span> <span class="ruby-identifier">apply_to_nil</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">normalized_attributes</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">names</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:to_sym</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

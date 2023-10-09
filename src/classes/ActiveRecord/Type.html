@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -129,7 +129,23 @@ layout: default
           
             <tr valign='top'>
               <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
+              <td colspan="2" class="attr-desc"><h1 id="label-Active+Model+BigInteger+Type">Active Model BigInteger Type</h1>
+
+<p>Attribute type for integers that can be serialized to an unlimited number of bytes. This type is registered under the <code>:big_integer</code> key.</p>
+
+<pre><code>class Person
+  include ActiveModel::Attributes
+
+  attribute :id, :big_integer
+end
+
+person = Person.new
+person.id = &quot;18_000_000_000&quot;
+
+person.id # =&gt; 18000000000
+</code></pre>
+
+<p>All casting and serialization are performed in the same way as the standard <a href="../ActiveModel/Type/Integer.html"><code>ActiveModel::Type::Integer</code></a> type.</p></td>
             </tr>
           
         
@@ -141,7 +157,11 @@ layout: default
           
             <tr valign='top'>
               <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
+              <td colspan="2" class="attr-desc"><h1 id="label-Active+Model+Binary+Type">Active Model Binary Type</h1>
+
+<p>Attribute type for representation of binary data. This type is registered under the <code>:binary</code> key.</p>
+
+<p>Non-string values are coerced to strings using their <code>to_s</code> method.</p></td>
             </tr>
           
         
@@ -153,19 +173,15 @@ layout: default
           
             <tr valign='top'>
               <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"><h2 id="label-Active+Model+Type+Boolean">Active Model Type Boolean</h2>
+              <td colspan="2" class="attr-desc"><h1 id="label-Active+Model+Boolean+Type">Active Model Boolean Type</h1>
 
 <p>A class that behaves like a boolean type, including rules for coercion of user input.</p>
-
-<h3 id="label-Coercion">Coercion</h3>
-
-<p>Values set from user input will first be coerced into the appropriate ruby type. Coercion behavior is roughly mapped to Ruby&#39;s boolean semantics.</p>
 <ul><li>
-<p>“false”, “f” , “0”, <code>0</code> or any other value in <code>FALSE_VALUES</code> will be coerced to <code>false</code></p>
+<p><code>&quot;false&quot;</code>, <code>&quot;f&quot;</code>, <code>&quot;0&quot;</code>, <code>0</code> or any other value in <code>FALSE_VALUES</code> will be coerced to <code>false</code>.</p>
 </li><li>
-<p>Empty strings are coerced to <code>nil</code></p>
+<p>Empty strings are coerced to <code>nil</code>.</p>
 </li><li>
-<p>All other values will be coerced to <code>true</code></p>
+<p>All other values will be coerced to <code>true</code>.</p>
 </li></ul></td>
             </tr>
           
@@ -178,7 +194,42 @@ layout: default
           
             <tr valign='top'>
               <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
+              <td colspan="2" class="attr-desc"><h1 id="label-Active+Model+Decimal+Type">Active Model Decimal Type</h1>
+
+<p>Attribute type for decimal, high-precision floating point numeric representation. It is registered under the <code>:decimal</code> key.</p>
+
+<pre><code>class BagOfCoffee
+  include ActiveModel::Attributes
+
+  attribute :weight, :decimal
+end
+</code></pre>
+
+<p><a href="../Numeric.html"><code>Numeric</code></a> instances are converted to <a href="../BigDecimal.html"><code>BigDecimal</code></a> instances. Any other objects are cast using their <code>to_d</code> method, except for blank strings, which are cast to <code>nil</code>. If a <code>to_d</code> method is not defined, the object is converted to a string using <code>to_s</code>, which is then cast using <code>to_d</code>.</p>
+
+<pre><code>bag = BagOfCoffee.new
+
+bag.weight = 0.01
+bag.weight # =&gt; 0.1e-1
+
+bag.weight = &quot;0.01&quot;
+bag.weight # =&gt; 0.1e-1
+
+bag.weight = &quot;&quot;
+bag.weight # =&gt; nil
+
+bag.weight = :arbitrary
+bag.weight # =&gt; nil (the result of `.to_s.to_d`)
+</code></pre>
+
+<p><a href="../ActiveModel/Type/Decimal.html"><code>Decimal</code></a> precision defaults to 18, and can be customized when declaring an attribute:</p>
+
+<pre><code>class BagOfCoffee
+  include ActiveModel::Attributes
+
+  attribute :weight, :decimal, precision: 24
+end
+</code></pre></td>
             </tr>
           
         
@@ -190,7 +241,35 @@ layout: default
           
             <tr valign='top'>
               <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
+              <td colspan="2" class="attr-desc"><h1 id="label-Active+Model+Float+Type">Active Model Float Type</h1>
+
+<p>Attribute type for floating point numeric values. It is registered under the <code>:float</code> key.</p>
+
+<pre><code>class BagOfCoffee
+  include ActiveModel::Attributes
+
+  attribute :weight, :float
+end
+</code></pre>
+
+<p>Values are cast using their <code>to_f</code> method, except for the following strings:</p>
+<ul><li>
+<p>Blank strings are cast to <code>nil</code>.</p>
+</li><li>
+<p><code>&quot;Infinity&quot;</code> is cast to <code>Float::INFINITY</code>.</p>
+</li><li>
+<p><code>&quot;-Infinity&quot;</code> is cast to <code>-Float::INFINITY</code>.</p>
+</li><li>
+<p><code>&quot;NaN&quot;</code> is cast to <code>Float::NAN</code>.</p>
+
+<p>bag = BagOfCoffee.new</p>
+
+<p>bag.weight = “0.25” bag.weight # =&gt; 0.25</p>
+
+<p>bag.weight = “” bag.weight # =&gt; nil</p>
+
+<p>bag.weight = “NaN” bag.weight # =&gt; Float::NAN</p>
+</li></ul></td>
             </tr>
           
         
@@ -202,7 +281,36 @@ layout: default
           
             <tr valign='top'>
               <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
+              <td colspan="2" class="attr-desc"><h1 id="label-Active+Model+ImmutableString+Type">Active Model ImmutableString Type</h1>
+
+<p>Attribute type to represent immutable strings. It casts incoming values to frozen strings.</p>
+
+<pre><code>class Person
+  include ActiveModel::Attributes
+
+  attribute :name, :immutable_string
+end
+
+person = Person.new
+person.name = 1
+
+person.name # =&gt; &quot;1&quot;
+person.name.frozen? # =&gt; true
+</code></pre>
+
+<p>Values are coerced to strings using their <code>to_s</code> method. <a href="../ActiveModel/Type/Boolean.html"><code>Boolean</code></a> values are treated differently, however: <code>true</code> will be cast to <code>&quot;t&quot;</code> and <code>false</code> will be cast to <code>&quot;f&quot;</code>. These strings can be customized when declaring an attribute:</p>
+
+<pre><code>class Person
+  include ActiveModel::Attributes
+
+  attribute :active, :immutable_string, true: &quot;aye&quot;, false: &quot;nay&quot;
+end
+
+person = Person.new
+person.active = true
+
+person.active # =&gt; &quot;aye&quot;
+</code></pre></td>
             </tr>
           
         
@@ -214,7 +322,41 @@ layout: default
           
             <tr valign='top'>
               <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
+              <td colspan="2" class="attr-desc"><h1 id="label-Active+Model+Integer+Type">Active Model Integer Type</h1>
+
+<p>Attribute type for integer representation. This type is registered under the <code>:integer</code> key.</p>
+
+<pre><code>class Person
+  include ActiveModel::Attributes
+
+  attribute :age, :integer
+end
+</code></pre>
+
+<p>Values are cast using their <code>to_i</code> method, except for blank strings, which are cast to <code>nil</code>. If a <code>to_i</code> method is not defined or raises an error, the value will be cast to <code>nil</code>.</p>
+
+<pre><code>person = Person.new
+
+person.age = &quot;18&quot;
+person.age # =&gt; 18
+
+person.age = &quot;&quot;
+person.age # =&gt; nil
+
+person.age = :not_an_integer
+person.age # =&gt; nil (because Symbol does not define #to_i)
+</code></pre>
+
+<p><a href="Serialization.html"><code>Serialization</code></a> also works under the same principle. Non-numeric strings are serialized as <code>nil</code>, for example.</p>
+
+<p><a href="Serialization.html"><code>Serialization</code></a> also validates that the integer can be stored using a limited number of bytes. If it cannot, an <a href="../ActiveModel/RangeError.html"><code>ActiveModel::RangeError</code></a> will be raised. The default limit is 4 bytes, and can be customized when declaring an attribute:</p>
+
+<pre><code>class Person
+  include ActiveModel::Attributes
+
+  attribute :age, :integer, limit: 6
+end
+</code></pre></td>
             </tr>
           
         
@@ -226,7 +368,11 @@ layout: default
           
             <tr valign='top'>
               <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
+              <td colspan="2" class="attr-desc"><h1 id="label-Active+Model+String+Type">Active Model String Type</h1>
+
+<p>Attribute type for strings. It is registered under the <code>:string</code> key.</p>
+
+<p>This class is a specialization of <a href="../ActiveModel/Type/ImmutableString.html"><code>ActiveModel::Type::ImmutableString</code></a>. It performs coercion in the same way, and can be configured in the same way. However, it accounts for mutable strings, so dirty tracking can properly check if a string has changed.</p></td>
             </tr>
           
         
@@ -238,7 +384,9 @@ layout: default
           
             <tr valign='top'>
               <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
+              <td colspan="2" class="attr-desc"><h1 id="label-Active+Model+Value+Type">Active Model Value Type</h1>
+
+<p>The base class for all attribute types. This class also serves as the default type for attributes that do not specify a type.</p></td>
             </tr>
           
         

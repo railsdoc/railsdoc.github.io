@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -29,6 +29,8 @@ layout: default
   
     <div class="description">
       
+<h1 id="class-ActiveStorage::Service::MirrorService-label-Active+Storage+Mirror+Service">Active Storage Mirror Service</h1>
+
 <p>Wraps a set of mirror services and provides a single <a href="../Service.html"><code>ActiveStorage::Service</code></a> object that will all have the files uploaded to them. A <code>primary</code> service is designated to answer calls to:</p>
 <ul><li>
 <p><code>download</code></p>
@@ -143,7 +145,7 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/mirror_service.rb, line 29</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/mirror_service.rb, line 31</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-value">primary:</span>, <span class="ruby-value">mirrors:</span>)
   <span class="ruby-ivar">@primary</span>, <span class="ruby-ivar">@mirrors</span> = <span class="ruby-identifier">primary</span>, <span class="ruby-identifier">mirrors</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -182,7 +184,7 @@ layout: default
                 
               </p>
               <div id="method-i-delete_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/mirror_service.rb, line 43</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/mirror_service.rb, line 45</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete</span>(<span class="ruby-identifier">key</span>)
   <span class="ruby-identifier">perform_across_services</span> <span class="ruby-value">:delete</span>, <span class="ruby-identifier">key</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -217,7 +219,7 @@ layout: default
                 
               </p>
               <div id="method-i-delete_prefixed_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/mirror_service.rb, line 48</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/mirror_service.rb, line 50</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete_prefixed</span>(<span class="ruby-identifier">prefix</span>)
   <span class="ruby-identifier">perform_across_services</span> <span class="ruby-value">:delete_prefixed</span>, <span class="ruby-identifier">prefix</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -235,7 +237,7 @@ layout: default
 
           
             <div class="description">
-              <p>Copy the file at the <code>key</code> from the primary service to each of the mirrors where it doesn&#39;t already exist.</p>
+              <p>Copy the file at the <code>key</code> from the primary service to each of the mirrors where it doesn’t already exist.</p>
             </div>
           
 
@@ -252,7 +254,7 @@ layout: default
                 
               </p>
               <div id="method-i-mirror_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/mirror_service.rb, line 54</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/mirror_service.rb, line 59</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">mirror</span>(<span class="ruby-identifier">key</span>, <span class="ruby-value">checksum:</span>)
   <span class="ruby-identifier">instrument</span> <span class="ruby-value">:mirror</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">checksum:</span> <span class="ruby-identifier">checksum</span> <span class="ruby-keyword">do</span>
     <span class="ruby-keyword">if</span> (<span class="ruby-identifier">mirrors_in_need_of_mirroring</span> = <span class="ruby-identifier">mirrors</span>.<span class="ruby-identifier">select</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">service</span><span class="ruby-operator">|</span> <span class="ruby-operator">!</span><span class="ruby-identifier">service</span>.<span class="ruby-identifier">exist?</span>(<span class="ruby-identifier">key</span>) }).<span class="ruby-identifier">any?</span>
@@ -279,7 +281,7 @@ layout: default
 
           
             <div class="description">
-              <p>Upload the <code>io</code> to the <code>key</code> specified to all services. If a <code>checksum</code> is provided, all services will ensure a match when the upload has completed or raise an <a href="../IntegrityError.html"><code>ActiveStorage::IntegrityError</code></a>.</p>
+              <p>Upload the <code>io</code> to the <code>key</code> specified to all services. The upload to the primary service is done synchronously whereas the upload to the mirrors is done asynchronously. If a <code>checksum</code> is provided, all services will ensure a match when the upload has completed or raise an <a href="../IntegrityError.html"><code>ActiveStorage::IntegrityError</code></a>.</p>
             </div>
           
 
@@ -296,12 +298,11 @@ layout: default
                 
               </p>
               <div id="method-i-upload_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/mirror_service.rb, line 35</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/service/mirror_service.rb, line 38</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">upload</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">io</span>, <span class="ruby-value">checksum:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
-  <span class="ruby-identifier">each_service</span>.<span class="ruby-identifier">collect</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">service</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">io</span>.<span class="ruby-identifier">rewind</span>
-    <span class="ruby-identifier">service</span>.<span class="ruby-identifier">upload</span> <span class="ruby-identifier">key</span>, <span class="ruby-identifier">io</span>, <span class="ruby-value">checksum:</span> <span class="ruby-identifier">checksum</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>
-  <span class="ruby-keyword">end</span>
+  <span class="ruby-identifier">io</span>.<span class="ruby-identifier">rewind</span>
+  <span class="ruby-identifier">primary</span>.<span class="ruby-identifier">upload</span> <span class="ruby-identifier">key</span>, <span class="ruby-identifier">io</span>, <span class="ruby-value">checksum:</span> <span class="ruby-identifier">checksum</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>
+  <span class="ruby-identifier">mirror_later</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">checksum:</span> <span class="ruby-identifier">checksum</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

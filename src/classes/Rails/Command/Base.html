@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -21,8 +21,6 @@ layout: default
         <ul class="files">
             
             <li><a href="../../../files/railties/lib/rails/command/base_rb.html">railties/lib/rails/command/base.rb</a></li>
-            
-            <li><a href="../../../files/railties/lib/rails/generators_rb.html">railties/lib/rails/generators.rb</a></li>
             
         </ul>
     </div>
@@ -68,10 +66,6 @@ layout: default
       
         <li>
           <a href="#method-c-executable">executable</a>
-        </li>
-      
-        <li>
-          <a href="#method-i-help">help</a>
         </li>
       
         <li>
@@ -125,13 +119,13 @@ layout: default
         <div class="method">
           <h3 id="method-c-banner">
             
-              banner(*)
+              banner(command = nil, *)
             
           </h3>
 
           
             <div class="description">
-              <p>Use Rails&#39; default banner.</p>
+              
             </div>
           
 
@@ -148,9 +142,16 @@ layout: default
                 
               </p>
               <div id="method-c-banner_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 99</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">banner</span>(<span class="ruby-operator">*</span>)
-  <span class="ruby-node">&quot;#{executable} #{arguments.map(&amp;:usage).join(&#39; &#39;)} [options]&quot;</span>.<span class="ruby-identifier">squish</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 86</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">banner</span>(<span class="ruby-identifier">command</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">*</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">command</span>
+    <span class="ruby-comment"># Similar to Thor&#39;s banner, but show the namespace (minus the</span>
+    <span class="ruby-comment"># &quot;rails:&quot; prefix), and show the command&#39;s declared bin instead of</span>
+    <span class="ruby-comment"># the command runner.</span>
+    <span class="ruby-identifier">command</span>.<span class="ruby-identifier">formatted_usage</span>(<span class="ruby-keyword">self</span>).<span class="ruby-identifier">gsub</span>(<span class="ruby-regexp">/^#{namespace}:(\w+)/</span>) { <span class="ruby-identifier">executable</span>(<span class="ruby-node">$1</span>) }
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">executable</span>
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -266,10 +267,10 @@ layout: default
                 
               </p>
               <div id="method-c-default_command_root_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 135</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 139</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">default_command_root</span>
-  <span class="ruby-identifier">path</span> = <span class="ruby-constant">File</span>.<span class="ruby-identifier">expand_path</span>(<span class="ruby-identifier">relative_command_path</span>, <span class="ruby-identifier">__dir__</span>)
-  <span class="ruby-identifier">path</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">File</span>.<span class="ruby-identifier">exist?</span>(<span class="ruby-identifier">path</span>)
+  <span class="ruby-ivar">@default_command_root</span> = <span class="ruby-identifier">resolve_path</span>(<span class="ruby-string">&quot;.&quot;</span>) <span class="ruby-keyword">unless</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-ivar">@default_command_root</span>)
+  <span class="ruby-ivar">@default_command_root</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -302,12 +303,12 @@ layout: default
                 
               </p>
               <div id="method-c-desc_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 49</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 34</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">desc</span>(<span class="ruby-identifier">usage</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">description</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">usage</span>
     <span class="ruby-keyword">super</span>
   <span class="ruby-keyword">else</span>
-    <span class="ruby-ivar">@desc</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">ERB</span>.<span class="ruby-identifier">new</span>(<span class="ruby-constant">File</span>.<span class="ruby-identifier">read</span>(<span class="ruby-identifier">usage_path</span>), <span class="ruby-value">trim_mode:</span> <span class="ruby-string">&quot;-&quot;</span>).<span class="ruby-identifier">result</span>(<span class="ruby-identifier">binding</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">usage_path</span>
+    <span class="ruby-identifier">class_usage</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -324,7 +325,7 @@ layout: default
 
           
             <div class="description">
-              <p>Returns true when the app is a <a href="../Rails.html"><code>Rails</code></a> engine.</p>
+              <p>Returns true when the app is a Rails engine.</p>
             </div>
           
 
@@ -341,7 +342,7 @@ layout: default
                 
               </p>
               <div id="method-c-engine-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 43</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 28</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">engine?</span>
   <span class="ruby-keyword">defined?</span>(<span class="ruby-constant">ENGINE_ROOT</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -353,7 +354,7 @@ layout: default
         <div class="method">
           <h3 id="method-c-executable">
             
-              executable()
+              executable(command_name = self.command_name)
             
           </h3>
 
@@ -376,9 +377,9 @@ layout: default
                 
               </p>
               <div id="method-c-executable_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 94</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">executable</span>
-  <span class="ruby-node">&quot;rails #{command_name}&quot;</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 82</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">executable</span>(<span class="ruby-identifier">command_name</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">command_name</span>)
+  <span class="ruby-node">&quot;#{bin} #{namespaced_name(command_name)}&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -411,7 +412,7 @@ layout: default
                 
               </p>
               <div id="method-c-hide_command-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 70</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 55</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">hide_command!</span>
   <span class="ruby-constant">Rails</span><span class="ruby-operator">::</span><span class="ruby-constant">Command</span>.<span class="ruby-identifier">hidden_commands</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-keyword">self</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -429,7 +430,7 @@ layout: default
 
           
             <div class="description">
-              <p>Convenience method to get the namespace from the class name. It&#39;s the same as Thor default except that the <a href="../Command.html"><code>Command</code></a> at the end of the class is removed.</p>
+              <p>Convenience method to get the namespace from the class name. It’s the same as Thor default except that the <a href="../Command.html"><code>Command</code></a> at the end of the class is removed.</p>
             </div>
           
 
@@ -446,7 +447,7 @@ layout: default
                 
               </p>
               <div id="method-c-namespace_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 60</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 45</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">namespace</span>(<span class="ruby-identifier">name</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">name</span>
     <span class="ruby-keyword">super</span>
@@ -485,9 +486,11 @@ layout: default
                 
               </p>
               <div id="method-c-printing_commands_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 90</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 76</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">printing_commands</span>
-  <span class="ruby-identifier">namespaced_commands</span>
+  <span class="ruby-identifier">commands</span>.<span class="ruby-identifier">filter_map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span>, <span class="ruby-identifier">command</span><span class="ruby-operator">|</span>
+    [<span class="ruby-identifier">namespaced_name</span>(<span class="ruby-identifier">name</span>), <span class="ruby-identifier">command</span>.<span class="ruby-identifier">description</span>] <span class="ruby-keyword">unless</span> <span class="ruby-identifier">command</span>.<span class="ruby-identifier">hidden?</span>
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -520,12 +523,10 @@ layout: default
                 
               </p>
               <div id="method-c-usage_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 123</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 129</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">usage_path</span>
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">default_command_root</span>
-    <span class="ruby-identifier">path</span> = <span class="ruby-constant">File</span>.<span class="ruby-identifier">join</span>(<span class="ruby-identifier">default_command_root</span>, <span class="ruby-string">&quot;USAGE&quot;</span>)
-    <span class="ruby-identifier">path</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">File</span>.<span class="ruby-identifier">exist?</span>(<span class="ruby-identifier">path</span>)
-  <span class="ruby-keyword">end</span>
+  <span class="ruby-ivar">@usage_path</span> = <span class="ruby-identifier">resolve_path</span>(<span class="ruby-string">&quot;USAGE&quot;</span>) <span class="ruby-keyword">unless</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-ivar">@usage_path</span>)
+  <span class="ruby-ivar">@usage_path</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -534,48 +535,6 @@ layout: default
         
       
     
-      <h2 id="instance-public-methods">Instance Public methods</h2>
-      
-        <div class="method">
-          <h3 id="method-i-help">
-            
-              help()
-            
-          </h3>
-
-          
-            <div class="description">
-              
-            </div>
-          
-
-          
-
-          
-
-          
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-help_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command/base.rb, line 174</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">help</span>
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">command_name</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">command_name</span>
-    <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">command_help</span>(<span class="ruby-identifier">shell</span>, <span class="ruby-identifier">command_name</span>)
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-keyword">super</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
-        
-      
     
   
 </div>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -20,6 +20,12 @@ layout: default
     </div>
     <div id="bodyContent">
         <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveRecord::AttributeMethods::PrimaryKey-label-Active+Record+Attribute+Methods+Primary+Key">Active Record Attribute Methods Primary Key</h1>
+
+    </div>
   
 
   
@@ -103,7 +109,7 @@ layout: default
 
           
             <div class="description">
-              <p>Returns the primary key column&#39;s value.</p>
+              <p>Returns the primary key column’s value. If the primary key is composite, returns an array of the primary key column values.</p>
             </div>
           
 
@@ -120,9 +126,11 @@ layout: default
                 
               </p>
               <div id="method-i-id_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 18</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 20</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">id</span>
-  <span class="ruby-identifier">_read_attribute</span>(<span class="ruby-ivar">@primary_key</span>)
+  <span class="ruby-keyword">return</span> <span class="ruby-identifier">_read_attribute</span>(<span class="ruby-ivar">@primary_key</span>) <span class="ruby-keyword">unless</span> <span class="ruby-ivar">@primary_key</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Array</span>)
+
+  <span class="ruby-ivar">@primary_key</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">pk</span><span class="ruby-operator">|</span> <span class="ruby-identifier">_read_attribute</span>(<span class="ruby-identifier">pk</span>) }
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -138,7 +146,7 @@ layout: default
 
           
             <div class="description">
-              <p>Sets the primary key column&#39;s value.</p>
+              <p>Sets the primary key column’s value. If the primary key is composite, raises TypeError when the set value not enumerable.</p>
             </div>
           
 
@@ -155,9 +163,14 @@ layout: default
                 
               </p>
               <div id="method-i-id-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 23</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 34</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">id=</span>(<span class="ruby-identifier">value</span>)
-  <span class="ruby-identifier">_write_attribute</span>(<span class="ruby-ivar">@primary_key</span>, <span class="ruby-identifier">value</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">composite_primary_key?</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">TypeError</span>, <span class="ruby-node">&quot;Expected value matching #{self.class.primary_key.inspect}, got #{value.inspect}.&quot;</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Enumerable</span>)
+    <span class="ruby-ivar">@primary_key</span>.<span class="ruby-identifier">zip</span>(<span class="ruby-identifier">value</span>) { <span class="ruby-operator">|</span><span class="ruby-identifier">attr</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span> <span class="ruby-identifier">_write_attribute</span>(<span class="ruby-identifier">attr</span>, <span class="ruby-identifier">value</span>) }
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">_write_attribute</span>(<span class="ruby-ivar">@primary_key</span>, <span class="ruby-identifier">value</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -173,7 +186,7 @@ layout: default
 
           
             <div class="description">
-              <p>Queries the primary key column&#39;s value.</p>
+              <p>Queries the primary key column’s value. If the primary key is composite, all primary key column values must be queryable.</p>
             </div>
           
 
@@ -190,9 +203,13 @@ layout: default
                 
               </p>
               <div id="method-i-id-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 28</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 45</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">id?</span>
-  <span class="ruby-identifier">query_attribute</span>(<span class="ruby-ivar">@primary_key</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">composite_primary_key?</span>
+    <span class="ruby-ivar">@primary_key</span>.<span class="ruby-identifier">all?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">col</span><span class="ruby-operator">|</span> <span class="ruby-identifier">_query_attribute</span>(<span class="ruby-identifier">col</span>) }
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">_query_attribute</span>(<span class="ruby-ivar">@primary_key</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -208,7 +225,7 @@ layout: default
 
           
             <div class="description">
-              <p>Returns the primary key column&#39;s value before type cast.</p>
+              <p>Returns the primary key column’s value before type cast. If the primary key is composite, returns an array of primary key column values before type cast.</p>
             </div>
           
 
@@ -225,9 +242,13 @@ layout: default
                 
               </p>
               <div id="method-i-id_before_type_cast_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 33</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 55</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">id_before_type_cast</span>
-  <span class="ruby-identifier">attribute_before_type_cast</span>(<span class="ruby-ivar">@primary_key</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">composite_primary_key?</span>
+    <span class="ruby-ivar">@primary_key</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">col</span><span class="ruby-operator">|</span> <span class="ruby-identifier">attribute_before_type_cast</span>(<span class="ruby-identifier">col</span>) }
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">attribute_before_type_cast</span>(<span class="ruby-ivar">@primary_key</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -243,7 +264,7 @@ layout: default
 
           
             <div class="description">
-              <p>Returns the primary key column&#39;s value from the database.</p>
+              <p>Returns the primary key column’s value from the database. If the primary key is composite, returns an array of primary key column values from database.</p>
             </div>
           
 
@@ -260,9 +281,13 @@ layout: default
                 
               </p>
               <div id="method-i-id_in_database_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 43</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 75</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">id_in_database</span>
-  <span class="ruby-identifier">attribute_in_database</span>(<span class="ruby-ivar">@primary_key</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">composite_primary_key?</span>
+    <span class="ruby-ivar">@primary_key</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">col</span><span class="ruby-operator">|</span> <span class="ruby-identifier">attribute_in_database</span>(<span class="ruby-identifier">col</span>) }
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">attribute_in_database</span>(<span class="ruby-ivar">@primary_key</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -278,7 +303,7 @@ layout: default
 
           
             <div class="description">
-              <p>Returns the primary key column&#39;s previous value.</p>
+              <p>Returns the primary key column’s previous value. If the primary key is composite, returns an array of primary key column previous values.</p>
             </div>
           
 
@@ -295,9 +320,13 @@ layout: default
                 
               </p>
               <div id="method-i-id_was_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 38</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 65</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">id_was</span>
-  <span class="ruby-identifier">attribute_was</span>(<span class="ruby-ivar">@primary_key</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">composite_primary_key?</span>
+    <span class="ruby-ivar">@primary_key</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">col</span><span class="ruby-operator">|</span> <span class="ruby-identifier">attribute_was</span>(<span class="ruby-identifier">col</span>) }
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">attribute_was</span>(<span class="ruby-ivar">@primary_key</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -313,7 +342,7 @@ layout: default
 
           
             <div class="description">
-              <p>Returns this record&#39;s primary key value wrapped in an array if one is available.</p>
+              <p>Returns this record’s primary key value wrapped in an array if one is available.</p>
             </div>
           
 
@@ -330,10 +359,10 @@ layout: default
                 
               </p>
               <div id="method-i-to_key_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 12</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/primary_key.rb, line 13</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_key</span>
   <span class="ruby-identifier">key</span> = <span class="ruby-identifier">id</span>
-  [<span class="ruby-identifier">key</span>] <span class="ruby-keyword">if</span> <span class="ruby-identifier">key</span>
+  <span class="ruby-constant">Array</span>(<span class="ruby-identifier">key</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">key</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

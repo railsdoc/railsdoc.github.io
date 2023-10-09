@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -31,6 +31,8 @@ layout: default
   
     <div class="description">
       
+<h1 id="class-ActionDispatch::HostAuthorization-label-Action+Dispatch+HostAuthorization">Action Dispatch HostAuthorization</h1>
+
 <p>This middleware guards from DNS rebinding attacks by explicitly permitting the hosts a request can be sent to, and is passed the options set in <code>config.host_authorization</code>.</p>
 
 <p>Requests can opt-out of Host Authorization with <code>exclude</code>:</p>
@@ -38,7 +40,7 @@ layout: default
 <pre><code>config.host_authorization = { exclude: -&gt;(request) { request.path =~ /healthcheck/ } }
 </code></pre>
 
-<p>When a request comes to an unauthorized host, the <code>response_app</code> application will be executed and rendered. If no <code>response_app</code> is given, a default one will run. The default response app logs blocked host info with level &#39;error&#39; and responds with <code>403 Forbidden</code>. The body of the response contains debug info if <code>config.consider_all_requests_local</code> is set to true, otherwise the body is empty.</p>
+<p>When a request comes to an unauthorized host, the <code>response_app</code> application will be executed and rendered. If no <code>response_app</code> is given, a default one will run. The default response app logs blocked host info with level ‘error’ and responds with <code>403 Forbidden</code>. The body of the response contains debug info if <code>config.consider_all_requests_local</code> is set to true, otherwise the body is empty.</p>
 
     </div>
   
@@ -125,7 +127,7 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 122</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 125</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">app</span>, <span class="ruby-identifier">hosts</span>, <span class="ruby-value">exclude:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">response_app:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-ivar">@app</span> = <span class="ruby-identifier">app</span>
   <span class="ruby-ivar">@permissions</span> = <span class="ruby-constant">Permissions</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">hosts</span>)
@@ -168,16 +170,18 @@ layout: default
                 
               </p>
               <div id="method-i-call_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 130</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 133</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">call</span>(<span class="ruby-identifier">env</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-ivar">@app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>) <span class="ruby-keyword">if</span> <span class="ruby-ivar">@permissions</span>.<span class="ruby-identifier">empty?</span>
 
   <span class="ruby-identifier">request</span> = <span class="ruby-constant">Request</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">env</span>)
+  <span class="ruby-identifier">hosts</span> = <span class="ruby-identifier">blocked_hosts</span>(<span class="ruby-identifier">request</span>)
 
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">authorized?</span>(<span class="ruby-identifier">request</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">excluded?</span>(<span class="ruby-identifier">request</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">hosts</span>.<span class="ruby-identifier">empty?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">excluded?</span>(<span class="ruby-identifier">request</span>)
     <span class="ruby-identifier">mark_as_authorized</span>(<span class="ruby-identifier">request</span>)
     <span class="ruby-ivar">@app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>)
   <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">env</span>[<span class="ruby-string">&quot;action_dispatch.blocked_hosts&quot;</span>] = <span class="ruby-identifier">hosts</span>
     <span class="ruby-ivar">@response_app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>)
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>

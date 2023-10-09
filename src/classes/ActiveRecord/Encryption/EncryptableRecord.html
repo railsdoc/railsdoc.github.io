@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -163,7 +163,7 @@ layout: default
                 
               </p>
               <div id="method-i-add_length_validation_for_encrypted_columns_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 127</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 132</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_length_validation_for_encrypted_columns</span>
   <span class="ruby-identifier">encrypted_attributes</span>&amp;.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">attribute_name</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">validate_column_size</span> <span class="ruby-identifier">attribute_name</span>
@@ -200,9 +200,13 @@ layout: default
                 
               </p>
               <div id="method-i-ciphertext_for_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 146</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 151</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">ciphertext_for</span>(<span class="ruby-identifier">attribute_name</span>)
-  <span class="ruby-identifier">read_attribute_before_type_cast</span>(<span class="ruby-identifier">attribute_name</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">encrypted_attribute?</span>(<span class="ruby-identifier">attribute_name</span>)
+    <span class="ruby-identifier">read_attribute_before_type_cast</span>(<span class="ruby-identifier">attribute_name</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">read_attribute_for_database</span>(<span class="ruby-identifier">attribute_name</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -235,7 +239,7 @@ layout: default
                 
               </p>
               <div id="method-i-decrypt_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 156</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 165</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">decrypt</span>
   <span class="ruby-identifier">decrypt_attributes</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">has_encrypted_attributes?</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -270,7 +274,7 @@ layout: default
                 
               </p>
               <div id="method-i-deterministic_encrypted_attributes_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 56</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 58</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deterministic_encrypted_attributes</span>
   <span class="ruby-ivar">@deterministic_encrypted_attributes</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">encrypted_attributes</span>&amp;.<span class="ruby-identifier">find_all</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">attribute_name</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">type_for_attribute</span>(<span class="ruby-identifier">attribute_name</span>).<span class="ruby-identifier">deterministic?</span>
@@ -307,7 +311,7 @@ layout: default
                 
               </p>
               <div id="method-i-encrypt_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 151</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 160</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">encrypt</span>
   <span class="ruby-identifier">encrypt_attributes</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">has_encrypted_attributes?</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -319,7 +323,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-encrypt_attribute">
             
-              encrypt_attribute(name, attribute_scheme)
+              encrypt_attribute(name, key_provider: nil, key: nil, deterministic: false, support_unencrypted_data: nil, downcase: false, ignore_case: false, previous: [], **context_properties)
             
           </h3>
 
@@ -342,15 +346,18 @@ layout: default
                 
               </p>
               <div id="method-i-encrypt_attribute_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 82</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">encrypt_attribute</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">attribute_scheme</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 84</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">encrypt_attribute</span>(<span class="ruby-identifier">name</span>, <span class="ruby-value">key_provider:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">key:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">deterministic:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">support_unencrypted_data:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">downcase:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">ignore_case:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">previous:</span> [], <span class="ruby-operator">**</span><span class="ruby-identifier">context_properties</span>)
   <span class="ruby-identifier">encrypted_attributes</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_sym</span>
 
   <span class="ruby-identifier">attribute</span> <span class="ruby-identifier">name</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">cast_type</span><span class="ruby-operator">|</span>
-    <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span><span class="ruby-operator">::</span><span class="ruby-constant">EncryptedAttributeType</span>.<span class="ruby-identifier">new</span> <span class="ruby-value">scheme:</span> <span class="ruby-identifier">attribute_scheme</span>, <span class="ruby-value">cast_type:</span> <span class="ruby-identifier">cast_type</span>
+    <span class="ruby-identifier">scheme</span> = <span class="ruby-identifier">scheme_for</span> <span class="ruby-value">key_provider:</span> <span class="ruby-identifier">key_provider</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">deterministic:</span> <span class="ruby-identifier">deterministic</span>, <span class="ruby-value">support_unencrypted_data:</span> <span class="ruby-identifier">support_unencrypted_data</span>, \
+      <span class="ruby-value">downcase:</span> <span class="ruby-identifier">downcase</span>, <span class="ruby-value">ignore_case:</span> <span class="ruby-identifier">ignore_case</span>, <span class="ruby-value">previous:</span> <span class="ruby-identifier">previous</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">context_properties</span>
+
+    <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span><span class="ruby-operator">::</span><span class="ruby-constant">EncryptedAttributeType</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">scheme:</span> <span class="ruby-identifier">scheme</span>, <span class="ruby-value">cast_type:</span> <span class="ruby-identifier">cast_type</span>, <span class="ruby-value">default:</span> <span class="ruby-identifier">columns_hash</span>[<span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>]&amp;.<span class="ruby-identifier">default</span>)
   <span class="ruby-keyword">end</span>
 
-  <span class="ruby-identifier">preserve_original_encrypted</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">attribute_scheme</span>.<span class="ruby-identifier">ignore_case?</span>
+  <span class="ruby-identifier">preserve_original_encrypted</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">ignore_case</span>
   <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span>.<span class="ruby-identifier">encrypted_attribute_was_declared</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -384,9 +391,9 @@ layout: default
                 
               </p>
               <div id="method-i-encrypted_attribute-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 141</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 146</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">encrypted_attribute?</span>(<span class="ruby-identifier">attribute_name</span>)
-  <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span>.<span class="ruby-identifier">encryptor</span>.<span class="ruby-identifier">encrypted?</span> <span class="ruby-identifier">ciphertext_for</span>(<span class="ruby-identifier">attribute_name</span>)
+  <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span>.<span class="ruby-identifier">encryptor</span>.<span class="ruby-identifier">encrypted?</span> <span class="ruby-identifier">read_attribute_before_type_cast</span>(<span class="ruby-identifier">attribute_name</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -396,7 +403,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-encrypts">
             
-              encrypts(*names, key_provider: nil, key: nil, deterministic: false, downcase: false, ignore_case: false, previous: [], **context_properties)
+              encrypts(*names, key_provider: nil, key: nil, deterministic: false, support_unencrypted_data: nil, downcase: false, ignore_case: false, previous: [], **context_properties)
             
           </h3>
 
@@ -408,9 +415,11 @@ layout: default
 <ul><li>
 <p><code>:key_provider</code> - A key provider to provide encryption and decryption keys. Defaults to <code>ActiveRecord::Encryption.key_provider</code>.</p>
 </li><li>
-<p><code>:key</code> - A password to derive the key from. It&#39;s a shorthand for a <code>:key_provider</code> that serves derivated keys. Both options can&#39;t be used at the same time.</p>
+<p><code>:key</code> - A password to derive the key from. It’s a shorthand for a <code>:key_provider</code> that serves derivated keys. Both options can’t be used at the same time.</p>
 </li><li>
-<p><code>:deterministic</code> - By default, encryption is not deterministic. It will use a random initialization vector for each encryption operation. This means that encrypting the same content with the same key twice will generate different ciphertexts. When set to <code>true</code>, it will generate the initialization vector based on the encrypted content. This means that the same content will generate the same ciphertexts. This enables querying encrypted text with Active Record. Deterministic encryption will use the oldest encryption scheme to encrypt new data by default. You can change this by setting +deterministic: { fixed: false }+. That will make it use the newest encryption scheme for encrypting new data.</p>
+<p><code>:deterministic</code> - By default, encryption is not deterministic. It will use a random initialization vector for each encryption operation. This means that encrypting the same content with the same key twice will generate different ciphertexts. When set to <code>true</code>, it will generate the initialization vector based on the encrypted content. This means that the same content will generate the same ciphertexts. This enables querying encrypted text with Active Record. Deterministic encryption will use the oldest encryption scheme to encrypt new data by default. You can change this by setting <code>deterministic: { fixed: false }</code>. That will make it use the newest encryption scheme for encrypting new data.</p>
+</li><li>
+<p><code>:support_unencrypted_data</code> - If ‘config.active_record.encryption.support_unencrypted_data` is <code>true</code>, you can set this to <code>false</code> to opt out of unencrypted data support for this attribute. This is useful for scenarios where you encrypt one column, and want to disable support for unencrypted data without having to tweak the global setting.</p>
 </li><li>
 <p><code>:downcase</code> - When true, it converts the encrypted content to downcase automatically. This allows to effectively ignore case when querying data. Notice that the case is lost. Use <code>:ignore_case</code> if you are interested in preserving it.</p>
 </li><li>
@@ -436,14 +445,12 @@ layout: default
                 
               </p>
               <div id="method-i-encrypts_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 45</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">encrypts</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>, <span class="ruby-value">key_provider:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">key:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">deterministic:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">downcase:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">ignore_case:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">previous:</span> [], <span class="ruby-operator">**</span><span class="ruby-identifier">context_properties</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 49</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">encrypts</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>, <span class="ruby-value">key_provider:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">key:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">deterministic:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">support_unencrypted_data:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">downcase:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">ignore_case:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">previous:</span> [], <span class="ruby-operator">**</span><span class="ruby-identifier">context_properties</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">encrypted_attributes</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">Set</span>.<span class="ruby-identifier">new</span> <span class="ruby-comment"># not using :default because the instance would be shared across classes</span>
-  <span class="ruby-identifier">scheme</span> = <span class="ruby-identifier">scheme_for</span> <span class="ruby-value">key_provider:</span> <span class="ruby-identifier">key_provider</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">deterministic:</span> <span class="ruby-identifier">deterministic</span>, <span class="ruby-value">downcase:</span> <span class="ruby-identifier">downcase</span>, \
-      <span class="ruby-value">ignore_case:</span> <span class="ruby-identifier">ignore_case</span>, <span class="ruby-value">previous:</span> <span class="ruby-identifier">previous</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">context_properties</span>
 
   <span class="ruby-identifier">names</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">encrypt_attribute</span> <span class="ruby-identifier">name</span>, <span class="ruby-identifier">scheme</span>
+    <span class="ruby-identifier">encrypt_attribute</span> <span class="ruby-identifier">name</span>, <span class="ruby-value">key_provider:</span> <span class="ruby-identifier">key_provider</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">deterministic:</span> <span class="ruby-identifier">deterministic</span>, <span class="ruby-value">support_unencrypted_data:</span> <span class="ruby-identifier">support_unencrypted_data</span>, <span class="ruby-value">downcase:</span> <span class="ruby-identifier">downcase</span>, <span class="ruby-value">ignore_case:</span> <span class="ruby-identifier">ignore_case</span>, <span class="ruby-value">previous:</span> <span class="ruby-identifier">previous</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">context_properties</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -477,10 +484,10 @@ layout: default
                 
               </p>
               <div id="method-i-global_previous_schemes_for_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 76</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 78</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">global_previous_schemes_for</span>(<span class="ruby-identifier">scheme</span>)
-  <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">previous_schemes</span>.<span class="ruby-identifier">collect</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">previous_scheme</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">scheme</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">previous_scheme</span>)
+  <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span>.<span class="ruby-identifier">config</span>.<span class="ruby-identifier">previous_schemes</span>.<span class="ruby-identifier">filter_map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">previous_scheme</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">scheme</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">previous_scheme</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">scheme</span>.<span class="ruby-identifier">compatible_with?</span>(<span class="ruby-identifier">previous_scheme</span>)
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -514,7 +521,7 @@ layout: default
                 
               </p>
               <div id="method-i-load_schema-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 121</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 126</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">load_schema!</span>
   <span class="ruby-keyword">super</span>
 
@@ -551,7 +558,7 @@ layout: default
                 
               </p>
               <div id="method-i-override_accessors_to_preserve_original_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 104</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 109</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">override_accessors_to_preserve_original</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">original_attribute_name</span>)
   <span class="ruby-identifier">include</span>(<span class="ruby-constant">Module</span>.<span class="ruby-identifier">new</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">define_method</span> <span class="ruby-identifier">name</span> <span class="ruby-keyword">do</span>
@@ -599,7 +606,7 @@ layout: default
                 
               </p>
               <div id="method-i-preserve_original_encrypted_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 93</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 98</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">preserve_original_encrypted</span>(<span class="ruby-identifier">name</span>)
   <span class="ruby-identifier">original_attribute_name</span> = <span class="ruby-node">&quot;#{ORIGINAL_ATTRIBUTE_PREFIX}#{name}&quot;</span>.<span class="ruby-identifier">to_sym</span>
 
@@ -618,7 +625,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-scheme_for">
             
-              scheme_for(key_provider: nil, key: nil, deterministic: false, downcase: false, ignore_case: false, previous: [], **context_properties)
+              scheme_for(key_provider: nil, key: nil, deterministic: false, support_unencrypted_data: nil, downcase: false, ignore_case: false, previous: [], **context_properties)
             
           </h3>
 
@@ -641,12 +648,12 @@ layout: default
                 
               </p>
               <div id="method-i-scheme_for_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 68</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">scheme_for</span>(<span class="ruby-value">key_provider:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">key:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">deterministic:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">downcase:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">ignore_case:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">previous:</span> [], <span class="ruby-operator">**</span><span class="ruby-identifier">context_properties</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 70</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">scheme_for</span>(<span class="ruby-value">key_provider:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">key:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">deterministic:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">support_unencrypted_data:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">downcase:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">ignore_case:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">previous:</span> [], <span class="ruby-operator">**</span><span class="ruby-identifier">context_properties</span>)
   <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span><span class="ruby-operator">::</span><span class="ruby-constant">Scheme</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">key_provider:</span> <span class="ruby-identifier">key_provider</span>, <span class="ruby-value">key:</span> <span class="ruby-identifier">key</span>, <span class="ruby-value">deterministic:</span> <span class="ruby-identifier">deterministic</span>,
-                                       <span class="ruby-value">downcase:</span> <span class="ruby-identifier">downcase</span>, <span class="ruby-value">ignore_case:</span> <span class="ruby-identifier">ignore_case</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">context_properties</span>).<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">scheme</span><span class="ruby-operator">|</span>
+    <span class="ruby-value">support_unencrypted_data:</span> <span class="ruby-identifier">support_unencrypted_data</span>, <span class="ruby-value">downcase:</span> <span class="ruby-identifier">downcase</span>, <span class="ruby-value">ignore_case:</span> <span class="ruby-identifier">ignore_case</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">context_properties</span>).<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">scheme</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">scheme</span>.<span class="ruby-identifier">previous_schemes</span> = <span class="ruby-identifier">global_previous_schemes_for</span>(<span class="ruby-identifier">scheme</span>) <span class="ruby-operator">+</span>
-      <span class="ruby-constant">Array</span>.<span class="ruby-identifier">wrap</span>(<span class="ruby-identifier">previous</span>).<span class="ruby-identifier">collect</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">scheme_config</span><span class="ruby-operator">|</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span><span class="ruby-operator">::</span><span class="ruby-constant">Scheme</span>.<span class="ruby-identifier">new</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">scheme_config</span>) }
+    <span class="ruby-constant">Array</span>.<span class="ruby-identifier">wrap</span>(<span class="ruby-identifier">previous</span>).<span class="ruby-identifier">collect</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">scheme_config</span><span class="ruby-operator">|</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span><span class="ruby-operator">::</span><span class="ruby-constant">Scheme</span>.<span class="ruby-identifier">new</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">scheme_config</span>) }
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -663,7 +670,7 @@ layout: default
 
           
             <div class="description">
-              <p>Given a attribute name, it returns the name of the source attribute when it&#39;s a preserved one.</p>
+              <p>Given a attribute name, it returns the name of the source attribute when it’s a preserved one.</p>
             </div>
           
 
@@ -680,9 +687,9 @@ layout: default
                 
               </p>
               <div id="method-i-source_attribute_from_preserved_attribute_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 63</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 65</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">source_attribute_from_preserved_attribute</span>(<span class="ruby-identifier">attribute_name</span>)
-  <span class="ruby-identifier">attribute_name</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">sub</span>(<span class="ruby-constant">ORIGINAL_ATTRIBUTE_PREFIX</span>, <span class="ruby-string">&quot;&quot;</span>) <span class="ruby-keyword">if</span> <span class="ruby-regexp">/^#{ORIGINAL_ATTRIBUTE_PREFIX}/</span>.<span class="ruby-identifier">match?</span>(<span class="ruby-identifier">attribute_name</span>)
+  <span class="ruby-identifier">attribute_name</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">sub</span>(<span class="ruby-constant">ORIGINAL_ATTRIBUTE_PREFIX</span>, <span class="ruby-string">&quot;&quot;</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">attribute_name</span>.<span class="ruby-identifier">start_with?</span>(<span class="ruby-constant">ORIGINAL_ATTRIBUTE_PREFIX</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -715,7 +722,7 @@ layout: default
                 
               </p>
               <div id="method-i-validate_column_size_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 133</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 138</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">validate_column_size</span>(<span class="ruby-identifier">attribute_name</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">limit</span> = <span class="ruby-identifier">columns_hash</span>[<span class="ruby-identifier">attribute_name</span>.<span class="ruby-identifier">to_s</span>]&amp;.<span class="ruby-identifier">limit</span>
     <span class="ruby-identifier">validates_length_of</span> <span class="ruby-identifier">attribute_name</span>, <span class="ruby-value">maximum:</span> <span class="ruby-identifier">limit</span>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -26,6 +26,8 @@ layout: default
             
             <li><a href="../../files/railties/lib/rails/command/helpers/editor_rb.html">railties/lib/rails/command/helpers/editor.rb</a></li>
             
+            <li><a href="../../files/railties/lib/rails/commands/about/about_command_rb.html">railties/lib/rails/commands/about/about_command.rb</a></li>
+            
             <li><a href="../../files/railties/lib/rails/commands/application/application_command_rb.html">railties/lib/rails/commands/application/application_command.rb</a></li>
             
             <li><a href="../../files/railties/lib/rails/commands/console/console_command_rb.html">railties/lib/rails/commands/console/console_command.rb</a></li>
@@ -44,11 +46,15 @@ layout: default
             
             <li><a href="../../files/railties/lib/rails/commands/encrypted/encrypted_command_rb.html">railties/lib/rails/commands/encrypted/encrypted_command.rb</a></li>
             
+            <li><a href="../../files/railties/lib/rails/commands/gem_help/gem_help_command_rb.html">railties/lib/rails/commands/gem_help/gem_help_command.rb</a></li>
+            
             <li><a href="../../files/railties/lib/rails/commands/generate/generate_command_rb.html">railties/lib/rails/commands/generate/generate_command.rb</a></li>
             
             <li><a href="../../files/railties/lib/rails/commands/help/help_command_rb.html">railties/lib/rails/commands/help/help_command.rb</a></li>
             
             <li><a href="../../files/railties/lib/rails/commands/initializers/initializers_command_rb.html">railties/lib/rails/commands/initializers/initializers_command.rb</a></li>
+            
+            <li><a href="../../files/railties/lib/rails/commands/middleware/middleware_command_rb.html">railties/lib/rails/commands/middleware/middleware_command.rb</a></li>
             
             <li><a href="../../files/railties/lib/rails/commands/new/new_command_rb.html">railties/lib/rails/commands/new/new_command.rb</a></li>
             
@@ -58,15 +64,21 @@ layout: default
             
             <li><a href="../../files/railties/lib/rails/commands/rake/rake_command_rb.html">railties/lib/rails/commands/rake/rake_command.rb</a></li>
             
+            <li><a href="../../files/railties/lib/rails/commands/restart/restart_command_rb.html">railties/lib/rails/commands/restart/restart_command.rb</a></li>
+            
             <li><a href="../../files/railties/lib/rails/commands/routes/routes_command_rb.html">railties/lib/rails/commands/routes/routes_command.rb</a></li>
             
             <li><a href="../../files/railties/lib/rails/commands/runner/runner_command_rb.html">railties/lib/rails/commands/runner/runner_command.rb</a></li>
+            
+            <li><a href="../../files/railties/lib/rails/commands/secret/secret_command_rb.html">railties/lib/rails/commands/secret/secret_command.rb</a></li>
             
             <li><a href="../../files/railties/lib/rails/commands/secrets/secrets_command_rb.html">railties/lib/rails/commands/secrets/secrets_command.rb</a></li>
             
             <li><a href="../../files/railties/lib/rails/commands/server/server_command_rb.html">railties/lib/rails/commands/server/server_command.rb</a></li>
             
             <li><a href="../../files/railties/lib/rails/commands/test/test_command_rb.html">railties/lib/rails/commands/test/test_command.rb</a></li>
+            
+            <li><a href="../../files/railties/lib/rails/commands/unused_routes/unused_routes_command_rb.html">railties/lib/rails/commands/unused_routes/unused_routes_command.rb</a></li>
             
             <li><a href="../../files/railties/lib/rails/commands/version/version_command_rb.html">railties/lib/rails/commands/version/version_command.rb</a></li>
             
@@ -105,6 +117,8 @@ layout: default
       <ul>
       
         <li><a href="Command/Base.html">Rails::Command::Base</a></li>
+      
+        <li><a href="Command/UnusedRoutesCommand.html">Rails::Command::UnusedRoutesCommand</a></li>
       
       </ul>
     
@@ -152,7 +166,19 @@ layout: default
           <tr valign='top'>
             <td class="attr-name">HELP_MAPPINGS</td>
             <td>=</td>
-            <td class="attr-value">%w(-h -? --help)</td>
+            <td class="attr-value">%w(-h -? --help).to_set</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">VERSION_MAPPINGS</td>
+            <td>=</td>
+            <td class="attr-value">%w(-v --version).to_set</td>
           </tr>
           
             <tr valign='top'>
@@ -196,32 +222,28 @@ layout: default
                 
               </p>
               <div id="method-c-invoke_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command.rb, line 30</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command.rb, line 62</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">invoke</span>(<span class="ruby-identifier">full_namespace</span>, <span class="ruby-identifier">args</span> = [], <span class="ruby-operator">**</span><span class="ruby-identifier">config</span>)
-  <span class="ruby-identifier">namespace</span> = <span class="ruby-identifier">full_namespace</span> = <span class="ruby-identifier">full_namespace</span>.<span class="ruby-identifier">to_s</span>
+  <span class="ruby-identifier">args</span> = [<span class="ruby-string">&quot;--help&quot;</span>] <span class="ruby-keyword">if</span> <span class="ruby-identifier">rails_new_with_no_path?</span>(<span class="ruby-identifier">args</span>)
 
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">char</span> = <span class="ruby-identifier">namespace</span> <span class="ruby-operator">=~</span> <span class="ruby-regexp">/:(\w+)$/</span>
-    <span class="ruby-identifier">command_name</span>, <span class="ruby-identifier">namespace</span> = <span class="ruby-node">$1</span>, <span class="ruby-identifier">namespace</span>.<span class="ruby-identifier">slice</span>(<span class="ruby-value">0</span>, <span class="ruby-identifier">char</span>)
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">command_name</span> = <span class="ruby-identifier">namespace</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">command_name</span>, <span class="ruby-identifier">namespace</span> = <span class="ruby-string">&quot;help&quot;</span>, <span class="ruby-string">&quot;help&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">command_name</span>.<span class="ruby-identifier">blank?</span> <span class="ruby-operator">||</span> <span class="ruby-constant">HELP_MAPPINGS</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">command_name</span>)
-  <span class="ruby-identifier">command_name</span>, <span class="ruby-identifier">namespace</span>, <span class="ruby-identifier">args</span> = <span class="ruby-string">&quot;application&quot;</span>, <span class="ruby-string">&quot;application&quot;</span>, [<span class="ruby-string">&quot;--help&quot;</span>] <span class="ruby-keyword">if</span> <span class="ruby-identifier">rails_new_with_no_path?</span>(<span class="ruby-identifier">args</span>)
-  <span class="ruby-identifier">command_name</span>, <span class="ruby-identifier">namespace</span> = <span class="ruby-string">&quot;version&quot;</span>, <span class="ruby-string">&quot;version&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-node">%w( -v --version )</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">command_name</span>)
-
-  <span class="ruby-identifier">original_argv</span> = <span class="ruby-constant">ARGV</span>.<span class="ruby-identifier">dup</span>
-  <span class="ruby-constant">ARGV</span>.<span class="ruby-identifier">replace</span>(<span class="ruby-identifier">args</span>)
-
+  <span class="ruby-identifier">full_namespace</span> = <span class="ruby-identifier">full_namespace</span>.<span class="ruby-identifier">to_s</span>
+  <span class="ruby-identifier">namespace</span>, <span class="ruby-identifier">command_name</span> = <span class="ruby-identifier">split_namespace</span>(<span class="ruby-identifier">full_namespace</span>)
   <span class="ruby-identifier">command</span> = <span class="ruby-identifier">find_by_namespace</span>(<span class="ruby-identifier">namespace</span>, <span class="ruby-identifier">command_name</span>)
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">command</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">command</span>.<span class="ruby-identifier">all_commands</span>[<span class="ruby-identifier">command_name</span>]
-    <span class="ruby-identifier">command</span>.<span class="ruby-identifier">perform</span>(<span class="ruby-identifier">command_name</span>, <span class="ruby-identifier">args</span>, <span class="ruby-identifier">config</span>)
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">args</span> = [<span class="ruby-string">&quot;--describe&quot;</span>, <span class="ruby-identifier">full_namespace</span>] <span class="ruby-keyword">if</span> <span class="ruby-constant">HELP_MAPPINGS</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">args</span>[<span class="ruby-value">0</span>])
-    <span class="ruby-identifier">find_by_namespace</span>(<span class="ruby-string">&quot;rake&quot;</span>).<span class="ruby-identifier">perform</span>(<span class="ruby-identifier">full_namespace</span>, <span class="ruby-identifier">args</span>, <span class="ruby-identifier">config</span>)
+
+  <span class="ruby-identifier">with_argv</span>(<span class="ruby-identifier">args</span>) <span class="ruby-keyword">do</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">command</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">command</span>.<span class="ruby-identifier">all_commands</span>[<span class="ruby-identifier">command_name</span>]
+      <span class="ruby-identifier">command</span>.<span class="ruby-identifier">perform</span>(<span class="ruby-identifier">command_name</span>, <span class="ruby-identifier">args</span>, <span class="ruby-identifier">config</span>)
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-identifier">invoke_rake</span>(<span class="ruby-identifier">full_namespace</span>, <span class="ruby-identifier">args</span>, <span class="ruby-identifier">config</span>)
+    <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">ensure</span>
-  <span class="ruby-constant">ARGV</span>.<span class="ruby-identifier">replace</span>(<span class="ruby-identifier">original_argv</span>)
+<span class="ruby-keyword">rescue</span> <span class="ruby-constant">UnrecognizedCommandError</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">error</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">error</span>.<span class="ruby-identifier">name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">full_namespace</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">command</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">command_name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">full_namespace</span>
+    <span class="ruby-identifier">command</span>.<span class="ruby-identifier">perform</span>(<span class="ruby-string">&quot;help&quot;</span>, [], <span class="ruby-identifier">config</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">puts</span> <span class="ruby-identifier">error</span>.<span class="ruby-identifier">detailed_message</span>
+  <span class="ruby-keyword">end</span>
+  <span class="ruby-identifier">exit</span>(<span class="ruby-value">1</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -237,7 +259,7 @@ layout: default
 
           
             <div class="description">
-              <p>Returns the root of the <a href="Rails.html"><code>Rails</code></a> engine or app running the command.</p>
+              <p>Returns the root of the Rails engine or app running the command.</p>
             </div>
           
 
@@ -254,12 +276,12 @@ layout: default
                 
               </p>
               <div id="method-c-root_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command.rb, line 80</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command.rb, line 108</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">root</span>
   <span class="ruby-keyword">if</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-constant">ENGINE_ROOT</span>)
     <span class="ruby-constant">Pathname</span>.<span class="ruby-identifier">new</span>(<span class="ruby-constant">ENGINE_ROOT</span>)
-  <span class="ruby-keyword">elsif</span> <span class="ruby-keyword">defined?</span>(<span class="ruby-constant">APP_PATH</span>)
-    <span class="ruby-constant">Pathname</span>.<span class="ruby-identifier">new</span>(<span class="ruby-constant">File</span>.<span class="ruby-identifier">expand_path</span>(<span class="ruby-string">&quot;../..&quot;</span>, <span class="ruby-constant">APP_PATH</span>))
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">application_root</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -296,7 +318,7 @@ layout: default
                 
               </p>
               <div id="method-c-command_type_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command.rb, line 108</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command.rb, line 159</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">command_type</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-ivar">@command_type</span> <span class="ruby-operator">||=</span> <span class="ruby-string">&quot;command&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -331,7 +353,7 @@ layout: default
                 
               </p>
               <div id="method-c-file_lookup_paths_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command.rb, line 116</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command.rb, line 167</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">file_lookup_paths</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-ivar">@file_lookup_paths</span> <span class="ruby-operator">||=</span> [ <span class="ruby-node">&quot;{#{lookup_paths.join(&#39;,&#39;)}}&quot;</span>, <span class="ruby-string">&quot;**&quot;</span>, <span class="ruby-string">&quot;*_command.rb&quot;</span> ]
 <span class="ruby-keyword">end</span></code></pre>
@@ -366,7 +388,7 @@ layout: default
                 
               </p>
               <div id="method-c-lookup_paths_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command.rb, line 112</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/command.rb, line 163</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">lookup_paths</span> <span class="ruby-comment"># :doc:</span>
   <span class="ruby-ivar">@lookup_paths</span> <span class="ruby-operator">||=</span> <span class="ruby-node">%w( rails/commands commands )</span>
 <span class="ruby-keyword">end</span></code></pre>

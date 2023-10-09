@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -16,12 +16,16 @@ layout: default
             
             <li><a href="../../files/activesupport/lib/active_support/core_ext/range/conversions_rb.html">activesupport/lib/active_support/core_ext/range/conversions.rb</a></li>
             
-            <li><a href="../../files/activesupport/lib/active_support/core_ext/range/deprecated_conversions_rb.html">activesupport/lib/active_support/core_ext/range/deprecated_conversions.rb</a></li>
-            
         </ul>
     </div>
     <div id="bodyContent">
         <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveSupport::RangeWithFormat-label-Range+With+Format">Range With Format</h1>
+
+    </div>
   
 
   
@@ -64,10 +68,24 @@ layout: default
             <td>=</td>
             <td class="attr-value">{
 db: -&gt; (start, stop) do
+if start &amp;&amp; stop
 case start
 when String then &quot;BETWEEN &#39;#{start}&#39; AND &#39;#{stop}&#39;&quot;
 else
 &quot;BETWEEN &#39;#{start.to_fs(:db)}&#39; AND &#39;#{stop.to_fs(:db)}&#39;&quot;
+end
+elsif start
+case start
+when String then &quot;&gt;= &#39;#{start}&#39;&quot;
+else
+&quot;&gt;= &#39;#{start.to_fs(:db)}&#39;&quot;
+end
+elsif stop
+case stop
+when String then &quot;&lt;= &#39;#{stop}&#39;&quot;
+else
+&quot;&lt;= &#39;#{stop.to_fs(:db)}&#39;&quot;
+end
 end
 end
 }</td>
@@ -129,10 +147,16 @@ end
 <pre><code>range = (1..100)           # =&gt; 1..100
 
 range.to_s                 # =&gt; &quot;1..100&quot;
-range.to_fs(:db)            # =&gt; &quot;BETWEEN &#39;1&#39; AND &#39;100&#39;&quot;
+range.to_fs(:db)           # =&gt; &quot;BETWEEN &#39;1&#39; AND &#39;100&#39;&quot;
+
+range = (1..)              # =&gt; 1..
+range.to_fs(:db)           # =&gt; &quot;&gt;= &#39;1&#39;&quot;
+
+range = (..100)            # =&gt; ..100
+range.to_fs(:db)           # =&gt; &quot;&lt;= &#39;100&#39;&quot;
 </code></pre>
 
-<h2 id="method-i-to_fs-label-Adding+your+own+range+formats+to+to_s">Adding your own range formats to to_s</h2>
+<h2 id="method-i-to_fs-label-Adding+your+own+range+formats+to+to_fs">Adding your own range formats to <a href="RangeWithFormat.html#method-i-to_fs"><code>to_fs</code></a></h2>
 
 <p>You can add your own formats to the Range::RANGE_FORMATS hash. Use the format name as the hash key and a Proc instance.</p>
 
@@ -159,10 +183,10 @@ Range::RANGE_FORMATS[:short] = -&gt;(start, stop) { &quot;Between #{start.to_fs(
                 
               </p>
               <div id="method-i-to_fs_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/range/conversions.rb, line 30</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/range/conversions.rb, line 51</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_fs</span>(<span class="ruby-identifier">format</span> = <span class="ruby-value">:default</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">formatter</span> = <span class="ruby-constant">RANGE_FORMATS</span>[<span class="ruby-identifier">format</span>]
-    <span class="ruby-identifier">formatter</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">first</span>, <span class="ruby-identifier">last</span>)
+    <span class="ruby-identifier">formatter</span>.<span class="ruby-identifier">call</span>(<span class="ruby-keyword">self</span>.<span class="ruby-identifier">begin</span>, <span class="ruby-keyword">self</span>.<span class="ruby-identifier">end</span>)
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">to_s</span>
   <span class="ruby-keyword">end</span>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -29,7 +29,7 @@ layout: default
   
     <div class="description">
       
-<p><a href="WhereChain.html"><code>WhereChain</code></a> objects act as placeholder for queries in which <code>where</code> does not have any parameter. In this case, <code>where</code> can be chained to return a new relation.</p>
+<p><code>WhereChain</code> objects act as placeholder for queries in which <code>where</code> does not have any parameter. In this case, <code>where</code> can be chained to return a new relation.</p>
 
     </div>
   
@@ -120,12 +120,16 @@ layout: default
                 
               </p>
               <div id="method-i-associated_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 76</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 75</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">associated</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">associations</span>)
   <span class="ruby-identifier">associations</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">association</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">reflection</span> = <span class="ruby-identifier">scope_association_reflection</span>(<span class="ruby-identifier">association</span>)
     <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">joins!</span>(<span class="ruby-identifier">association</span>)
-    <span class="ruby-keyword">self</span>.<span class="ruby-identifier">not</span>(<span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">table_name</span> <span class="ruby-operator">=&gt;</span> { <span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">association_primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">nil</span> })
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">options</span>[<span class="ruby-value">:class_name</span>]
+      <span class="ruby-keyword">self</span>.<span class="ruby-identifier">not</span>(<span class="ruby-identifier">association</span> <span class="ruby-operator">=&gt;</span> { <span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">association_primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">nil</span> })
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-keyword">self</span>.<span class="ruby-identifier">not</span>(<span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">table_name</span> <span class="ruby-operator">=&gt;</span> { <span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">association_primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">nil</span> })
+    <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 
   <span class="ruby-ivar">@scope</span>
@@ -178,12 +182,16 @@ layout: default
                 
               </p>
               <div id="method-i-missing_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 104</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 107</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">missing</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">associations</span>)
   <span class="ruby-identifier">associations</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">association</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">reflection</span> = <span class="ruby-identifier">scope_association_reflection</span>(<span class="ruby-identifier">association</span>)
     <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">left_outer_joins!</span>(<span class="ruby-identifier">association</span>)
-    <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">where!</span>(<span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">table_name</span> <span class="ruby-operator">=&gt;</span> { <span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">association_primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">nil</span> })
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">options</span>[<span class="ruby-value">:class_name</span>]
+      <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">where!</span>(<span class="ruby-identifier">association</span> <span class="ruby-operator">=&gt;</span> { <span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">association_primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">nil</span> })
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">where!</span>(<span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">table_name</span> <span class="ruby-operator">=&gt;</span> { <span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">association_primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">nil</span> })
+    <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 
   <span class="ruby-ivar">@scope</span>
@@ -222,10 +230,10 @@ User.where.not(name: %w(Ko1 Nobu))
 # SELECT * FROM users WHERE name NOT IN (&#39;Ko1&#39;, &#39;Nobu&#39;)
 
 User.where.not(name: &quot;Jon&quot;, role: &quot;admin&quot;)
-# SELECT * FROM users WHERE NOT (name == &#39;Jon&#39; AND role == &#39;admin&#39;)
+# SELECT * FROM users WHERE NOT (name = &#39;Jon&#39; AND role = &#39;admin&#39;)
 </code></pre>
 
-<p>If there is a non-nil condition on a nullable column in the hash condition, the records that have nil values on the nullable column won&#39;t be returned.</p>
+<p>If there is a non-nil condition on a nullable column in the hash condition, the records that have nil values on the nullable column won’t be returned.</p>
 
 <pre><code>User.create!(nullable_country: nil)
 User.where.not(nullable_country: &quot;UK&quot;)
@@ -248,7 +256,7 @@ User.where.not(nullable_country: &quot;UK&quot;)
                 
               </p>
               <div id="method-i-not_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 50</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/query_methods.rb, line 49</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">not</span>(<span class="ruby-identifier ruby-title">opts</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">rest</span>)
   <span class="ruby-identifier">where_clause</span> = <span class="ruby-ivar">@scope</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:build_where_clause</span>, <span class="ruby-identifier">opts</span>, <span class="ruby-identifier">rest</span>)
 

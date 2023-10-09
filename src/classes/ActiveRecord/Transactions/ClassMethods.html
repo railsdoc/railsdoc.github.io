@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -23,7 +23,7 @@ layout: default
   
     <div class="description">
       
-<h1 id="module-ActiveRecord::Transactions::ClassMethods-label-Active+Record+Transactions">Active Record <a href="../Transactions.html"><code>Transactions</code></a></h1>
+<h1 id="module-ActiveRecord::Transactions::ClassMethods-label-Active+Record+Transactions">Active Record Transactions</h1>
 
 <p>Transactions are protective blocks where SQL statements are only permanent if they can all succeed as one atomic action. The classic example is a transfer between two accounts where you can only have a deposit if the withdrawal succeeded and vice versa. Transactions enforce the integrity of the database and guard the data against program errors or database break-downs. So basically you should use transaction blocks whenever you have a number of statements that must be executed together or not at all.</p>
 
@@ -75,15 +75,15 @@ end
 
 <p>Both <a href="../Persistence.html#method-i-save">#save</a> and <a href="../Persistence.html#method-i-destroy">#destroy</a> come wrapped in a transaction that ensures that whatever you do in validations or callbacks will happen under its protected cover. So you can use validations to check for values that the transaction depends on or you can raise exceptions in the callbacks to rollback, including <code>after_*</code> callbacks.</p>
 
-<p>As a consequence changes to the database are not seen outside your connection until the operation is complete. For example, if you try to update the index of a search engine in <code>after_save</code> the indexer won&#39;t see the updated record. The <a href="ClassMethods.html#method-i-after_commit"><code>after_commit</code></a> callback is the only one that is triggered once the update is committed. See below.</p>
+<p>As a consequence changes to the database are not seen outside your connection until the operation is complete. For example, if you try to update the index of a search engine in <code>after_save</code> the indexer won’t see the updated record. The <a href="ClassMethods.html#method-i-after_commit"><code>after_commit</code></a> callback is the only one that is triggered once the update is committed. See below.</p>
 
 <h2 id="module-ActiveRecord::Transactions::ClassMethods-label-Exception+handling+and+rolling+back"><a href="../../Exception.html"><code>Exception</code></a> handling and rolling back</h2>
 
 <p>Also have in mind that exceptions thrown within a transaction block will be propagated (after triggering the ROLLBACK), so you should be ready to catch those in your application code.</p>
 
-<p>One exception is the <a href="../Rollback.html"><code>ActiveRecord::Rollback</code></a> exception, which will trigger a ROLLBACK when raised, but not be re-raised by the transaction block.</p>
+<p>One exception is the <a href="../Rollback.html"><code>ActiveRecord::Rollback</code></a> exception, which will trigger a ROLLBACK when raised, but not be re-raised by the transaction block. Any other exception will be re-raised.</p>
 
-<p><strong>Warning</strong>: one should not catch <a href="../StatementInvalid.html"><code>ActiveRecord::StatementInvalid</code></a> exceptions inside a transaction block. <a href="../StatementInvalid.html"><code>ActiveRecord::StatementInvalid</code></a> exceptions indicate that an error occurred at the database level, for example when a unique constraint is violated. On some database systems, such as PostgreSQL, database errors inside a transaction cause the entire transaction to become unusable until it&#39;s restarted from the beginning. Here is an example which demonstrates the problem:</p>
+<p><strong>Warning</strong>: one should not catch <a href="../StatementInvalid.html"><code>ActiveRecord::StatementInvalid</code></a> exceptions inside a transaction block. <a href="../StatementInvalid.html"><code>ActiveRecord::StatementInvalid</code></a> exceptions indicate that an error occurred at the database level, for example when a unique constraint is violated. On some database systems, such as PostgreSQL, database errors inside a transaction cause the entire transaction to become unusable until it’s restarted from the beginning. Here is an example which demonstrates the problem:</p>
 
 <pre><code># Suppose that we have a Number model with a unique column called &#39;i&#39;.
 Number.transaction do
@@ -134,7 +134,7 @@ end
 
 <p>only “Kotori” is created.</p>
 
-<p>Most databases don&#39;t support true nested transactions. At the time of writing, the only database that we&#39;re aware of that supports true nested transactions, is MS-SQL. Because of this, Active Record emulates nested transactions by using savepoints. See <a href="https://dev.mysql.com/doc/refman/en/savepoint.html">dev.mysql.com/doc/refman/en/savepoint.html</a> for more information about savepoints.</p>
+<p>Most databases don’t support true nested transactions. At the time of writing, the only database that we’re aware of that supports true nested transactions, is MS-SQL. Because of this, Active Record emulates nested transactions by using savepoints. See <a href="https://dev.mysql.com/doc/refman/en/savepoint.html">dev.mysql.com/doc/refman/en/savepoint.html</a> for more information about savepoints.</p>
 
 <h3 id="module-ActiveRecord::Transactions::ClassMethods-label-Callbacks">Callbacks</h3>
 
@@ -146,7 +146,7 @@ end
 
 <h3 id="module-ActiveRecord::Transactions::ClassMethods-label-Caveats">Caveats</h3>
 
-<p>If you&#39;re on MySQL, then do not use Data Definition Language (DDL) operations in nested transactions blocks that are emulated with savepoints. That is, do not execute statements like &#39;CREATE TABLE&#39; inside such blocks. This is because MySQL automatically releases all savepoints upon executing a DDL operation. When <code>transaction</code> is finished and tries to release the savepoint it created earlier, a database error will occur because the savepoint has already been automatically released. The following example demonstrates the problem:</p>
+<p>If you’re on MySQL, then do not use Data Definition Language (DDL) operations in nested transactions blocks that are emulated with savepoints. That is, do not execute statements like ‘CREATE TABLE’ inside such blocks. This is because MySQL automatically releases all savepoints upon executing a DDL operation. When <code>transaction</code> is finished and tries to release the savepoint it created earlier, a database error will occur because the savepoint has already been automatically released. The following example demonstrates the problem:</p>
 
 <pre><code>Model.connection.transaction do                           # BEGIN
   Model.connection.transaction(requires_new: true) do     # CREATE SAVEPOINT active_record_1
@@ -256,9 +256,9 @@ after_commit :do_bar_baz, on: [:update, :destroy]
                 
               </p>
               <div id="method-i-after_commit_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 229</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 232</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">after_commit</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>)
+  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>, <span class="ruby-identifier">prepend_option</span>)
   <span class="ruby-identifier">set_callback</span>(<span class="ruby-value">:commit</span>, <span class="ruby-value">:after</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -292,9 +292,9 @@ after_commit :do_bar_baz, on: [:update, :destroy]
                 
               </p>
               <div id="method-i-after_create_commit_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 241</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 244</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">after_create_commit</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>, <span class="ruby-value">on:</span> <span class="ruby-value">:create</span>)
+  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>, <span class="ruby-value">on:</span> <span class="ruby-value">:create</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">prepend_option</span>)
   <span class="ruby-identifier">set_callback</span>(<span class="ruby-value">:commit</span>, <span class="ruby-value">:after</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -328,9 +328,9 @@ after_commit :do_bar_baz, on: [:update, :destroy]
                 
               </p>
               <div id="method-i-after_destroy_commit_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 253</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 256</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">after_destroy_commit</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>, <span class="ruby-value">on:</span> <span class="ruby-value">:destroy</span>)
+  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>, <span class="ruby-value">on:</span> <span class="ruby-value">:destroy</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">prepend_option</span>)
   <span class="ruby-identifier">set_callback</span>(<span class="ruby-value">:commit</span>, <span class="ruby-value">:after</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -366,9 +366,9 @@ after_commit :do_bar_baz, on: [:update, :destroy]
                 
               </p>
               <div id="method-i-after_rollback_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 261</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 264</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">after_rollback</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>)
+  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>, <span class="ruby-identifier">prepend_option</span>)
   <span class="ruby-identifier">set_callback</span>(<span class="ruby-value">:rollback</span>, <span class="ruby-value">:after</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -402,9 +402,9 @@ after_commit :do_bar_baz, on: [:update, :destroy]
                 
               </p>
               <div id="method-i-after_save_commit_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 235</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 238</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">after_save_commit</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>, <span class="ruby-value">on:</span> [ <span class="ruby-value">:create</span>, <span class="ruby-value">:update</span> ])
+  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>, <span class="ruby-value">on:</span> [ <span class="ruby-value">:create</span>, <span class="ruby-value">:update</span> ], <span class="ruby-operator">**</span><span class="ruby-identifier">prepend_option</span>)
   <span class="ruby-identifier">set_callback</span>(<span class="ruby-value">:commit</span>, <span class="ruby-value">:after</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -438,9 +438,9 @@ after_commit :do_bar_baz, on: [:update, :destroy]
                 
               </p>
               <div id="method-i-after_update_commit_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 247</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 250</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">after_update_commit</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>, <span class="ruby-value">on:</span> <span class="ruby-value">:update</span>)
+  <span class="ruby-identifier">set_options_for_callbacks!</span>(<span class="ruby-identifier">args</span>, <span class="ruby-value">on:</span> <span class="ruby-value">:update</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">prepend_option</span>)
   <span class="ruby-identifier">set_callback</span>(<span class="ruby-value">:commit</span>, <span class="ruby-value">:after</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -474,7 +474,7 @@ after_commit :do_bar_baz, on: [:update, :destroy]
                 
               </p>
               <div id="method-i-transaction_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 208</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/transactions.rb, line 211</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">transaction</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">transaction</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">options</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
 <span class="ruby-keyword">end</span></code></pre>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -68,7 +68,8 @@ layout: default
         <div class="method">
           <h3 id="method-i-assert_deprecated">
             
-              assert_deprecated(match = nil, deprecator = nil, &amp;block)
+              assert_deprecated(deprecator, &block)<br />assert_deprecated(match, deprecator, &block)
+
             
           </h3>
 
@@ -90,15 +91,8 @@ end
 
 <p>If the <code>match</code> is omitted (or explicitly <code>nil</code>), any deprecation warning will match.</p>
 
-<pre><code>assert_deprecated(nil, CustomDeprecator) do
+<pre><code>assert_deprecated(CustomDeprecator) do
   CustomDeprecator.warn &quot;foo should no longer be used&quot;
-end
-</code></pre>
-
-<p>If no <code>deprecator</code> is given, defaults to <a href="../Deprecation.html"><code>ActiveSupport::Deprecation</code></a>.</p>
-
-<pre><code>assert_deprecated do
-  ActiveSupport::Deprecation.warn &quot;foo should no longer be used&quot;
 end
 </code></pre>
             </div>
@@ -117,8 +111,13 @@ end
                 
               </p>
               <div id="method-i-assert_deprecated_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/deprecation.rb, line 31</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/deprecation.rb, line 30</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_deprecated</span>(<span class="ruby-identifier">match</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">deprecator</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">match</span>, <span class="ruby-identifier">deprecator</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">match</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">match</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>)
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">deprecator</span>
+    <span class="ruby-constant">ActiveSupport</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-string">&quot;assert_deprecated without a deprecator is deprecated&quot;</span>)
+    <span class="ruby-identifier">deprecator</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">_instance</span>
+  <span class="ruby-keyword">end</span>
   <span class="ruby-identifier">result</span>, <span class="ruby-identifier">warnings</span> = <span class="ruby-identifier">collect_deprecations</span>(<span class="ruby-identifier">deprecator</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">assert</span> <span class="ruby-operator">!</span><span class="ruby-identifier">warnings</span>.<span class="ruby-identifier">empty?</span>, <span class="ruby-string">&quot;Expected a deprecation warning within the block but received none&quot;</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">match</span>
@@ -146,16 +145,9 @@ end
 <pre><code>assert_not_deprecated(CustomDeprecator) do
   CustomDeprecator.warn &quot;message&quot; # fails assertion
 end
-</code></pre>
 
-<p>If no <code>deprecator</code> is given, defaults to <a href="../Deprecation.html"><code>ActiveSupport::Deprecation</code></a>.</p>
-
-<pre><code>assert_not_deprecated do
-  ActiveSupport::Deprecation.warn &quot;message&quot; # fails assertion
-end
-
-assert_not_deprecated do
-  CustomDeprecator.warn &quot;message&quot; # passes assertion
+assert_not_deprecated(ActiveSupport::Deprecation.new) do
+  CustomDeprecator.warn &quot;message&quot; # passes assertion, different deprecator
 end
 </code></pre>
             </div>
@@ -174,8 +166,12 @@ end
                 
               </p>
               <div id="method-i-assert_not_deprecated_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/deprecation.rb, line 56</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/deprecation.rb, line 54</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_not_deprecated</span>(<span class="ruby-identifier">deprecator</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">deprecator</span>
+    <span class="ruby-constant">ActiveSupport</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-string">&quot;assert_not_deprecated without a deprecator is deprecated&quot;</span>)
+    <span class="ruby-identifier">deprecator</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">_instance</span>
+  <span class="ruby-keyword">end</span>
   <span class="ruby-identifier">result</span>, <span class="ruby-identifier">deprecations</span> = <span class="ruby-identifier">collect_deprecations</span>(<span class="ruby-identifier">deprecator</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">assert</span> <span class="ruby-identifier">deprecations</span>.<span class="ruby-identifier">empty?</span>, <span class="ruby-node">&quot;Expected no deprecation warning within the block but received #{deprecations.size}: \n  #{deprecations * &quot;\n  &quot;}&quot;</span>
   <span class="ruby-identifier">result</span>
@@ -194,19 +190,13 @@ end
 
           
             <div class="description">
-              <p>Returns an array of all the deprecation warnings emitted by the given <code>deprecator</code> during the execution of the yielded block.</p>
+              <p>Returns the return value of the block and an array of all the deprecation warnings emitted by the given <code>deprecator</code> during the execution of the yielded block.</p>
 
 <pre><code>collect_deprecations(CustomDeprecator) do
   CustomDeprecator.warn &quot;message&quot;
-end # =&gt; [&quot;message&quot;]
-</code></pre>
-
-<p>If no <code>deprecator</code> is given, defaults to <a href="../Deprecation.html"><code>ActiveSupport::Deprecation</code></a>.</p>
-
-<pre><code>collect_deprecations do
-  CustomDeprecator.warn &quot;custom message&quot;
-  ActiveSupport::Deprecation.warn &quot;message&quot;
-end # =&gt; [&quot;message&quot;]
+  ActiveSupport::Deprecation.new.warn &quot;other message&quot;
+  :result
+end # =&gt; [:result, [&quot;message&quot;]]
 </code></pre>
             </div>
           
@@ -224,9 +214,12 @@ end # =&gt; [&quot;message&quot;]
                 
               </p>
               <div id="method-i-collect_deprecations_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/deprecation.rb, line 75</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/deprecation.rb, line 72</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">collect_deprecations</span>(<span class="ruby-identifier">deprecator</span> = <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">deprecator</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">deprecator</span>
+    <span class="ruby-constant">ActiveSupport</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-string">&quot;collect_deprecations without a deprecator is deprecated&quot;</span>)
+    <span class="ruby-identifier">deprecator</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">_instance</span>
+  <span class="ruby-keyword">end</span>
   <span class="ruby-identifier">old_behavior</span> = <span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">behavior</span>
   <span class="ruby-identifier">deprecations</span> = []
   <span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">behavior</span> = <span class="ruby-constant">Proc</span>.<span class="ruby-identifier">new</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">message</span>, <span class="ruby-identifier">callstack</span><span class="ruby-operator">|</span>
