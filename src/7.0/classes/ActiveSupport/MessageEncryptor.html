@@ -1,0 +1,353 @@
+---
+title: ActiveSupport::MessageEncryptor
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::MessageEncryptor
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/message_encryptor_rb.html">activesupport/lib/active_support/message_encryptor.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p><a href="MessageEncryptor.html"><code>MessageEncryptor</code></a> is a simple way to encrypt values which get stored somewhere you don’t trust.</p>
+
+<p>The cipher text and initialization vector are base64 encoded and returned to you.</p>
+
+<p>This can be used in situations similar to the <a href="MessageVerifier.html"><code>MessageVerifier</code></a>, but where you don’t want users to be able to determine the value of the payload.</p>
+
+<pre><code>len   = ActiveSupport::MessageEncryptor.key_len
+salt  = SecureRandom.random_bytes(len)
+key   = ActiveSupport::KeyGenerator.new(&#39;password&#39;).generate_key(salt, len) # =&gt; &quot;\x89\xE0\x156\xAC...&quot;
+crypt = ActiveSupport::MessageEncryptor.new(key)                            # =&gt; #&lt;ActiveSupport::MessageEncryptor ...&gt;
+encrypted_data = crypt.encrypt_and_sign(&#39;my secret data&#39;)                   # =&gt; &quot;NlFBTTMwOUV5UlA1QlNEN2xkY2d6eThYWWh...&quot;
+crypt.decrypt_and_verify(encrypted_data)                                    # =&gt; &quot;my secret data&quot;
+</code></pre>
+
+<p>The <code>decrypt_and_verify</code> method will raise an <code>ActiveSupport::MessageEncryptor::InvalidMessage</code> exception if the data provided cannot be decrypted or verified.</p>
+
+<pre><code>crypt.decrypt_and_verify(&#39;not encrypted data&#39;) # =&gt; ActiveSupport::MessageEncryptor::InvalidMessage
+</code></pre>
+
+<h3 id="class-ActiveSupport::MessageEncryptor-label-Confining+messages+to+a+specific+purpose">Confining messages to a specific purpose</h3>
+
+<p>By default any message can be used throughout your app. But they can also be confined to a specific <code>:purpose</code>.</p>
+
+<pre><code>token = crypt.encrypt_and_sign(&quot;this is the chair&quot;, purpose: :login)
+</code></pre>
+
+<p>Then that same purpose must be passed when verifying to get the data back out:</p>
+
+<pre><code>crypt.decrypt_and_verify(token, purpose: :login)    # =&gt; &quot;this is the chair&quot;
+crypt.decrypt_and_verify(token, purpose: :shipping) # =&gt; nil
+crypt.decrypt_and_verify(token)                     # =&gt; nil
+</code></pre>
+
+<p>Likewise, if a message has no purpose it won’t be returned when verifying with a specific purpose.</p>
+
+<pre><code>token = crypt.encrypt_and_sign(&quot;the conversation is lively&quot;)
+crypt.decrypt_and_verify(token, purpose: :scare_tactics) # =&gt; nil
+crypt.decrypt_and_verify(token)                          # =&gt; &quot;the conversation is lively&quot;
+</code></pre>
+
+<h3 id="class-ActiveSupport::MessageEncryptor-label-Making+messages+expire">Making messages expire</h3>
+
+<p>By default messages last forever and verifying one year from now will still return the original value. But messages can be set to expire at a given time with <code>:expires_in</code> or <code>:expires_at</code>.</p>
+
+<pre><code>crypt.encrypt_and_sign(parcel, expires_in: 1.month)
+crypt.encrypt_and_sign(doowad, expires_at: Time.now.end_of_year)
+</code></pre>
+
+<p>Then the messages can be verified and returned up to the expire time. Thereafter, verifying returns <code>nil</code>.</p>
+
+<h3 id="class-ActiveSupport::MessageEncryptor-label-Rotating+keys">Rotating keys</h3>
+
+<p><a href="MessageEncryptor.html"><code>MessageEncryptor</code></a> also supports rotating out old configurations by falling back to a stack of encryptors. Call <code>rotate</code> to build and add an encryptor so <code>decrypt_and_verify</code> will also try the fallback.</p>
+
+<p>By default any rotated encryptors use the values of the primary encryptor unless specified otherwise.</p>
+
+<p>You’d give your encryptor the new defaults:</p>
+
+<pre><code>crypt = ActiveSupport::MessageEncryptor.new(@secret, cipher: &quot;aes-256-gcm&quot;)
+</code></pre>
+
+<p>Then gradually rotate the old values out by adding them as fallbacks. Any message generated with the old values will then work until the rotation is removed.</p>
+
+<pre><code>crypt.rotate old_secret            # Fallback to an old secret instead of @secret.
+crypt.rotate cipher: &quot;aes-256-cbc&quot; # Fallback to an old cipher instead of aes-256-gcm.
+</code></pre>
+
+<p>Though if both the secret and the cipher was changed at the same time, the above should be combined into:</p>
+
+<pre><code>crypt.rotate old_secret, cipher: &quot;aes-256-cbc&quot;
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="MessageEncryptor/InvalidMessage.html">ActiveSupport::MessageEncryptor::InvalidMessage</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-decrypt_and_verify">decrypt_and_verify</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-encrypt_and_sign">encrypt_and_sign</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-key_len">key_len</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">OpenSSLCipherError</td>
+            <td>=</td>
+            <td class="attr-value">OpenSSL::Cipher::CipherError</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-key_len">
+            
+              key_len(cipher = default_cipher)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Given a cipher, returns the key length of the cipher to help generate the key of desired size</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-key_len_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_encryptor.rb, line 164</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">key_len</span>(<span class="ruby-identifier">cipher</span> = <span class="ruby-identifier">default_cipher</span>)
+  <span class="ruby-constant">OpenSSL</span><span class="ruby-operator">::</span><span class="ruby-constant">Cipher</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">cipher</span>).<span class="ruby-identifier">key_len</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(secret, sign_secret = nil, cipher: nil, digest: nil, serializer: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Initialize a new <a href="MessageEncryptor.html"><code>MessageEncryptor</code></a>. <code>secret</code> must be at least as long as the cipher key size. For the default ‘aes-256-gcm’ cipher, this is 256 bits. If you are using a user-entered secret, you can generate a suitable key by using <a href="KeyGenerator.html"><code>ActiveSupport::KeyGenerator</code></a> or a similar key derivation function.</p>
+
+<p>First additional parameter is used as the signature key for <a href="MessageVerifier.html"><code>MessageVerifier</code></a>. This allows you to specify keys to encrypt and sign data.</p>
+
+<pre><code>ActiveSupport::MessageEncryptor.new(&#39;secret&#39;, &#39;signature_secret&#39;)
+</code></pre>
+
+<p>Options:</p>
+<ul><li>
+<p><code>:cipher</code>     - Cipher to use. Can be any cipher returned by <code>OpenSSL::Cipher.ciphers</code>. Default is ‘aes-256-gcm’.</p>
+</li><li>
+<p><code>:digest</code> - <a href="../String.html"><code>String</code></a> of digest to use for signing. Default is <code>SHA1</code>. Ignored when using an AEAD cipher like ‘aes-256-gcm’.</p>
+</li><li>
+<p><code>:serializer</code> - <a href="../Object.html"><code>Object</code></a> serializer to use. Default is <code>Marshal</code>.</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_encryptor.rb, line 142</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">secret</span>, <span class="ruby-identifier">sign_secret</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-value">cipher:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">digest:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">serializer:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-ivar">@secret</span> = <span class="ruby-identifier">secret</span>
+  <span class="ruby-ivar">@sign_secret</span> = <span class="ruby-identifier">sign_secret</span>
+  <span class="ruby-ivar">@cipher</span> = <span class="ruby-identifier">cipher</span> <span class="ruby-operator">||</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">default_cipher</span>
+  <span class="ruby-ivar">@digest</span> = <span class="ruby-identifier">digest</span> <span class="ruby-operator">||</span> <span class="ruby-string">&quot;SHA1&quot;</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">aead_mode?</span>
+  <span class="ruby-ivar">@verifier</span> = <span class="ruby-identifier">resolve_verifier</span>
+  <span class="ruby-ivar">@serializer</span> = <span class="ruby-identifier">serializer</span> <span class="ruby-operator">||</span> <span class="ruby-constant">Marshal</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-decrypt_and_verify">
+            
+              decrypt_and_verify(data, purpose: nil, **)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Decrypt and verify a message. We need to verify the message in order to avoid padding attacks. Reference: <a href="https://www.limited-entropy.com/padding-oracle-attacks">www.limited-entropy.com/padding-oracle-attacks</a>/.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-decrypt_and_verify_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_encryptor.rb, line 159</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">decrypt_and_verify</span>(<span class="ruby-identifier">data</span>, <span class="ruby-value">purpose:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span>)
+  <span class="ruby-identifier">_decrypt</span>(<span class="ruby-identifier">verifier</span>.<span class="ruby-identifier">verify</span>(<span class="ruby-identifier">data</span>), <span class="ruby-identifier">purpose</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-encrypt_and_sign">
+            
+              encrypt_and_sign(value, expires_at: nil, expires_in: nil, purpose: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Encrypt and sign a message. We need to sign the message in order to avoid padding attacks. Reference: <a href="https://www.limited-entropy.com/padding-oracle-attacks">www.limited-entropy.com/padding-oracle-attacks</a>/.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-encrypt_and_sign_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_encryptor.rb, line 153</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">encrypt_and_sign</span>(<span class="ruby-identifier">value</span>, <span class="ruby-value">expires_at:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">expires_in:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">purpose:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">verifier</span>.<span class="ruby-identifier">generate</span>(<span class="ruby-identifier">_encrypt</span>(<span class="ruby-identifier">value</span>, <span class="ruby-value">expires_at:</span> <span class="ruby-identifier">expires_at</span>, <span class="ruby-value">expires_in:</span> <span class="ruby-identifier">expires_in</span>, <span class="ruby-value">purpose:</span> <span class="ruby-identifier">purpose</span>))
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

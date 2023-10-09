@@ -1,0 +1,325 @@
+---
+title: ActiveRecord::Encryption::Properties
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::Encryption::Properties
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/encryption/properties_rb.html">activerecord/lib/active_record/encryption/properties.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>This is a wrapper for a hash of encryption properties. It is used by <code>Key</code> (public tags) and <code>Message</code> (headers).</p>
+
+<p>Since properties are serialized in messages, it is important for storage efficiency to keep their keys as short as possible. It defines accessors for common properties that will keep these keys very short while exposing a readable name.</p>
+
+<pre><code>message.headers.encrypted_data_key # instead of message.headers[:k]
+</code></pre>
+
+<p>See <code>Properties::DEFAULT_PROPERTIES</code>, <a href="Key.html"><code>Key</code></a>, <a href="Message.html"><code>Message</code></a></p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-5B-5D-3D">[]=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-add">add</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_h">to_h</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-validate_value_type">validate_value_type</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">ALLOWED_VALUE_CLASSES</td>
+            <td>=</td>
+            <td class="attr-value">[String, ActiveRecord::Encryption::Message, Numeric, TrueClass, FalseClass, Symbol, NilClass]</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">DEFAULT_PROPERTIES</td>
+            <td>=</td>
+            <td class="attr-value">{
+encrypted_data_key: &quot;k&quot;,
+encrypted_data_key_id: &quot;i&quot;,
+compressed: &quot;c&quot;,
+iv: &quot;iv&quot;,
+auth_tag: &quot;at&quot;,
+encoding: &quot;e&quot;
+}</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>For each entry it generates an accessor exposing the full name</p></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(initial_properties = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/properties.rb, line 42</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">initial_properties</span> = {})
+  <span class="ruby-ivar">@data</span> = {}
+  <span class="ruby-identifier">add</span>(<span class="ruby-identifier">initial_properties</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-5B-5D-3D">
+            
+              []=(key, value)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Set a value for a given key</p>
+
+<p>It will raise an <code>EncryptedContentIntegrity</code> if the value exists</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-5B-5D-3D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/properties.rb, line 50</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">[]=</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">value</span>)
+  <span class="ruby-identifier">raise</span> <span class="ruby-constant">Errors</span><span class="ruby-operator">::</span><span class="ruby-constant">EncryptedContentIntegrity</span>, <span class="ruby-node">&quot;Properties can&#39;t be overridden: #{key}&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">key?</span>(<span class="ruby-identifier">key</span>)
+  <span class="ruby-identifier">validate_value_type</span>(<span class="ruby-identifier">value</span>)
+  <span class="ruby-identifier">data</span>[<span class="ruby-identifier">key</span>] = <span class="ruby-identifier">value</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-add">
+            
+              add(other_properties)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-add_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/properties.rb, line 62</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add</span>(<span class="ruby-identifier">other_properties</span>)
+  <span class="ruby-identifier">other_properties</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">key</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span>
+    <span class="ruby-keyword">self</span>[<span class="ruby-identifier">key</span>.<span class="ruby-identifier">to_sym</span>] = <span class="ruby-identifier">value</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_h">
+            
+              to_h()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-to_h_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/properties.rb, line 68</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_h</span>
+  <span class="ruby-identifier">data</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-validate_value_type">
+            
+              validate_value_type(value)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-validate_value_type_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/properties.rb, line 56</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">validate_value_type</span>(<span class="ruby-identifier">value</span>)
+  <span class="ruby-keyword">unless</span> <span class="ruby-constant">ALLOWED_VALUE_CLASSES</span>.<span class="ruby-identifier">find</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">klass</span><span class="ruby-operator">|</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-identifier">klass</span>) }
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Encryption</span><span class="ruby-operator">::</span><span class="ruby-constant">Errors</span><span class="ruby-operator">::</span><span class="ruby-constant">ForbiddenClass</span>, <span class="ruby-node">&quot;Can&#39;t store a #{value.class}, only properties of type #{ALLOWED_VALUE_CLASSES.inspect} are allowed&quot;</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

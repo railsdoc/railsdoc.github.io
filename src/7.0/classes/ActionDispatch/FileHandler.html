@@ -1,0 +1,236 @@
+---
+title: ActionDispatch::FileHandler
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionDispatch::FileHandler
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/middleware/static_rb.html">actionpack/lib/action_dispatch/middleware/static.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>This endpoint serves static files from disk using <code>Rack::File</code>.</p>
+
+<p>URL paths are matched with static files according to expected conventions: <code>path</code>, <code>path</code>.html, <code>path</code>/index.html.</p>
+
+<p>Precompressed versions of these files are checked first. Brotli (.br) and gzip (.gz) files are supported. If <code>path</code>.br exists, this endpoint returns that file with a <code>Content-Encoding: br</code> header.</p>
+
+<p>If no matching file is found, this endpoint responds <code>404 Not Found</code>.</p>
+
+<p>Pass the <code>root</code> directory to search for matching files, an optional <code>index: &quot;index&quot;</code> to change the default <code>path</code>/index.html, and optional additional response headers.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-attempt">attempt</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-call">call</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">PRECOMPRESSED</td>
+            <td>=</td>
+            <td class="attr-value">{
+&quot;br&quot; =&gt; &quot;.br&quot;,
+&quot;gzip&quot; =&gt; &quot;.gz&quot;,
+&quot;identity&quot; =&gt; nil
+}</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p><code>Accept-Encoding</code> value -&gt; file extension</p></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(root, index: &quot;index&quot;, headers: {}, precompressed: %i[ br gzip ], compressible_content_types: /\A(?:text\/|application\/javascript)/)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/static.rb, line 49</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">root</span>, <span class="ruby-value">index:</span> <span class="ruby-string">&quot;index&quot;</span>, <span class="ruby-value">headers:</span> {}, <span class="ruby-value">precompressed:</span> <span class="ruby-node">%i[ br gzip ]</span>, <span class="ruby-value">compressible_content_types:</span> <span class="ruby-regexp">/\A(?:text\/|application\/javascript)/</span>)
+  <span class="ruby-ivar">@root</span> = <span class="ruby-identifier">root</span>.<span class="ruby-identifier">chomp</span>(<span class="ruby-string">&quot;/&quot;</span>).<span class="ruby-identifier">b</span>
+  <span class="ruby-ivar">@index</span> = <span class="ruby-identifier">index</span>
+
+  <span class="ruby-ivar">@precompressed</span> = <span class="ruby-constant">Array</span>(<span class="ruby-identifier">precompressed</span>).<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:to_s</span>) <span class="ruby-operator">|</span> <span class="ruby-node">%w[ identity ]</span>
+  <span class="ruby-ivar">@compressible_content_types</span> = <span class="ruby-identifier">compressible_content_types</span>
+
+  <span class="ruby-ivar">@file_server</span> = <span class="ruby-operator">::</span><span class="ruby-constant">Rack</span><span class="ruby-operator">::</span><span class="ruby-constant">File</span>.<span class="ruby-identifier">new</span>(<span class="ruby-ivar">@root</span>, <span class="ruby-identifier">headers</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-attempt">
+            
+              attempt(env)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-attempt_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/static.rb, line 63</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attempt</span>(<span class="ruby-identifier">env</span>)
+  <span class="ruby-identifier">request</span> = <span class="ruby-constant">Rack</span><span class="ruby-operator">::</span><span class="ruby-constant">Request</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">env</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">request</span>.<span class="ruby-identifier">get?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">request</span>.<span class="ruby-identifier">head?</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">found</span> = <span class="ruby-identifier">find_file</span>(<span class="ruby-identifier">request</span>.<span class="ruby-identifier">path_info</span>, <span class="ruby-value">accept_encoding:</span> <span class="ruby-identifier">request</span>.<span class="ruby-identifier">accept_encoding</span>)
+      <span class="ruby-identifier">serve</span> <span class="ruby-identifier">request</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">found</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-call">
+            
+              call(env)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-call_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/static.rb, line 59</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">call</span>(<span class="ruby-identifier">env</span>)
+  <span class="ruby-identifier">attempt</span>(<span class="ruby-identifier">env</span>) <span class="ruby-operator">||</span> <span class="ruby-ivar">@file_server</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

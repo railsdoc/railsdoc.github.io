@@ -1,0 +1,274 @@
+---
+title: ActionCable::TestHelper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionCable::TestHelper
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actioncable/lib/action_cable/test_helper_rb.html">actioncable/lib/action_cable/test_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Provides helper methods for testing Action Cable broadcasting</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-assert_broadcast_on">assert_broadcast_on</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_broadcasts">assert_broadcasts</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_no_broadcasts">assert_no_broadcasts</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-assert_broadcast_on">
+            
+              assert_broadcast_on(stream, data, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that the specified message has been sent to the stream.</p>
+
+<pre><code>def test_assert_transmitted_message
+  ActionCable.server.broadcast &#39;messages&#39;, text: &#39;hello&#39;
+  assert_broadcast_on(&#39;messages&#39;, text: &#39;hello&#39;)
+end
+</code></pre>
+
+<p>If a block is passed, that block should cause a message with the specified data to be sent.</p>
+
+<pre><code>def test_assert_broadcast_on_again
+  assert_broadcast_on(&#39;messages&#39;, text: &#39;hello&#39;) do
+    ActionCable.server.broadcast &#39;messages&#39;, text: &#39;hello&#39;
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-assert_broadcast_on_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/test_helper.rb, line 97</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_broadcast_on</span>(<span class="ruby-identifier">stream</span>, <span class="ruby-identifier">data</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-comment"># Encode to JSON and back–we want to use this value to compare</span>
+  <span class="ruby-comment"># with decoded JSON.</span>
+  <span class="ruby-comment"># Comparing JSON strings doesn&#39;t work due to the order if the keys.</span>
+  <span class="ruby-identifier">serialized_msg</span> =
+    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">JSON</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">JSON</span>.<span class="ruby-identifier">encode</span>(<span class="ruby-identifier">data</span>))
+
+  <span class="ruby-identifier">new_messages</span> = <span class="ruby-identifier">broadcasts</span>(<span class="ruby-identifier">stream</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+    <span class="ruby-identifier">old_messages</span> = <span class="ruby-identifier">new_messages</span>
+    <span class="ruby-identifier">clear_messages</span>(<span class="ruby-identifier">stream</span>)
+
+    <span class="ruby-identifier">_assert_nothing_raised_or_warn</span>(<span class="ruby-string">&quot;assert_broadcast_on&quot;</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+    <span class="ruby-identifier">new_messages</span> = <span class="ruby-identifier">broadcasts</span>(<span class="ruby-identifier">stream</span>)
+    <span class="ruby-identifier">clear_messages</span>(<span class="ruby-identifier">stream</span>)
+
+    <span class="ruby-comment"># Restore all sent messages</span>
+    (<span class="ruby-identifier">old_messages</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">new_messages</span>).<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">m</span><span class="ruby-operator">|</span> <span class="ruby-identifier">pubsub_adapter</span>.<span class="ruby-identifier">broadcast</span>(<span class="ruby-identifier">stream</span>, <span class="ruby-identifier">m</span>) }
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">message</span> = <span class="ruby-identifier">new_messages</span>.<span class="ruby-identifier">find</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">msg</span><span class="ruby-operator">|</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">JSON</span>.<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">msg</span>) <span class="ruby-operator">==</span> <span class="ruby-identifier">serialized_msg</span> }
+
+  <span class="ruby-identifier">assert</span> <span class="ruby-identifier">message</span>, <span class="ruby-node">&quot;No messages sent with #{data} to #{stream}&quot;</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_broadcasts">
+            
+              assert_broadcasts(stream, number, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that the number of broadcasted messages to the stream matches the given number.</p>
+
+<pre><code>def test_broadcasts
+  assert_broadcasts &#39;messages&#39;, 0
+  ActionCable.server.broadcast &#39;messages&#39;, { text: &#39;hello&#39; }
+  assert_broadcasts &#39;messages&#39;, 1
+  ActionCable.server.broadcast &#39;messages&#39;, { text: &#39;world&#39; }
+  assert_broadcasts &#39;messages&#39;, 2
+end
+</code></pre>
+
+<p>If a block is passed, that block should cause the specified number of messages to be broadcasted.</p>
+
+<pre><code>def test_broadcasts_again
+  assert_broadcasts(&#39;messages&#39;, 1) do
+    ActionCable.server.broadcast &#39;messages&#39;, { text: &#39;hello&#39; }
+  end
+
+  assert_broadcasts(&#39;messages&#39;, 2) do
+    ActionCable.server.broadcast &#39;messages&#39;, { text: &#39;hi&#39; }
+    ActionCable.server.broadcast &#39;messages&#39;, { text: &#39;how are you?&#39; }
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-assert_broadcasts_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/test_helper.rb, line 45</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_broadcasts</span>(<span class="ruby-identifier">stream</span>, <span class="ruby-identifier">number</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+    <span class="ruby-identifier">original_count</span> = <span class="ruby-identifier">broadcasts_size</span>(<span class="ruby-identifier">stream</span>)
+    <span class="ruby-identifier">_assert_nothing_raised_or_warn</span>(<span class="ruby-string">&quot;assert_broadcasts&quot;</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+    <span class="ruby-identifier">new_count</span> = <span class="ruby-identifier">broadcasts_size</span>(<span class="ruby-identifier">stream</span>)
+    <span class="ruby-identifier">actual_count</span> = <span class="ruby-identifier">new_count</span> <span class="ruby-operator">-</span> <span class="ruby-identifier">original_count</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">actual_count</span> = <span class="ruby-identifier">broadcasts_size</span>(<span class="ruby-identifier">stream</span>)
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">assert_equal</span> <span class="ruby-identifier">number</span>, <span class="ruby-identifier">actual_count</span>, <span class="ruby-node">&quot;#{number} broadcasts to #{stream} expected, but #{actual_count} were sent&quot;</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_no_broadcasts">
+            
+              assert_no_broadcasts(stream, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that no messages have been sent to the stream.</p>
+
+<pre><code>def test_no_broadcasts
+  assert_no_broadcasts &#39;messages&#39;
+  ActionCable.server.broadcast &#39;messages&#39;, { text: &#39;hi&#39; }
+  assert_broadcasts &#39;messages&#39;, 1
+end
+</code></pre>
+
+<p>If a block is passed, that block should not cause any message to be sent.</p>
+
+<pre><code>def test_broadcasts_again
+  assert_no_broadcasts &#39;messages&#39; do
+    # No job messages should be sent from this block
+  end
+end
+</code></pre>
+
+<p>Note: This assertion is simply a shortcut for:</p>
+
+<pre><code>assert_broadcasts &#39;messages&#39;, 0, &amp;block
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-assert_no_broadcasts_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/test_helper.rb, line 78</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_no_broadcasts</span>(<span class="ruby-identifier">stream</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">assert_broadcasts</span> <span class="ruby-identifier">stream</span>, <span class="ruby-value">0</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

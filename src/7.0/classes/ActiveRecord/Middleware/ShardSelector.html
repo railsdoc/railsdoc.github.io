@@ -1,0 +1,201 @@
+---
+title: ActiveRecord::Middleware::ShardSelector
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::Middleware::ShardSelector
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/middleware/shard_selector_rb.html">activerecord/lib/active_record/middleware/shard_selector.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>The <a href="ShardSelector.html"><code>ShardSelector</code></a> <a href="../Middleware.html"><code>Middleware</code></a> provides a framework for automatically swapping shards. Rails provides a basic framework to determine which shard to switch to and allows for applications to write custom strategies for swapping if needed.</p>
+
+<p>The <a href="ShardSelector.html"><code>ShardSelector</code></a> takes a set of options (currently only <code>lock</code> is supported) that can be used by the middleware to alter behavior. <code>lock</code> is true by default and will prohibit the request from switching shards once inside the block. If <code>lock</code> is false, then shard swapping will be allowed. For tenant based sharding, <code>lock</code> should always be true to prevent application code from mistakenly switching between tenants.</p>
+
+<p>Options can be set in the config:</p>
+
+<pre><code>config.active_record.shard_selector = { lock: true }
+</code></pre>
+
+<p>Applications must also provide the code for the resolver as it depends on application specific models. An example resolver would look like this:</p>
+
+<pre><code>config.active_record.shard_resolver = -&gt;(request) {
+  subdomain = request.subdomain
+  tenant = Tenant.find_by_subdomain!(subdomain)
+  tenant.shard
+}
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-call">call</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>options</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>resolver</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(app, resolver, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/middleware/shard_selector.rb, line 30</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">app</span>, <span class="ruby-identifier">resolver</span>, <span class="ruby-identifier">options</span> = {})
+  <span class="ruby-ivar">@app</span> = <span class="ruby-identifier">app</span>
+  <span class="ruby-ivar">@resolver</span> = <span class="ruby-identifier">resolver</span>
+  <span class="ruby-ivar">@options</span> = <span class="ruby-identifier">options</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-call">
+            
+              call(env)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-call_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/middleware/shard_selector.rb, line 38</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">call</span>(<span class="ruby-identifier">env</span>)
+  <span class="ruby-identifier">request</span> = <span class="ruby-constant">ActionDispatch</span><span class="ruby-operator">::</span><span class="ruby-constant">Request</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">env</span>)
+
+  <span class="ruby-identifier">shard</span> = <span class="ruby-identifier">selected_shard</span>(<span class="ruby-identifier">request</span>)
+
+  <span class="ruby-identifier">set_shard</span>(<span class="ruby-identifier">shard</span>) <span class="ruby-keyword">do</span>
+    <span class="ruby-ivar">@app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
