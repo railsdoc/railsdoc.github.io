@@ -47,11 +47,11 @@ def generate_rails_rdoc
   cd 'rails' do
     Bundler.with_unbundled_env do
       # TODO: use `BUNDLE_ONLY`(require bundler 2.3.19+).
-      ENV['BUNDLE_WITHOUT'] = 'db:job:storage:cable:ujs:test'
+      ENV['BUNDLE_WITHOUT'] = %w[db job storage cable ujs test rubocop view].join(':')
 
       # replace sdoc gem
       gemfile = File.read('Gemfile')
-      gemfile.gsub!(/"sdoc.*$/, '"sdoc", github: "toshimaru/sdoc", branch: "railsdoc"')
+      gemfile.gsub!(/"sdoc".*$/, '"sdoc", github: "toshimaru/sdoc", branch: "railsdoc"')
       File.write('Gemfile', gemfile)
 
       sh 'bundle install && bundle update sdoc'
@@ -68,10 +68,9 @@ def generate_src(target_version: nil)
 
   cd target_dir do
     cp INDEX_HTML, 'index.html'
-
     return if target_version.nil?
 
-    # Replace absolute path in navigation.html
+    # Prepend version number to the absolute path in navigation.html
     content = File.read('navigation.html')
     content.gsub!('<a href="/', "<a href=\"/#{target_version}/")
     File.write('navigation.html', content)
