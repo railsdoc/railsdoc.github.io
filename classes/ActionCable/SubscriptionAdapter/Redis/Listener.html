@@ -92,11 +92,12 @@
 </ul>
 </li>
 <li class="toc-entry toc-h2"><a href="#methods">Methods</a></li>
+<li class="toc-entry toc-h2"><a href="#constants">Constants</a></li>
 <li class="toc-entry toc-h2"><a href="#class-public-methods">Class Public methods</a>
 <ul>
 <li class="toc-entry toc-h3"><a href="#method-c-new">
             
-              new(adapter, event_loop)
+              new(adapter, config_options, event_loop)
             
           </a></li>
 </ul>
@@ -137,7 +138,7 @@
         <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.0.8</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -220,6 +221,24 @@
     
 
     
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">ConnectionError</td>
+            <td>=</td>
+            <td class="attr-value">::Redis::ConnectionError</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+      </table>
+    
 
     
 
@@ -230,7 +249,7 @@
         <div class="method">
           <h3 id="method-c-new">
             
-              new(adapter, event_loop)
+              new(adapter, config_options, event_loop)
             
           </h3>
 
@@ -253,8 +272,8 @@
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 63</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">adapter</span>, <span class="ruby-identifier">event_loop</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 67</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">adapter</span>, <span class="ruby-identifier">config_options</span>, <span class="ruby-identifier">event_loop</span>)
   <span class="ruby-keyword">super</span>()
 
   <span class="ruby-ivar">@adapter</span> = <span class="ruby-identifier">adapter</span>
@@ -262,6 +281,11 @@
 
   <span class="ruby-ivar">@subscribe_callbacks</span> = <span class="ruby-constant">Hash</span>.<span class="ruby-identifier">new</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">h</span>, <span class="ruby-identifier">k</span><span class="ruby-operator">|</span> <span class="ruby-identifier">h</span>[<span class="ruby-identifier">k</span>] = [] }
   <span class="ruby-ivar">@subscription_lock</span> = <span class="ruby-constant">Mutex</span>.<span class="ruby-identifier">new</span>
+
+  <span class="ruby-ivar">@reconnect_attempt</span> = <span class="ruby-value">0</span>
+  <span class="ruby-comment"># Use the same config as used by Redis conn</span>
+  <span class="ruby-ivar">@reconnect_attempts</span> = <span class="ruby-identifier">config_options</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-value">:reconnect_attempts</span>, <span class="ruby-value">1</span>)
+  <span class="ruby-ivar">@reconnect_attempts</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">new</span>(<span class="ruby-ivar">@reconnect_attempts</span>, <span class="ruby-value">0</span>) <span class="ruby-keyword">if</span> <span class="ruby-ivar">@reconnect_attempts</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Integer</span>)
 
   <span class="ruby-ivar">@subscribed_client</span> = <span class="ruby-keyword">nil</span>
 
@@ -304,7 +328,7 @@
                 
               </p>
               <div id="method-i-add_channel_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 130</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 140</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_channel</span>(<span class="ruby-identifier">channel</span>, <span class="ruby-identifier">on_success</span>)
   <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">ensure_listener_running</span>
@@ -343,7 +367,7 @@
                 
               </p>
               <div id="method-i-invoke_callback_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 144</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 154</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">invoke_callback</span>(<span class="ruby-operator">*</span>)
   <span class="ruby-ivar">@event_loop</span>.<span class="ruby-identifier">post</span> { <span class="ruby-keyword">super</span> }
 <span class="ruby-keyword">end</span></code></pre>
@@ -378,7 +402,7 @@
                 
               </p>
               <div id="method-i-listen_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 79</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 88</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">listen</span>(<span class="ruby-identifier">conn</span>)
   <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">without_reconnect</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">original_client</span> = <span class="ruby-identifier">extract_subscribed_client</span>(<span class="ruby-identifier">conn</span>)
@@ -387,6 +411,7 @@
       <span class="ruby-identifier">on</span>.<span class="ruby-identifier">subscribe</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">chan</span>, <span class="ruby-identifier">count</span><span class="ruby-operator">|</span>
         <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
           <span class="ruby-keyword">if</span> <span class="ruby-identifier">count</span> <span class="ruby-operator">==</span> <span class="ruby-value">1</span>
+            <span class="ruby-ivar">@reconnect_attempt</span> = <span class="ruby-value">0</span>
             <span class="ruby-ivar">@subscribed_client</span> = <span class="ruby-identifier">original_client</span>
 
             <span class="ruby-keyword">until</span> <span class="ruby-ivar">@when_connected</span>.<span class="ruby-identifier">empty?</span>
@@ -447,7 +472,7 @@
                 
               </p>
               <div id="method-i-remove_channel_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 138</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 148</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_channel</span>(<span class="ruby-identifier">channel</span>)
   <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">when_connected</span> { <span class="ruby-ivar">@subscribed_client</span>.<span class="ruby-identifier">unsubscribe</span>(<span class="ruby-identifier">channel</span>) }
@@ -484,7 +509,7 @@
                 
               </p>
               <div id="method-i-shutdown_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 117</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 127</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">shutdown</span>
   <span class="ruby-ivar">@subscription_lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-ivar">@thread</span>.<span class="ruby-identifier">nil?</span>
