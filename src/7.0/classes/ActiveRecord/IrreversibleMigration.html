@@ -1,0 +1,139 @@
+---
+title: ActiveRecord::IrreversibleMigration
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::IrreversibleMigration
+            
+                <span class="parent">&lt;
+                    
+                    ActiveRecord::MigrationError
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration_rb.html">activerecord/lib/active_record/migration.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p><a href="../Exception.html"><code>Exception</code></a> that can be raised to stop migrations from being rolled back. For example the following migration is not reversible. Rolling back this migration will raise an <a href="IrreversibleMigration.html"><code>ActiveRecord::IrreversibleMigration</code></a> error.</p>
+
+<pre><code>class IrreversibleMigrationExample &lt; ActiveRecord::Migration[7.0]
+  def change
+    create_table :distributors do |t|
+      t.string :zipcode
+    end
+
+    execute &lt;&lt;~SQL
+      ALTER TABLE distributors
+        ADD CONSTRAINT zipchk
+          CHECK (char_length(zipcode) = 5) NO INHERIT;
+    SQL
+  end
+end
+</code></pre>
+
+<p>There are two ways to mitigate this problem.</p>
+<ol><li>
+<p>Define <code>#up</code> and <code>#down</code> methods instead of <code>#change</code>:</p>
+</li></ol>
+
+<pre><code>class ReversibleMigrationExample &lt; ActiveRecord::Migration[7.0]
+  def up
+    create_table :distributors do |t|
+      t.string :zipcode
+    end
+
+    execute &lt;&lt;~SQL
+      ALTER TABLE distributors
+        ADD CONSTRAINT zipchk
+          CHECK (char_length(zipcode) = 5) NO INHERIT;
+    SQL
+  end
+
+  def down
+    execute &lt;&lt;~SQL
+      ALTER TABLE distributors
+        DROP CONSTRAINT zipchk
+    SQL
+
+    drop_table :distributors
+  end
+end
+</code></pre>
+<ol><li>
+<p>Use the reversible method in <code>#change</code> method:</p>
+</li></ol>
+
+<pre><code>class ReversibleMigrationExample &lt; ActiveRecord::Migration[7.0]
+  def change
+    create_table :distributors do |t|
+      t.string :zipcode
+    end
+
+    reversible do |dir|
+      dir.up do
+        execute &lt;&lt;~SQL
+          ALTER TABLE distributors
+            ADD CONSTRAINT zipchk
+              CHECK (char_length(zipcode) = 5) NO INHERIT;
+        SQL
+      end
+
+      dir.down do
+        execute &lt;&lt;~SQL
+          ALTER TABLE distributors
+            DROP CONSTRAINT zipchk
+        SQL
+      end
+    end
+  end
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+    
+  
+</div>
+
+    </div>
+</div>

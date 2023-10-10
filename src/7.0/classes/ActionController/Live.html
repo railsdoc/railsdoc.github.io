@@ -1,0 +1,303 @@
+---
+title: ActionController::Live
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionController::Live
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_controller/metal/live_rb.html">actionpack/lib/action_controller/metal/live.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_controller/test_case_rb.html">actionpack/lib/action_controller/test_case.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Mix this module into your controller, and all actions in that controller will be able to stream data to the client as it’s written.</p>
+
+<pre><code>class MyController &lt; ActionController::Base
+  include ActionController::Live
+
+  def stream
+    response.headers[&#39;Content-Type&#39;] = &#39;text/event-stream&#39;
+    100.times {
+      response.stream.write &quot;hello world\n&quot;
+      sleep 1
+    }
+  ensure
+    response.stream.close
+  end
+end
+</code></pre>
+
+<p>There are a few caveats with this module. You <strong>cannot</strong> write headers after the response has been committed (Response#committed? will return truthy). Calling <code>write</code> or <code>close</code> on the response stream will cause the response object to be committed. Make sure all headers are set before calling write or close on your stream.</p>
+
+<p>You <strong>must</strong> call close on your stream when you’re finished, otherwise the socket may be left open forever.</p>
+
+<p>The final caveat is that your actions are executed in a separate thread than the main thread. Make sure your actions are thread safe, and this shouldn’t be a problem (don’t share state across threads, etc).</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Live/ClassMethods.html">ActionController::Live::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Live/ClientDisconnected.html">ActionController::Live::ClientDisconnected</a></li>
+      
+        <li><a href="Live/SSE.html">ActionController::Live::SSE</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-process">process</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-response_body-3D">response_body=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-send_stream">send_stream</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-process">
+            
+              process(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-process_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/live.rb, line 249</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">process</span>(<span class="ruby-identifier">name</span>)
+  <span class="ruby-identifier">t1</span> = <span class="ruby-constant">Thread</span>.<span class="ruby-identifier">current</span>
+  <span class="ruby-identifier">locals</span> = <span class="ruby-identifier">t1</span>.<span class="ruby-identifier">keys</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">key</span><span class="ruby-operator">|</span> [<span class="ruby-identifier">key</span>, <span class="ruby-identifier">t1</span>[<span class="ruby-identifier">key</span>]] }
+
+  <span class="ruby-identifier">error</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-comment"># This processes the action in a child thread. It lets us return the</span>
+  <span class="ruby-comment"># response code and headers back up the Rack stack, and still process</span>
+  <span class="ruby-comment"># the body in parallel with sending data to the client.</span>
+  <span class="ruby-identifier">new_controller_thread</span> {
+    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Dependencies</span>.<span class="ruby-identifier">interlock</span>.<span class="ruby-identifier">running</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">t2</span> = <span class="ruby-constant">Thread</span>.<span class="ruby-identifier">current</span>
+
+      <span class="ruby-comment"># Since we&#39;re processing the view in a different thread, copy the</span>
+      <span class="ruby-comment"># thread locals from the main thread to the child thread. :&#39;(</span>
+      <span class="ruby-identifier">locals</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">k</span>, <span class="ruby-identifier">v</span><span class="ruby-operator">|</span> <span class="ruby-identifier">t2</span>[<span class="ruby-identifier">k</span>] = <span class="ruby-identifier">v</span> }
+      <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">IsolatedExecutionState</span>.<span class="ruby-identifier">share_with</span>(<span class="ruby-identifier">t1</span>)
+
+      <span class="ruby-keyword">begin</span>
+        <span class="ruby-keyword">super</span>(<span class="ruby-identifier">name</span>)
+      <span class="ruby-keyword">rescue</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">e</span>
+        <span class="ruby-keyword">if</span> <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">committed?</span>
+          <span class="ruby-keyword">begin</span>
+            <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">stream</span>.<span class="ruby-identifier">write</span>(<span class="ruby-constant">ActionView</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">streaming_completion_on_exception</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">request</span>.<span class="ruby-identifier">format</span> <span class="ruby-operator">==</span> <span class="ruby-value">:html</span>
+            <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">stream</span>.<span class="ruby-identifier">call_on_error</span>
+          <span class="ruby-keyword">rescue</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">exception</span>
+            <span class="ruby-identifier">log_error</span>(<span class="ruby-identifier">exception</span>)
+          <span class="ruby-keyword">ensure</span>
+            <span class="ruby-identifier">log_error</span>(<span class="ruby-identifier">e</span>)
+            <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">stream</span>.<span class="ruby-identifier">close</span>
+          <span class="ruby-keyword">end</span>
+        <span class="ruby-keyword">else</span>
+          <span class="ruby-identifier">error</span> = <span class="ruby-identifier">e</span>
+        <span class="ruby-keyword">end</span>
+      <span class="ruby-keyword">ensure</span>
+        <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">commit!</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  }
+
+  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Dependencies</span>.<span class="ruby-identifier">interlock</span>.<span class="ruby-identifier">permit_concurrent_loads</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">await_commit</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">raise</span> <span class="ruby-identifier">error</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">error</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-response_body-3D">
+            
+              response_body=(body)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-response_body-3D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/live.rb, line 295</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">response_body=</span>(<span class="ruby-identifier">body</span>)
+  <span class="ruby-keyword">super</span>
+  <span class="ruby-identifier">response</span>.<span class="ruby-identifier">close</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">response</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-send_stream">
+            
+              send_stream(filename:, disposition: &quot;attachment&quot;, type: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sends a stream to the browser, which is helpful when you’re generating exports or other running data where you don’t want the entire file buffered in memory first. Similar to send_data, but where the data is generated live.</p>
+
+<p>Options:</p>
+<ul><li>
+<p><code>:filename</code> - suggests a filename for the browser to use.</p>
+</li><li>
+<p><code>:type</code> - specifies an HTTP content type. You can specify either a string or a symbol for a registered type with <code>Mime::Type.register</code>, for example :json. If omitted, type will be inferred from the file extension specified in <code>:filename</code>. If no content type is registered for the extension, the default type ‘application/octet-stream’ will be used.</p>
+</li><li>
+<p><code>:disposition</code> - specifies whether the file will be shown inline or downloaded. Valid values are ‘inline’ and ‘attachment’ (default).</p>
+</li></ul>
+
+<p>Example of generating a csv export:</p>
+
+<pre><code>send_stream(filename: &quot;subscribers.csv&quot;) do |stream|
+  stream.write &quot;email_address,updated_at\n&quot;
+
+  @subscribers.find_each do |subscriber|
+    stream.write &quot;#{subscriber.email_address},#{subscriber.updated_at}\n&quot;
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-send_stream_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/live.rb, line 321</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">send_stream</span>(<span class="ruby-value">filename:</span>, <span class="ruby-value">disposition:</span> <span class="ruby-string">&quot;attachment&quot;</span>, <span class="ruby-value">type:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">response</span>.<span class="ruby-identifier">headers</span>[<span class="ruby-string">&quot;Content-Type&quot;</span>] =
+    (<span class="ruby-identifier">type</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Symbol</span>) <span class="ruby-operator">?</span> <span class="ruby-constant">Mime</span>[<span class="ruby-identifier">type</span>].<span class="ruby-identifier">to_s</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">type</span>) <span class="ruby-operator">||</span>
+    <span class="ruby-constant">Mime</span><span class="ruby-operator">::</span><span class="ruby-constant">Type</span>.<span class="ruby-identifier">lookup_by_extension</span>(<span class="ruby-constant">File</span>.<span class="ruby-identifier">extname</span>(<span class="ruby-identifier">filename</span>).<span class="ruby-identifier">downcase</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-string">&quot;.&quot;</span>))&amp;.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">||</span>
+    <span class="ruby-string">&quot;application/octet-stream&quot;</span>
+
+  <span class="ruby-identifier">response</span>.<span class="ruby-identifier">headers</span>[<span class="ruby-string">&quot;Content-Disposition&quot;</span>] =
+    <span class="ruby-constant">ActionDispatch</span><span class="ruby-operator">::</span><span class="ruby-constant">Http</span><span class="ruby-operator">::</span><span class="ruby-constant">ContentDisposition</span>.<span class="ruby-identifier">format</span>(<span class="ruby-value">disposition:</span> <span class="ruby-identifier">disposition</span>, <span class="ruby-value">filename:</span> <span class="ruby-identifier">filename</span>)
+
+  <span class="ruby-keyword">yield</span> <span class="ruby-identifier">response</span>.<span class="ruby-identifier">stream</span>
+<span class="ruby-keyword">ensure</span>
+  <span class="ruby-identifier">response</span>.<span class="ruby-identifier">stream</span>.<span class="ruby-identifier">close</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

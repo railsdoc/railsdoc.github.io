@@ -1,0 +1,401 @@
+---
+title: ActiveSupport::Testing::Parallelization::Worker
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::Testing::Parallelization::Worker
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/activesupport/lib/active_support/testing/parallelization/worker_rb.html">activesupport/lib/active_support/testing/parallelization/worker.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-after_fork">after_fork</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-perform_job">perform_job</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-run_cleanup">run_cleanup</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-safe_record">safe_record</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-start">start</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-work_from_queue">work_from_queue</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(number, url)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 7</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">number</span>, <span class="ruby-identifier">url</span>)
+  <span class="ruby-ivar">@id</span> = <span class="ruby-constant">SecureRandom</span>.<span class="ruby-identifier">uuid</span>
+  <span class="ruby-ivar">@number</span> = <span class="ruby-identifier">number</span>
+  <span class="ruby-ivar">@url</span> = <span class="ruby-identifier">url</span>
+  <span class="ruby-ivar">@setup_exception</span> = <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-after_fork">
+            
+              after_fork()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-after_fork_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 80</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">after_fork</span>
+  <span class="ruby-constant">Parallelization</span>.<span class="ruby-identifier">after_fork_hooks</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">cb</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">cb</span>.<span class="ruby-identifier">call</span>(<span class="ruby-ivar">@number</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-perform_job">
+            
+              perform_job(job)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-perform_job_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 42</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">perform_job</span>(<span class="ruby-identifier">job</span>)
+  <span class="ruby-identifier">klass</span>    = <span class="ruby-identifier">job</span>[<span class="ruby-value">0</span>]
+  <span class="ruby-identifier">method</span>   = <span class="ruby-identifier">job</span>[<span class="ruby-value">1</span>]
+  <span class="ruby-identifier">reporter</span> = <span class="ruby-identifier">job</span>[<span class="ruby-value">2</span>]
+
+  <span class="ruby-identifier">set_process_title</span>(<span class="ruby-node">&quot;#{klass}##{method}&quot;</span>)
+
+  <span class="ruby-identifier">result</span> = <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">with_info_handler</span> <span class="ruby-identifier">reporter</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-constant">Minitest</span>.<span class="ruby-identifier">run_one_method</span>(<span class="ruby-identifier">klass</span>, <span class="ruby-identifier">method</span>)
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">safe_record</span>(<span class="ruby-identifier">reporter</span>, <span class="ruby-identifier">result</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-run_cleanup">
+            
+              run_cleanup()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-run_cleanup_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 86</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">run_cleanup</span>
+  <span class="ruby-constant">Parallelization</span>.<span class="ruby-identifier">run_cleanup_hooks</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">cb</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">cb</span>.<span class="ruby-identifier">call</span>(<span class="ruby-ivar">@number</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-safe_record">
+            
+              safe_record(reporter, result)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-safe_record_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 56</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">safe_record</span>(<span class="ruby-identifier">reporter</span>, <span class="ruby-identifier">result</span>)
+  <span class="ruby-identifier">add_setup_exception</span>(<span class="ruby-identifier">result</span>) <span class="ruby-keyword">if</span> <span class="ruby-ivar">@setup_exception</span>
+
+  <span class="ruby-keyword">begin</span>
+    <span class="ruby-ivar">@queue</span>.<span class="ruby-identifier">record</span>(<span class="ruby-identifier">reporter</span>, <span class="ruby-identifier">result</span>)
+  <span class="ruby-keyword">rescue</span> <span class="ruby-constant">DRb</span><span class="ruby-operator">::</span><span class="ruby-constant">DRbConnError</span>
+    <span class="ruby-identifier">result</span>.<span class="ruby-identifier">failures</span>.<span class="ruby-identifier">map!</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">failure</span><span class="ruby-operator">|</span>
+      <span class="ruby-keyword">if</span> <span class="ruby-identifier">failure</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:error</span>)
+        <span class="ruby-comment"># minitest &gt;5.14.0</span>
+        <span class="ruby-identifier">error</span> = <span class="ruby-constant">DRb</span><span class="ruby-operator">::</span><span class="ruby-constant">DRbRemoteError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">failure</span>.<span class="ruby-identifier">error</span>)
+      <span class="ruby-keyword">else</span>
+        <span class="ruby-identifier">error</span> = <span class="ruby-constant">DRb</span><span class="ruby-operator">::</span><span class="ruby-constant">DRbRemoteError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">failure</span>.<span class="ruby-identifier">exception</span>)
+      <span class="ruby-keyword">end</span>
+      <span class="ruby-constant">Minitest</span><span class="ruby-operator">::</span><span class="ruby-constant">UnexpectedError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">error</span>)
+    <span class="ruby-keyword">end</span>
+    <span class="ruby-ivar">@queue</span>.<span class="ruby-identifier">record</span>(<span class="ruby-identifier">reporter</span>, <span class="ruby-identifier">result</span>)
+  <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Interrupt</span>
+    <span class="ruby-ivar">@queue</span>.<span class="ruby-identifier">interrupt</span>
+    <span class="ruby-identifier">raise</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">set_process_title</span>(<span class="ruby-string">&quot;(idle)&quot;</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-start">
+            
+              start()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-start_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 14</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">start</span>
+  <span class="ruby-identifier">fork</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">set_process_title</span>(<span class="ruby-string">&quot;(starting)&quot;</span>)
+
+    <span class="ruby-constant">DRb</span>.<span class="ruby-identifier">stop_service</span>
+
+    <span class="ruby-ivar">@queue</span> = <span class="ruby-constant">DRbObject</span>.<span class="ruby-identifier">new_with_uri</span>(<span class="ruby-ivar">@url</span>)
+    <span class="ruby-ivar">@queue</span>.<span class="ruby-identifier">start_worker</span>(<span class="ruby-ivar">@id</span>)
+
+    <span class="ruby-keyword">begin</span>
+      <span class="ruby-identifier">after_fork</span>
+    <span class="ruby-keyword">rescue</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-ivar">@setup_exception</span>; <span class="ruby-keyword">end</span>
+
+    <span class="ruby-identifier">work_from_queue</span>
+  <span class="ruby-keyword">ensure</span>
+    <span class="ruby-identifier">set_process_title</span>(<span class="ruby-string">&quot;(stopping)&quot;</span>)
+
+    <span class="ruby-identifier">run_cleanup</span>
+    <span class="ruby-ivar">@queue</span>.<span class="ruby-identifier">stop_worker</span>(<span class="ruby-ivar">@id</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-work_from_queue">
+            
+              work_from_queue()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-work_from_queue_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 36</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">work_from_queue</span>
+  <span class="ruby-keyword">while</span> <span class="ruby-identifier">job</span> = <span class="ruby-ivar">@queue</span>.<span class="ruby-identifier">pop</span>
+    <span class="ruby-identifier">perform_job</span>(<span class="ruby-identifier">job</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

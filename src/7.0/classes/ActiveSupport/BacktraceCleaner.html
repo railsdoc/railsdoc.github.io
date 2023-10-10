@@ -1,0 +1,393 @@
+---
+title: ActiveSupport::BacktraceCleaner
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::BacktraceCleaner
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/backtrace_cleaner_rb.html">activesupport/lib/active_support/backtrace_cleaner.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Backtraces often include many lines that are not relevant for the context under review. This makes it hard to find the signal amongst the backtrace noise, and adds debugging time. With a <a href="BacktraceCleaner.html"><code>BacktraceCleaner</code></a>, filters and silencers are used to remove the noisy lines, so that only the most relevant lines remain.</p>
+
+<p>Filters are used to modify lines of data, while silencers are used to remove lines entirely. The typical filter use case is to remove lengthy path information from the start of each line, and view file paths relevant to the app directory instead of the file system root. The typical silencer use case is to exclude the output of a noisy library from the backtrace, so that you can focus on the rest.</p>
+
+<pre><code>bc = ActiveSupport::BacktraceCleaner.new
+bc.add_filter   { |line| line.gsub(Rails.root.to_s, &#39;&#39;) } # strip the Rails.root prefix
+bc.add_silencer { |line| /puma|rubygems/.match?(line) } # skip any lines from puma or rubygems
+bc.clean(exception.backtrace) # perform the cleanup
+</code></pre>
+
+<p>To reconfigure an existing <a href="BacktraceCleaner.html"><code>BacktraceCleaner</code></a> (like the default one in Rails) and show as much data as possible, you can always call <a href="BacktraceCleaner.html#method-i-remove_silencers-21"><code>BacktraceCleaner#remove_silencers!</code></a>, which will restore the backtrace to a pristine state. If you need to reconfigure an existing <a href="BacktraceCleaner.html"><code>BacktraceCleaner</code></a> so that it does not filter or modify the paths of any lines of the backtrace, you can call <a href="BacktraceCleaner.html#method-i-remove_filters-21"><code>BacktraceCleaner#remove_filters!</code></a> These two methods will give you a completely untouched backtrace.</p>
+
+<p>Inspired by the Quiet Backtrace gem by thoughtbot.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-add_filter">add_filter</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-add_silencer">add_silencer</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clean">clean</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-filter">filter</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-remove_filters-21">remove_filters!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-remove_silencers-21">remove_silencers!</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">FORMATTED_GEMS_PATTERN</td>
+            <td>=</td>
+            <td class="attr-value">/\A[^\/]+ \([\w.]+\) /</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/backtrace_cleaner.rb, line 32</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>
+  <span class="ruby-ivar">@filters</span>, <span class="ruby-ivar">@silencers</span> = [], []
+  <span class="ruby-identifier">add_gem_filter</span>
+  <span class="ruby-identifier">add_gem_silencer</span>
+  <span class="ruby-identifier">add_stdlib_silencer</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-add_filter">
+            
+              add_filter(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Adds a filter from the block provided. Each line in the backtrace will be mapped against this filter.</p>
+
+<pre><code># Will turn &quot;/my/rails/root/app/models/person.rb&quot; into &quot;/app/models/person.rb&quot;
+backtrace_cleaner.add_filter { |line| line.gsub(Rails.root, &#39;&#39;) }
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-add_filter_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/backtrace_cleaner.rb, line 60</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_filter</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-ivar">@filters</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">block</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-add_silencer">
+            
+              add_silencer(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Adds a silencer from the block provided. If the silencer returns <code>true</code> for a given line, it will be excluded from the clean backtrace.</p>
+
+<pre><code># Will reject all lines that include the word &quot;puma&quot;, like &quot;/gems/puma/server.rb&quot; or &quot;/app/my_puma_server/rb&quot;
+backtrace_cleaner.add_silencer { |line| /puma/.match?(line) }
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-add_silencer_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/backtrace_cleaner.rb, line 69</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_silencer</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-ivar">@silencers</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">block</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-clean">
+            
+              clean(backtrace, kind = :silent)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the backtrace after all filters and silencers have been run against it. Filters run first, then silencers.</p>
+            </div>
+          
+
+          
+            <div class="aka">
+              Also aliased as: <a href="BacktraceCleaner.html#method-i-filter">filter</a>
+            </div>
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-clean_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/backtrace_cleaner.rb, line 41</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clean</span>(<span class="ruby-identifier">backtrace</span>, <span class="ruby-identifier">kind</span> = <span class="ruby-value">:silent</span>)
+  <span class="ruby-identifier">filtered</span> = <span class="ruby-identifier">filter_backtrace</span>(<span class="ruby-identifier">backtrace</span>)
+
+  <span class="ruby-keyword">case</span> <span class="ruby-identifier">kind</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-value">:silent</span>
+    <span class="ruby-identifier">silence</span>(<span class="ruby-identifier">filtered</span>)
+  <span class="ruby-keyword">when</span> <span class="ruby-value">:noise</span>
+    <span class="ruby-identifier">noise</span>(<span class="ruby-identifier">filtered</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">filtered</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-filter">
+            
+              filter(backtrace, kind = :silent)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+            <div class="aka">
+              Alias for: <a href="BacktraceCleaner.html#method-i-clean">clean</a>
+            </div>
+          
+
+          
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-remove_filters-21">
+            
+              remove_filters!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Removes all filters, but leaves in the silencers. Useful if you suddenly need to see entire filepaths in the backtrace that you had already filtered out.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-remove_filters-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/backtrace_cleaner.rb, line 83</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_filters!</span>
+  <span class="ruby-ivar">@filters</span> = []
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-remove_silencers-21">
+            
+              remove_silencers!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Removes all silencers, but leaves in the filters. Useful if your context of debugging suddenly expands as you suspect a bug in one of the libraries you use.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-remove_silencers-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/backtrace_cleaner.rb, line 76</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_silencers!</span>
+  <span class="ruby-ivar">@silencers</span> = []
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,713 @@
+---
+title: ActiveSupport::Cache::RedisCacheStore
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::Cache::RedisCacheStore
+            
+                <span class="parent">&lt;
+                    
+                    <a href="Store.html">ActiveSupport::Cache::Store</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/cache/redis_cache_store_rb.html">activesupport/lib/active_support/cache/redis_cache_store.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Redis cache store.</p>
+
+<p>Deployment note: Take care to use a *dedicated Redis cache* rather than pointing this at your existing Redis server. It won’t cope well with mixed usage patterns and it won’t expire cache entries by default.</p>
+
+<p>Redis cache server setup guide: <a href="https://redis.io/topics/lru-cache">redis.io/topics/lru-cache</a></p>
+<ul><li>
+<p>Supports vanilla Redis, hiredis, and Redis::Distributed.</p>
+</li><li>
+<p>Supports Memcached-like sharding across Redises with Redis::Distributed.</p>
+</li><li>
+<p>Fault tolerant. If the Redis server is unavailable, no exceptions are raised. <a href="../Cache.html"><code>Cache</code></a> fetches are all misses and writes are dropped.</p>
+</li><li>
+<p>Local cache. Hot in-memory primary cache within block/middleware scope.</p>
+</li><li>
+<p><code>read_multi</code> and <code>write_multi</code> support for Redis mget/mset. Use Redis::Distributed 4.0.1+ for distributed mget support.</p>
+</li><li>
+<p><code>delete_matched</code> support for Redis KEYS globs.</p>
+</li></ul>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-cleanup">cleanup</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clear">clear</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-decrement">decrement</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete_matched">delete_matched</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-increment">increment</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-inspect">inspect</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-read_multi">read_multi</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-redis">redis</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-stats">stats</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-supports_cache_versioning-3F">supports_cache_versioning?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">DEFAULT_ERROR_HANDLER</td>
+            <td>=</td>
+            <td class="attr-value">-&gt; (method:, returning:, exception:) do
+if logger
+logger.error { &quot;RedisCacheStore: #{method} failed, returned #{returning.inspect}: #{exception.class}: #{exception.message}&quot; }
+end
+end</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">DEFAULT_REDIS_OPTIONS</td>
+            <td>=</td>
+            <td class="attr-value">{
+connect_timeout:    20,
+read_timeout:       1,
+write_timeout:      1,
+reconnect_attempts: 0,
+}</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MAX_KEY_BYTESIZE</td>
+            <td>=</td>
+            <td class="attr-value">1024</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>Keys are truncated with the <a href="../../ActiveSupport.html"><code>ActiveSupport</code></a> digest if they exceed 1kB</p></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>max_key_bytesize</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>redis_options</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(namespace: nil, compress: true, compress_threshold: 1.kilobyte, coder: default_coder, expires_in: nil, race_condition_ttl: nil, error_handler: DEFAULT_ERROR_HANDLER, **redis_options)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Creates a new Redis cache store.</p>
+
+<p>Handles four options: :redis block, :redis instance, single :url string, and multiple :url strings.</p>
+
+<pre><code>Option  Class       Result
+:redis  Proc    -&gt;  options[:redis].call
+:redis  Object  -&gt;  options[:redis]
+:url    String  -&gt;  Redis.new(url: …)
+:url    Array   -&gt;  Redis::Distributed.new([{ url: … }, { url: … }, …])
+</code></pre>
+
+<p>No namespace is set by default. Provide one if the Redis cache server is shared with other apps: <code>namespace: &#39;myapp-cache&#39;</code>.</p>
+
+<p>Compression is enabled by default with a 1kB threshold, so cached values larger than 1kB are automatically compressed. Disable by passing <code>compress: false</code> or change the threshold by passing <code>compress_threshold: 4.kilobytes</code>.</p>
+
+<p>No expiry is set on cache entries by default. Redis is expected to be configured with an eviction policy that automatically deletes least-recently or -frequently used keys when it reaches max memory. See <a href="https://redis.io/topics/lru-cache">redis.io/topics/lru-cache</a> for cache server setup.</p>
+
+<p>Race condition TTL is not set by default. This can be used to avoid “thundering herd” cache writes when hot cache entries are expired. See <a href="Store.html#method-i-fetch"><code>ActiveSupport::Cache::Store#fetch</code></a> for more.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 149</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-value">namespace:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">compress:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">compress_threshold:</span> <span class="ruby-value">1</span>.<span class="ruby-identifier">kilobyte</span>, <span class="ruby-value">coder:</span> <span class="ruby-identifier">default_coder</span>, <span class="ruby-value">expires_in:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">race_condition_ttl:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">error_handler:</span> <span class="ruby-constant">DEFAULT_ERROR_HANDLER</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">redis_options</span>)
+  <span class="ruby-ivar">@redis_options</span> = <span class="ruby-identifier">redis_options</span>
+
+  <span class="ruby-ivar">@max_key_bytesize</span> = <span class="ruby-constant">MAX_KEY_BYTESIZE</span>
+  <span class="ruby-ivar">@error_handler</span> = <span class="ruby-identifier">error_handler</span>
+
+  <span class="ruby-keyword">super</span> <span class="ruby-value">namespace:</span> <span class="ruby-identifier">namespace</span>,
+    <span class="ruby-value">compress:</span> <span class="ruby-identifier">compress</span>, <span class="ruby-value">compress_threshold:</span> <span class="ruby-identifier">compress_threshold</span>,
+    <span class="ruby-value">expires_in:</span> <span class="ruby-identifier">expires_in</span>, <span class="ruby-value">race_condition_ttl:</span> <span class="ruby-identifier">race_condition_ttl</span>,
+    <span class="ruby-value">coder:</span> <span class="ruby-identifier">coder</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-supports_cache_versioning-3F">
+            
+              supports_cache_versioning?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Advertise cache versioning support.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-supports_cache_versioning-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 73</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">supports_cache_versioning?</span>
+  <span class="ruby-keyword">true</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-cleanup">
+            
+              cleanup(options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><a href="../Cache.html"><code>Cache</code></a> <a href="Store.html"><code>Store</code></a> API implementation.</p>
+
+<p>Removes expired entries. Handled natively by Redis least-recently-/ least-frequently-used expiry, so manual cleanup is not supported.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-cleanup_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 281</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">cleanup</span>(<span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-keyword">super</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-clear">
+            
+              clear(options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Clear the entire cache on all Redis servers. Safe to use on shared servers if the cache is namespaced.</p>
+
+<p>Failsafe: Raises errors.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-clear_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 289</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear</span>(<span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">failsafe</span> <span class="ruby-value">:clear</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">namespace</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)[<span class="ruby-value">:namespace</span>]
+      <span class="ruby-identifier">delete_matched</span> <span class="ruby-string">&quot;*&quot;</span>, <span class="ruby-value">namespace:</span> <span class="ruby-identifier">namespace</span>
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">with</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">c</span><span class="ruby-operator">|</span> <span class="ruby-identifier">c</span>.<span class="ruby-identifier">flushdb</span> }
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-decrement">
+            
+              decrement(name, amount = 1, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><a href="../Cache.html"><code>Cache</code></a> <a href="Store.html"><code>Store</code></a> API implementation.</p>
+
+<p>Decrement a cached value. This method uses the Redis decr atomic operator and can only be used on values written with the <code>:raw</code> option. Calling it on a value not stored with <code>:raw</code> will initialize that value to zero.</p>
+
+<p>Failsafe: Raises errors.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-decrement_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 262</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">decrement</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">amount</span> = <span class="ruby-value">1</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">instrument</span> <span class="ruby-value">:decrement</span>, <span class="ruby-identifier">name</span>, <span class="ruby-value">amount:</span> <span class="ruby-identifier">amount</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">failsafe</span> <span class="ruby-value">:decrement</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
+      <span class="ruby-identifier">key</span> = <span class="ruby-identifier">normalize_key</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>)
+
+      <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">with</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">c</span><span class="ruby-operator">|</span>
+        <span class="ruby-identifier">c</span>.<span class="ruby-identifier">decrby</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">amount</span>).<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span>
+          <span class="ruby-identifier">write_key_expiry</span>(<span class="ruby-identifier">c</span>, <span class="ruby-identifier">key</span>, <span class="ruby-identifier">options</span>)
+        <span class="ruby-keyword">end</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete_matched">
+            
+              delete_matched(matcher, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><a href="../Cache.html"><code>Cache</code></a> <a href="Store.html"><code>Store</code></a> API implementation.</p>
+
+<p>Supports Redis KEYS glob patterns:</p>
+
+<pre><code>h?llo matches hello, hallo and hxllo
+h*llo matches hllo and heeeello
+h[ae]llo matches hello and hallo, but not hillo
+h[^e]llo matches hallo, hbllo, ... but not hello
+h[a-b]llo matches hallo and hbllo
+</code></pre>
+
+<p>Use \ to escape special characters if you want to match them verbatim.</p>
+
+<p>See <a href="https://redis.io/commands/KEYS">redis.io/commands/KEYS</a> for more.</p>
+
+<p>Failsafe: Raises errors.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-delete_matched_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 210</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete_matched</span>(<span class="ruby-identifier">matcher</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">instrument</span> <span class="ruby-value">:delete_matched</span>, <span class="ruby-identifier">matcher</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-keyword">unless</span> <span class="ruby-constant">String</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">matcher</span>
+      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;Only Redis glob strings are supported: #{matcher.inspect}&quot;</span>
+    <span class="ruby-keyword">end</span>
+    <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">with</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">c</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">pattern</span> = <span class="ruby-identifier">namespace_key</span>(<span class="ruby-identifier">matcher</span>, <span class="ruby-identifier">options</span>)
+      <span class="ruby-identifier">cursor</span> = <span class="ruby-string">&quot;0&quot;</span>
+      <span class="ruby-comment"># Fetch keys in batches using SCAN to avoid blocking the Redis server.</span>
+      <span class="ruby-identifier">nodes</span> = <span class="ruby-identifier">c</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:nodes</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">c</span>.<span class="ruby-identifier">nodes</span> <span class="ruby-operator">:</span> [<span class="ruby-identifier">c</span>]
+
+      <span class="ruby-identifier">nodes</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">node</span><span class="ruby-operator">|</span>
+        <span class="ruby-keyword">begin</span>
+          <span class="ruby-identifier">cursor</span>, <span class="ruby-identifier">keys</span> = <span class="ruby-identifier">node</span>.<span class="ruby-identifier">scan</span>(<span class="ruby-identifier">cursor</span>, <span class="ruby-value">match:</span> <span class="ruby-identifier">pattern</span>, <span class="ruby-value">count:</span> <span class="ruby-constant">SCAN_BATCH_SIZE</span>)
+          <span class="ruby-identifier">node</span>.<span class="ruby-identifier">del</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">keys</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">keys</span>.<span class="ruby-identifier">empty?</span>
+        <span class="ruby-keyword">end</span> <span class="ruby-keyword">until</span> <span class="ruby-identifier">cursor</span> <span class="ruby-operator">==</span> <span class="ruby-string">&quot;0&quot;</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-increment">
+            
+              increment(name, amount = 1, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><a href="../Cache.html"><code>Cache</code></a> <a href="Store.html"><code>Store</code></a> API implementation.</p>
+
+<p>Increment a cached value. This method uses the Redis incr atomic operator and can only be used on values written with the <code>:raw</code> option. Calling it on a value not stored with <code>:raw</code> will initialize that value to zero.</p>
+
+<p>Failsafe: Raises errors.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-increment_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 239</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">increment</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">amount</span> = <span class="ruby-value">1</span>, <span class="ruby-identifier">options</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-identifier">instrument</span> <span class="ruby-value">:increment</span>, <span class="ruby-identifier">name</span>, <span class="ruby-value">amount:</span> <span class="ruby-identifier">amount</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">failsafe</span> <span class="ruby-value">:increment</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">options</span> = <span class="ruby-identifier">merged_options</span>(<span class="ruby-identifier">options</span>)
+      <span class="ruby-identifier">key</span> = <span class="ruby-identifier">normalize_key</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>)
+
+      <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">with</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">c</span><span class="ruby-operator">|</span>
+        <span class="ruby-identifier">c</span>.<span class="ruby-identifier">incrby</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">amount</span>).<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span>
+          <span class="ruby-identifier">write_key_expiry</span>(<span class="ruby-identifier">c</span>, <span class="ruby-identifier">key</span>, <span class="ruby-identifier">options</span>)
+        <span class="ruby-keyword">end</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-inspect">
+            
+              inspect()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-inspect_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 174</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">inspect</span>
+  <span class="ruby-identifier">instance</span> = <span class="ruby-ivar">@redis</span> <span class="ruby-operator">||</span> <span class="ruby-ivar">@redis_options</span>
+  <span class="ruby-node">&quot;#&lt;#{self.class} options=#{options.inspect} redis=#{instance.inspect}&gt;&quot;</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-read_multi">
+            
+              read_multi(*names)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><a href="../Cache.html"><code>Cache</code></a> <a href="Store.html"><code>Store</code></a> API implementation.</p>
+
+<p>Read multiple values at once. Returns a hash of requested keys -&gt; fetched values.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-read_multi_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 183</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">read_multi</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">mget_capable?</span>
+    <span class="ruby-identifier">instrument</span>(<span class="ruby-value">:read_multi</span>, <span class="ruby-identifier">names</span>, <span class="ruby-identifier">options</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">payload</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">read_multi_mget</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>).<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">results</span><span class="ruby-operator">|</span>
+        <span class="ruby-identifier">payload</span>[<span class="ruby-value">:hits</span>] = <span class="ruby-identifier">results</span>.<span class="ruby-identifier">keys</span>
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-keyword">super</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-redis">
+            
+              redis()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-redis_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 161</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">redis</span>
+  <span class="ruby-ivar">@redis</span> <span class="ruby-operator">||=</span> <span class="ruby-keyword">begin</span>
+    <span class="ruby-identifier">pool_options</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:retrieve_pool_options</span>, <span class="ruby-identifier">redis_options</span>)
+
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">pool_options</span>.<span class="ruby-identifier">any?</span>
+      <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:ensure_connection_pool_added!</span>)
+      <span class="ruby-operator">::</span><span class="ruby-constant">ConnectionPool</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">pool_options</span>) { <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">build_redis</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">redis_options</span>) }
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">build_redis</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">redis_options</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-stats">
+            
+              stats()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Get info from redis servers.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-stats_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 300</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">stats</span>
+  <span class="ruby-identifier">redis</span>.<span class="ruby-identifier">with</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">c</span><span class="ruby-operator">|</span> <span class="ruby-identifier">c</span>.<span class="ruby-identifier">info</span> }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
