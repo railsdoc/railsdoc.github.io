@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.0.8</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -29,27 +29,31 @@ layout: default
   
     <div class="description">
       
-<p><code>ParameterFilter</code> allows you to specify keys for sensitive data from hash-like object and replace corresponding value. Filtering only certain sub-keys from a hash is possible by using the dot notation: &#39;credit_card.number&#39;. If a proc is given, each key and value of a hash and all sub-hashes are passed to it, where the value or the key can be replaced using String#replace or similar methods.</p>
+<p><code>ParameterFilter</code> replaces values in a <code>Hash</code>-like object if their keys match one of the specified filters.</p>
 
-<pre><code>ActiveSupport::ParameterFilter.new([:password])
-=&gt; replaces the value to all keys matching /password/i with &quot;[FILTERED]&quot;
+<p>Matching based on nested keys is possible by using dot notation, e.g. <code>&quot;credit_card.number&quot;</code>.</p>
 
+<p>If a proc is given as a filter, each key and value of the <code>Hash</code>-like and of any nested <code>Hash</code>es will be passed to it. The value or key can then be mutated as desired using methods such as <code>String#replace</code>.</p>
+
+<pre><code># Replaces values with &quot;[FILTERED]&quot; for keys that match /password/i.
+ActiveSupport::ParameterFilter.new([:password])
+
+# Replaces values with &quot;[FILTERED]&quot; for keys that match /foo|bar/i.
 ActiveSupport::ParameterFilter.new([:foo, &quot;bar&quot;])
-=&gt; replaces the value to all keys matching /foo|bar/i with &quot;[FILTERED]&quot;
 
-ActiveSupport::ParameterFilter.new([/\Apin\z/i, /\Apin_/i])
-=&gt; replaces the value for the exact (case-insensitive) key &#39;pin&#39; and all
-(case-insensitive) keys beginning with &#39;pin_&#39;, with &quot;[FILTERED]&quot;.
-Does not match keys with &#39;pin&#39; as a substring, such as &#39;shipping_id&#39;.
+# Replaces values for the exact key &quot;pin&quot; and for keys that begin with
+# &quot;pin_&quot;. Does not match keys that otherwise include &quot;pin&quot; as a
+# substring, such as &quot;shipping_id&quot;.
+ActiveSupport::ParameterFilter.new([/\Apin\z/, /\Apin_/])
 
+# Replaces the value for :code in `{ credit_card: { code: &quot;xxxx&quot; } }`.
+# Does not change `{ file: { code: &quot;xxxx&quot; } }`.
 ActiveSupport::ParameterFilter.new([&quot;credit_card.code&quot;])
-=&gt; replaces { credit_card: {code: &quot;xxxx&quot;} } with &quot;[FILTERED]&quot;, does not
-change { file: { code: &quot;xxxx&quot;} }
 
+# Reverses values for keys that match /secret/i.
 ActiveSupport::ParameterFilter.new([-&gt; (k, v) do
   v.reverse! if /secret/i.match?(k)
 end])
-=&gt; reverses the value to all keys matching /secret/i
 </code></pre>
 
     </div>
@@ -128,7 +132,7 @@ end])
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/parameter_filter.rb, line 42</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/parameter_filter.rb, line 46</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">filters</span> = [], <span class="ruby-value">mask:</span> <span class="ruby-constant">FILTERED</span>)
   <span class="ruby-ivar">@filters</span> = <span class="ruby-identifier">filters</span>
   <span class="ruby-ivar">@mask</span> = <span class="ruby-identifier">mask</span>
@@ -168,7 +172,7 @@ end])
                 
               </p>
               <div id="method-i-filter_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/parameter_filter.rb, line 48</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/parameter_filter.rb, line 52</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">filter</span>(<span class="ruby-identifier">params</span>)
   <span class="ruby-identifier">compiled_filter</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">params</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -203,7 +207,7 @@ end])
                 
               </p>
               <div id="method-i-filter_param_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/parameter_filter.rb, line 53</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/parameter_filter.rb, line 57</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">filter_param</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">value</span>)
   <span class="ruby-ivar">@filters</span>.<span class="ruby-identifier">empty?</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">value</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">compiled_filter</span>.<span class="ruby-identifier">value_for_key</span>(<span class="ruby-identifier">key</span>, <span class="ruby-identifier">value</span>)
 <span class="ruby-keyword">end</span></code></pre>

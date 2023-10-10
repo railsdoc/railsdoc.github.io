@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.0.8</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -664,7 +664,11 @@ Rails.application.config_for(:example)[:foo][:bar]
 
           
             <div class="description">
-              <p>Decrypts the credentials hash as kept in <code>config/credentials.yml.enc</code>. This file is encrypted with the <a href="Rails.html"><code>Rails</code></a> master key, which is either taken from <code>ENV[&quot;RAILS_MASTER_KEY&quot;]</code> or from loading <code>config/master.key</code>. If specific credentials file exists for current environment, it takes precedence, thus for <code>production</code> environment look first for <code>config/credentials/production.yml.enc</code> with master key taken from <code>ENV[&quot;RAILS_MASTER_KEY&quot;]</code> or from loading <code>config/credentials/production.key</code>. Default behavior can be overwritten by setting <code>config.credentials.content_path</code> and <code>config.credentials.key_path</code>.</p>
+              <p>Returns an <a href="../ActiveSupport/EncryptedConfiguration.html"><code>ActiveSupport::EncryptedConfiguration</code></a> instance for the credentials file specified by <code>config.credentials.content_path</code>.</p>
+
+<p>By default, <code>config.credentials.content_path</code> will point to either <code>config/credentials/#{environment}.yml.enc</code> for the current environment (for example, <code>config/credentials/production.yml.enc</code> for the <code>production</code> environment), or <code>config/credentials.yml.enc</code> if that file does not exist.</p>
+
+<p>The encryption key is taken from either <code>ENV[&quot;RAILS_MASTER_KEY&quot;]</code>, or from the file specified by <code>config.credentials.key_path</code>. By default, <code>config.credentials.key_path</code> will point to either <code>config/credentials/#{environment}.key</code> for the current environment, or <code>config/master.key</code> if that file does not exist.</p>
             </div>
           
 
@@ -681,7 +685,7 @@ Rails.application.config_for(:example)[:foo][:bar]
                 
               </p>
               <div id="method-i-credentials_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 432</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 439</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">credentials</span>
   <span class="ruby-ivar">@credentials</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">encrypted</span>(<span class="ruby-identifier">config</span>.<span class="ruby-identifier">credentials</span>.<span class="ruby-identifier">content_path</span>, <span class="ruby-value">key_path:</span> <span class="ruby-identifier">config</span>.<span class="ruby-identifier">credentials</span>.<span class="ruby-identifier">key_path</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -716,7 +720,7 @@ Rails.application.config_for(:example)[:foo][:bar]
                 
               </p>
               <div id="method-i-eager_load-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 497</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 492</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">eager_load!</span>
   <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">autoloaders</span>.<span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:eager_load</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -734,35 +738,18 @@ Rails.application.config_for(:example)[:foo][:bar]
 
           
             <div class="description">
-              <p>Shorthand to decrypt any encrypted configurations or files.</p>
+              <p>Returns an <a href="../ActiveSupport/EncryptedConfiguration.html"><code>ActiveSupport::EncryptedConfiguration</code></a> instance for an encrypted file. By default, the encryption key is taken from either <code>ENV[&quot;RAILS_MASTER_KEY&quot;]</code>, or from the <code>config/master.key</code> file.</p>
 
-<p>For any file added with <code>rails encrypted:edit</code> call <code>read</code> to decrypt the file with the master key. The master key is either stored in <code>config/master.key</code> or <code>ENV[&quot;RAILS_MASTER_KEY&quot;]</code>.</p>
+<pre><code>my_config = Rails.application.encrypted(&quot;config/my_config.enc&quot;)
 
-<pre><code>Rails.application.encrypted(&quot;config/mystery_man.txt.enc&quot;).read
-# =&gt; &quot;We&#39;ve met before, haven&#39;t we?&quot;
+my_config.read
+# =&gt; &quot;foo:\n  bar: 123\n&quot;
+
+my_config.foo.bar
+# =&gt; 123
 </code></pre>
 
-<p>It&#39;s also possible to interpret encrypted YAML files with <code>config</code>.</p>
-
-<pre><code>Rails.application.encrypted(&quot;config/credentials.yml.enc&quot;).config
-# =&gt; { next_guys_line: &quot;I don&#39;t think so. Where was it you think we met?&quot; }
-</code></pre>
-
-<p>Any top-level configs are also accessible directly on the return value:</p>
-
-<pre><code>Rails.application.encrypted(&quot;config/credentials.yml.enc&quot;).next_guys_line
-# =&gt; &quot;I don&#39;t think so. Where was it you think we met?&quot;
-</code></pre>
-
-<p>The files or configs can also be encrypted with a custom key. To decrypt with a key in the <code>ENV</code>, use:</p>
-
-<pre><code>Rails.application.encrypted(&quot;config/special_tokens.yml.enc&quot;, env_key: &quot;SPECIAL_TOKENS&quot;)
-</code></pre>
-
-<p>Or to decrypt with a file, that should be version control ignored, relative to <code>Rails.root</code>:</p>
-
-<pre><code>Rails.application.encrypted(&quot;config/special_tokens.yml.enc&quot;, key_path: &quot;config/special_tokens.key&quot;)
-</code></pre>
+<p>Encrypted files can be edited with the <code>bin/rails encrypted:edit</code> command. (See the output of <code>bin/rails encrypted:edit --help</code> for more information.)</p>
             </div>
           
 
@@ -779,7 +766,7 @@ Rails.application.config_for(:example)[:foo][:bar]
                 
               </p>
               <div id="method-i-encrypted_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 463</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 458</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">encrypted</span>(<span class="ruby-identifier">path</span>, <span class="ruby-value">key_path:</span> <span class="ruby-string">&quot;config/master.key&quot;</span>, <span class="ruby-value">env_key:</span> <span class="ruby-string">&quot;RAILS_MASTER_KEY&quot;</span>)
   <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">EncryptedConfiguration</span>.<span class="ruby-identifier">new</span>(
     <span class="ruby-value">config_path:</span> <span class="ruby-constant">Rails</span>.<span class="ruby-identifier">root</span>.<span class="ruby-identifier">join</span>(<span class="ruby-identifier">path</span>),
@@ -1005,7 +992,7 @@ Rails.application.config_for(:example)[:foo][:bar]
 
           
             <div class="description">
-              <p>Returns the application&#39;s KeyGenerator</p>
+              <p>Returns the application’s KeyGenerator</p>
             </div>
           
 
@@ -1100,7 +1087,7 @@ Rails.application.message_verifier(&#39;sensitive_data&#39;).verify(message)
 
           
             <div class="description">
-              <p>If you try to define a set of Rake tasks on the instance, these will get passed up to the Rake tasks defined on the application&#39;s class.</p>
+              <p>If you try to define a set of Rake tasks on the instance, these will get passed up to the Rake tasks defined on the application’s class.</p>
             </div>
           
 
@@ -1205,7 +1192,7 @@ Rails.application.message_verifier(&#39;sensitive_data&#39;).verify(message)
 
           
             <div class="description">
-              <p>The <a href="Application.html#method-i-secret_key_base"><code>secret_key_base</code></a> is used as the input secret to the application&#39;s key generator, which in turn is used to create all <a href="../ActiveSupport/MessageVerifier.html"><code>ActiveSupport::MessageVerifier</code></a> and <a href="../ActiveSupport/MessageEncryptor.html"><code>ActiveSupport::MessageEncryptor</code></a> instances, including the ones that sign and encrypt cookies.</p>
+              <p>The <a href="Application.html#method-i-secret_key_base"><code>secret_key_base</code></a> is used as the input secret to the application’s key generator, which in turn is used to create all <a href="../ActiveSupport/MessageVerifier.html"><code>ActiveSupport::MessageVerifier</code></a> and <a href="../ActiveSupport/MessageEncryptor.html"><code>ActiveSupport::MessageEncryptor</code></a> instances, including the ones that sign and encrypt cookies.</p>
 
 <p>In development and test, this is randomly generated and stored in a temporary file in <code>tmp/development_secret.txt</code>.</p>
 
@@ -1350,7 +1337,7 @@ Rails.application.message_verifier(&#39;sensitive_data&#39;).verify(message)
                 
               </p>
               <div id="method-i-validate_secret_key_base_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 575</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File railties/lib/rails/application.rb, line 570</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">validate_secret_key_base</span>(<span class="ruby-identifier">secret_key_base</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">secret_key_base</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">String</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">secret_key_base</span>.<span class="ruby-identifier">present?</span>
     <span class="ruby-identifier">secret_key_base</span>

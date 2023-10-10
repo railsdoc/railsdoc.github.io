@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.4</span><br />
+            <span>Ruby on Rails 7.0.8</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -48,7 +48,7 @@ layout: default
     <ul>
       
         <li>
-          <a href="#method-i-render_to_body">render_to_body</a>
+          <a href="#method-i-render">render</a>
         </li>
       
         <li>
@@ -93,15 +93,125 @@ layout: default
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
         <div class="method">
-          <h3 id="method-i-render_to_body">
+          <h3 id="method-i-render">
             
-              render_to_body(options = {})
+              render(*args)
             
           </h3>
 
           
             <div class="description">
-              
+              <p>Renders a template and assigns the result to <code>self.response_body</code>.</p>
+
+<p>If no rendering mode option is specified, the template will be derived from the first argument.</p>
+
+<pre><code>render &quot;posts/show&quot;
+# =&gt; renders app/views/posts/show.html.erb
+
+# In a PostsController action...
+render :show
+# =&gt; renders app/views/posts/show.html.erb
+</code></pre>
+
+<p>If the first argument responds to <code>render_in</code>, the template will be rendered by calling <code>render_in</code> with the current view context.</p>
+
+<h4 id="method-i-render-label-Rendering+Mode">Rendering Mode</h4>
+<dl class="rdoc-list label-list"><dt><code>:partial</code>
+<dd>
+<p>See <a href="../ActionView/PartialRenderer.html"><code>ActionView::PartialRenderer</code></a> for details.</p>
+
+<pre><code>render partial: &quot;posts/form&quot;, locals: { post: Post.new }
+# =&gt; renders app/views/posts/_form.html.erb
+</code></pre>
+</dd><dt><code>:file</code>
+<dd>
+<p>Renders the contents of a file. This option should <strong>not</strong> be used with unsanitized user input.</p>
+
+<pre><code>render file: &quot;/path/to/some/file&quot;
+# =&gt; renders /path/to/some/file
+</code></pre>
+</dd><dt><code>:inline</code>
+<dd>
+<p>Renders an <a href="../ERB.html"><code>ERB</code></a> template string.</p>
+
+<pre><code>@name = &quot;World&quot;
+render inline: &quot;&lt;h1&gt;Hello, &lt;%= @name %&gt;!&lt;/h1&gt;&quot;
+# =&gt; renders &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;
+</code></pre>
+</dd><dt><code>:body</code>
+<dd>
+<p>Renders the provided text, and sets the content type as <code>text/plain</code>.</p>
+
+<pre><code>render body: &quot;Hello, World!&quot;
+# =&gt; renders &quot;Hello, World!&quot;
+</code></pre>
+</dd><dt><code>:plain</code>
+<dd>
+<p>Renders the provided text, and sets the content type as <code>text/plain</code>.</p>
+
+<pre><code>render plain: &quot;Hello, World!&quot;
+# =&gt; renders &quot;Hello, World!&quot;
+</code></pre>
+</dd><dt><code>:html</code>
+<dd>
+<p>Renders the provided HTML string, and sets the content type as <code>text/html</code>. If the string is not <code>html_safe?</code>, performs HTML escaping on the string before rendering.</p>
+
+<pre><code>render html: &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;.html_safe
+# =&gt; renders &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;
+
+render html: &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;
+# =&gt; renders &quot;&amp;lt;h1&amp;gt;Hello, World!&amp;lt;/h1&amp;gt;&quot;
+</code></pre>
+</dd><dt><code>:json</code>
+<dd>
+<p>Renders the provided object as JSON, and sets the content type as <code>application/json</code>. If the object is not a string, it will be converted to JSON by calling <code>to_json</code>.</p>
+
+<pre><code>render json: { hello: &quot;world&quot; }
+# =&gt; renders &quot;{\&quot;hello\&quot;:\&quot;world\&quot;}&quot;
+</code></pre>
+</dd></dl>
+
+<p>By default, when a rendering mode is specified, no layout template is rendered.</p>
+
+<h4 id="method-i-render-label-Options">Options</h4>
+<dl class="rdoc-list label-list"><dt><code>:assigns</code>
+<dd>
+<p><a href="../Hash.html"><code>Hash</code></a> of instance variable assignments for the template.</p>
+
+<pre><code>render inline: &quot;&lt;h1&gt;Hello, &lt;%= @name %&gt;!&lt;/h1&gt;&quot;, assigns: { name: &quot;World&quot; }
+# =&gt; renders &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;
+</code></pre>
+</dd><dt><code>:locals</code>
+<dd>
+<p><a href="../Hash.html"><code>Hash</code></a> of local variable assignments for the template.</p>
+
+<pre><code>render inline: &quot;&lt;h1&gt;Hello, &lt;%= name %&gt;!&lt;/h1&gt;&quot;, locals: { name: &quot;World&quot; }
+# =&gt; renders &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;
+</code></pre>
+</dd><dt><code>:layout</code>
+<dd>
+<p>The layout template to render. Can also be <code>false</code> or <code>true</code> to disable or (re)enable the default layout template.</p>
+
+<pre><code>render &quot;posts/show&quot;, layout: &quot;holiday&quot;
+# =&gt; renders app/views/posts/show.html.erb with the app/views/layouts/holiday.html.erb layout
+
+render &quot;posts/show&quot;, layout: false
+# =&gt; renders app/views/posts/show.html.erb with no layout
+
+render inline: &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;, layout: true
+# =&gt; renders &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot; with the default layout
+</code></pre>
+</dd><dt><code>:status</code>
+<dd>
+<p>The HTTP status code to send with the response. Can be specified as a number or as the status name in <a href="../Symbol.html"><code>Symbol</code></a> form. Defaults to 200.</p>
+
+<pre><code>render &quot;posts/new&quot;, status: 422
+# =&gt; renders app/views/posts/new.html.erb with HTTP status code 422
+
+render &quot;posts/new&quot;, status: :unprocessable_entity
+# =&gt; renders app/views/posts/new.html.erb with HTTP status code 422
+</code></pre>
+</dd></dl>
             </div>
           
 
@@ -117,10 +227,11 @@ layout: default
                 Source:
                 
               </p>
-              <div id="method-i-render_to_body_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/rendering.rb, line 45</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">render_to_body</span>(<span class="ruby-identifier">options</span> = {})
-  <span class="ruby-keyword">super</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">_render_in_priorities</span>(<span class="ruby-identifier">options</span>) <span class="ruby-operator">||</span> <span class="ruby-string">&quot; &quot;</span>
+              <div id="method-i-render_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/rendering.rb, line 137</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">render</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>)
+  <span class="ruby-identifier">raise</span> <span class="ruby-operator">::</span><span class="ruby-constant">AbstractController</span><span class="ruby-operator">::</span><span class="ruby-constant">DoubleRenderError</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">response_body</span>
+  <span class="ruby-keyword">super</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -136,7 +247,7 @@ layout: default
 
           
             <div class="description">
-              <p>Override <a href="Rendering.html#method-i-render_to_string"><code>render_to_string</code></a> because body can now be set to a Rack body.</p>
+              <p>Similar to <a href="Rendering.html#method-i-render"><code>render</code></a>, but only returns the rendered template as a string, instead of setting <code>self.response_body</code>.</p>
             </div>
           
 
@@ -153,7 +264,7 @@ layout: default
                 
               </p>
               <div id="method-i-render_to_string_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/rendering.rb, line 34</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/rendering.rb, line 146</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">render_to_string</span>(<span class="ruby-operator">*</span>)
   <span class="ruby-identifier">result</span> = <span class="ruby-keyword">super</span>
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">result</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:each</span>)
