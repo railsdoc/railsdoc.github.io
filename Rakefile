@@ -73,7 +73,7 @@ def generate_src(target_version: nil)
 
     # Replace absolute path in navigation.html
     content = File.read('navigation.html')
-    content.gsub!('<a href=\"/', "<a href=\"/#{target_version}/")
+    content.gsub!('<a href="/', "<a href=\"/#{target_version}/")
     File.write('navigation.html', content)
   end
 end
