@@ -46,10 +46,9 @@ end
 def generate_rails_rdoc
   cd 'rails' do
     Bundler.with_unbundled_env do
-      # TODO: use `BUNDLE_ONLY`(require bundler 2.3.19+).
-      ENV['BUNDLE_WITHOUT'] = %w[db job storage cable ujs test rubocop view].join(':')
+      ENV['BUNDLE_WITHOUT'] = %w[db view job storage cable ujs test rubocop lint mdl].join(':')
 
-      # replace sdoc gem
+      # Replace sdoc gem with my forked one
       gemfile = File.read('Gemfile')
       gemfile.gsub!(/"sdoc".*$/, '"sdoc", github: "toshimaru/sdoc", branch: "railsdoc"')
       File.write('Gemfile', gemfile)
