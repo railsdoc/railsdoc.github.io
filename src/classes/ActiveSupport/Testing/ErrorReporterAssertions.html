@@ -1,0 +1,195 @@
+---
+title: ActiveSupport::Testing::ErrorReporterAssertions
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.0</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Testing::ErrorReporterAssertions
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/testing/error_reporter_assertions_rb.html">activesupport/lib/active_support/testing/error_reporter_assertions.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="ErrorReporterAssertions/ErrorCollector.html">ActiveSupport::Testing::ErrorReporterAssertions::ErrorCollector</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-assert_error_reported">assert_error_reported</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_no_error_reported">assert_no_error_reported</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-assert_error_reported">
+            
+              assert_error_reported(error_class = StandardError, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Assertion that the block should cause at least one exception to be reported to <code>Rails.error</code>.</p>
+
+<p>Passes if the evaluated code in the yielded block reports a matching exception.</p>
+
+<pre><code>assert_error_reported(IOError) do
+  Rails.error.report(IOError.new(&quot;Oops&quot;))
+end
+</code></pre>
+
+<p>To test further details about the reported exception, you can use the return value.</p>
+
+<pre><code>report = assert_error_reported(IOError) do
+  # ...
+end
+assert_equal &quot;Oops&quot;, report.error.message
+assert_equal &quot;admin&quot;, report.context[:section]
+assert_equal :warning, report.severity
+assert_predicate report, :handled?
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-assert_error_reported_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/error_reporter_assertions.rb, line 88</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_error_reported</span>(<span class="ruby-identifier">error_class</span> = <span class="ruby-constant">StandardError</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">reports</span> = <span class="ruby-constant">ErrorCollector</span>.<span class="ruby-identifier">record</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">_assert_nothing_raised_or_warn</span>(<span class="ruby-string">&quot;assert_error_reported&quot;</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">reports</span>.<span class="ruby-identifier">empty?</span>
+    <span class="ruby-identifier">assert</span>(<span class="ruby-keyword">false</span>, <span class="ruby-node">&quot;Expected a #{error_class.name} to be reported, but there were no errors reported.&quot;</span>)
+  <span class="ruby-keyword">elsif</span> (<span class="ruby-identifier">report</span> = <span class="ruby-identifier">reports</span>.<span class="ruby-identifier">find</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">r</span><span class="ruby-operator">|</span> <span class="ruby-identifier">error_class</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">r</span>.<span class="ruby-identifier">error</span> })
+    <span class="ruby-keyword">self</span>.<span class="ruby-identifier">assertions</span> <span class="ruby-operator">+=</span> <span class="ruby-value">1</span>
+    <span class="ruby-identifier">report</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">message</span> = <span class="ruby-node">&quot;Expected a #{error_class.name} to be reported, but none of the &quot;</span> \
+      <span class="ruby-node">&quot;#{reports.size} reported errors matched:  \n&quot;</span> \
+      <span class="ruby-node">&quot;#{reports.map { |r| r.error.class.name }.join(&quot;\n  &quot;)}&quot;</span>
+    <span class="ruby-identifier">assert</span>(<span class="ruby-keyword">false</span>, <span class="ruby-identifier">message</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_no_error_reported">
+            
+              assert_no_error_reported(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Assertion that the block should not cause an exception to be reported to <code>Rails.error</code>.</p>
+
+<p>Passes if evaluated code in the yielded block reports no exception.</p>
+
+<pre><code>assert_no_error_reported do
+  perform_service(param: &#39;no_exception&#39;)
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-assert_no_error_reported_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/error_reporter_assertions.rb, line 62</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_no_error_reported</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">reports</span> = <span class="ruby-constant">ErrorCollector</span>.<span class="ruby-identifier">record</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">_assert_nothing_raised_or_warn</span>(<span class="ruby-string">&quot;assert_no_error_reported&quot;</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">end</span>
+  <span class="ruby-identifier">assert_predicate</span>(<span class="ruby-identifier">reports</span>, <span class="ruby-value">:empty?</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

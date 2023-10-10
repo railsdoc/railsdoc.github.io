@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -98,7 +98,7 @@ end
 
 <p>If you need to add verification to the beginning of the callback chain, use <code>prepend: true</code>.</p>
 </li><li>
-<p><code>:with</code> - Set the method to handle unverified request.</p>
+<p><code>:with</code> - Set the method to handle unverified request. Note if <code>default_protect_from_forgery</code> is true, <a href="../../Rails.html"><code>Rails</code></a> call <a href="ClassMethods.html#method-i-protect_from_forgery"><code>protect_from_forgery</code></a> with <code>with :exception</code>.</p>
 </li></ul>
 
 <p>Built-in unverified request handling methods are:</p>
@@ -118,12 +118,43 @@ end
   end
 
   def handle_unverified_request
-    # Custom behaviour for unverfied request
+    # Custom behavior for unverfied request
   end
 end
 
-class ApplicationController &lt; ActionController:x:Base
+class ApplicationController &lt; ActionController::Base
   protect_from_forgery with: CustomStrategy
+end
+</code></pre>
+<ul><li>
+<p><code>:store</code> - Set the strategy to store and retrieve CSRF tokens.</p>
+</li></ul>
+
+<p>Built-in session token strategies are:</p>
+<ul><li>
+<p><code>:session</code> - Store the CSRF token in the session.  Used as default if <code>:store</code> option is not specified.</p>
+</li><li>
+<p><code>:cookie</code> - Store the CSRF token in an encrypted cookie.</p>
+</li></ul>
+
+<p>You can also implement custom strategy classes for CSRF token storage:</p>
+
+<pre><code>class CustomStore
+  def fetch(request)
+    # Return the token from a custom location
+  end
+
+  def store(request, csrf_token)
+    # Store the token in a custom location
+  end
+
+  def reset(request)
+    # Delete the stored session token
+  end
+end
+
+class ApplicationController &lt; ActionController::Base
+  protect_from_forgery store: CustomStore.new
 end
 </code></pre>
             </div>
@@ -142,12 +173,15 @@ end
                 
               </p>
               <div id="method-i-protect_from_forgery_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/request_forgery_protection.rb, line 158</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/request_forgery_protection.rb, line 179</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">protect_from_forgery</span>(<span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">options</span> = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">reverse_merge</span>(<span class="ruby-value">prepend:</span> <span class="ruby-keyword">false</span>)
 
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">forgery_protection_strategy</span> = <span class="ruby-identifier">protection_method_class</span>(<span class="ruby-identifier">options</span>[<span class="ruby-value">:with</span>] <span class="ruby-operator">||</span> <span class="ruby-value">:null_session</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">request_forgery_protection_token</span> <span class="ruby-operator">||=</span> <span class="ruby-value">:authenticity_token</span>
+
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">csrf_token_storage_strategy</span> = <span class="ruby-identifier">storage_strategy</span>(<span class="ruby-identifier">options</span>[<span class="ruby-value">:store</span>] <span class="ruby-operator">||</span> <span class="ruby-constant">SessionStore</span>.<span class="ruby-identifier">new</span>)
+
   <span class="ruby-identifier">before_action</span> <span class="ruby-value">:verify_authenticity_token</span>, <span class="ruby-identifier">options</span>
   <span class="ruby-identifier">append_after_action</span> <span class="ruby-value">:verify_same_origin_request</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -187,7 +221,7 @@ end
                 
               </p>
               <div id="method-i-skip_forgery_protection_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/request_forgery_protection.rb, line 172</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/request_forgery_protection.rb, line 196</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">skip_forgery_protection</span>(<span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">skip_before_action</span> <span class="ruby-value">:verify_authenticity_token</span>, <span class="ruby-identifier">options</span>.<span class="ruby-identifier">reverse_merge</span>(<span class="ruby-value">raise:</span> <span class="ruby-keyword">false</span>)
 <span class="ruby-keyword">end</span></code></pre>

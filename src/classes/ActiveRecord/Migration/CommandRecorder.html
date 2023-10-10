@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -29,6 +29,8 @@ layout: default
   
     <div class="description">
       
+<h1 id="class-ActiveRecord::Migration::CommandRecorder-label-Migration+Command+Recorder">Migration Command Recorder</h1>
+
 <p><code>ActiveRecord::Migration::CommandRecorder</code> records commands done during a migration and knows how to reverse those commands. The <a href="CommandRecorder.html"><code>CommandRecorder</code></a> knows how to invert the following commands:</p>
 <ul><li>
 <p>add_column</p>
@@ -36,6 +38,10 @@ layout: default
 <p>add_foreign_key</p>
 </li><li>
 <p>add_check_constraint</p>
+</li><li>
+<p>add_exclusion_constraint</p>
+</li><li>
+<p>add_unique_constraint</p>
 </li><li>
 <p>add_index</p>
 </li><li>
@@ -51,11 +57,15 @@ layout: default
 </li><li>
 <p>change_table_comment (must supply a <code>:from</code> and <code>:to</code> option)</p>
 </li><li>
+<p>create_enum</p>
+</li><li>
 <p>create_join_table</p>
 </li><li>
 <p>create_table</p>
 </li><li>
 <p>disable_extension</p>
+</li><li>
+<p>drop_enum (must supply a list of values)</p>
 </li><li>
 <p>drop_join_table</p>
 </li><li>
@@ -71,6 +81,10 @@ layout: default
 </li><li>
 <p>remove_check_constraint</p>
 </li><li>
+<p>remove_exclusion_constraint</p>
+</li><li>
+<p>remove_unique_constraint</p>
+</li><li>
 <p>remove_index</p>
 </li><li>
 <p>remove_reference</p>
@@ -78,6 +92,10 @@ layout: default
 <p>remove_timestamps</p>
 </li><li>
 <p>rename_column</p>
+</li><li>
+<p>rename_enum (must supply a <code>:to</code> option)</p>
+</li><li>
+<p>rename_enum_value (must supply a <code>:from</code> and <code>:to</code> option)</p>
 </li><li>
 <p>rename_index</p>
 </li><li>
@@ -145,7 +163,10 @@ layout: default
 :change_column, :execute, :remove_columns, :change_column_null,
 :add_foreign_key, :remove_foreign_key,
 :change_column_comment, :change_table_comment,
-:add_check_constraint, :remove_check_constraint
+:add_check_constraint, :remove_check_constraint,
+:add_exclusion_constraint, :remove_exclusion_constraint,
+:add_unique_constraint, :remove_unique_constraint,
+:create_enum, :drop_enum, :rename_enum, :add_enum_value, :rename_enum_value,
 ]</td>
           </tr>
           
@@ -220,7 +241,7 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration/command_recorder.rb, line 50</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration/command_recorder.rb, line 63</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">delegate</span> = <span class="ruby-keyword">nil</span>)
   <span class="ruby-ivar">@commands</span> = []
   <span class="ruby-ivar">@delegate</span> = <span class="ruby-identifier">delegate</span>
@@ -273,7 +294,7 @@ layout: default
                 
               </p>
               <div id="method-i-inverse_of_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration/command_recorder.rb, line 97</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration/command_recorder.rb, line 110</span>
       <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">inverse_of</span>(<span class="ruby-identifier">command</span>, <span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
         <span class="ruby-identifier">method</span> = <span class="ruby-value">:&quot;invert_#{command}&quot;</span>
         <span class="ruby-identifier">raise</span> <span class="ruby-constant">IrreversibleMigration</span>, <span class="ruby-identifier">&lt;&lt;~MSG</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">respond_to?</span>(<span class="ruby-identifier">method</span>, <span class="ruby-keyword">true</span>)
@@ -318,7 +339,7 @@ layout: default
                 
               </p>
               <div id="method-i-record_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration/command_recorder.rb, line 77</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration/command_recorder.rb, line 90</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">record</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">command</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-ivar">@reverting</span>
     <span class="ruby-ivar">@commands</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">inverse_of</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">command</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
@@ -357,7 +378,7 @@ layout: default
                 
               </p>
               <div id="method-i-replay_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration/command_recorder.rb, line 123</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration/command_recorder.rb, line 144</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">replay</span>(<span class="ruby-identifier">migration</span>)
   <span class="ruby-identifier">commands</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">cmd</span>, <span class="ruby-identifier">args</span>, <span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">migration</span>.<span class="ruby-identifier">send</span>(<span class="ruby-identifier">cmd</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
@@ -398,7 +419,7 @@ layout: default
                 
               </p>
               <div id="method-i-revert_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration/command_recorder.rb, line 63</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/migration/command_recorder.rb, line 76</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">revert</span>
   <span class="ruby-ivar">@reverting</span> = <span class="ruby-operator">!</span><span class="ruby-ivar">@reverting</span>
   <span class="ruby-identifier">previous</span> = <span class="ruby-ivar">@commands</span>

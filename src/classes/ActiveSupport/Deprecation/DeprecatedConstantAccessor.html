@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -25,7 +25,7 @@ layout: default
       
 <p><a href="DeprecatedConstantAccessor.html"><code>DeprecatedConstantAccessor</code></a> transforms a constant into a deprecated one by hooking <code>const_missing</code>.</p>
 
-<p>It takes the names of an old (deprecated) constant and of a new constant (both in string form) and optionally a deprecator. The deprecator defaults to <code>ActiveSupport::Deprecator</code> if none is specified.</p>
+<p>It takes the names of an old (deprecated) constant and of a new constant (both in string form) and a deprecator.</p>
 
 <p>The deprecated constant now returns the same object as the new one rather than a proxy object, so it can be used transparently in <code>rescue</code> blocks etc.</p>
 
@@ -35,7 +35,7 @@ layout: default
 
 PLANETS_POST_2006 = %w(mercury venus earth mars jupiter saturn uranus neptune)
 include ActiveSupport::Deprecation::DeprecatedConstantAccessor
-deprecate_constant &#39;PLANETS&#39;, &#39;PLANETS_POST_2006&#39;
+deprecate_constant &#39;PLANETS&#39;, &#39;PLANETS_POST_2006&#39;, deprecator: ActiveSupport::Deprecation.new
 
 PLANETS.map { |planet| planet.capitalize }
 # =&gt; DEPRECATION WARNING: PLANETS is deprecated! Use PLANETS_POST_2006 instead.
@@ -114,7 +114,7 @@ PLANETS.map { |planet| planet.capitalize }
                 
               </p>
               <div id="method-c-included_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 29</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 28</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">included</span>(<span class="ruby-identifier">base</span>)
   <span class="ruby-identifier">require</span> <span class="ruby-string">&quot;active_support/inflector/methods&quot;</span>
 
@@ -129,7 +129,9 @@ PLANETS.map { |planet| planet.capitalize }
       <span class="ruby-keyword">super</span>
     <span class="ruby-keyword">end</span>
 
-    <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deprecate_constant</span>(<span class="ruby-identifier">const_name</span>, <span class="ruby-identifier">new_constant</span>, <span class="ruby-value">message:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">deprecator:</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">instance</span>)
+    <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deprecate_constant</span>(<span class="ruby-identifier">const_name</span>, <span class="ruby-identifier">new_constant</span>, <span class="ruby-value">message:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">deprecator:</span> <span class="ruby-keyword">nil</span>)
+      <span class="ruby-constant">ActiveSupport</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-string">&quot;DeprecatedConstantAccessor.deprecate_constant without a deprecator is deprecated&quot;</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">deprecator</span>
+      <span class="ruby-identifier">deprecator</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">_instance</span>
       <span class="ruby-identifier">class_variable_set</span>(<span class="ruby-value">:@@_deprecated_constants</span>, {}) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">class_variable_defined?</span>(<span class="ruby-value">:@@_deprecated_constants</span>)
       <span class="ruby-identifier">class_variable_get</span>(<span class="ruby-value">:@@_deprecated_constants</span>)[<span class="ruby-identifier">const_name</span>.<span class="ruby-identifier">to_s</span>] = { <span class="ruby-value">new:</span> <span class="ruby-identifier">new_constant</span>, <span class="ruby-value">message:</span> <span class="ruby-identifier">message</span>, <span class="ruby-value">deprecator:</span> <span class="ruby-identifier">deprecator</span> }
     <span class="ruby-keyword">end</span>
@@ -171,7 +173,7 @@ PLANETS.map { |planet| planet.capitalize }
                 
               </p>
               <div id="method-i-const_missing_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 33</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 32</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">const_missing</span>(<span class="ruby-identifier">missing_const_name</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">class_variable_defined?</span>(<span class="ruby-value">:@@_deprecated_constants</span>)
     <span class="ruby-keyword">if</span> (<span class="ruby-identifier">replacement</span> = <span class="ruby-identifier">class_variable_get</span>(<span class="ruby-value">:@@_deprecated_constants</span>)[<span class="ruby-identifier">missing_const_name</span>.<span class="ruby-identifier">to_s</span>])
@@ -189,7 +191,7 @@ PLANETS.map { |planet| planet.capitalize }
         <div class="method">
           <h3 id="method-i-deprecate_constant">
             
-              deprecate_constant(const_name, new_constant, message: nil, deprecator: ActiveSupport::Deprecation.instance)
+              deprecate_constant(const_name, new_constant, message: nil, deprecator: nil)
             
           </h3>
 
@@ -212,8 +214,10 @@ PLANETS.map { |planet| planet.capitalize }
                 
               </p>
               <div id="method-i-deprecate_constant_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 43</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deprecate_constant</span>(<span class="ruby-identifier">const_name</span>, <span class="ruby-identifier">new_constant</span>, <span class="ruby-value">message:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">deprecator:</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">instance</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 42</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">deprecate_constant</span>(<span class="ruby-identifier">const_name</span>, <span class="ruby-identifier">new_constant</span>, <span class="ruby-value">message:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">deprecator:</span> <span class="ruby-keyword">nil</span>)
+  <span class="ruby-constant">ActiveSupport</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-string">&quot;DeprecatedConstantAccessor.deprecate_constant without a deprecator is deprecated&quot;</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">deprecator</span>
+  <span class="ruby-identifier">deprecator</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">_instance</span>
   <span class="ruby-identifier">class_variable_set</span>(<span class="ruby-value">:@@_deprecated_constants</span>, {}) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">class_variable_defined?</span>(<span class="ruby-value">:@@_deprecated_constants</span>)
   <span class="ruby-identifier">class_variable_get</span>(<span class="ruby-value">:@@_deprecated_constants</span>)[<span class="ruby-identifier">const_name</span>.<span class="ruby-identifier">to_s</span>] = { <span class="ruby-value">new:</span> <span class="ruby-identifier">new_constant</span>, <span class="ruby-value">message:</span> <span class="ruby-identifier">message</span>, <span class="ruby-value">deprecator:</span> <span class="ruby-identifier">deprecator</span> }
 <span class="ruby-keyword">end</span></code></pre>

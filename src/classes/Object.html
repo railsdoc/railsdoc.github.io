@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -19,8 +19,6 @@ layout: default
             
         </h1>
         <ul class="files">
-            
-            <li><a href="../files/activesupport/lib/active_support/core_ext/enumerable_rb.html">activesupport/lib/active_support/core_ext/enumerable.rb</a></li>
             
             <li><a href="../files/activesupport/lib/active_support/core_ext/object/acts_like_rb.html">activesupport/lib/active_support/core_ext/object/acts_like.rb</a></li>
             
@@ -40,6 +38,8 @@ layout: default
             
             <li><a href="../files/activesupport/lib/active_support/core_ext/object/try_rb.html">activesupport/lib/active_support/core_ext/object/try.rb</a></li>
             
+            <li><a href="../files/activesupport/lib/active_support/core_ext/object/with_rb.html">activesupport/lib/active_support/core_ext/object/with.rb</a></li>
+            
             <li><a href="../files/activesupport/lib/active_support/core_ext/object/with_options_rb.html">activesupport/lib/active_support/core_ext/object/with_options.rb</a></li>
             
             <li><a href="../files/activesupport/lib/active_support/core_ext/string/output_safety_rb.html">activesupport/lib/active_support/core_ext/string/output_safety.rb</a></li>
@@ -49,8 +49,6 @@ layout: default
             <li><a href="../files/activesupport/lib/active_support/xml_mini/jdom_rb.html">activesupport/lib/active_support/xml_mini/jdom.rb</a></li>
             
             <li><a href="../files/railties/lib/rails/engine/commands_rb.html">railties/lib/rails/engine/commands.rb</a></li>
-            
-            <li><a href="../files/railties/lib/rails/test_help_rb.html">railties/lib/rails/test_help.rb</a></li>
             
         </ul>
     </div>
@@ -131,6 +129,10 @@ layout: default
         </li>
       
         <li>
+          <a href="#method-i-with">with</a>
+        </li>
+      
+        <li>
           <a href="#method-i-with_options">with_options</a>
         </li>
       
@@ -145,14 +147,6 @@ layout: default
         <li>
           
             Java
-          
-        </li>
-      
-        <li>
-          
-            <a href="ActiveRecord/TestFixtures.html">
-              ActiveRecord::TestFixtures
-            </a>
           
         </li>
       
@@ -409,7 +403,7 @@ dup.instance_variable_defined?(:@a)    # =&gt; true
                 
               </p>
               <div id="method-i-html_safe-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/string/output_safety.rb, line 150</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/string/output_safety.rb, line 7</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">html_safe?</span>
   <span class="ruby-keyword">false</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -427,13 +421,15 @@ dup.instance_variable_defined?(:@a)    # =&gt; true
 
           
             <div class="description">
-              <p>Returns true if this object is included in the argument. Argument must be any object which responds to <code>#include?</code>. Usage:</p>
+              <p>Returns true if this object is included in the argument.</p>
+
+<p>When argument is a <code>Range</code>, <code>#cover?</code> is used to properly handle inclusion check within open ranges. Otherwise, argument must be any object which responds to <code>#include?</code>. Usage:</p>
 
 <pre><code>characters = [&quot;Konata&quot;, &quot;Kagami&quot;, &quot;Tsukasa&quot;]
 &quot;Konata&quot;.in?(characters) # =&gt; true
 </code></pre>
 
-<p>This will throw an <code>ArgumentError</code> if the argument doesn’t respond to <code>#include?</code>.</p>
+<p>For non <code>Range</code> arguments, this will throw an <code>ArgumentError</code> if the argument doesn’t respond to <code>#include?</code>.</p>
             </div>
           
 
@@ -450,9 +446,14 @@ dup.instance_variable_defined?(:@a)    # =&gt; true
                 
               </p>
               <div id="method-i-in-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/inclusion.rb, line 12</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/inclusion.rb, line 15</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">in?</span>(<span class="ruby-identifier">another_object</span>)
-  <span class="ruby-identifier">another_object</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-keyword">self</span>)
+  <span class="ruby-keyword">case</span> <span class="ruby-identifier">another_object</span>
+  <span class="ruby-keyword">when</span> <span class="ruby-constant">Range</span>
+    <span class="ruby-identifier">another_object</span>.<span class="ruby-identifier">cover?</span>(<span class="ruby-keyword">self</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">another_object</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-keyword">self</span>)
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">rescue</span> <span class="ruby-constant">NoMethodError</span>
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-string">&quot;The parameter passed to #in? must respond to #include?&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -498,7 +499,9 @@ C.new(0, 1).instance_values # =&gt; {&quot;x&quot; =&gt; 0, &quot;y&quot; =&gt; 
               <div id="method-i-instance_values_source">
                 <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/instance_variables.rb, line 14</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">instance_values</span>
-  <span class="ruby-constant">Hash</span>[<span class="ruby-identifier">instance_variables</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">name</span><span class="ruby-operator">|</span> [<span class="ruby-identifier">name</span>[<span class="ruby-value">1</span><span class="ruby-operator">..</span><span class="ruby-value">-1</span>], <span class="ruby-identifier">instance_variable_get</span>(<span class="ruby-identifier">name</span>)] }]
+  <span class="ruby-identifier">instance_variables</span>.<span class="ruby-identifier">to_h</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">ivar</span><span class="ruby-operator">|</span>
+    [<span class="ruby-identifier">ivar</span>[<span class="ruby-value">1</span><span class="ruby-operator">..</span><span class="ruby-value">-1</span>].<span class="ruby-identifier">freeze</span>, <span class="ruby-identifier">instance_variable_get</span>(<span class="ruby-identifier">ivar</span>)]
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -540,9 +543,9 @@ C.new(0, 1).instance_variable_names # =&gt; [&quot;@y&quot;, &quot;@x&quot;]
                 
               </p>
               <div id="method-i-instance_variable_names_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/instance_variables.rb, line 27</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/instance_variables.rb, line 30</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">instance_variable_names</span>
-  <span class="ruby-identifier">instance_variables</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:to_s</span>)
+  <span class="ruby-identifier">instance_variables</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:name</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -634,7 +637,7 @@ region  = state || country || &#39;US&#39;
                 
               </p>
               <div id="method-i-presence_in_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/inclusion.rb, line 26</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/inclusion.rb, line 34</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">presence_in</span>(<span class="ruby-identifier">another_object</span>)
   <span class="ruby-identifier">in?</span>(<span class="ruby-identifier">another_object</span>) <span class="ruby-operator">?</span> <span class="ruby-keyword">self</span> <span class="ruby-operator">:</span> <span class="ruby-keyword">nil</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -882,6 +885,72 @@ nil.try!(:upcase) # =&gt; nil
           </div>
         
         <div class="method">
+          <h3 id="method-i-with">
+            
+              with(**attributes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Set and restore public attributes around a block.</p>
+
+<pre><code>client.timeout # =&gt; 5
+client.with(timeout: 1) do
+  client.timeout # =&gt; 1
+end
+client.timeout # =&gt; 5
+</code></pre>
+
+<p>This method is a shorthand for the common begin/ensure pattern:</p>
+
+<pre><code>old_value = object.attribute
+begin
+  object.attribute = new_value
+  # do things
+ensure
+  object.attribute = old_value
+end
+</code></pre>
+
+<p>It can be used on any object as long as both the reader and writer methods are public.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-with_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/object/with.rb, line 24</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">with</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">attributes</span>)
+  <span class="ruby-identifier">old_values</span> = {}
+  <span class="ruby-keyword">begin</span>
+    <span class="ruby-identifier">attributes</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">key</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">old_values</span>[<span class="ruby-identifier">key</span>] = <span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">key</span>)
+      <span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{key}=&quot;</span>, <span class="ruby-identifier">value</span>)
+    <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">yield</span>
+  <span class="ruby-keyword">ensure</span>
+    <span class="ruby-identifier">old_values</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">key</span>, <span class="ruby-identifier">old_value</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{key}=&quot;</span>, <span class="ruby-identifier">old_value</span>)
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
           <h3 id="method-i-with_options">
             
               with_options(options, &amp;block)
@@ -890,7 +959,7 @@ nil.try!(:upcase) # =&gt; nil
 
           
             <div class="description">
-              <p>An elegant way to factor duplication out of options passed to a series of method calls. Each method called in the block, with the block variable as the receiver, will have its options merged with the default <code>options</code> hash provided. Each method called on the block variable must take an options hash as its final argument.</p>
+              <p>An elegant way to factor duplication out of options passed to a series of method calls. Each method called in the block, with the block variable as the receiver, will have its options merged with the default <code>options</code> <code>Hash</code> or <code>Hash</code>-like object provided. Each method called on the block variable must take an options hash as its final argument.</p>
 
 <p>Without <code>with_options</code>, this code contains duplication:</p>
 

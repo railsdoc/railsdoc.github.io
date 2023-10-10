@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -39,11 +39,7 @@ layout: default
         </li>
       
         <li>
-          <a href="#method-i-find_or_create_by">find_or_create_by</a>
-        </li>
-      
-        <li>
-          <a href="#method-i-find_or_create_by-21">find_or_create_by!</a>
+          <a href="#method-i-scope_for_create">scope_for_create</a>
         </li>
       
         <li>
@@ -53,20 +49,6 @@ layout: default
     </ul>
   
 
-  
-    <!-- Includes -->
-    <h2 id="included-modules">Included Modules</h2>
-    <ul>
-      
-        <li>
-          
-            <a href="EncryptedQueryArgumentProcessor.html">
-              ActiveRecord::Encryption::ExtendedDeterministicQueries::EncryptedQueryArgumentProcessor
-            </a>
-          
-        </li>
-      
-    </ul>
   
 
   
@@ -109,10 +91,9 @@ layout: default
                 
               </p>
               <div id="method-i-exists-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/extended_deterministic_queries.rb, line 89</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/extended_deterministic_queries.rb, line 101</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">exists?</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>)
-  <span class="ruby-identifier">process_encrypted_query_arguments_if_needed</span>(<span class="ruby-identifier">args</span>)
-  <span class="ruby-keyword">super</span>
+  <span class="ruby-keyword">super</span>(<span class="ruby-operator">*</span><span class="ruby-constant">EncryptedQuery</span>.<span class="ruby-identifier">process_arguments</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">args</span>, <span class="ruby-keyword">true</span>))
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -120,9 +101,9 @@ layout: default
           </div>
         
         <div class="method">
-          <h3 id="method-i-find_or_create_by">
+          <h3 id="method-i-scope_for_create">
             
-              find_or_create_by(attributes, &amp;block)
+              scope_for_create()
             
           </h3>
 
@@ -144,45 +125,23 @@ layout: default
                 Source:
                 
               </p>
-              <div id="method-i-find_or_create_by_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/extended_deterministic_queries.rb, line 94</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">find_or_create_by</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">find_by</span>(<span class="ruby-identifier">attributes</span>.<span class="ruby-identifier">dup</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">create</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
-        
-        <div class="method">
-          <h3 id="method-i-find_or_create_by-21">
-            
-              find_or_create_by!(attributes, &amp;block)
-            
-          </h3>
+              <div id="method-i-scope_for_create_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/extended_deterministic_queries.rb, line 105</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">scope_for_create</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">super</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">deterministic_encrypted_attributes</span>&amp;.<span class="ruby-identifier">any?</span>
 
-          
-            <div class="description">
-              
-            </div>
-          
+  <span class="ruby-identifier">scope_attributes</span> = <span class="ruby-keyword">super</span>
+  <span class="ruby-identifier">wheres</span> = <span class="ruby-identifier">where_values_hash</span>
 
-          
+  <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">deterministic_encrypted_attributes</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">attribute_name</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">attribute_name</span> = <span class="ruby-identifier">attribute_name</span>.<span class="ruby-identifier">to_s</span>
+    <span class="ruby-identifier">values</span> = <span class="ruby-identifier">wheres</span>[<span class="ruby-identifier">attribute_name</span>]
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">values</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Array</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">values</span>[<span class="ruby-value">1</span><span class="ruby-operator">..</span>].<span class="ruby-identifier">all?</span>(<span class="ruby-constant">AdditionalValue</span>)
+      <span class="ruby-identifier">scope_attributes</span>[<span class="ruby-identifier">attribute_name</span>] = <span class="ruby-identifier">values</span>.<span class="ruby-identifier">first</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
 
-          
-
-          
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-find_or_create_by-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/extended_deterministic_queries.rb, line 98</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">find_or_create_by!</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">find_by</span>(<span class="ruby-identifier">attributes</span>.<span class="ruby-identifier">dup</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">create!</span>(<span class="ruby-identifier">attributes</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">scope_attributes</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -215,10 +174,9 @@ layout: default
                 
               </p>
               <div id="method-i-where_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/extended_deterministic_queries.rb, line 84</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/encryption/extended_deterministic_queries.rb, line 97</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">where</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>)
-  <span class="ruby-identifier">process_encrypted_query_arguments_if_needed</span>(<span class="ruby-identifier">args</span>)
-  <span class="ruby-keyword">super</span>
+  <span class="ruby-keyword">super</span>(<span class="ruby-operator">*</span><span class="ruby-constant">EncryptedQuery</span>.<span class="ruby-identifier">process_arguments</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">args</span>, <span class="ruby-keyword">true</span>))
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -31,6 +31,8 @@ layout: default
   
     <div class="description">
       
+<h1 id="class-ActiveSupport::CurrentAttributes-label-Current+Attributes">Current Attributes</h1>
+
 <p>Abstract super class that provides a thread-isolated attributes singleton, which resets automatically before and after each request. This allows you to keep all the per-request attributes easily available to the whole system.</p>
 
 <p>The following full app-like example demonstrates how to use a Current class to facilitate easy access to the global, per-request attributes without passing them deeply around everywhere:</p>
@@ -203,7 +205,7 @@ end
         <div class="method">
           <h3 id="method-c-after_reset">
             
-              after_reset(&amp;block)
+              after_reset(*methods, &amp;block)
             
           </h3>
 
@@ -250,8 +252,13 @@ end
                 
               </p>
               <div id="method-c-attribute_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 100</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 104</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>)
+  <span class="ruby-identifier">invalid_attribute_names</span> = <span class="ruby-identifier">names</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:to_sym</span>) <span class="ruby-operator">&amp;</span> <span class="ruby-constant">INVALID_ATTRIBUTE_NAMES</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">invalid_attribute_names</span>.<span class="ruby-identifier">any?</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;Restricted attribute names: #{invalid_attribute_names.join(&quot;, &quot;)}&quot;</span>
+  <span class="ruby-keyword">end</span>
+
   <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">CodeGenerator</span>.<span class="ruby-identifier">batch</span>(<span class="ruby-identifier">generated_attribute_methods</span>, <span class="ruby-keyword">__FILE__</span>, <span class="ruby-keyword">__LINE__</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">owner</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">names</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span><span class="ruby-operator">|</span>
       <span class="ruby-identifier">owner</span>.<span class="ruby-identifier">define_cached_method</span>(<span class="ruby-identifier">name</span>, <span class="ruby-value">namespace:</span> <span class="ruby-value">:current_attributes</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">batch</span><span class="ruby-operator">|</span>
@@ -294,13 +301,13 @@ end
         <div class="method">
           <h3 id="method-c-before_reset">
             
-              before_reset(&amp;block)
+              before_reset(*methods, &amp;block)
             
           </h3>
 
           
             <div class="description">
-              <p>Calls this block before <a href="CurrentAttributes.html#method-i-reset"><code>reset</code></a> is called on the instance. Used for resetting external collaborators that depend on current values.</p>
+              <p>Calls this callback before <a href="CurrentAttributes.html#method-i-reset"><code>reset</code></a> is called on the instance. Used for resetting external collaborators that depend on current values.</p>
             </div>
           
 
@@ -317,9 +324,9 @@ end
                 
               </p>
               <div id="method-c-before_reset_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 137</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">before_reset</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">set_callback</span> <span class="ruby-value">:reset</span>, <span class="ruby-value">:before</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 146</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">before_reset</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">methods</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">set_callback</span> <span class="ruby-value">:reset</span>, <span class="ruby-value">:before</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">methods</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -352,7 +359,7 @@ end
                 
               </p>
               <div id="method-c-instance_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 95</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 99</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">instance</span>
   <span class="ruby-identifier">current_instances</span>[<span class="ruby-identifier">current_instances_key</span>] <span class="ruby-operator">||=</span> <span class="ruby-identifier">new</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -387,7 +394,7 @@ end
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 188</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 197</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>
   <span class="ruby-ivar">@attributes</span> = {}
 <span class="ruby-keyword">end</span></code></pre>
@@ -399,13 +406,13 @@ end
         <div class="method">
           <h3 id="method-c-resets">
             
-              resets(&amp;block)
+              resets(*methods, &amp;block)
             
           </h3>
 
           
             <div class="description">
-              <p>Calls this block after <a href="CurrentAttributes.html#method-i-reset"><code>reset</code></a> is called on the instance. Used for resetting external collaborators, like <a href="../Time.html#method-c-zone"><code>Time.zone</code></a>.</p>
+              <p>Calls this callback after <a href="CurrentAttributes.html#method-i-reset"><code>reset</code></a> is called on the instance. Used for resetting external collaborators, like <a href="../Time.html#method-c-zone"><code>Time.zone</code></a>.</p>
             </div>
           
 
@@ -426,9 +433,9 @@ end
                 
               </p>
               <div id="method-c-resets_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 142</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">resets</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">set_callback</span> <span class="ruby-value">:reset</span>, <span class="ruby-value">:after</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 151</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">resets</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">methods</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">set_callback</span> <span class="ruby-value">:reset</span>, <span class="ruby-value">:after</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">methods</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -465,7 +472,7 @@ end
                 
               </p>
               <div id="method-i-reset_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 211</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 220</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reset</span>
   <span class="ruby-identifier">run_callbacks</span> <span class="ruby-value">:reset</span> <span class="ruby-keyword">do</span>
     <span class="ruby-keyword">self</span>.<span class="ruby-identifier">attributes</span> = {}
@@ -511,7 +518,7 @@ end
                 
               </p>
               <div id="method-i-set_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 202</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/current_attributes.rb, line 211</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">set</span>(<span class="ruby-identifier">set_attributes</span>)
   <span class="ruby-identifier">old_attributes</span> = <span class="ruby-identifier">compute_attributes</span>(<span class="ruby-identifier">set_attributes</span>.<span class="ruby-identifier">keys</span>)
   <span class="ruby-identifier">assign_attributes</span>(<span class="ruby-identifier">set_attributes</span>)

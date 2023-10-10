@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -37,7 +37,13 @@ layout: default
   
     <div class="description">
       
-<p><a href="DatabaseConfigurations.html"><code>ActiveRecord::DatabaseConfigurations</code></a> returns an array of DatabaseConfig objects (either a <a href="DatabaseConfigurations/HashConfig.html"><code>HashConfig</code></a> or <a href="DatabaseConfigurations/UrlConfig.html"><code>UrlConfig</code></a>) that are constructed from the application’s database configuration hash or URL string.</p>
+<h1 id="class-ActiveRecord::DatabaseConfigurations-label-Active+Record+Database+Configurations">Active Record Database Configurations</h1>
+
+<p><code>ActiveRecord::DatabaseConfigurations</code> returns an array of <code>DatabaseConfig</code> objects that are constructed from the application’s database configuration hash or URL string.</p>
+
+<p>The array of <code>DatabaseConfig</code> objects in an application default to either a <a href="DatabaseConfigurations/HashConfig.html"><code>HashConfig</code></a> or <a href="DatabaseConfigurations/UrlConfig.html"><code>UrlConfig</code></a>. You can retrieve your application’s config by using <a href="Core.html#method-c-configurations"><code>ActiveRecord::Base.configurations</code></a>.</p>
+
+<p>If you register a custom handler, objects will be created according to the conditions of the handler. See <a href="DatabaseConfigurations.html#method-c-register_db_config_handler"><code>::register_db_config_handler</code></a> for more on registering custom handlers.</p>
 
     </div>
   
@@ -89,6 +95,10 @@ layout: default
       
         <li>
           <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-register_db_config_handler">register_db_config_handler</a>
         </li>
       
     </ul>
@@ -149,9 +159,63 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 19</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 73</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">configurations</span> = {})
   <span class="ruby-ivar">@configurations</span> = <span class="ruby-identifier">build_configs</span>(<span class="ruby-identifier">configurations</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-register_db_config_handler">
+            
+              register_db_config_handler(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Allows an application to register a custom handler for database configuration objects. This is useful for creating a custom handler that responds to methods your application needs but Active Record doesn’t implement. For example if you are using Vitess, you may want your Vitess configurations to respond to ‘sharded?`. To implement this define the following in an initializer:</p>
+
+<pre><code>ActiveRecord::DatabaseConfigurations.register_db_config_handler do |env_name, name, url, config|
+  next unless config.key?(:vitess)
+  VitessConfig.new(env_name, name, config)
+end
+</code></pre>
+
+<p>Note: applications must handle the condition in which custom config should be created in your handler registration otherwise all objects will use the custom handler.</p>
+
+<p>Then define your <code>VitessConfig</code> to respond to the methods your application needs. It is recommended that you inherit from one of the existing database config classes to avoid having to reimplement all methods. Custom config handlers should only implement methods Active Record does not.</p>
+
+<pre><code>class VitessConfig &lt; ActiveRecord::DatabaseConfigurations::UrlConfig
+  def sharded?
+    configuration_hash.fetch(&quot;sharded&quot;, false)
+  end
+end
+</code></pre>
+
+<p>For configs that have a <code>:vitess</code> key, a <code>VitessConfig</code> object will be created instead of a <code>UrlConfig</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-register_db_config_handler_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 61</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">register_db_config_handler</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">db_config_handlers</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">block</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -189,7 +253,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-configs_for">
             
-              configs_for(env_name: nil, name: nil, include_replicas: false, include_hidden: false)
+              configs_for(env_name: nil, name: nil, config_key: nil, include_hidden: false)
             
           </h3>
 
@@ -197,7 +261,7 @@ layout: default
             <div class="description">
               <p>Collects the configs for the environment and optionally the specification name passed in. To include replica configurations pass <code>include_hidden: true</code>.</p>
 
-<p>If a name is provided a single DatabaseConfig object will be returned, otherwise an array of DatabaseConfig objects will be returned that corresponds with the environment and type requested.</p>
+<p>If a name is provided a single <code>DatabaseConfig</code> object will be returned, otherwise an array of <code>DatabaseConfig</code> objects will be returned that corresponds with the environment and type requested.</p>
 
 <h4 id="method-i-configs_for-label-Options">Options</h4>
 <ul><li>
@@ -205,9 +269,9 @@ layout: default
 </li><li>
 <p><code>name:</code> The db config name (i.e. primary, animals, etc.). Defaults to <code>nil</code>. If no <code>env_name</code> is specified the config for the default env and the passed <code>name</code> will be returned.</p>
 </li><li>
-<p><code>include_replicas:</code> Deprecated. Determines whether to include replicas in the returned list. Most of the time we’re only iterating over the write connection (i.e. migrations don’t need to run for the write and read connection). Defaults to <code>false</code>.</p>
+<p><code>config_key:</code> Selects configs that contain a particular key in the configuration hash. Useful for selecting configs that use a custom db config handler or finding configs with hashes that contain a particular key.</p>
 </li><li>
-<p><code>include_hidden:</code> Determines whether to include replicas and configurations hidden by +database_tasks: false+ in the returned list. Most of the time we’re only iterating over the primary connections (i.e. migrations don’t need to run for the write and read connection). Defaults to <code>false</code>.</p>
+<p><code>include_hidden:</code> Determines whether to include replicas and configurations hidden by <code>database_tasks: false</code> in the returned list. Most of the time we’re only iterating over the primary connections (i.e. migrations don’t need to run for the write and read connection). Defaults to <code>false</code>.</p>
 </li></ul>
             </div>
           
@@ -225,19 +289,20 @@ layout: default
                 
               </p>
               <div id="method-i-configs_for_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 45</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">configs_for</span>(<span class="ruby-value">env_name:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">name:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">include_replicas:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">include_hidden:</span> <span class="ruby-keyword">false</span>)
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">include_replicas</span>
-    <span class="ruby-identifier">include_hidden</span> = <span class="ruby-identifier">include_replicas</span>
-    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-string">&quot;The kwarg `include_replicas` is deprecated in favor of `include_hidden`. When `include_hidden` is passed, configurations with `replica: true` or `database_tasks: false` will be returned. `include_replicas` will be removed in Rails 7.1.&quot;</span>)
-  <span class="ruby-keyword">end</span>
-
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 98</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">configs_for</span>(<span class="ruby-value">env_name:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">name:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">config_key:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">include_hidden:</span> <span class="ruby-keyword">false</span>)
   <span class="ruby-identifier">env_name</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">default_env</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">name</span>
   <span class="ruby-identifier">configs</span> = <span class="ruby-identifier">env_with_configs</span>(<span class="ruby-identifier">env_name</span>)
 
   <span class="ruby-keyword">unless</span> <span class="ruby-identifier">include_hidden</span>
     <span class="ruby-identifier">configs</span> = <span class="ruby-identifier">configs</span>.<span class="ruby-identifier">select</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">db_config</span><span class="ruby-operator">|</span>
       <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">database_tasks?</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">config_key</span>
+    <span class="ruby-identifier">configs</span> = <span class="ruby-identifier">configs</span>.<span class="ruby-identifier">select</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">db_config</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">configuration_hash</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-identifier">config_key</span>)
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 
@@ -264,8 +329,6 @@ layout: default
           
             <div class="description">
               <p>Checks if the application’s configurations are empty.</p>
-
-<p>Aliased to blank?</p>
             </div>
           
 
@@ -286,7 +349,7 @@ layout: default
                 
               </p>
               <div id="method-i-empty-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 98</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 150</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">empty?</span>
   <span class="ruby-identifier">configurations</span>.<span class="ruby-identifier">empty?</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -304,9 +367,9 @@ layout: default
 
           
             <div class="description">
-              <p>Returns a single DatabaseConfig object based on the requested environment.</p>
+              <p>Returns a single <code>DatabaseConfig</code> object based on the requested environment.</p>
 
-<p>If the application has multiple databases <code>find_db_config</code> will return the first DatabaseConfig for the environment.</p>
+<p>If the application has multiple databases <code>find_db_config</code> will return the first <code>DatabaseConfig</code> for the environment.</p>
             </div>
           
 
@@ -323,14 +386,14 @@ layout: default
                 
               </p>
               <div id="method-i-find_db_config_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 73</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/database_configurations.rb, line 127</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">find_db_config</span>(<span class="ruby-identifier">env</span>)
-  <span class="ruby-identifier">configurations</span>
-    .<span class="ruby-identifier">sort_by</span>.<span class="ruby-identifier">with_index</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">db_config</span>, <span class="ruby-identifier">i</span><span class="ruby-operator">|</span> <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">for_current_env?</span> <span class="ruby-operator">?</span> [<span class="ruby-value">0</span>, <span class="ruby-identifier">i</span>] <span class="ruby-operator">:</span> [<span class="ruby-value">1</span>, <span class="ruby-identifier">i</span>] }
-    .<span class="ruby-identifier">find</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">db_config</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">env_name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">env</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">||</span>
-        (<span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">for_current_env?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">env</span>.<span class="ruby-identifier">to_s</span>)
-    <span class="ruby-keyword">end</span>
+  <span class="ruby-identifier">env</span> = <span class="ruby-identifier">env</span>.<span class="ruby-identifier">to_s</span>
+  <span class="ruby-identifier">configurations</span>.<span class="ruby-identifier">find</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">db_config</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">for_current_env?</span> <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">env_name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">env</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">env</span>)
+  <span class="ruby-keyword">end</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">configurations</span>.<span class="ruby-identifier">find</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">db_config</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">env_name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">env</span>
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

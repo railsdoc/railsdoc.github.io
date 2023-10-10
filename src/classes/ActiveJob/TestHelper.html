@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -244,6 +244,14 @@ end
 end
 </code></pre>
 
+<p>For keyword arguments, specify them as a hash inside an array:</p>
+
+<pre><code>def test_assert_enqueued_with_keyword_arguments
+  MyJob.perform_later(arg1: &#39;value1&#39;, arg2: &#39;value2&#39;)
+  assert_enqueued_with(job: MyJob, args: [{ arg1: &#39;value1&#39;, arg2: &#39;value2&#39; }])
+end
+</code></pre>
+
 <p>The given arguments may also be specified as matcher procs that return a boolean value indicating whether a job’s attribute meets certain criteria.</p>
 
 <p>For example, a proc can be used to match a range of times:</p>
@@ -296,7 +304,7 @@ end
                 
               </p>
               <div id="method-i-assert_enqueued_with_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 392</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 399</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_enqueued_with</span>(<span class="ruby-value">job:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">args:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">at:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">priority:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">expected</span> = { <span class="ruby-value">job:</span> <span class="ruby-identifier">job</span>, <span class="ruby-value">args:</span> <span class="ruby-identifier">args</span>, <span class="ruby-value">at:</span> <span class="ruby-identifier">at</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-value">priority:</span> <span class="ruby-identifier">priority</span> }.<span class="ruby-identifier">compact</span>
   <span class="ruby-identifier">expected_args</span> = <span class="ruby-identifier">prepare_args_for_assertion</span>(<span class="ruby-identifier">expected</span>)
@@ -735,7 +743,7 @@ end
                 
               </p>
               <div id="method-i-assert_performed_with_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 494</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 501</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">assert_performed_with</span>(<span class="ruby-value">job:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">args:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">at:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">priority:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">expected</span> = { <span class="ruby-value">job:</span> <span class="ruby-identifier">job</span>, <span class="ruby-value">args:</span> <span class="ruby-identifier">args</span>, <span class="ruby-value">at:</span> <span class="ruby-identifier">at</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-value">priority:</span> <span class="ruby-identifier">priority</span> }.<span class="ruby-identifier">compact</span>
   <span class="ruby-identifier">expected_args</span> = <span class="ruby-identifier">prepare_args_for_assertion</span>(<span class="ruby-identifier">expected</span>)
@@ -850,6 +858,8 @@ end
 </code></pre>
 
 <p>If the <code>:at</code> option is specified, then only run jobs enqueued to run immediately or before the given time</p>
+
+<p>If an adapter other than the test adapter is in use, this method just yields. See <a href="TestHelper.html#method-i-queue_adapter_for_test"><code>queue_adapter_for_test</code></a> for more information.</p>
             </div>
           
 
@@ -866,9 +876,11 @@ end
                 
               </p>
               <div id="method-i-perform_enqueued_jobs_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 598</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 608</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">perform_enqueued_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">except:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">at:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-identifier">flush_enqueued_jobs</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>, <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-value">at:</span> <span class="ruby-identifier">at</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">block_given?</span>
+
+  <span class="ruby-keyword">return</span> <span class="ruby-identifier">_assert_nothing_raised_or_warn</span>(<span class="ruby-string">&quot;perform_enqueued_jobs&quot;</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">using_test_adapter?</span>
 
   <span class="ruby-identifier">validate_option</span>(<span class="ruby-value">only:</span> <span class="ruby-identifier">only</span>, <span class="ruby-value">except:</span> <span class="ruby-identifier">except</span>)
 
@@ -933,7 +945,7 @@ end
                 
               </p>
               <div id="method-i-queue_adapter_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 634</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/test_helper.rb, line 646</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">queue_adapter</span>
   <span class="ruby-constant">ActiveJob</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">queue_adapter</span>
 <span class="ruby-keyword">end</span></code></pre>
