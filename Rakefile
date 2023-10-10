@@ -46,7 +46,7 @@ end
 def generate_rails_rdoc
   cd 'rails' do
     Bundler.with_unbundled_env do
-      ENV['BUNDLE_WITHOUT'] = 'lint:db:mdl:job:storage:cable:ujs:test'
+      ENV['BUNDLE_WITHOUT'] = 'lint:db:mdl:job:storage:cable:ujs:test:view'
 
       # replace sdoc gem
       gemfile = File.read('Gemfile')
