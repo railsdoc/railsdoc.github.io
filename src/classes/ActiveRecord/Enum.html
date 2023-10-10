@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -126,6 +126,60 @@ conversation.comments_inactive!
 conversation.comments_active? # =&gt; false
 </code></pre>
 
+<p>If you want to disable the auto-generated methods on the model, you can do so by setting the <code>:instance_methods</code> option to false:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], instance_methods: false
+end
+</code></pre>
+
+<p>If you want the enum value to be validated before saving, use the option <code>:validate</code>:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], validate: true
+end
+
+conversation = Conversation.new
+
+conversation.status = :unknown
+conversation.valid? # =&gt; false
+
+conversation.status = nil
+conversation.valid? # =&gt; false
+
+conversation.status = :active
+conversation.valid? # =&gt; true
+</code></pre>
+
+<p>It is also possible to pass additional validation options:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], validate: { allow_nil: true }
+end
+
+conversation = Conversation.new
+
+conversation.status = :unknown
+conversation.valid? # =&gt; false
+
+conversation.status = nil
+conversation.valid? # =&gt; true
+
+conversation.status = :active
+conversation.valid? # =&gt; true
+</code></pre>
+
+<p>Otherwise <code>ArgumentError</code> will raise:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ]
+end
+
+conversation = Conversation.new
+
+conversation.status = :unknown # &#39;unknown&#39; is not a valid status (ArgumentError)
+</code></pre>
+
     </div>
   
 
@@ -190,14 +244,14 @@ conversation.comments_active? # =&gt; false
                 
               </p>
               <div id="method-i-enum_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/enum.rb, line 167</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/enum.rb, line 225</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">enum</span>(<span class="ruby-identifier">name</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">values</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">name</span>
     <span class="ruby-identifier">values</span>, <span class="ruby-identifier">options</span> = <span class="ruby-identifier">options</span>, {} <span class="ruby-keyword">unless</span> <span class="ruby-identifier">values</span>
     <span class="ruby-keyword">return</span> <span class="ruby-identifier">_enum</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">values</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-keyword">end</span>
 
-  <span class="ruby-identifier">definitions</span> = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">slice!</span>(<span class="ruby-value">:_prefix</span>, <span class="ruby-value">:_suffix</span>, <span class="ruby-value">:_scopes</span>, <span class="ruby-value">:_default</span>)
+  <span class="ruby-identifier">definitions</span> = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">slice!</span>(<span class="ruby-value">:_prefix</span>, <span class="ruby-value">:_suffix</span>, <span class="ruby-value">:_scopes</span>, <span class="ruby-value">:_default</span>, <span class="ruby-value">:_instance_methods</span>)
   <span class="ruby-identifier">options</span>.<span class="ruby-identifier">transform_keys!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">key</span><span class="ruby-operator">|</span> <span class="ruby-value">:&quot;#{key[1..-1]}&quot;</span> }
 
   <span class="ruby-identifier">definitions</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">name</span>, <span class="ruby-identifier">values</span><span class="ruby-operator">|</span> <span class="ruby-identifier">_enum</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">values</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>) }

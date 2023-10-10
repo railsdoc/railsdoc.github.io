@@ -1,0 +1,211 @@
+---
+title: ActiveRecord::TokenFor::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.0</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::TokenFor::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/token_for_rb.html">activerecord/lib/active_record/token_for.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-find_by_token_for">find_by_token_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-find_by_token_for-21">find_by_token_for!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-generates_token_for">generates_token_for</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-find_by_token_for">
+            
+              find_by_token_for(purpose, token)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Finds a record using a given <code>token</code> for a predefined <code>purpose</code>. Returns <code>nil</code> if the token is invalid or the record was not found.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-find_by_token_for_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/token_for.rb, line 90</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">find_by_token_for</span>(<span class="ruby-identifier">purpose</span>, <span class="ruby-identifier">token</span>)
+  <span class="ruby-identifier">raise</span> <span class="ruby-constant">UnknownPrimaryKey</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">self</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">primary_key</span>
+  <span class="ruby-identifier">token_definitions</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-identifier">purpose</span>).<span class="ruby-identifier">resolve_token</span>(<span class="ruby-identifier">token</span>) { <span class="ruby-operator">|</span><span class="ruby-identifier">id</span><span class="ruby-operator">|</span> <span class="ruby-identifier">find_by</span>(<span class="ruby-identifier">primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">id</span>) }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-find_by_token_for-21">
+            
+              find_by_token_for!(purpose, token)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Finds a record using a given <code>token</code> for a predefined <code>purpose</code>. Raises <a href="../../ActiveSupport/MessageVerifier/InvalidSignature.html"><code>ActiveSupport::MessageVerifier::InvalidSignature</code></a> if the token is invalid (e.g. expired, bad format, etc). Raises <a href="../RecordNotFound.html"><code>ActiveRecord::RecordNotFound</code></a> if the token is valid but the record was not found.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-find_by_token_for-21_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/token_for.rb, line 99</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">find_by_token_for!</span>(<span class="ruby-identifier">purpose</span>, <span class="ruby-identifier">token</span>)
+  <span class="ruby-identifier">token_definitions</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-identifier">purpose</span>).<span class="ruby-identifier">resolve_token</span>(<span class="ruby-identifier">token</span>) { <span class="ruby-operator">|</span><span class="ruby-identifier">id</span><span class="ruby-operator">|</span> <span class="ruby-identifier">find</span>(<span class="ruby-identifier">id</span>) } <span class="ruby-operator">||</span>
+    (<span class="ruby-identifier">raise</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">MessageVerifier</span><span class="ruby-operator">::</span><span class="ruby-constant">InvalidSignature</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-generates_token_for">
+            
+              generates_token_for(purpose, expires_in: nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Defines the behavior of tokens generated for a specific <code>purpose</code>. A token can be generated by calling <a href="../TokenFor.html#method-i-generate_token_for"><code>TokenFor#generate_token_for</code></a> on a record. Later, that record can be fetched by calling <a href="ClassMethods.html#method-i-find_by_token_for"><code>find_by_token_for</code></a> (or <a href="ClassMethods.html#method-i-find_by_token_for-21"><code>find_by_token_for!</code></a>) with the same purpose and token.</p>
+
+<p>Tokens are signed so that they are tamper-proof. Thus they can be exposed to outside world as, for example, password reset tokens.</p>
+
+<p>By default, tokens do not expire. They can be configured to expire by specifying a duration via the <code>expires_in</code> option. The duration becomes part of the token’s signature, so changing the value of <code>expires_in</code> will automatically invalidate previously generated tokens.</p>
+
+<p>A block may also be specified. When generating a token with <a href="../TokenFor.html#method-i-generate_token_for"><code>TokenFor#generate_token_for</code></a>, the block will be evaluated in the context of the record, and its return value will be embedded in the token as JSON. Later, when fetching the record with <a href="ClassMethods.html#method-i-find_by_token_for"><code>find_by_token_for</code></a>, the block will be evaluated again in the context of the fetched record. If the two JSON values do not match, the token will be treated as invalid. Note that the value returned by the block <strong>should not contain sensitive information</strong> because it will be embedded in the token as <strong>human-readable plaintext JSON</strong>.</p>
+
+<h4 id="method-i-generates_token_for-label-Examples">Examples</h4>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  has_secure_password
+
+  generates_token_for :password_reset, expires_in: 15.minutes do
+    # Last 10 characters of password salt, which changes when password is updated:
+    password_salt&amp;.last(10)
+  end
+end
+
+user = User.first
+
+token = user.generate_token_for(:password_reset)
+User.find_by_token_for(:password_reset, token) # =&gt; user
+# 16 minutes later...
+User.find_by_token_for(:password_reset, token) # =&gt; nil
+
+token = user.generate_token_for(:password_reset)
+User.find_by_token_for(:password_reset, token) # =&gt; user
+user.update!(password: &quot;new password&quot;)
+User.find_by_token_for(:password_reset, token) # =&gt; nil
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-generates_token_for_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/token_for.rb, line 84</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">generates_token_for</span>(<span class="ruby-identifier">purpose</span>, <span class="ruby-value">expires_in:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">token_definitions</span> = <span class="ruby-identifier">token_definitions</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">purpose</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-constant">TokenDefinition</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">purpose</span>, <span class="ruby-identifier">expires_in</span>, <span class="ruby-identifier">block</span>))
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

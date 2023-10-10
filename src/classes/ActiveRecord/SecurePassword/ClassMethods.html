@@ -1,0 +1,138 @@
+---
+title: ActiveRecord::SecurePassword::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.0</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::SecurePassword::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/secure_password_rb.html">activerecord/lib/active_record/secure_password.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-authenticate_by">authenticate_by</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-authenticate_by">
+            
+              authenticate_by(attributes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Given a set of attributes, finds a record using the non-password attributes, and then authenticates that record using the password attributes. Returns the record if authentication succeeds; otherwise, returns <code>nil</code>.</p>
+
+<p>Regardless of whether a record is found, <code>authenticate_by</code> will cryptographically digest the given password attributes. This behavior helps mitigate timing-based enumeration attacks, wherein an attacker can determine if a passworded record exists even without knowing the password.</p>
+
+<p>Raises an ArgumentError if the set of attributes doesn’t contain at least one password and one non-password attribute.</p>
+
+<h4 id="method-i-authenticate_by-label-Examples">Examples</h4>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  has_secure_password
+end
+
+User.create(name: &quot;John Doe&quot;, email: &quot;jdoe@example.com&quot;, password: &quot;abc123&quot;)
+
+User.authenticate_by(email: &quot;jdoe@example.com&quot;, password: &quot;abc123&quot;).name # =&gt; &quot;John Doe&quot; (in 373.4ms)
+User.authenticate_by(email: &quot;jdoe@example.com&quot;, password: &quot;wrong&quot;)       # =&gt; nil (in 373.9ms)
+User.authenticate_by(email: &quot;wrong@example.com&quot;, password: &quot;abc123&quot;)     # =&gt; nil (in 373.6ms)
+
+User.authenticate_by(email: &quot;jdoe@example.com&quot;, password: nil) # =&gt; nil (no queries executed)
+User.authenticate_by(email: &quot;jdoe@example.com&quot;, password: &quot;&quot;)  # =&gt; nil (no queries executed)
+
+User.authenticate_by(email: &quot;jdoe@example.com&quot;) # =&gt; ArgumentError
+User.authenticate_by(password: &quot;abc123&quot;)        # =&gt; ArgumentError
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-authenticate_by_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/secure_password.rb, line 41</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">authenticate_by</span>(<span class="ruby-identifier">attributes</span>)
+  <span class="ruby-identifier">passwords</span>, <span class="ruby-identifier">identifiers</span> = <span class="ruby-identifier">attributes</span>.<span class="ruby-identifier">to_h</span>.<span class="ruby-identifier">partition</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span>
+    <span class="ruby-operator">!</span><span class="ruby-identifier">has_attribute?</span>(<span class="ruby-identifier">name</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">has_attribute?</span>(<span class="ruby-node">&quot;#{name}_digest&quot;</span>)
+  <span class="ruby-keyword">end</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:to_h</span>)
+
+  <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;One or more password arguments are required&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">passwords</span>.<span class="ruby-identifier">empty?</span>
+  <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;One or more finder arguments are required&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">identifiers</span>.<span class="ruby-identifier">empty?</span>
+
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">passwords</span>.<span class="ruby-identifier">any?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">name</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">nil?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">value</span>.<span class="ruby-identifier">empty?</span> }
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">record</span> = <span class="ruby-identifier">find_by</span>(<span class="ruby-identifier">identifiers</span>)
+    <span class="ruby-identifier">record</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">passwords</span>.<span class="ruby-identifier">count</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">name</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-value">:&quot;authenticate_#{name}&quot;</span>, <span class="ruby-identifier">value</span>) } <span class="ruby-operator">==</span> <span class="ruby-identifier">passwords</span>.<span class="ruby-identifier">size</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">new</span>(<span class="ruby-identifier">passwords</span>)
+    <span class="ruby-keyword">nil</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -22,6 +22,12 @@ layout: default
     </div>
     <div id="bodyContent">
         <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveRecord::Batches-label-Active+Record+Batches">Active Record Batches</h1>
+
+    </div>
   
 
   
@@ -77,6 +83,18 @@ layout: default
       <table border='0' cellpadding='5'>
         
           <tr valign='top'>
+            <td class="attr-name">DEFAULT_ORDER</td>
+            <td>=</td>
+            <td class="attr-value">:asc</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+          <tr valign='top'>
             <td class="attr-name">ORDER_IGNORE_MESSAGE</td>
             <td>=</td>
             <td class="attr-value">&quot;Scoped order is ignored, it&#39;s forced to be batch order.&quot;</td>
@@ -101,7 +119,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-find_each">
             
-              find_each(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: :asc, &amp;block)
+              find_each(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: DEFAULT_ORDER, &amp;block)
             
           </h3>
 
@@ -139,7 +157,16 @@ end
 </li><li>
 <p><code>:error_on_ignore</code> - Overrides the application config to specify if an error should be raised when an order is present in the relation.</p>
 </li><li>
-<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code>). Defaults to <code>:asc</code>.</p>
+<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
+
+<pre><code>class Order &lt; ActiveRecord::Base
+  self.primary_key = [:id_1, :id_2]
+end
+
+Order.find_each(order: [:asc, :desc])
+</code></pre>
+
+<p>In the above code, <code>id_1</code> is sorted in ascending order and <code>id_2</code> in descending order.</p>
 </li></ul>
 
 <p>Limits are honored, and if present there is no requirement for the batch size: it can be less than, equal to, or greater than the limit.</p>
@@ -176,8 +203,8 @@ end
                 
               </p>
               <div id="method-i-find_each_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/batches.rb, line 68</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">find_each</span>(<span class="ruby-value">start:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">finish:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">batch_size:</span> <span class="ruby-value">1000</span>, <span class="ruby-value">error_on_ignore:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">order:</span> <span class="ruby-value">:asc</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/batches.rb, line 79</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">find_each</span>(<span class="ruby-value">start:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">finish:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">batch_size:</span> <span class="ruby-value">1000</span>, <span class="ruby-value">error_on_ignore:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">order:</span> <span class="ruby-constant">DEFAULT_ORDER</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
     <span class="ruby-identifier">find_in_batches</span>(<span class="ruby-value">start:</span> <span class="ruby-identifier">start</span>, <span class="ruby-value">finish:</span> <span class="ruby-identifier">finish</span>, <span class="ruby-value">batch_size:</span> <span class="ruby-identifier">batch_size</span>, <span class="ruby-value">error_on_ignore:</span> <span class="ruby-identifier">error_on_ignore</span>, <span class="ruby-value">order:</span> <span class="ruby-identifier">order</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">records</span><span class="ruby-operator">|</span>
       <span class="ruby-identifier">records</span>.<span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
@@ -185,7 +212,7 @@ end
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">enum_for</span>(<span class="ruby-value">:find_each</span>, <span class="ruby-value">start:</span> <span class="ruby-identifier">start</span>, <span class="ruby-value">finish:</span> <span class="ruby-identifier">finish</span>, <span class="ruby-value">batch_size:</span> <span class="ruby-identifier">batch_size</span>, <span class="ruby-value">error_on_ignore:</span> <span class="ruby-identifier">error_on_ignore</span>, <span class="ruby-value">order:</span> <span class="ruby-identifier">order</span>) <span class="ruby-keyword">do</span>
       <span class="ruby-identifier">relation</span> = <span class="ruby-keyword">self</span>
-      <span class="ruby-identifier">apply_limits</span>(<span class="ruby-identifier">relation</span>, <span class="ruby-identifier">start</span>, <span class="ruby-identifier">finish</span>, <span class="ruby-identifier">order</span>).<span class="ruby-identifier">size</span>
+      <span class="ruby-identifier">apply_limits</span>(<span class="ruby-identifier">relation</span>, <span class="ruby-identifier">start</span>, <span class="ruby-identifier">finish</span>, <span class="ruby-identifier">build_batch_orders</span>(<span class="ruby-identifier">order</span>)).<span class="ruby-identifier">size</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -197,7 +224,7 @@ end
         <div class="method">
           <h3 id="method-i-find_in_batches">
             
-              find_in_batches(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: :asc)
+              find_in_batches(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: DEFAULT_ORDER)
             
           </h3>
 
@@ -231,7 +258,16 @@ end
 </li><li>
 <p><code>:error_on_ignore</code> - Overrides the application config to specify if an error should be raised when an order is present in the relation.</p>
 </li><li>
-<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code>). Defaults to <code>:asc</code>.</p>
+<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
+
+<pre><code>class Order &lt; ActiveRecord::Base
+  self.primary_key = [:id_1, :id_2]
+end
+
+Order.find_in_batches(order: [:asc, :desc])
+</code></pre>
+
+<p>In the above code, <code>id_1</code> is sorted in ascending order and <code>id_2</code> in descending order.</p>
 </li></ul>
 
 <p>Limits are honored, and if present there is no requirement for the batch size: it can be less than, equal to, or greater than the limit.</p>
@@ -263,12 +299,12 @@ end
                 
               </p>
               <div id="method-i-find_in_batches_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/batches.rb, line 128</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">find_in_batches</span>(<span class="ruby-value">start:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">finish:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">batch_size:</span> <span class="ruby-value">1000</span>, <span class="ruby-value">error_on_ignore:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">order:</span> <span class="ruby-value">:asc</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/batches.rb, line 148</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">find_in_batches</span>(<span class="ruby-value">start:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">finish:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">batch_size:</span> <span class="ruby-value">1000</span>, <span class="ruby-value">error_on_ignore:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">order:</span> <span class="ruby-constant">DEFAULT_ORDER</span>)
   <span class="ruby-identifier">relation</span> = <span class="ruby-keyword">self</span>
   <span class="ruby-keyword">unless</span> <span class="ruby-identifier">block_given?</span>
     <span class="ruby-keyword">return</span> <span class="ruby-identifier">to_enum</span>(<span class="ruby-value">:find_in_batches</span>, <span class="ruby-value">start:</span> <span class="ruby-identifier">start</span>, <span class="ruby-value">finish:</span> <span class="ruby-identifier">finish</span>, <span class="ruby-value">batch_size:</span> <span class="ruby-identifier">batch_size</span>, <span class="ruby-value">error_on_ignore:</span> <span class="ruby-identifier">error_on_ignore</span>, <span class="ruby-value">order:</span> <span class="ruby-identifier">order</span>) <span class="ruby-keyword">do</span>
-      <span class="ruby-identifier">total</span> = <span class="ruby-identifier">apply_limits</span>(<span class="ruby-identifier">relation</span>, <span class="ruby-identifier">start</span>, <span class="ruby-identifier">finish</span>, <span class="ruby-identifier">order</span>).<span class="ruby-identifier">size</span>
+      <span class="ruby-identifier">total</span> = <span class="ruby-identifier">apply_limits</span>(<span class="ruby-identifier">relation</span>, <span class="ruby-identifier">start</span>, <span class="ruby-identifier">finish</span>, <span class="ruby-identifier">build_batch_orders</span>(<span class="ruby-identifier">order</span>)).<span class="ruby-identifier">size</span>
       (<span class="ruby-identifier">total</span> <span class="ruby-operator">-</span> <span class="ruby-value">1</span>).<span class="ruby-identifier">div</span>(<span class="ruby-identifier">batch_size</span>) <span class="ruby-operator">+</span> <span class="ruby-value">1</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
@@ -285,7 +321,7 @@ end
         <div class="method">
           <h3 id="method-i-in_batches">
             
-              in_batches(of: 1000, start: nil, finish: nil, load: false, error_on_ignore: nil, order: :asc)
+              in_batches(of: 1000, start: nil, finish: nil, load: false, error_on_ignore: nil, order: DEFAULT_ORDER, use_ranges: nil, &amp;block)
             
           </h3>
 
@@ -326,7 +362,18 @@ Person.in_batches.each_record(&amp;:party_all_night!)
 </li><li>
 <p><code>:error_on_ignore</code> - Overrides the application config to specify if an error should be raised when an order is present in the relation.</p>
 </li><li>
-<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code>). Defaults to <code>:asc</code>.</p>
+<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
+
+<pre><code>class Order &lt; ActiveRecord::Base
+  self.primary_key = [:id_1, :id_2]
+end
+
+Order.in_batches(order: [:asc, :desc])
+</code></pre>
+
+<p>In the above code, <code>id_1</code> is sorted in ascending order and <code>id_2</code> in descending order.</p>
+</li><li>
+<p><code>:use_ranges</code> - Specifies whether to use range iteration (id &gt;= x AND id &lt;= y). It can make iterating over the whole or almost whole tables several times faster. Only whole table iterations use this style of iteration by default. You can disable this behavior by passing <code>false</code>. If you iterate over the table and the only condition is, e.g., <code>archived_at: nil</code> (and only a tiny fraction of the records are archived), it makes sense to opt in to this approach.</p>
 </li></ul>
 
 <p>Limits are honored, and if present there is no requirement for the batch size, it can be less than, equal, or greater than the limit.</p>
@@ -370,15 +417,14 @@ end
                 
               </p>
               <div id="method-i-in_batches_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/batches.rb, line 204</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">in_batches</span>(<span class="ruby-value">of:</span> <span class="ruby-value">1000</span>, <span class="ruby-value">start:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">finish:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">load:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">error_on_ignore:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">order:</span> <span class="ruby-value">:asc</span>)
-  <span class="ruby-identifier">relation</span> = <span class="ruby-keyword">self</span>
-  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">block_given?</span>
-    <span class="ruby-keyword">return</span> <span class="ruby-constant">BatchEnumerator</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">of:</span> <span class="ruby-identifier">of</span>, <span class="ruby-value">start:</span> <span class="ruby-identifier">start</span>, <span class="ruby-value">finish:</span> <span class="ruby-identifier">finish</span>, <span class="ruby-value">relation:</span> <span class="ruby-keyword">self</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/relation/batches.rb, line 239</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">in_batches</span>(<span class="ruby-value">of:</span> <span class="ruby-value">1000</span>, <span class="ruby-value">start:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">finish:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">load:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">error_on_ignore:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">order:</span> <span class="ruby-constant">DEFAULT_ORDER</span>, <span class="ruby-value">use_ranges:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-keyword">unless</span> <span class="ruby-constant">Array</span>(<span class="ruby-identifier">order</span>).<span class="ruby-identifier">all?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">ord</span><span class="ruby-operator">|</span> [<span class="ruby-value">:asc</span>, <span class="ruby-value">:desc</span>].<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">ord</span>) }
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;:order must be :asc or :desc or an array consisting of :asc or :desc, got #{order.inspect}&quot;</span>
   <span class="ruby-keyword">end</span>
 
-  <span class="ruby-keyword">unless</span> [<span class="ruby-value">:asc</span>, <span class="ruby-value">:desc</span>].<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">order</span>)
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;:order must be :asc or :desc, got #{order.inspect}&quot;</span>
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">block</span>
+    <span class="ruby-keyword">return</span> <span class="ruby-constant">BatchEnumerator</span>.<span class="ruby-identifier">new</span>(<span class="ruby-value">of:</span> <span class="ruby-identifier">of</span>, <span class="ruby-value">start:</span> <span class="ruby-identifier">start</span>, <span class="ruby-value">finish:</span> <span class="ruby-identifier">finish</span>, <span class="ruby-value">relation:</span> <span class="ruby-keyword">self</span>, <span class="ruby-value">order:</span> <span class="ruby-identifier">order</span>, <span class="ruby-value">use_ranges:</span> <span class="ruby-identifier">use_ranges</span>)
   <span class="ruby-keyword">end</span>
 
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">arel</span>.<span class="ruby-identifier">orders</span>.<span class="ruby-identifier">present?</span>
@@ -386,50 +432,32 @@ end
   <span class="ruby-keyword">end</span>
 
   <span class="ruby-identifier">batch_limit</span> = <span class="ruby-identifier">of</span>
+
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">limit_value</span>
     <span class="ruby-identifier">remaining</span>   = <span class="ruby-identifier">limit_value</span>
     <span class="ruby-identifier">batch_limit</span> = <span class="ruby-identifier">remaining</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">remaining</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">batch_limit</span>
   <span class="ruby-keyword">end</span>
 
-  <span class="ruby-identifier">relation</span> = <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">reorder</span>(<span class="ruby-identifier">batch_order</span>(<span class="ruby-identifier">order</span>)).<span class="ruby-identifier">limit</span>(<span class="ruby-identifier">batch_limit</span>)
-  <span class="ruby-identifier">relation</span> = <span class="ruby-identifier">apply_limits</span>(<span class="ruby-identifier">relation</span>, <span class="ruby-identifier">start</span>, <span class="ruby-identifier">finish</span>, <span class="ruby-identifier">order</span>)
-  <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">skip_query_cache!</span> <span class="ruby-comment"># Retaining the results in the query cache would undermine the point of batching</span>
-  <span class="ruby-identifier">batch_relation</span> = <span class="ruby-identifier">relation</span>
-
-  <span class="ruby-identifier">loop</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">load</span>
-      <span class="ruby-identifier">records</span> = <span class="ruby-identifier">batch_relation</span>.<span class="ruby-identifier">records</span>
-      <span class="ruby-identifier">ids</span> = <span class="ruby-identifier">records</span>.<span class="ruby-identifier">map</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:id</span>)
-      <span class="ruby-identifier">yielded_relation</span> = <span class="ruby-identifier">where</span>(<span class="ruby-identifier">primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">ids</span>)
-      <span class="ruby-identifier">yielded_relation</span>.<span class="ruby-identifier">load_records</span>(<span class="ruby-identifier">records</span>)
-    <span class="ruby-keyword">else</span>
-      <span class="ruby-identifier">ids</span> = <span class="ruby-identifier">batch_relation</span>.<span class="ruby-identifier">pluck</span>(<span class="ruby-identifier">primary_key</span>)
-      <span class="ruby-identifier">yielded_relation</span> = <span class="ruby-identifier">where</span>(<span class="ruby-identifier">primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">ids</span>)
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-keyword">break</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">ids</span>.<span class="ruby-identifier">empty?</span>
-
-    <span class="ruby-identifier">primary_key_offset</span> = <span class="ruby-identifier">ids</span>.<span class="ruby-identifier">last</span>
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-string">&quot;Primary key not included in the custom select clause&quot;</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">primary_key_offset</span>
-
-    <span class="ruby-keyword">yield</span> <span class="ruby-identifier">yielded_relation</span>
-
-    <span class="ruby-keyword">break</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">ids</span>.<span class="ruby-identifier">length</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">batch_limit</span>
-
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">limit_value</span>
-      <span class="ruby-identifier">remaining</span> <span class="ruby-operator">-=</span> <span class="ruby-identifier">ids</span>.<span class="ruby-identifier">length</span>
-
-      <span class="ruby-keyword">if</span> <span class="ruby-identifier">remaining</span> <span class="ruby-operator">==</span> <span class="ruby-value">0</span>
-        <span class="ruby-comment"># Saves a useless iteration when the limit is a multiple of the</span>
-        <span class="ruby-comment"># batch size.</span>
-        <span class="ruby-keyword">break</span>
-      <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">remaining</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">batch_limit</span>
-        <span class="ruby-identifier">relation</span> = <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">limit</span>(<span class="ruby-identifier">remaining</span>)
-      <span class="ruby-keyword">end</span>
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-identifier">batch_relation</span> = <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">where</span>(
-      <span class="ruby-identifier">predicate_builder</span>[<span class="ruby-identifier">primary_key</span>, <span class="ruby-identifier">primary_key_offset</span>, <span class="ruby-identifier">order</span> <span class="ruby-operator">==</span> <span class="ruby-value">:desc</span> <span class="ruby-operator">?</span> <span class="ruby-value">:lt</span> <span class="ruby-operator">:</span> <span class="ruby-value">:gt</span>]
+  <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">loaded?</span>
+    <span class="ruby-identifier">batch_on_loaded_relation</span>(
+      <span class="ruby-value">relation:</span> <span class="ruby-keyword">self</span>,
+      <span class="ruby-value">start:</span> <span class="ruby-identifier">start</span>,
+      <span class="ruby-value">finish:</span> <span class="ruby-identifier">finish</span>,
+      <span class="ruby-value">order:</span> <span class="ruby-identifier">order</span>,
+      <span class="ruby-value">batch_limit:</span> <span class="ruby-identifier">batch_limit</span>,
+      <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
+    )
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">batch_on_unloaded_relation</span>(
+      <span class="ruby-value">relation:</span> <span class="ruby-keyword">self</span>,
+      <span class="ruby-value">start:</span> <span class="ruby-identifier">start</span>,
+      <span class="ruby-value">finish:</span> <span class="ruby-identifier">finish</span>,
+      <span class="ruby-value">load:</span> <span class="ruby-identifier">load</span>,
+      <span class="ruby-value">order:</span> <span class="ruby-identifier">order</span>,
+      <span class="ruby-value">use_ranges:</span> <span class="ruby-identifier">use_ranges</span>,
+      <span class="ruby-value">remaining:</span> <span class="ruby-identifier">remaining</span>,
+      <span class="ruby-value">batch_limit:</span> <span class="ruby-identifier">batch_limit</span>,
+      <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>
     )
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>

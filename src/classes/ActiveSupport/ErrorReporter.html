@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -22,6 +22,8 @@ layout: default
             
             <li><a href="../../files/activesupport/lib/active_support/error_reporter_rb.html">activesupport/lib/active_support/error_reporter.rb</a></li>
             
+            <li><a href="../../files/activesupport/lib/active_support/error_reporter/test_helper_rb.html">activesupport/lib/active_support/error_reporter/test_helper.rb</a></li>
+            
         </ul>
     </div>
     <div id="bodyContent">
@@ -29,9 +31,11 @@ layout: default
   
     <div class="description">
       
+<h1 id="class-ActiveSupport::ErrorReporter-label-Active+Support+Error+Reporter">Active Support Error Reporter</h1>
+
 <p><code>ActiveSupport::ErrorReporter</code> is a common interface for error reporting services.</p>
 
-<p>To rescue and report any unhandled error, you can use the <code>handle</code> method:</p>
+<p>To rescue and report any unhandled error, you can use the <a href="ErrorReporter.html#method-i-handle"><code>handle</code></a> method:</p>
 
 <pre><code>Rails.error.handle do
   do_something!
@@ -40,32 +44,16 @@ end
 
 <p>If an error is raised, it will be reported and swallowed.</p>
 
-<p>Alternatively if you want to report the error but not swallow it, you can use <code>record</code></p>
+<p>Alternatively, if you want to report the error but not swallow it, you can use <a href="ErrorReporter.html#method-i-record"><code>record</code></a>:</p>
 
 <pre><code>Rails.error.record do
   do_something!
 end
 </code></pre>
 
-<p>Both methods can be restricted to only handle a specific exception class</p>
+<p>Both methods can be restricted to handle only a specific error class:</p>
 
 <pre><code>maybe_tags = Rails.error.handle(Redis::BaseError) { redis.get(&quot;tags&quot;) }
-</code></pre>
-
-<p>You can also pass some extra context information that may be used by the error subscribers:</p>
-
-<pre><code>Rails.error.handle(context: { section: &quot;admin&quot; }) do
-  # ...
-end
-</code></pre>
-
-<p>Additionally a <code>severity</code> can be passed along to communicate how important the error report is. <code>severity</code> can be one of <code>:error</code>, <code>:warning</code>, or <code>:info</code>. Handled errors default to the <code>:warning</code> severity, and unhandled ones to <code>:error</code>.</p>
-
-<p>Both <code>handle</code> and <code>record</code> pass through the return value from the block. In the case of <code>handle</code> rescuing an error, a fallback can be provided. The fallback must be a callable whose result will be returned when the block raises and is handled:</p>
-
-<pre><code>user = Rails.error.handle(fallback: -&gt; { User.anonymous }) do
-  User.find_by(params)
-end
 </code></pre>
 
     </div>
@@ -78,10 +66,27 @@ end
 
 
   
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="ErrorReporter/TestHelper.html">ActiveSupport::ErrorReporter::TestHelper</a></li>
+      
+      </ul>
+    
+
+    
+  
 
   
     <h2 id="methods">Methods</h2>
     <ul>
+      
+        <li>
+          <a href="#method-i-disable">disable</a>
+        </li>
       
         <li>
           <a href="#method-i-handle">handle</a>
@@ -107,6 +112,10 @@ end
           <a href="#method-i-subscribe">subscribe</a>
         </li>
       
+        <li>
+          <a href="#method-i-unsubscribe">unsubscribe</a>
+        </li>
+      
     </ul>
   
 
@@ -121,6 +130,18 @@ end
       <!-- Section constants -->
       <h2 id="constants">Constants</h2>
       <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">DEFAULT_SOURCE</td>
+            <td>=</td>
+            <td class="attr-value">&quot;application&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
         
           <tr valign='top'>
             <td class="attr-name">SEVERITIES</td>
@@ -183,7 +204,7 @@ end
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 46</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 32</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">subscribers</span>, <span class="ruby-value">logger:</span> <span class="ruby-keyword">nil</span>)
   <span class="ruby-ivar">@subscribers</span> = <span class="ruby-identifier">subscribers</span>.<span class="ruby-identifier">flatten</span>
   <span class="ruby-ivar">@logger</span> = <span class="ruby-identifier">logger</span>
@@ -198,20 +219,90 @@ end
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
         <div class="method">
-          <h3 id="method-i-handle">
+          <h3 id="method-i-disable">
             
-              handle(error_class = StandardError, severity: :warning, context: {}, fallback: nil)
+              disable(subscriber)
             
           </h3>
 
           
             <div class="description">
-              <p>Report any unhandled exception, and swallow it.</p>
+              <p>Prevent a subscriber from being notified of errors for the duration of the block. You may pass in the subscriber itself, or its class.</p>
 
-<pre><code>Rails.error.handle do
+<p>This can be helpful for error reporting service integrations, when they wish to handle any errors higher in the stack.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-disable_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 147</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">disable</span>(<span class="ruby-identifier">subscriber</span>)
+  <span class="ruby-identifier">disabled_subscribers</span> = (<span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">IsolatedExecutionState</span>[<span class="ruby-keyword">self</span>] <span class="ruby-operator">||=</span> [])
+  <span class="ruby-identifier">disabled_subscribers</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">subscriber</span>
+  <span class="ruby-keyword">begin</span>
+    <span class="ruby-keyword">yield</span>
+  <span class="ruby-keyword">ensure</span>
+    <span class="ruby-identifier">disabled_subscribers</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">subscriber</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-handle">
+            
+              handle(*error_classes, severity: :warning, context: {}, fallback: nil, source: DEFAULT_SOURCE)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Evaluates the given block, reporting and swallowing any unhandled error. If no error is raised, returns the return value of the block. Otherwise, returns the result of <code>fallback.call</code>, or <code>nil</code> if <code>fallback</code> is not specified.</p>
+
+<pre><code># Will report a TypeError to all subscribers and return nil.
+Rails.error.handle do
   1 + &#39;1&#39;
 end
 </code></pre>
+
+<p>Can be restricted to handle only specific error classes:</p>
+
+<pre><code>maybe_tags = Rails.error.handle(Redis::BaseError) { redis.get(&quot;tags&quot;) }
+</code></pre>
+
+<h4 id="method-i-handle-label-Options">Options</h4>
+<ul><li>
+<p><code>:severity</code> - This value is passed along to subscribers to indicate how important the error report is. Can be <code>:error</code>, <code>:warning</code>, or <code>:info</code>. Defaults to <code>:warning</code>.</p>
+</li><li>
+<p><code>:context</code> - Extra information that is passed along to subscribers. For example:</p>
+
+<pre><code>Rails.error.handle(context: { section: &quot;admin&quot; }) do
+  # ...
+end
+</code></pre>
+</li><li>
+<p><code>:fallback</code> - A callable that provides <code>handle</code>‘s return value when an unhandled error is raised. For example:</p>
+
+<pre><code>user = Rails.error.handle(fallback: -&gt; { User.anonymous }) do
+  User.find_by(params)
+end
+</code></pre>
+</li><li>
+<p><code>:source</code> - This value is passed along to subscribers to indicate the source of the error. Subscribers can use this value to ignore certain errors. Defaults to <code>&quot;application&quot;</code>.</p>
+</li></ul>
             </div>
           
 
@@ -228,11 +319,12 @@ end
                 
               </p>
               <div id="method-i-handle_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 57</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">handle</span>(<span class="ruby-identifier">error_class</span> = <span class="ruby-constant">StandardError</span>, <span class="ruby-value">severity:</span> <span class="ruby-value">:warning</span>, <span class="ruby-value">context:</span> {}, <span class="ruby-value">fallback:</span> <span class="ruby-keyword">nil</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 74</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">handle</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">error_classes</span>, <span class="ruby-value">severity:</span> <span class="ruby-value">:warning</span>, <span class="ruby-value">context:</span> {}, <span class="ruby-value">fallback:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">source:</span> <span class="ruby-constant">DEFAULT_SOURCE</span>)
+  <span class="ruby-identifier">error_classes</span> = [<span class="ruby-constant">StandardError</span>] <span class="ruby-keyword">if</span> <span class="ruby-identifier">error_classes</span>.<span class="ruby-identifier">blank?</span>
   <span class="ruby-keyword">yield</span>
-<span class="ruby-keyword">rescue</span> <span class="ruby-identifier">error_class</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">error</span>
-  <span class="ruby-identifier">report</span>(<span class="ruby-identifier">error</span>, <span class="ruby-value">handled:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">severity:</span> <span class="ruby-identifier">severity</span>, <span class="ruby-value">context:</span> <span class="ruby-identifier">context</span>)
+<span class="ruby-keyword">rescue</span> <span class="ruby-operator">*</span><span class="ruby-identifier">error_classes</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">error</span>
+  <span class="ruby-identifier">report</span>(<span class="ruby-identifier">error</span>, <span class="ruby-value">handled:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">severity:</span> <span class="ruby-identifier">severity</span>, <span class="ruby-value">context:</span> <span class="ruby-identifier">context</span>, <span class="ruby-value">source:</span> <span class="ruby-identifier">source</span>)
   <span class="ruby-identifier">fallback</span>.<span class="ruby-identifier">call</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">fallback</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -243,13 +335,38 @@ end
         <div class="method">
           <h3 id="method-i-record">
             
-              record(error_class = StandardError, severity: :error, context: {})
+              record(*error_classes, severity: :error, context: {}, source: DEFAULT_SOURCE)
             
           </h3>
 
           
             <div class="description">
-              
+              <p>Evaluates the given block, reporting and re-raising any unhandled error. If no error is raised, returns the return value of the block.</p>
+
+<pre><code># Will report a TypeError to all subscribers and re-raise it.
+Rails.error.record do
+  1 + &#39;1&#39;
+end
+</code></pre>
+
+<p>Can be restricted to handle only specific error classes:</p>
+
+<pre><code>tags = Rails.error.record(Redis::BaseError) { redis.get(&quot;tags&quot;) }
+</code></pre>
+
+<h4 id="method-i-record-label-Options">Options</h4>
+<ul><li>
+<p><code>:severity</code> - This value is passed along to subscribers to indicate how important the error report is. Can be <code>:error</code>, <code>:warning</code>, or <code>:info</code>. Defaults to <code>:error</code>.</p>
+</li><li>
+<p><code>:context</code> - Extra information that is passed along to subscribers. For example:</p>
+
+<pre><code>Rails.error.record(context: { section: &quot;admin&quot; }) do
+  # ...
+end
+</code></pre>
+</li><li>
+<p><code>:source</code> - This value is passed along to subscribers to indicate the source of the error. Subscribers can use this value to ignore certain errors. Defaults to <code>&quot;application&quot;</code>.</p>
+</li></ul>
             </div>
           
 
@@ -266,11 +383,12 @@ end
                 
               </p>
               <div id="method-i-record_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 64</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">record</span>(<span class="ruby-identifier">error_class</span> = <span class="ruby-constant">StandardError</span>, <span class="ruby-value">severity:</span> <span class="ruby-value">:error</span>, <span class="ruby-value">context:</span> {})
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 110</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">record</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">error_classes</span>, <span class="ruby-value">severity:</span> <span class="ruby-value">:error</span>, <span class="ruby-value">context:</span> {}, <span class="ruby-value">source:</span> <span class="ruby-constant">DEFAULT_SOURCE</span>)
+  <span class="ruby-identifier">error_classes</span> = [<span class="ruby-constant">StandardError</span>] <span class="ruby-keyword">if</span> <span class="ruby-identifier">error_classes</span>.<span class="ruby-identifier">blank?</span>
   <span class="ruby-keyword">yield</span>
-<span class="ruby-keyword">rescue</span> <span class="ruby-identifier">error_class</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">error</span>
-  <span class="ruby-identifier">report</span>(<span class="ruby-identifier">error</span>, <span class="ruby-value">handled:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">severity:</span> <span class="ruby-identifier">severity</span>, <span class="ruby-value">context:</span> <span class="ruby-identifier">context</span>)
+<span class="ruby-keyword">rescue</span> <span class="ruby-operator">*</span><span class="ruby-identifier">error_classes</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">error</span>
+  <span class="ruby-identifier">report</span>(<span class="ruby-identifier">error</span>, <span class="ruby-value">handled:</span> <span class="ruby-keyword">false</span>, <span class="ruby-value">severity:</span> <span class="ruby-identifier">severity</span>, <span class="ruby-value">context:</span> <span class="ruby-identifier">context</span>, <span class="ruby-value">source:</span> <span class="ruby-identifier">source</span>)
   <span class="ruby-identifier">raise</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -281,15 +399,15 @@ end
         <div class="method">
           <h3 id="method-i-report">
             
-              report(error, handled:, severity: handled ? :warning : :error, context: {})
+              report(error, handled: true, severity: handled ? :warning : :error, context: {}, source: DEFAULT_SOURCE)
             
           </h3>
 
           
             <div class="description">
-              <p>When the block based <code>handle</code> and <code>record</code> methods are not suitable, you can directly use <code>report</code></p>
+              <p>Report an error directly to subscribers. You can use this method when the block-based <a href="ErrorReporter.html#method-i-handle"><code>handle</code></a> and <a href="ErrorReporter.html#method-i-record"><code>record</code></a> methods are not suitable.</p>
 
-<pre><code>Rails.error.report(error, handled: true)
+<pre><code>Rails.error.report(error)
 </code></pre>
             </div>
           
@@ -307,15 +425,20 @@ end
                 
               </p>
               <div id="method-i-report_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 95</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">report</span>(<span class="ruby-identifier">error</span>, <span class="ruby-value">handled:</span>, <span class="ruby-value">severity:</span> <span class="ruby-identifier">handled</span> <span class="ruby-operator">?</span> <span class="ruby-value">:warning</span> <span class="ruby-operator">:</span> <span class="ruby-value">:error</span>, <span class="ruby-value">context:</span> {})
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 172</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">report</span>(<span class="ruby-identifier">error</span>, <span class="ruby-value">handled:</span> <span class="ruby-keyword">true</span>, <span class="ruby-value">severity:</span> <span class="ruby-identifier">handled</span> <span class="ruby-operator">?</span> <span class="ruby-value">:warning</span> <span class="ruby-operator">:</span> <span class="ruby-value">:error</span>, <span class="ruby-value">context:</span> {}, <span class="ruby-value">source:</span> <span class="ruby-constant">DEFAULT_SOURCE</span>)
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">error</span>.<span class="ruby-identifier">instance_variable_defined?</span>(<span class="ruby-value">:@__rails_error_reported</span>)
+
   <span class="ruby-keyword">unless</span> <span class="ruby-constant">SEVERITIES</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">severity</span>)
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;severity must be one of #{SEVERITIES.map(&amp;:inspect).join(&quot;, &quot;)}, got: #{severity.inspect}&quot;</span>
   <span class="ruby-keyword">end</span>
 
   <span class="ruby-identifier">full_context</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">ExecutionContext</span>.<span class="ruby-identifier">to_h</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">context</span>)
+  <span class="ruby-identifier">disabled_subscribers</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">IsolatedExecutionState</span>[<span class="ruby-keyword">self</span>]
   <span class="ruby-ivar">@subscribers</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">subscriber</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">report</span>(<span class="ruby-identifier">error</span>, <span class="ruby-value">handled:</span> <span class="ruby-identifier">handled</span>, <span class="ruby-value">severity:</span> <span class="ruby-identifier">severity</span>, <span class="ruby-value">context:</span> <span class="ruby-identifier">full_context</span>)
+    <span class="ruby-keyword">unless</span> <span class="ruby-identifier">disabled_subscribers</span>&amp;.<span class="ruby-identifier">any?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">s</span><span class="ruby-operator">|</span> <span class="ruby-identifier">s</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">subscriber</span> }
+      <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">report</span>(<span class="ruby-identifier">error</span>, <span class="ruby-value">handled:</span> <span class="ruby-identifier">handled</span>, <span class="ruby-value">severity:</span> <span class="ruby-identifier">severity</span>, <span class="ruby-value">context:</span> <span class="ruby-identifier">full_context</span>, <span class="ruby-value">source:</span> <span class="ruby-identifier">source</span>)
+    <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">rescue</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">subscriber_error</span>
     <span class="ruby-keyword">if</span> <span class="ruby-identifier">logger</span>
       <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">fatal</span>(
@@ -325,6 +448,10 @@ end
     <span class="ruby-keyword">else</span>
       <span class="ruby-identifier">raise</span>
     <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">error</span>.<span class="ruby-identifier">frozen?</span>
+    <span class="ruby-identifier">error</span>.<span class="ruby-identifier">instance_variable_set</span>(<span class="ruby-value">:@__rails_error_reported</span>, <span class="ruby-keyword">true</span>)
   <span class="ruby-keyword">end</span>
 
   <span class="ruby-keyword">nil</span>
@@ -343,12 +470,10 @@ end
 
           
             <div class="description">
-              <p>Update the execution context that is accessible to error subscribers</p>
+              <p>Update the execution context that is accessible to error subscribers. Any context passed to <a href="ErrorReporter.html#method-i-handle"><code>handle</code></a>, <a href="ErrorReporter.html#method-i-record"><code>record</code></a>, or <a href="ErrorReporter.html#method-i-report"><code>report</code></a> will be merged with the context set here.</p>
 
 <pre><code>Rails.error.set_context(section: &quot;checkout&quot;, user_id: @user.id)
 </code></pre>
-
-<p>See <code>ActiveSupport::ExecutionContext.set</code></p>
             </div>
           
 
@@ -365,7 +490,7 @@ end
                 
               </p>
               <div id="method-i-set_context_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 88</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 163</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">set_context</span>(<span class="ruby-operator">...</span>)
   <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">ExecutionContext</span>.<span class="ruby-identifier">set</span>(<span class="ruby-operator">...</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -385,10 +510,10 @@ end
             <div class="description">
               <p>Register a new error subscriber. The subscriber must respond to</p>
 
-<pre><code>report(Exception, handled: Boolean, context: Hash)
+<pre><code>report(Exception, handled: Boolean, severity: (:error OR :warning OR :info), context: Hash, source: String)
 </code></pre>
 
-<p>The <code>report</code> method <code>should</code> never raise an error.</p>
+<p>The <code>report</code> method <strong>should never</strong> raise an error.</p>
             </div>
           
 
@@ -405,12 +530,55 @@ end
                 
               </p>
               <div id="method-i-subscribe_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 76</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 123</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">subscribe</span>(<span class="ruby-identifier">subscriber</span>)
   <span class="ruby-keyword">unless</span> <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:report</span>)
     <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;Error subscribers must respond to #report&quot;</span>
   <span class="ruby-keyword">end</span>
   <span class="ruby-ivar">@subscribers</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">subscriber</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-unsubscribe">
+            
+              unsubscribe(subscriber)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Unregister an error subscriber. Accepts either a subscriber or a class.</p>
+
+<pre><code>subscriber = MyErrorSubscriber.new
+Rails.error.subscribe(subscriber)
+
+Rails.error.unsubscribe(subscriber)
+# or
+Rails.error.unsubscribe(MyErrorSubscriber)
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-unsubscribe_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/error_reporter.rb, line 138</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">unsubscribe</span>(<span class="ruby-identifier">subscriber</span>)
+  <span class="ruby-ivar">@subscribers</span>.<span class="ruby-identifier">delete_if</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">s</span><span class="ruby-operator">|</span> <span class="ruby-identifier">subscriber</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">s</span> }
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

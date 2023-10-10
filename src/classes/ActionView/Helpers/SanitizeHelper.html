@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -23,6 +23,8 @@ layout: default
   
     <div class="description">
       
+<h1 id="module-ActionView::Helpers::SanitizeHelper-label-Action+View+Sanitize+Helpers">Action View Sanitize Helpers</h1>
+
 <p>The <a href="SanitizeHelper.html"><code>SanitizeHelper</code></a> module provides a set of methods for scrubbing text of undesired HTML elements. These helper methods extend Action View making them callable within your template files.</p>
 
     </div>
@@ -86,9 +88,9 @@ layout: default
             <div class="description">
               <p>Sanitizes HTML input, stripping all but known-safe tags and attributes.</p>
 
-<p>It also strips href/src attributes with unsafe protocols like <code>javascript:</code>, while also protecting against attempts to use Unicode, ASCII, and hex character references to work around these protocol filters. All special characters will be escaped.</p>
+<p>It also strips href/src attributes with unsafe protocols like <code>javascript:</code>, while also protecting against attempts to use Unicode, ASCII, and hex character references to work around these protocol filters.</p>
 
-<p>The default sanitizer is Rails::Html::SafeListSanitizer. See <a href="https://github.com/rails/rails-html-sanitizer">Rails HTML Sanitizers</a> for more information.</p>
+<p>The default sanitizer is Rails::HTML5::SafeListSanitizer. See <a href="https://github.com/rails/rails-html-sanitizer">Rails HTML Sanitizers</a> for more information.</p>
 
 <p>Custom sanitization rules can also be provided.</p>
 
@@ -100,7 +102,7 @@ layout: default
 </li><li>
 <p><code>:attributes</code> - An array of allowed attributes.</p>
 </li><li>
-<p><code>:scrubber</code> - A <a href="https://github.com/rails/rails-html-sanitizer">Rails::Html scrubber</a> or <a href="https://github.com/flavorjones/loofah">Loofah::Scrubber</a> object that defines custom sanitization rules. A custom scrubber takes precedence over custom tags and attributes.</p>
+<p><code>:scrubber</code> - A <a href="https://github.com/rails/rails-html-sanitizer">Rails::HTML scrubber</a> or <a href="https://github.com/flavorjones/loofah">Loofah::Scrubber</a> object that defines custom sanitization rules. A custom scrubber takes precedence over custom tags and attributes.</p>
 </li></ul>
 
 <h4 id="method-i-sanitize-label-Examples">Examples</h4>
@@ -115,9 +117,9 @@ layout: default
 <pre><code>&lt;%= sanitize @comment.body, tags: %w(strong em a), attributes: %w(href) %&gt;
 </code></pre>
 
-<p>Providing a custom Rails::Html scrubber:</p>
+<p>Providing a custom Rails::HTML scrubber:</p>
 
-<pre><code>class CommentScrubber &lt; Rails::Html::PermitScrubber
+<pre><code>class CommentScrubber &lt; Rails::HTML::PermitScrubber
   def initialize
     super
     self.tags = %w( form script comment blockquote )
@@ -132,7 +134,7 @@ end
 &lt;%= sanitize @comment.body, scrubber: CommentScrubber.new %&gt;
 </code></pre>
 
-<p>See <a href="https://github.com/rails/rails-html-sanitizer">Rails HTML Sanitizer</a> for documentation about Rails::Html scrubbers.</p>
+<p>See <a href="https://github.com/rails/rails-html-sanitizer">Rails HTML Sanitizer</a> for documentation about Rails::HTML scrubbers.</p>
 
 <p>Providing a custom Loofah::Scrubber:</p>
 
@@ -151,6 +153,20 @@ end
 config.action_view.sanitized_allowed_tags = [&#39;strong&#39;, &#39;em&#39;, &#39;a&#39;]
 config.action_view.sanitized_allowed_attributes = [&#39;href&#39;, &#39;title&#39;]
 </code></pre>
+
+<p>The default, starting in Rails 7.1, is to use an HTML5 parser for sanitization (if it is available, see NOTE below). If you wish to revert back to the previous HTML4 behavior, you can do so by setting the following in your application configuration:</p>
+
+<pre><code># In config/application.rb
+config.action_view.sanitizer_vendor = Rails::HTML4::Sanitizer
+</code></pre>
+
+<p>Or, if you’re upgrading from a previous version of Rails and wish to opt into the HTML5 behavior:</p>
+
+<pre><code># In config/application.rb
+config.action_view.sanitizer_vendor = Rails::HTML5::Sanitizer
+</code></pre>
+
+<p>NOTE: Rails::HTML5::Sanitizer is not supported on JRuby, so on JRuby platforms Rails will fall back to use Rails::HTML4::Sanitizer.</p>
             </div>
           
 
@@ -167,7 +183,7 @@ config.action_view.sanitized_allowed_attributes = [&#39;href&#39;, &#39;title&#3
                 
               </p>
               <div id="method-i-sanitize_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 81</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 100</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">sanitize</span>(<span class="ruby-identifier">html</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">safe_list_sanitizer</span>.<span class="ruby-identifier">sanitize</span>(<span class="ruby-identifier">html</span>, <span class="ruby-identifier">options</span>)&amp;.<span class="ruby-identifier">html_safe</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -202,7 +218,7 @@ config.action_view.sanitized_allowed_attributes = [&#39;href&#39;, &#39;title&#3
                 
               </p>
               <div id="method-i-sanitize_css_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 86</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 105</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">sanitize_css</span>(<span class="ruby-identifier">style</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">safe_list_sanitizer</span>.<span class="ruby-identifier">sanitize_css</span>(<span class="ruby-identifier">style</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -250,7 +266,7 @@ strip_links(&#39;&lt;&lt;a href=&quot;https://example.org&quot;&gt;malformed &am
                 
               </p>
               <div id="method-i-strip_links_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 120</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 139</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">strip_links</span>(<span class="ruby-identifier">html</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">link_sanitizer</span>.<span class="ruby-identifier">sanitize</span>(<span class="ruby-identifier">html</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -298,7 +314,7 @@ strip_tags(&quot;&gt; A quote from Smith &amp; Wesson&quot;)
                 
               </p>
               <div id="method-i-strip_tags_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 103</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 122</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">strip_tags</span>(<span class="ruby-identifier">html</span>)
   <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">full_sanitizer</span>.<span class="ruby-identifier">sanitize</span>(<span class="ruby-identifier">html</span>)&amp;.<span class="ruby-identifier">html_safe</span>
 <span class="ruby-keyword">end</span></code></pre>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -29,40 +29,27 @@ layout: default
   
     <div class="description">
       
-<p><a href="Renderer.html"><code>ActionController::Renderer</code></a> allows you to render arbitrary templates without requirement of being in controller actions.</p>
+<h1 id="class-ActionController::Renderer-label-Action+Controller+Renderer">Action Controller Renderer</h1>
 
-<p>You get a concrete renderer class by invoking ActionController::Base#renderer. For example:</p>
+<p><a href="Renderer.html"><code>ActionController::Renderer</code></a> allows you to render arbitrary templates without being inside a controller action.</p>
+
+<p>You can get a renderer instance by calling <code>renderer</code> on a controller class:</p>
 
 <pre><code>ApplicationController.renderer
+PostsController.renderer
 </code></pre>
 
-<p>It allows you to call method <a href="Renderer.html#method-i-render"><code>render</code></a> directly.</p>
+<p>and render a template by calling the <a href="Renderer.html#method-i-render"><code>render</code></a> method:</p>
 
-<pre><code>ApplicationController.renderer.render template: &#39;...&#39;
+<pre><code>ApplicationController.renderer.render template: &quot;posts/show&quot;, assigns: { post: Post.first }
+PostsController.renderer.render :show, assigns: { post: Post.first }
 </code></pre>
 
-<p>You can use this shortcut in a controller, instead of the previous example:</p>
+<p>As a shortcut, you can also call <code>render</code> directly on the controller class itself:</p>
 
-<pre><code>ApplicationController.render template: &#39;...&#39;
+<pre><code>ApplicationController.render template: &quot;posts/show&quot;, assigns: { post: Post.first }
+PostsController.render :show, assigns: { post: Post.first }
 </code></pre>
-
-<p><a href="Renderer.html#method-i-render"><code>render</code></a> allows you to use the same options that you can use when rendering in a controller. For example:</p>
-
-<pre><code>FooController.render :action, locals: { ... }, assigns: { ... }
-</code></pre>
-
-<p>The template will be rendered in a Rack environment which is accessible through ActionController::Renderer#env. You can set it up in two ways:</p>
-<ul><li>
-<p>by changing renderer defaults, like</p>
-
-<pre><code>ApplicationController.renderer.defaults # =&gt; hash with default Rack environment
-</code></pre>
-</li><li>
-<p>by initializing an instance of renderer by passing it a custom environment.</p>
-
-<pre><code>ApplicationController.renderer.new(method: &#39;post&#39;, https: true)
-</code></pre>
-</li></ul>
 
     </div>
   
@@ -78,6 +65,10 @@ layout: default
   
     <h2 id="methods">Methods</h2>
     <ul>
+      
+        <li>
+          <a href="#method-i-defaults">defaults</a>
+        </li>
       
         <li>
           <a href="#method-c-for">for</a>
@@ -122,10 +113,7 @@ layout: default
             <td class="attr-name">DEFAULTS</td>
             <td>=</td>
             <td class="attr-value">{
-http_host: &quot;example.org&quot;,
-https: false,
 method: &quot;get&quot;,
-script_name: &quot;&quot;,
 input: &quot;&quot;
 }.freeze</td>
           </tr>
@@ -170,14 +158,6 @@ input:       &quot;rack.input&quot;
             <td class='attr-desc'></td>
           </tr>
         
-          <tr valign='top'>
-            <td class='attr-rw'>
-              [R]
-            </td>
-            <td class='attr-name'>defaults</td>
-            <td class='attr-desc'></td>
-          </tr>
-        
       </table>
     
 
@@ -188,13 +168,13 @@ input:       &quot;rack.input&quot;
         <div class="method">
           <h3 id="method-c-for">
             
-              for(controller, env = {}, defaults = DEFAULTS.dup)
+              for(controller, env = nil, defaults = DEFAULTS)
             
           </h3>
 
           
             <div class="description">
-              <p>Create a new renderer instance for a specific controller class.</p>
+              <p>Creates a new renderer using the given controller class. See <a href="Renderer.html#method-c-new"><code>::new</code></a>.</p>
             </div>
           
 
@@ -211,8 +191,8 @@ input:       &quot;rack.input&quot;
                 
               </p>
               <div id="method-c-for_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/renderer.rb, line 48</span>
-<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-keyword">for</span>(<span class="ruby-identifier ruby-title">controller</span>, <span class="ruby-identifier">env</span> = {}, <span class="ruby-identifier">defaults</span> = <span class="ruby-constant">DEFAULTS</span>.<span class="ruby-identifier">dup</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/renderer.rb, line 61</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-keyword">for</span>(<span class="ruby-identifier ruby-title">controller</span>, <span class="ruby-identifier">env</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">defaults</span> = <span class="ruby-constant">DEFAULTS</span>)
   <span class="ruby-identifier">new</span>(<span class="ruby-identifier">controller</span>, <span class="ruby-identifier">env</span>, <span class="ruby-identifier">defaults</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -229,7 +209,29 @@ input:       &quot;rack.input&quot;
 
           
             <div class="description">
-              <p>Accepts a custom Rack environment to render templates in. It will be merged with the default Rack environment defined by <code>ActionController::Renderer::DEFAULTS</code>.</p>
+              <p>Initializes a new <a href="Renderer.html"><code>Renderer</code></a>.</p>
+
+<h4 id="method-c-new-label-Parameters"><a href="Parameters.html"><code>Parameters</code></a></h4>
+<ul><li>
+<p><code>controller</code> - The controller class to instantiate for rendering.</p>
+</li><li>
+<p><code>env</code> - The Rack env to use for mocking a request when rendering. Entries can be typical Rack env keys and values, or they can be any of the following, which will be converted appropriately:</p>
+<ul><li>
+<p><code>:http_host</code> - The HTTP host for the incoming request. Converts to Rack’s <code>HTTP_HOST</code>.</p>
+</li><li>
+<p><code>:https</code> - Boolean indicating whether the incoming request uses HTTPS. Converts to Rack’s <code>HTTPS</code>.</p>
+</li><li>
+<p><code>:method</code> - The HTTP method for the incoming request, case-insensitive. Converts to Rack’s <code>REQUEST_METHOD</code>.</p>
+</li><li>
+<p><code>:script_name</code> - The portion of the incoming request’s URL path that corresponds to the application. Converts to Rack’s <code>SCRIPT_NAME</code>.</p>
+</li><li>
+<p><code>:input</code> - The input stream. Converts to Rack’s <code>rack.input</code>.</p>
+</li></ul>
+</li><li>
+<p><code>defaults</code> - Default values for the Rack env. Entries are specified in the same format as <code>env</code>. <code>env</code> will be merged on top of these values. <code>defaults</code> will be retained when calling <a href="Renderer.html#method-i-new"><code>new</code></a> on a renderer instance.</p>
+</li></ul>
+
+<p>If no <code>http_host</code> is specified, the env HTTP host will be derived from the routes’ <code>default_url_options</code>. In this case, the <code>https</code> boolean and the <code>script_name</code> will also be derived from <code>default_url_options</code> if they were not specified. Additionally, the <code>https</code> boolean will fall back to <code>Rails.application.config.force_ssl</code> if <code>default_url_options</code> does not specify a <code>protocol</code>.</p>
             </div>
           
 
@@ -246,11 +248,16 @@ input:       &quot;rack.input&quot;
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/renderer.rb, line 65</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/renderer.rb, line 106</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">controller</span>, <span class="ruby-identifier">env</span>, <span class="ruby-identifier">defaults</span>)
   <span class="ruby-ivar">@controller</span> = <span class="ruby-identifier">controller</span>
   <span class="ruby-ivar">@defaults</span> = <span class="ruby-identifier">defaults</span>
-  <span class="ruby-ivar">@env</span> = <span class="ruby-identifier">normalize_keys</span> <span class="ruby-identifier">defaults</span>, <span class="ruby-identifier">env</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">env</span>.<span class="ruby-identifier">blank?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-ivar">@defaults</span> <span class="ruby-operator">==</span> <span class="ruby-constant">DEFAULTS</span>
+    <span class="ruby-ivar">@env</span> = <span class="ruby-constant">DEFAULT_ENV</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-ivar">@env</span> = <span class="ruby-identifier">normalize_env</span>(<span class="ruby-ivar">@defaults</span>)
+    <span class="ruby-ivar">@env</span>.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">normalize_env</span>(<span class="ruby-identifier">env</span>)) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">env</span>.<span class="ruby-identifier">blank?</span>
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -262,15 +269,54 @@ input:       &quot;rack.input&quot;
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
         <div class="method">
-          <h3 id="method-i-new">
+          <h3 id="method-i-defaults">
             
-              new(env = {})
+              defaults()
             
           </h3>
 
           
             <div class="description">
-              <p>Create a new renderer for the same controller but with a new env.</p>
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-defaults_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/renderer.rb, line 117</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">defaults</span>
+  <span class="ruby-ivar">@defaults</span> = <span class="ruby-ivar">@defaults</span>.<span class="ruby-identifier">dup</span> <span class="ruby-keyword">if</span> <span class="ruby-ivar">@defaults</span>.<span class="ruby-identifier">frozen?</span>
+  <span class="ruby-ivar">@defaults</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-new">
+            
+              new(env = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Creates a new renderer using the same controller, but with a new Rack env.</p>
+
+<pre><code>ApplicationController.renderer.new(method: &quot;post&quot;)
+</code></pre>
             </div>
           
 
@@ -287,9 +333,9 @@ input:       &quot;rack.input&quot;
                 
               </p>
               <div id="method-i-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/renderer.rb, line 53</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">new</span>(<span class="ruby-identifier">env</span> = {})
-  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">controller</span>, <span class="ruby-identifier">env</span>, <span class="ruby-identifier">defaults</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/renderer.rb, line 69</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">new</span>(<span class="ruby-identifier">env</span> = <span class="ruby-keyword">nil</span>)
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">controller</span>, <span class="ruby-identifier">env</span>, <span class="ruby-ivar">@defaults</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -326,11 +372,9 @@ input:       &quot;rack.input&quot;
                 
               </p>
               <div id="method-i-render_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/renderer.rb, line 72</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/renderer.rb, line 123</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">render</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>)
-  <span class="ruby-identifier">raise</span> <span class="ruby-string">&quot;missing controller&quot;</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">controller</span>
-
-  <span class="ruby-identifier">request</span> = <span class="ruby-constant">ActionDispatch</span><span class="ruby-operator">::</span><span class="ruby-constant">Request</span>.<span class="ruby-identifier">new</span> <span class="ruby-ivar">@env</span>
+  <span class="ruby-identifier">request</span> = <span class="ruby-constant">ActionDispatch</span><span class="ruby-operator">::</span><span class="ruby-constant">Request</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">env_for_request</span>)
   <span class="ruby-identifier">request</span>.<span class="ruby-identifier">routes</span> = <span class="ruby-identifier">controller</span>.<span class="ruby-identifier">_routes</span>
 
   <span class="ruby-identifier">instance</span> = <span class="ruby-identifier">controller</span>.<span class="ruby-identifier">new</span>
@@ -376,7 +420,7 @@ input:       &quot;rack.input&quot;
 
           
             <div class="description">
-              <p>Create a new renderer for the same controller but with new defaults.</p>
+              <p>Creates a new renderer using the same controller, but with the given defaults merged on top of the previous defaults.</p>
             </div>
           
 
@@ -393,9 +437,9 @@ input:       &quot;rack.input&quot;
                 
               </p>
               <div id="method-i-with_defaults_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/renderer.rb, line 58</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/renderer.rb, line 75</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">with_defaults</span>(<span class="ruby-identifier">defaults</span>)
-  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">controller</span>, <span class="ruby-ivar">@env</span>, <span class="ruby-keyword">self</span>.<span class="ruby-identifier">defaults</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">defaults</span>)
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">controller</span>, <span class="ruby-ivar">@env</span>, <span class="ruby-ivar">@defaults</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-identifier">defaults</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -103,7 +103,7 @@ end
 
 <h2 id="module-ActiveRecord::Callbacks-label-Types+of+callbacks">Types of callbacks</h2>
 
-<p>There are three types of callbacks accepted by the callback macros: method references (symbol), callback objects, inline methods (using a proc). <a href="../Method.html"><code>Method</code></a> references and callback objects are the recommended approaches, inline methods using a proc are sometimes appropriate (such as for creating mix-ins).</p>
+<p>There are three types of callbacks accepted by the callback macros: method references (symbol), callback objects, inline methods (using a proc). Method references and callback objects are the recommended approaches, inline methods using a proc are sometimes appropriate (such as for creating mix-ins).</p>
 
 <p>The method reference callbacks work by specifying a protected or private method available in the object, like this:</p>
 
@@ -187,7 +187,7 @@ end
 
 <h2 id="module-ActiveRecord::Callbacks-label-Canceling+callbacks">Canceling callbacks</h2>
 
-<p>If a <code>before_*</code> callback throws <code>:abort</code>, all the later callbacks and the associated action are cancelled. <a href="Callbacks.html"><code>Callbacks</code></a> are generally run in the order they are defined, with the exception of callbacks defined as methods on the model, which are called last.</p>
+<p>If a <code>before_*</code> callback throws <code>:abort</code>, all the later callbacks and the associated action are cancelled. Callbacks are generally run in the order they are defined, with the exception of callbacks defined as methods on the model, which are called last.</p>
 
 <h2 id="module-ActiveRecord::Callbacks-label-Ordering+callbacks">Ordering callbacks</h2>
 
@@ -244,30 +244,14 @@ end
 end
 </code></pre>
 
-<p>In this case the <code>log_children</code> is executed before <code>do_something_else</code>. The same applies to all non-transactional callbacks.</p>
+<p>In this case the <code>log_children</code> is executed before <code>do_something_else</code>. This applies to all non-transactional callbacks, and to <code>before_commit</code>.</p>
 
-<p>As seen below, in case there are multiple transactional callbacks the order is reversed.</p>
+<p>For transactional <code>after_</code> callbacks (<code>after_commit</code>, <code>after_rollback</code>, etc), the order can be set via configuration.</p>
 
-<p>For example:</p>
-
-<pre><code>class Topic &lt; ActiveRecord::Base
-  has_many :children
-
-  after_commit :log_children
-  after_commit :do_something_else
-
-  private
-    def log_children
-      # Child processing
-    end
-
-    def do_something_else
-      # Something else
-    end
-end
+<pre><code>config.active_record.run_after_transaction_callbacks_in_order_defined = false
 </code></pre>
 
-<p>In this case the <code>do_something_else</code> is executed before <code>log_children</code>.</p>
+<p>If <code>true</code> (the default from Rails 7.1), callbacks are executed in the order they are defined, just like the example above. If <code>false</code>, the order is reversed, so <code>do_something_else</code> is executed before <code>log_children</code>.</p>
 
 <h2 id="module-ActiveRecord::Callbacks-label-Transactions">Transactions</h2>
 

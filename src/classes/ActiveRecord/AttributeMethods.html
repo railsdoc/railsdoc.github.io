@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -13,6 +13,8 @@ layout: default
             
         </h1>
         <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record_rb.html">activerecord/lib/active_record.rb</a></li>
             
             <li><a href="../../files/activerecord/lib/active_record/attribute_methods_rb.html">activerecord/lib/active_record/attribute_methods.rb</a></li>
             
@@ -245,21 +247,25 @@ layout: default
 
           
             <div class="description">
-              <p>Returns the value of the attribute identified by <code>attr_name</code> after it has been typecast (for example, “2004-12-12” in a date column is cast to a date object, like <code>Date.new(2004, 12, 12)</code>). It raises <a href="../ActiveModel/MissingAttributeError.html"><code>ActiveModel::MissingAttributeError</code></a> if the identified attribute is missing.</p>
-
-<p>Note: <code>:id</code> is always present.</p>
+              <p>Returns the value of the attribute identified by <code>attr_name</code> after it has been type cast. (For information about specific type casting behavior, see the types under <a href="../ActiveModel/Type.html"><code>ActiveModel::Type</code></a>.)</p>
 
 <pre><code>class Person &lt; ActiveRecord::Base
   belongs_to :organization
 end
 
-person = Person.new(name: &#39;Francesco&#39;, age: &#39;22&#39;)
-person[:name] # =&gt; &quot;Francesco&quot;
-person[:age]  # =&gt; 22
+person = Person.new(name: &quot;Francesco&quot;, date_of_birth: &quot;2004-12-12&quot;)
+person[:name]            # =&gt; &quot;Francesco&quot;
+person[:date_of_birth]   # =&gt; Date.new(2004, 12, 12)
+person[:organization_id] # =&gt; nil
+</code></pre>
 
-person = Person.select(&#39;id&#39;).first
-person[:name]            # =&gt; ActiveModel::MissingAttributeError: missing attribute: name
-person[:organization_id] # =&gt; ActiveModel::MissingAttributeError: missing attribute: organization_id
+<p>Raises <a href="../ActiveModel/MissingAttributeError.html"><code>ActiveModel::MissingAttributeError</code></a> if the attribute is missing. Note, however, that the <code>id</code> attribute will never be considered missing.</p>
+
+<pre><code>person = Person.select(:name).first
+person[:name]            # =&gt; &quot;Francesco&quot;
+person[:date_of_birth]   # =&gt; ActiveModel::MissingAttributeError: missing attribute &#39;date_of_birth&#39; for Person
+person[:organization_id] # =&gt; ActiveModel::MissingAttributeError: missing attribute &#39;organization_id&#39; for Person
+person[:id]              # =&gt; nil
 </code></pre>
             </div>
           
@@ -277,7 +283,7 @@ person[:organization_id] # =&gt; ActiveModel::MissingAttributeError: missing att
                 
               </p>
               <div id="method-i-5B-5D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 329</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 412</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">[]</span>(<span class="ruby-identifier">attr_name</span>)
   <span class="ruby-identifier">read_attribute</span>(<span class="ruby-identifier">attr_name</span>) { <span class="ruby-operator">|</span><span class="ruby-identifier">n</span><span class="ruby-operator">|</span> <span class="ruby-identifier">missing_attribute</span>(<span class="ruby-identifier">n</span>, <span class="ruby-identifier">caller</span>) }
 <span class="ruby-keyword">end</span></code></pre>
@@ -295,15 +301,14 @@ person[:organization_id] # =&gt; ActiveModel::MissingAttributeError: missing att
 
           
             <div class="description">
-              <p>Updates the attribute identified by <code>attr_name</code> with the specified <code>value</code>.</p>
+              <p>Updates the attribute identified by <code>attr_name</code> using the specified <code>value</code>. The attribute value will be type cast upon being read.</p>
 
 <pre><code>class Person &lt; ActiveRecord::Base
 end
 
 person = Person.new
-person[:age] = &#39;22&#39;
-person[:age] # =&gt; 22
-person[:age].class # =&gt; Integer
+person[:date_of_birth] = &quot;2004-12-12&quot;
+person[:date_of_birth] # =&gt; Date.new(2004, 12, 12)
 </code></pre>
             </div>
           
@@ -321,7 +326,7 @@ person[:age].class # =&gt; Integer
                 
               </p>
               <div id="method-i-5B-5D-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 342</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 425</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">[]=</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-identifier">value</span>)
   <span class="ruby-identifier">write_attribute</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-identifier">value</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -381,7 +386,7 @@ end
                 
               </p>
               <div id="method-i-accessed_fields_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 374</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 457</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">accessed_fields</span>
   <span class="ruby-ivar">@attributes</span>.<span class="ruby-identifier">accessed</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -428,7 +433,7 @@ person.attribute_for_inspect(:tag_ids)
                 
               </p>
               <div id="method-i-attribute_for_inspect_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 283</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 362</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_for_inspect</span>(<span class="ruby-identifier">attr_name</span>)
   <span class="ruby-identifier">attr_name</span> = <span class="ruby-identifier">attr_name</span>.<span class="ruby-identifier">to_s</span>
   <span class="ruby-identifier">attr_name</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">attribute_aliases</span>[<span class="ruby-identifier">attr_name</span>] <span class="ruby-operator">||</span> <span class="ruby-identifier">attr_name</span>
@@ -474,7 +479,7 @@ person.attribute_names
                 
               </p>
               <div id="method-i-attribute_names_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 252</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 331</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_names</span>
   <span class="ruby-ivar">@attributes</span>.<span class="ruby-identifier">keys</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -521,7 +526,7 @@ task.attribute_present?(:is_done) # =&gt; true
                 
               </p>
               <div id="method-i-attribute_present-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 305</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 384</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_present?</span>(<span class="ruby-identifier">attr_name</span>)
   <span class="ruby-identifier">attr_name</span> = <span class="ruby-identifier">attr_name</span>.<span class="ruby-identifier">to_s</span>
   <span class="ruby-identifier">attr_name</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">attribute_aliases</span>[<span class="ruby-identifier">attr_name</span>] <span class="ruby-operator">||</span> <span class="ruby-identifier">attr_name</span>
@@ -567,7 +572,7 @@ person.attributes
                 
               </p>
               <div id="method-i-attributes_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 264</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 343</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attributes</span>
   <span class="ruby-ivar">@attributes</span>.<span class="ruby-identifier">to_hash</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -613,7 +618,7 @@ person.has_attribute?(:nothing)  # =&gt; false
                 
               </p>
               <div id="method-i-has_attribute-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 234</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 313</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_attribute?</span>(<span class="ruby-identifier">attr_name</span>)
   <span class="ruby-identifier">attr_name</span> = <span class="ruby-identifier">attr_name</span>.<span class="ruby-identifier">to_s</span>
   <span class="ruby-identifier">attr_name</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">attribute_aliases</span>[<span class="ruby-identifier">attr_name</span>] <span class="ruby-operator">||</span> <span class="ruby-identifier">attr_name</span>
@@ -663,7 +668,7 @@ person.respond_to?(:nothing) # =&gt; false
                 
               </p>
               <div id="method-i-respond_to-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 207</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 286</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">respond_to?</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">include_private</span> = <span class="ruby-keyword">false</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">false</span> <span class="ruby-keyword">unless</span> <span class="ruby-keyword">super</span>
 

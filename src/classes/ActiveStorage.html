@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -30,6 +30,8 @@ layout: default
             
             <li><a href="../files/activestorage/app/controllers/active_storage/representations/redirect_controller_rb.html">activestorage/app/controllers/active_storage/representations/redirect_controller.rb</a></li>
             
+            <li><a href="../files/activestorage/app/controllers/concerns/active_storage/disable_session_rb.html">activestorage/app/controllers/concerns/active_storage/disable_session.rb</a></li>
+            
             <li><a href="../files/activestorage/app/controllers/concerns/active_storage/file_server_rb.html">activestorage/app/controllers/concerns/active_storage/file_server.rb</a></li>
             
             <li><a href="../files/activestorage/app/controllers/concerns/active_storage/set_blob_rb.html">activestorage/app/controllers/concerns/active_storage/set_blob.rb</a></li>
@@ -46,6 +48,8 @@ layout: default
             
             <li><a href="../files/activestorage/app/jobs/active_storage/purge_job_rb.html">activestorage/app/jobs/active_storage/purge_job.rb</a></li>
             
+            <li><a href="../files/activestorage/app/jobs/active_storage/transform_job_rb.html">activestorage/app/jobs/active_storage/transform_job.rb</a></li>
+            
             <li><a href="../files/activestorage/app/models/active_storage/attachment_rb.html">activestorage/app/models/active_storage/attachment.rb</a></li>
             
             <li><a href="../files/activestorage/app/models/active_storage/blob_rb.html">activestorage/app/models/active_storage/blob.rb</a></li>
@@ -60,6 +64,8 @@ layout: default
             
             <li><a href="../files/activestorage/app/models/active_storage/filename_rb.html">activestorage/app/models/active_storage/filename.rb</a></li>
             
+            <li><a href="../files/activestorage/app/models/active_storage/named_variant_rb.html">activestorage/app/models/active_storage/named_variant.rb</a></li>
+            
             <li><a href="../files/activestorage/app/models/active_storage/preview_rb.html">activestorage/app/models/active_storage/preview.rb</a></li>
             
             <li><a href="../files/activestorage/app/models/active_storage/record_rb.html">activestorage/app/models/active_storage/record.rb</a></li>
@@ -71,6 +77,8 @@ layout: default
             <li><a href="../files/activestorage/app/models/active_storage/variant_with_record_rb.html">activestorage/app/models/active_storage/variant_with_record.rb</a></li>
             
             <li><a href="../files/activestorage/app/models/active_storage/variation_rb.html">activestorage/app/models/active_storage/variation.rb</a></li>
+            
+            <li><a href="../files/activestorage/lib/active_storage_rb.html">activestorage/lib/active_storage.rb</a></li>
             
             <li><a href="../files/activestorage/lib/active_storage/analyzer_rb.html">activestorage/lib/active_storage/analyzer.rb</a></li>
             
@@ -113,6 +121,8 @@ layout: default
             <li><a href="../files/activestorage/lib/active_storage/attached/model_rb.html">activestorage/lib/active_storage/attached/model.rb</a></li>
             
             <li><a href="../files/activestorage/lib/active_storage/attached/one_rb.html">activestorage/lib/active_storage/attached/one.rb</a></li>
+            
+            <li><a href="../files/activestorage/lib/active_storage/deprecator_rb.html">activestorage/lib/active_storage/deprecator.rb</a></li>
             
             <li><a href="../files/activestorage/lib/active_storage/downloader_rb.html">activestorage/lib/active_storage/downloader.rb</a></li>
             
@@ -165,6 +175,274 @@ layout: default
     <div id="bodyContent">
         <div id="content">
   
+    <div class="description">
+      
+<h1 id="module-ActiveStorage-label-Active+Storage">Active Storage</h1>
+
+<p>Active Storage makes it simple to upload and reference files in cloud services like <a href="https://aws.amazon.com/s3/">Amazon S3</a>, <a href="https://cloud.google.com/storage/docs/">Google Cloud Storage</a>, or <a href="https://azure.microsoft.com/en-us/services/storage/">Microsoft Azure Storage</a>, and attach those files to Active Records. Supports having one main service and mirrors in other services for redundancy. It also provides a disk service for testing or local deployments, but the focus is on cloud storage.</p>
+
+<p>Files can be uploaded from the server to the cloud or directly from the client to the cloud.</p>
+
+<p>Image files can furthermore be transformed using on-demand variants for quality, aspect ratio, size, or any other <a href="https://github.com/minimagick/minimagick">MiniMagick</a> or <a href="https://www.rubydoc.info/gems/ruby-vips/Vips/Image">Vips</a> supported transformation.</p>
+
+<p>You can read more about Active Storage in the <a href="https://guides.rubyonrails.org/active_storage_overview.html">Active Storage Overview</a> guide.</p>
+
+<h2 id="module-ActiveStorage-label-Compared+to+other+storage+solutions">Compared to other storage solutions</h2>
+
+<p>A key difference to how Active Storage works compared to other attachment solutions in Rails is through the use of built-in <a href="https://github.com/rails/rails/blob/main/activestorage/app/models/active_storage/blob.rb">Blob</a> and <a href="https://github.com/rails/rails/blob/main/activestorage/app/models/active_storage/attachment.rb">Attachment</a> models (backed by Active Record). This means existing application models do not need to be modified with additional columns to associate with files. Active Storage uses polymorphic associations via the <code>Attachment</code> join model, which then connects to the actual <code>Blob</code>.</p>
+
+<p><code>Blob</code> models store attachment metadata (filename, content-type, etc.), and their identifier key in the storage service. <a href="ActiveStorage/Blob.html"><code>Blob</code></a> models do not store the actual binary data. They are intended to be immutable in spirit. One file, one blob. You can associate the same blob with multiple application models as well. And if you want to do transformations of a given <code>Blob</code>, the idea is that you’ll simply create a new one, rather than attempt to mutate the existing one (though of course you can delete the previous version later if you don’t need it).</p>
+
+<h2 id="module-ActiveStorage-label-Installation">Installation</h2>
+
+<p>Run <code>bin/rails active_storage:install</code> to copy over active_storage migrations.</p>
+
+<p>NOTE: If the task cannot be found, verify that <code>require &quot;active_storage/engine&quot;</code> is present in <code>config/application.rb</code>.</p>
+
+<h2 id="module-ActiveStorage-label-Examples">Examples</h2>
+
+<p>One attachment:</p>
+
+<pre><code>class User &lt; ApplicationRecord
+  # Associates an attachment and a blob. When the user is destroyed they are
+  # purged by default (models destroyed, and resource files deleted).
+  has_one_attached :avatar
+end
+
+# Attach an avatar to the user.
+user.avatar.attach(io: File.open(&quot;/path/to/face.jpg&quot;), filename: &quot;face.jpg&quot;, content_type: &quot;image/jpeg&quot;)
+
+# Does the user have an avatar?
+user.avatar.attached? # =&gt; true
+
+# Synchronously destroy the avatar and actual resource files.
+user.avatar.purge
+
+# Destroy the associated models and actual resource files async, via Active Job.
+user.avatar.purge_later
+
+# Does the user have an avatar?
+user.avatar.attached? # =&gt; false
+
+# Generate a permanent URL for the blob that points to the application.
+# Upon access, a redirect to the actual service endpoint is returned.
+# This indirection decouples the public URL from the actual one, and
+# allows for example mirroring attachments in different services for
+# high-availability. The redirection has an HTTP expiration of 5 min.
+url_for(user.avatar)
+
+class AvatarsController &lt; ApplicationController
+  def update
+    # params[:avatar] contains an ActionDispatch::Http::UploadedFile object
+    Current.user.avatar.attach(params.require(:avatar))
+    redirect_to Current.user
+  end
+end
+</code></pre>
+
+<p>Many attachments:</p>
+
+<pre><code>class Message &lt; ApplicationRecord
+  has_many_attached :images
+end
+</code></pre>
+
+<pre><code>&lt;%= form_with model: @message, local: true do |form| %&gt;
+  &lt;%= form.text_field :title, placeholder: &quot;Title&quot; %&gt;&lt;br&gt;
+  &lt;%= form.text_area :content %&gt;&lt;br&gt;&lt;br&gt;
+
+  &lt;%= form.file_field :images, multiple: true %&gt;&lt;br&gt;
+  &lt;%= form.submit %&gt;
+&lt;% end %&gt;
+</code></pre>
+
+<pre><code>class MessagesController &lt; ApplicationController
+  def index
+    # Use the built-in with_attached_images scope to avoid N+1
+    @messages = Message.all.with_attached_images
+  end
+
+  def create
+    message = Message.create! params.require(:message).permit(:title, :content, images: [])
+    redirect_to message
+  end
+
+  def show
+    @message = Message.find(params[:id])
+  end
+end
+</code></pre>
+
+<p><a href="ActiveStorage/Variation.html"><code>Variation</code></a> of image attachment:</p>
+
+<pre><code>&lt;%# Hitting the variant URL will lazy transform the original blob and then redirect to its new service location %&gt;
+&lt;%= image_tag user.avatar.variant(resize_to_limit: [100, 100]) %&gt;
+</code></pre>
+
+<h2 id="module-ActiveStorage-label-File+serving+strategies"><a href="File.html"><code>File</code></a> serving strategies</h2>
+
+<p>Active Storage supports two ways to serve files: redirecting and proxying.</p>
+
+<h3 id="module-ActiveStorage-label-Redirecting">Redirecting</h3>
+
+<p>Active Storage generates stable application URLs for files which, when accessed, redirect to signed, short-lived service URLs. This relieves application servers of the burden of serving file data. It is the default file serving strategy.</p>
+
+<p>When the application is configured to proxy files by default, use the <code>rails_storage_redirect_path</code> and <code>_url</code> route helpers to redirect instead:</p>
+
+<pre><code>&lt;%= image_tag rails_storage_redirect_path(@user.avatar) %&gt;
+</code></pre>
+
+<h3 id="module-ActiveStorage-label-Proxying">Proxying</h3>
+
+<p>Optionally, files can be proxied instead. This means that your application servers will download file data from the storage service in response to requests. This can be useful for serving files from a CDN.</p>
+
+<p>You can configure Active Storage to use proxying by default:</p>
+
+<pre><code># config/initializers/active_storage.rb
+Rails.application.config.active_storage.resolve_model_to_route = :rails_storage_proxy
+</code></pre>
+
+<p>Or if you want to explicitly proxy specific attachments there are URL helpers you can use in the form of <code>rails_storage_proxy_path</code> and <code>rails_storage_proxy_url</code>.</p>
+
+<pre><code>&lt;%= image_tag rails_storage_proxy_path(@user.avatar) %&gt;
+</code></pre>
+
+<h2 id="module-ActiveStorage-label-Direct+uploads">Direct uploads</h2>
+
+<p>Active Storage, with its included JavaScript library, supports uploading directly from the client to the cloud.</p>
+
+<h3 id="module-ActiveStorage-label-Direct+upload+installation">Direct upload installation</h3>
+<ol><li>
+<p>Include the Active Storage JavaScript in your application's JavaScript bundle or reference it directly.</p>
+
+<p>Requiring directly without bundling through the asset pipeline in the application HTML with autostart:</p>
+
+<pre><code>&lt;%= javascript_include_tag &quot;activestorage&quot; %&gt;
+</code></pre>
+
+<p>Requiring via importmap-rails without bundling through the asset pipeline in the application HTML without autostart as ESM:</p>
+
+<pre><code># config/importmap.rb
+pin &quot;@rails/activestorage&quot;, to: &quot;activestorage.esm.js&quot;
+</code></pre>
+
+<pre><code>&lt;script type=&quot;module-shim&quot;&gt;
+  import * as ActiveStorage from &quot;@rails/activestorage&quot;
+  ActiveStorage.start()
+&lt;/script&gt;
+</code></pre>
+
+<p>Using the asset pipeline:</p>
+
+<pre><code>//= require activestorage
+</code></pre>
+
+<p>Using the npm package:</p>
+
+<pre><code>import * as ActiveStorage from &quot;@rails/activestorage&quot;
+ActiveStorage.start()
+</code></pre>
+</li><li>
+<p>Annotate file inputs with the direct upload URL.</p>
+
+<pre><code>&lt;%= form.file_field :attachments, multiple: true, direct_upload: true %&gt;
+</code></pre>
+</li><li>
+<p>That's it! Uploads begin upon form submission.</p>
+</li></ol>
+
+<h3 id="module-ActiveStorage-label-Direct+upload+JavaScript+events">Direct upload JavaScript events</h3>
+
+<table role="table">
+<thead>
+<tr>
+<th>Event name</th>
+<th>Event target</th>
+<th>Event data (‘event.detail`)</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>‘direct-uploads:start`</td>
+<td>‘&lt;form&gt;`</td>
+<td>None</td>
+<td>A form containing files for direct upload fields was submitted.</td>
+</tr>
+<tr>
+<td>‘direct-upload:initialize`</td>
+<td>‘&lt;input&gt;`</td>
+<td>‘{id, file}`</td>
+<td>Dispatched for every file after form submission.</td>
+</tr>
+<tr>
+<td>‘direct-upload:start`</td>
+<td>‘&lt;input&gt;`</td>
+<td>‘{id, file}`</td>
+<td>A direct upload is starting.</td>
+</tr>
+<tr>
+<td>‘direct-upload:before-blob-request`</td>
+<td>‘&lt;input&gt;`</td>
+<td>‘{id, file, xhr}`</td>
+<td>Before making a request to your application for direct upload metadata.</td>
+</tr>
+<tr>
+<td>‘direct-upload:before-storage-request`</td>
+<td>‘&lt;input&gt;`</td>
+<td>‘{id, file, xhr}`</td>
+<td>Before making a request to store a file.</td>
+</tr>
+<tr>
+<td>‘direct-upload:progress`</td>
+<td>‘&lt;input&gt;`</td>
+<td>‘{id, file, progress}`</td>
+<td>As requests to store files progress.</td>
+</tr>
+<tr>
+<td>‘direct-upload:error`</td>
+<td>‘&lt;input&gt;`</td>
+<td>‘{id, file, error}`</td>
+<td>An error occurred. An ‘alert` will display unless this event is canceled.</td>
+</tr>
+<tr>
+<td>‘direct-upload:end`</td>
+<td>‘&lt;input&gt;`</td>
+<td>‘{id, file}`</td>
+<td>A direct upload has ended.</td>
+</tr>
+<tr>
+<td>‘direct-uploads:end`</td>
+<td>‘&lt;form&gt;`</td>
+<td>None</td>
+<td>All direct uploads have ended.</td>
+</tr>
+</tbody>
+</table>
+
+<h2 id="module-ActiveStorage-label-License">License</h2>
+
+<p>Active Storage is released under the <a href="https://opensource.org/licenses/MIT">MIT License</a>.</p>
+
+<h2 id="module-ActiveStorage-label-Support">Support</h2>
+
+<p>API documentation is at:</p>
+<ul><li>
+<p><a href="https://api.rubyonrails.org">api.rubyonrails.org</a></p>
+</li></ul>
+
+<p>Bug reports for the Ruby on Rails project can be filed here:</p>
+<ul><li>
+<p><a href="https://github.com/rails/rails/issues">github.com/rails/rails/issues</a></p>
+</li></ul>
+
+<p>Feature requests should be discussed on the rails-core mailing list here:</p>
+<ul><li>
+<p><a href="https://discuss.rubyonrails.org/c/rubyonrails-core">discuss.rubyonrails.org/c/rubyonrails-core</a></p>
+</li></ul>
+
+    </div>
+  
 
   
 
@@ -180,6 +458,8 @@ layout: default
       <ul>
       
         <li><a href="ActiveStorage/Blobs.html">ActiveStorage::Blobs</a></li>
+      
+        <li><a href="ActiveStorage/DisableSession.html">ActiveStorage::DisableSession</a></li>
       
         <li><a href="ActiveStorage/Reflection.html">ActiveStorage::Reflection</a></li>
       
@@ -244,6 +524,8 @@ layout: default
       
         <li><a href="ActiveStorage/Service.html">ActiveStorage::Service</a></li>
       
+        <li><a href="ActiveStorage/TransformJob.html">ActiveStorage::TransformJob</a></li>
+      
         <li><a href="ActiveStorage/UnpreviewableError.html">ActiveStorage::UnpreviewableError</a></li>
       
         <li><a href="ActiveStorage/UnrepresentableError.html">ActiveStorage::UnrepresentableError</a></li>
@@ -266,6 +548,22 @@ layout: default
       
         <li>
           <a href="#method-c-gem_version">gem_version</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-replace_on_assign_to_many">replace_on_assign_to_many</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-replace_on_assign_to_many-3D">replace_on_assign_to_many=</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-silence_invalid_content_types_warning">silence_invalid_content_types_warning</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-silence_invalid_content_types_warning-3D">silence_invalid_content_types_warning=</a>
         </li>
       
         <li>
@@ -319,6 +617,146 @@ layout: default
                 <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/gem_version.rb, line 5</span>
 <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">gem_version</span>
   <span class="ruby-constant">Gem</span><span class="ruby-operator">::</span><span class="ruby-constant">Version</span>.<span class="ruby-identifier">new</span> <span class="ruby-constant">VERSION</span><span class="ruby-operator">::</span><span class="ruby-constant">STRING</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-replace_on_assign_to_many">
+            
+              replace_on_assign_to_many()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-replace_on_assign_to_many_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage.rb, line 367</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">replace_on_assign_to_many</span>
+  <span class="ruby-constant">ActiveStorage</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-string">&quot;config.active_storage.replace_on_assign_to_many is deprecated and has no effect.&quot;</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-replace_on_assign_to_many-3D">
+            
+              replace_on_assign_to_many=(value)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-replace_on_assign_to_many-3D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage.rb, line 371</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">replace_on_assign_to_many=</span>(<span class="ruby-identifier">value</span>)
+  <span class="ruby-constant">ActiveStorage</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-string">&quot;config.active_storage.replace_on_assign_to_many is deprecated and has no effect.&quot;</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-silence_invalid_content_types_warning">
+            
+              silence_invalid_content_types_warning()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-silence_invalid_content_types_warning_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage.rb, line 375</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">silence_invalid_content_types_warning</span>
+  <span class="ruby-constant">ActiveStorage</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-string">&quot;config.active_storage.silence_invalid_content_types_warning is deprecated and has no effect.&quot;</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-silence_invalid_content_types_warning-3D">
+            
+              silence_invalid_content_types_warning=(value)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-silence_invalid_content_types_warning-3D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage.rb, line 379</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">silence_invalid_content_types_warning=</span>(<span class="ruby-identifier">value</span>)
+  <span class="ruby-constant">ActiveStorage</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-string">&quot;config.active_storage.silence_invalid_content_types_warning is deprecated and has no effect.&quot;</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

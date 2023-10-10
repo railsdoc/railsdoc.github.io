@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -13,7 +13,7 @@ layout: default
             
                 <span class="parent">&lt;
                     
-                    <a href="../Object.html">Object</a>
+                    Messages::Codec
                     
                 </span>
             
@@ -29,70 +29,64 @@ layout: default
   
     <div class="description">
       
+<h1 id="class-ActiveSupport::MessageVerifier-label-Active+Support+Message+Verifier">Active Support Message Verifier</h1>
+
 <p><code>MessageVerifier</code> makes it easy to generate and verify messages which are signed to prevent tampering.</p>
+
+<p>In a Rails application, you can use <code>Rails.application.message_verifier</code> to manage unique instances of verifiers for each use case. <a href="../Rails/Application.html#method-i-message_verifier">Learn more</a>.</p>
 
 <p>This is useful for cases like remember-me tokens and auto-unsubscribe links where the session store isn’t suitable or available.</p>
 
-<p>Remember Me:</p>
+<p>First, generate a signed message:</p>
 
-<pre><code>cookies[:remember_me] = @verifier.generate([@user.id, 2.weeks.from_now])
+<pre><code>cookies[:remember_me] = Rails.application.message_verifier(:remember_me).generate([@user.id, 2.weeks.from_now])
 </code></pre>
 
-<p>In the authentication filter:</p>
+<p>Later verify that message:</p>
 
-<pre><code>id, time = @verifier.verify(cookies[:remember_me])
-if Time.now &lt; time
+<pre><code>id, time = Rails.application.message_verifier(:remember_me).verify(cookies[:remember_me])
+if time.future?
   self.current_user = User.find(id)
 end
 </code></pre>
 
-<p>By default it uses Marshal to serialize the message. If you want to use another serialization method, you can set the serializer in the options hash upon initialization:</p>
+<h3 id="class-ActiveSupport::MessageVerifier-label-Confine+messages+to+a+specific+purpose">Confine messages to a specific purpose</h3>
 
-<pre><code>@verifier = ActiveSupport::MessageVerifier.new(&#39;s3Krit&#39;, serializer: YAML)
-</code></pre>
+<p>It’s not recommended to use the same verifier for different purposes in your application. Doing so could allow a malicious actor to re-use a signed message to perform an unauthorized action. You can reduce this risk by confining signed messages to a specific <code>:purpose</code>.</p>
 
-<p><code>MessageVerifier</code> creates HMAC signatures using SHA1 hash algorithm by default. If you want to use a different hash algorithm, you can change it by providing <code>:digest</code> key as an option while initializing the verifier:</p>
-
-<pre><code>@verifier = ActiveSupport::MessageVerifier.new(&#39;s3Krit&#39;, digest: &#39;SHA256&#39;)
-</code></pre>
-
-<h3 id="class-ActiveSupport::MessageVerifier-label-Confining+messages+to+a+specific+purpose">Confining messages to a specific purpose</h3>
-
-<p>By default any message can be used throughout your app. But they can also be confined to a specific <code>:purpose</code>.</p>
-
-<pre><code>token = @verifier.generate(&quot;this is the chair&quot;, purpose: :login)
+<pre><code>token = @verifier.generate(&quot;signed message&quot;, purpose: :login)
 </code></pre>
 
 <p>Then that same purpose must be passed when verifying to get the data back out:</p>
 
-<pre><code>@verifier.verified(token, purpose: :login)    # =&gt; &quot;this is the chair&quot;
+<pre><code>@verifier.verified(token, purpose: :login)    # =&gt; &quot;signed message&quot;
 @verifier.verified(token, purpose: :shipping) # =&gt; nil
 @verifier.verified(token)                     # =&gt; nil
 
-@verifier.verify(token, purpose: :login)      # =&gt; &quot;this is the chair&quot;
-@verifier.verify(token, purpose: :shipping)   # =&gt; ActiveSupport::MessageVerifier::InvalidSignature
-@verifier.verify(token)                       # =&gt; ActiveSupport::MessageVerifier::InvalidSignature
+@verifier.verify(token, purpose: :login)      # =&gt; &quot;signed message&quot;
+@verifier.verify(token, purpose: :shipping)   # =&gt; raises ActiveSupport::MessageVerifier::InvalidSignature
+@verifier.verify(token)                       # =&gt; raises ActiveSupport::MessageVerifier::InvalidSignature
 </code></pre>
 
 <p>Likewise, if a message has no purpose it won’t be returned when verifying with a specific purpose.</p>
 
-<pre><code>token = @verifier.generate(&quot;the conversation is lively&quot;)
-@verifier.verified(token, purpose: :scare_tactics) # =&gt; nil
-@verifier.verified(token)                          # =&gt; &quot;the conversation is lively&quot;
+<pre><code>token = @verifier.generate(&quot;signed message&quot;)
+@verifier.verified(token, purpose: :redirect) # =&gt; nil
+@verifier.verified(token)                     # =&gt; &quot;signed message&quot;
 
-@verifier.verify(token, purpose: :scare_tactics)   # =&gt; ActiveSupport::MessageVerifier::InvalidSignature
-@verifier.verify(token)                            # =&gt; &quot;the conversation is lively&quot;
+@verifier.verify(token, purpose: :redirect)   # =&gt; raises ActiveSupport::MessageVerifier::InvalidSignature
+@verifier.verify(token)                       # =&gt; &quot;signed message&quot;
 </code></pre>
 
-<h3 id="class-ActiveSupport::MessageVerifier-label-Making+messages+expire">Making messages expire</h3>
+<h3 id="class-ActiveSupport::MessageVerifier-label-Expiring+messages">Expiring messages</h3>
 
 <p>By default messages last forever and verifying one year from now will still return the original value. But messages can be set to expire at a given time with <code>:expires_in</code> or <code>:expires_at</code>.</p>
 
-<pre><code>@verifier.generate(&quot;parcel&quot;, expires_in: 1.month)
-@verifier.generate(&quot;doowad&quot;, expires_at: Time.now.end_of_year)
+<pre><code>@verifier.generate(&quot;signed message&quot;, expires_in: 1.month)
+@verifier.generate(&quot;signed message&quot;, expires_at: Time.now.end_of_year)
 </code></pre>
 
-<p>Then the messages can be verified and returned up to the expire time. Thereafter, the <code>verified</code> method returns <code>nil</code> while <code>verify</code> raises <code>ActiveSupport::MessageVerifier::InvalidSignature</code>.</p>
+<p><a href="Messages.html"><code>Messages</code></a> can then be verified and returned until expiry. Thereafter, the <code>verified</code> method returns <code>nil</code> while <code>verify</code> raises <code>ActiveSupport::MessageVerifier::InvalidSignature</code>.</p>
 
 <h3 id="class-ActiveSupport::MessageVerifier-label-Rotating+keys">Rotating keys</h3>
 
@@ -107,14 +101,14 @@ end
 
 <p>Then gradually rotate the old values out by adding them as fallbacks. Any message generated with the old values will then work until the rotation is removed.</p>
 
-<pre><code>verifier.rotate old_secret          # Fallback to an old secret instead of @secret.
-verifier.rotate digest: &quot;SHA256&quot;    # Fallback to an old digest instead of SHA512.
-verifier.rotate serializer: Marshal # Fallback to an old serializer instead of JSON.
+<pre><code>verifier.rotate(old_secret)          # Fallback to an old secret instead of @secret.
+verifier.rotate(digest: &quot;SHA256&quot;)    # Fallback to an old digest instead of SHA512.
+verifier.rotate(serializer: Marshal) # Fallback to an old serializer instead of JSON.
 </code></pre>
 
 <p>Though the above would most likely be combined into one rotation:</p>
 
-<pre><code>verifier.rotate old_secret, digest: &quot;SHA256&quot;, serializer: Marshal
+<pre><code>verifier.rotate(old_secret, digest: &quot;SHA256&quot;, serializer: Marshal)
 </code></pre>
 
     </div>
@@ -186,13 +180,38 @@ verifier.rotate serializer: Marshal # Fallback to an old serializer instead of J
         <div class="method">
           <h3 id="method-c-new">
             
-              new(secret, digest: nil, serializer: nil)
+              new(secret, **options)
             
           </h3>
 
           
             <div class="description">
-              
+              <p>Initialize a new <a href="MessageVerifier.html"><code>MessageVerifier</code></a> with a secret for the signature.</p>
+
+<h4 id="method-c-new-label-Options">Options</h4>
+<dl class="rdoc-list label-list"><dt><code>:digest</code>
+<dd>
+<p><a href="../Digest.html"><code>Digest</code></a> used for signing. The default is <code>&quot;SHA1&quot;</code>. See <code>OpenSSL::Digest</code> for alternatives.</p>
+</dd><dt><code>:serializer</code>
+<dd>
+<p>The serializer used to serialize message data. You can specify any object that responds to <code>dump</code> and <code>load</code>, or you can choose from several preconfigured serializers: <code>:marshal</code>, <code>:json_allow_marshal</code>, <code>:json</code>, <code>:message_pack_allow_marshal</code>, <code>:message_pack</code>.</p>
+
+<p>The preconfigured serializers include a fallback mechanism to support multiple deserialization formats. For example, the <code>:marshal</code> serializer will serialize using <code>Marshal</code>, but can deserialize using <code>Marshal</code>, <a href="JSON.html"><code>ActiveSupport::JSON</code></a>, or <a href="MessagePack.html"><code>ActiveSupport::MessagePack</code></a>. This makes it easy to migrate between serializers.</p>
+
+<p>The <code>:marshal</code>, <code>:json_allow_marshal</code>, and <code>:message_pack_allow_marshal</code> serializers support deserializing using <code>Marshal</code>, but the others do not. Beware that <code>Marshal</code> is a potential vector for deserialization attacks in cases where a message signing secret has been leaked. <em>If possible, choose a serializer that does not support <code>Marshal</code>.</em></p>
+
+<p>The <code>:message_pack</code> and <code>:message_pack_allow_marshal</code> serializers use <a href="MessagePack.html"><code>ActiveSupport::MessagePack</code></a>, which can roundtrip some Ruby types that are not supported by <a href="JSON.html"><code>JSON</code></a>, and may provide improved performance. However, these require the <code>msgpack</code> gem.</p>
+
+<p>When using Rails, the default depends on <code>config.active_support.message_serializer</code>. Otherwise, the default is <code>:marshal</code>.</p>
+</dd><dt><code>:url_safe</code>
+<dd>
+<p>By default, <a href="MessageVerifier.html"><code>MessageVerifier</code></a> generates RFC 4648 compliant strings which are not URL-safe. In other words, they can contain “+” and “/”. If you want to generate URL-safe strings (in compliance with “Base 64 Encoding with URL and Filename Safe Alphabet” in RFC 4648), you can pass <code>true</code>.</p>
+</dd><dt><code>:force_legacy_metadata_serializer</code>
+<dd>
+<p>Whether to use the legacy metadata serializer, which serializes the message first, then wraps it in an envelope which is also serialized. This was the default in Rails 7.0 and below.</p>
+
+<p>If you don’t pass a truthy value, the default is set using <code>config.active_support.use_message_serializer_for_metadata</code>.</p>
+</dd></dl>
             </div>
           
 
@@ -209,12 +228,12 @@ verifier.rotate serializer: Marshal # Fallback to an old serializer instead of J
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 110</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">secret</span>, <span class="ruby-value">digest:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">serializer:</span> <span class="ruby-keyword">nil</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 153</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">secret</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;Secret should not be nil.&quot;</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">secret</span>
+  <span class="ruby-keyword">super</span>(<span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
   <span class="ruby-ivar">@secret</span> = <span class="ruby-identifier">secret</span>
-  <span class="ruby-ivar">@digest</span> = <span class="ruby-identifier">digest</span>&amp;.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">||</span> <span class="ruby-string">&quot;SHA1&quot;</span>
-  <span class="ruby-ivar">@serializer</span> = <span class="ruby-identifier">serializer</span> <span class="ruby-operator">||</span> <span class="ruby-constant">Marshal</span>
+  <span class="ruby-ivar">@digest</span> = <span class="ruby-identifier">options</span>[<span class="ruby-value">:digest</span>]&amp;.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">||</span> <span class="ruby-string">&quot;SHA1&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -228,7 +247,7 @@ verifier.rotate serializer: Marshal # Fallback to an old serializer instead of J
         <div class="method">
           <h3 id="method-i-generate">
             
-              generate(value, expires_at: nil, expires_in: nil, purpose: nil)
+              generate(value, **options)
             
           </h3>
 
@@ -238,9 +257,35 @@ verifier.rotate serializer: Marshal # Fallback to an old serializer instead of J
 
 <p>The message is signed with the <code>MessageVerifier</code>‘s secret. Returns Base64-encoded message joined with the generated signature.</p>
 
-<pre><code>verifier = ActiveSupport::MessageVerifier.new &#39;s3Krit&#39;
-verifier.generate &#39;a private message&#39; # =&gt; &quot;BAhJIhRwcml2YXRlLW1lc3NhZ2UGOgZFVA==--e2d724331ebdee96a10fb99b089508d1c72bd772&quot;
+<pre><code>verifier = ActiveSupport::MessageVerifier.new(&quot;secret&quot;)
+verifier.generate(&quot;signed message&quot;) # =&gt; &quot;BAhJIhNzaWduZWQgbWVzc2FnZQY6BkVU--f67d5f27c3ee0b8483cebf2103757455e947493b&quot;
 </code></pre>
+
+<h4 id="method-i-generate-label-Options">Options</h4>
+<dl class="rdoc-list label-list"><dt><code>:expires_at</code>
+<dd>
+<p>The datetime at which the message expires. After this datetime, verification of the message will fail.</p>
+
+<pre><code>message = verifier.generate(&quot;hello&quot;, expires_at: Time.now.tomorrow)
+verifier.verified(message) # =&gt; &quot;hello&quot;
+# 24 hours later...
+verifier.verified(message) # =&gt; nil
+verifier.verify(message)   # =&gt; raises ActiveSupport::MessageVerifier::InvalidSignature
+</code></pre>
+</dd><dt><code>:expires_in</code>
+<dd>
+<p>The duration for which the message is valid. After this duration has elapsed, verification of the message will fail.</p>
+
+<pre><code>message = verifier.generate(&quot;hello&quot;, expires_in: 24.hours)
+verifier.verified(message) # =&gt; &quot;hello&quot;
+# 24 hours later...
+verifier.verified(message) # =&gt; nil
+verifier.verify(message)   # =&gt; raises ActiveSupport::MessageVerifier::InvalidSignature
+</code></pre>
+</dd><dt><code>:purpose</code>
+<dd>
+<p>The purpose of the message. If specified, the same purpose must be specified when verifying the message; otherwise, verification will fail. (See <a href="MessageVerifier.html#method-i-verified"><code>verified</code></a> and <a href="MessageVerifier.html#method-i-verify"><code>verify</code></a>.)</p>
+</dd></dl>
             </div>
           
 
@@ -257,10 +302,9 @@ verifier.generate &#39;a private message&#39; # =&gt; &quot;BAhJIhRwcml2YXRlLW1l
                 
               </p>
               <div id="method-i-generate_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 188</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">generate</span>(<span class="ruby-identifier">value</span>, <span class="ruby-value">expires_at:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">expires_in:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">purpose:</span> <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">data</span> = <span class="ruby-identifier">encode</span>(<span class="ruby-constant">Messages</span><span class="ruby-operator">::</span><span class="ruby-constant">Metadata</span>.<span class="ruby-identifier">wrap</span>(<span class="ruby-ivar">@serializer</span>.<span class="ruby-identifier">dump</span>(<span class="ruby-identifier">value</span>), <span class="ruby-value">expires_at:</span> <span class="ruby-identifier">expires_at</span>, <span class="ruby-value">expires_in:</span> <span class="ruby-identifier">expires_in</span>, <span class="ruby-value">purpose:</span> <span class="ruby-identifier">purpose</span>))
-  <span class="ruby-node">&quot;#{data}#{SEPARATOR}#{generate_digest(data)}&quot;</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 292</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">generate</span>(<span class="ruby-identifier">value</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-identifier">create_message</span>(<span class="ruby-identifier">value</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -270,7 +314,7 @@ verifier.generate &#39;a private message&#39; # =&gt; &quot;BAhJIhRwcml2YXRlLW1l
         <div class="method">
           <h3 id="method-i-valid_message-3F">
             
-              valid_message?(signed_message)
+              valid_message?(message)
             
           </h3>
 
@@ -278,8 +322,8 @@ verifier.generate &#39;a private message&#39; # =&gt; &quot;BAhJIhRwcml2YXRlLW1l
             <div class="description">
               <p>Checks if a signed message could have been generated by signing an object with the <code>MessageVerifier</code>‘s secret.</p>
 
-<pre><code>verifier = ActiveSupport::MessageVerifier.new &#39;s3Krit&#39;
-signed_message = verifier.generate &#39;a private message&#39;
+<pre><code>verifier = ActiveSupport::MessageVerifier.new(&quot;secret&quot;)
+signed_message = verifier.generate(&quot;signed message&quot;)
 verifier.valid_message?(signed_message) # =&gt; true
 
 tampered_message = signed_message.chop # editing the message invalidates the signature
@@ -301,10 +345,9 @@ verifier.valid_message?(tampered_message) # =&gt; false
                 
               </p>
               <div id="method-i-valid_message-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 126</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">valid_message?</span>(<span class="ruby-identifier">signed_message</span>)
-  <span class="ruby-identifier">data</span>, <span class="ruby-identifier">digest</span> = <span class="ruby-identifier">get_data_and_digest_from</span>(<span class="ruby-identifier">signed_message</span>)
-  <span class="ruby-identifier">digest_matches_data?</span>(<span class="ruby-identifier">digest</span>, <span class="ruby-identifier">data</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 169</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">valid_message?</span>(<span class="ruby-identifier">message</span>)
+  <span class="ruby-operator">!</span><span class="ruby-operator">!</span><span class="ruby-identifier">catch_and_ignore</span>(<span class="ruby-value">:invalid_message_format</span>) { <span class="ruby-identifier">extract_encoded</span>(<span class="ruby-identifier">message</span>) }
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -314,7 +357,7 @@ verifier.valid_message?(tampered_message) # =&gt; false
         <div class="method">
           <h3 id="method-i-verified">
             
-              verified(signed_message, purpose: nil, **)
+              verified(message, **options)
             
           </h3>
 
@@ -322,15 +365,15 @@ verifier.valid_message?(tampered_message) # =&gt; false
             <div class="description">
               <p>Decodes the signed message using the <code>MessageVerifier</code>‘s secret.</p>
 
-<pre><code>verifier = ActiveSupport::MessageVerifier.new &#39;s3Krit&#39;
+<pre><code>verifier = ActiveSupport::MessageVerifier.new(&quot;secret&quot;)
 
-signed_message = verifier.generate &#39;a private message&#39;
-verifier.verified(signed_message) # =&gt; &#39;a private message&#39;
+signed_message = verifier.generate(&quot;signed message&quot;)
+verifier.verified(signed_message) # =&gt; &quot;signed message&quot;
 </code></pre>
 
 <p>Returns <code>nil</code> if the message was not signed with the same secret.</p>
 
-<pre><code>other_verifier = ActiveSupport::MessageVerifier.new &#39;d1ff3r3nt-s3Krit&#39;
+<pre><code>other_verifier = ActiveSupport::MessageVerifier.new(&quot;different_secret&quot;)
 other_verifier.verified(signed_message) # =&gt; nil
 </code></pre>
 
@@ -345,6 +388,22 @@ verifier.verified(invalid_message) # =&gt; nil
 <pre><code>incompatible_message = &quot;test--dad7b06c94abba8d46a15fafaef56c327665d5ff&quot;
 verifier.verified(incompatible_message) # =&gt; TypeError: incompatible marshal file format
 </code></pre>
+
+<h4 id="method-i-verified-label-Options">Options</h4>
+<dl class="rdoc-list label-list"><dt><code>:purpose</code>
+<dd>
+<p>The purpose that the message was generated with. If the purpose does not match, <code>verified</code> will return <code>nil</code>.</p>
+
+<pre><code>message = verifier.generate(&quot;hello&quot;, purpose: &quot;greeting&quot;)
+verifier.verified(message, purpose: &quot;greeting&quot;) # =&gt; &quot;hello&quot;
+verifier.verified(message, purpose: &quot;chatting&quot;) # =&gt; nil
+verifier.verified(message)                      # =&gt; nil
+
+message = verifier.generate(&quot;bye&quot;)
+verifier.verified(message)                      # =&gt; &quot;bye&quot;
+verifier.verified(message, purpose: &quot;greeting&quot;) # =&gt; nil
+</code></pre>
+</dd></dl>
             </div>
           
 
@@ -361,16 +420,13 @@ verifier.verified(incompatible_message) # =&gt; TypeError: incompatible marshal 
                 
               </p>
               <div id="method-i-verified_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 152</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">verified</span>(<span class="ruby-identifier">signed_message</span>, <span class="ruby-value">purpose:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span>)
-  <span class="ruby-identifier">data</span>, <span class="ruby-identifier">digest</span> = <span class="ruby-identifier">get_data_and_digest_from</span>(<span class="ruby-identifier">signed_message</span>)
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">digest_matches_data?</span>(<span class="ruby-identifier">digest</span>, <span class="ruby-identifier">data</span>)
-    <span class="ruby-keyword">begin</span>
-      <span class="ruby-identifier">message</span> = <span class="ruby-constant">Messages</span><span class="ruby-operator">::</span><span class="ruby-constant">Metadata</span>.<span class="ruby-identifier">verify</span>(<span class="ruby-identifier">decode</span>(<span class="ruby-identifier">data</span>), <span class="ruby-identifier">purpose</span>)
-      <span class="ruby-ivar">@serializer</span>.<span class="ruby-identifier">load</span>(<span class="ruby-identifier">message</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">message</span>
-    <span class="ruby-keyword">rescue</span> <span class="ruby-constant">ArgumentError</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">argument_error</span>
-      <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">argument_error</span>.<span class="ruby-identifier">message</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-string">&quot;invalid base64&quot;</span>)
-      <span class="ruby-identifier">raise</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 210</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">verified</span>(<span class="ruby-identifier">message</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-identifier">catch_and_ignore</span> <span class="ruby-value">:invalid_message_format</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">catch_and_raise</span> <span class="ruby-value">:invalid_message_serialization</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">catch_and_ignore</span> <span class="ruby-value">:invalid_message_content</span> <span class="ruby-keyword">do</span>
+        <span class="ruby-identifier">read_message</span>(<span class="ruby-identifier">message</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+      <span class="ruby-keyword">end</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -382,7 +438,7 @@ verifier.verified(incompatible_message) # =&gt; TypeError: incompatible marshal 
         <div class="method">
           <h3 id="method-i-verify">
             
-              verify(*args, **options)
+              verify(message, **options)
             
           </h3>
 
@@ -390,17 +446,33 @@ verifier.verified(incompatible_message) # =&gt; TypeError: incompatible marshal 
             <div class="description">
               <p>Decodes the signed message using the <code>MessageVerifier</code>‘s secret.</p>
 
-<pre><code>verifier = ActiveSupport::MessageVerifier.new &#39;s3Krit&#39;
-signed_message = verifier.generate &#39;a private message&#39;
+<pre><code>verifier = ActiveSupport::MessageVerifier.new(&quot;secret&quot;)
+signed_message = verifier.generate(&quot;signed message&quot;)
 
-verifier.verify(signed_message) # =&gt; &#39;a private message&#39;
+verifier.verify(signed_message) # =&gt; &quot;signed message&quot;
 </code></pre>
 
 <p>Raises <code>InvalidSignature</code> if the message was not signed with the same secret or was not Base64-encoded.</p>
 
-<pre><code>other_verifier = ActiveSupport::MessageVerifier.new &#39;d1ff3r3nt-s3Krit&#39;
+<pre><code>other_verifier = ActiveSupport::MessageVerifier.new(&quot;different_secret&quot;)
 other_verifier.verify(signed_message) # =&gt; ActiveSupport::MessageVerifier::InvalidSignature
 </code></pre>
+
+<h4 id="method-i-verify-label-Options">Options</h4>
+<dl class="rdoc-list label-list"><dt><code>:purpose</code>
+<dd>
+<p>The purpose that the message was generated with. If the purpose does not match, <code>verify</code> will raise <a href="MessageVerifier/InvalidSignature.html"><code>ActiveSupport::MessageVerifier::InvalidSignature</code></a>.</p>
+
+<pre><code>message = verifier.generate(&quot;hello&quot;, purpose: &quot;greeting&quot;)
+verifier.verify(message, purpose: &quot;greeting&quot;) # =&gt; &quot;hello&quot;
+verifier.verify(message, purpose: &quot;chatting&quot;) # =&gt; raises InvalidSignature
+verifier.verify(message)                      # =&gt; raises InvalidSignature
+
+message = verifier.generate(&quot;bye&quot;)
+verifier.verify(message)                      # =&gt; &quot;bye&quot;
+verifier.verify(message, purpose: &quot;greeting&quot;) # =&gt; raises InvalidSignature
+</code></pre>
+</dd></dl>
             </div>
           
 
@@ -417,9 +489,15 @@ other_verifier.verify(signed_message) # =&gt; ActiveSupport::MessageVerifier::In
                 
               </p>
               <div id="method-i-verify_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 177</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">verify</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
-  <span class="ruby-identifier">verified</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">raise</span>(<span class="ruby-constant">InvalidSignature</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/message_verifier.rb, line 248</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">verify</span>(<span class="ruby-identifier">message</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-identifier">catch_and_raise</span> <span class="ruby-value">:invalid_message_format</span>, <span class="ruby-value">as:</span> <span class="ruby-constant">InvalidSignature</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-identifier">catch_and_raise</span> <span class="ruby-value">:invalid_message_serialization</span> <span class="ruby-keyword">do</span>
+      <span class="ruby-identifier">catch_and_raise</span> <span class="ruby-value">:invalid_message_content</span>, <span class="ruby-value">as:</span> <span class="ruby-constant">InvalidSignature</span> <span class="ruby-keyword">do</span>
+        <span class="ruby-identifier">read_message</span>(<span class="ruby-identifier">message</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+      <span class="ruby-keyword">end</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -29,13 +29,15 @@ layout: default
   
     <div class="description">
       
+<h1 id="class-ActionDispatch::ShowExceptions-label-Action+Dispatch+ShowExceptions">Action Dispatch ShowExceptions</h1>
+
 <p>This middleware rescues any exception returned by the application and calls an exceptions app that will wrap it in a format for the end user.</p>
 
-<p>The exceptions app should be passed as a parameter on initialization of <code>ShowExceptions</code>. Every time there is an exception, <code>ShowExceptions</code> will store the exception in <code>env[&quot;action_dispatch.exception&quot;]</code>, rewrite the <code>PATH_INFO</code> to the exception status code and call the Rack app.</p>
+<p>The exceptions app should be passed as a parameter on initialization of <code>ShowExceptions</code>. Every time there is an exception, <code>ShowExceptions</code> will store the exception in <code>env[&quot;action_dispatch.exception&quot;]</code>, rewrite the <code>PATH_INFO</code> to the exception status code, and call the Rack app.</p>
 
 <p>In Rails applications, the exceptions app can be configured with <code>config.exceptions_app</code>, which defaults to <a href="PublicExceptions.html"><code>ActionDispatch::PublicExceptions</code></a>.</p>
 
-<p>If the application returns an <code>&quot;X-Cascade&quot; =&gt; &quot;pass&quot;</code> response, this middleware will send an empty response as a result with the correct status code. If any exception happens inside the exceptions app, this middleware catches the exceptions and returns a failsafe response.</p>
+<p>If the application returns a response with the <code>X-Cascade</code> header set to <code>&quot;pass&quot;</code>, this middleware will send an empty response as a result with the correct status code. If any exception happens inside the exceptions app, this middleware catches the exceptions and returns a failsafe response.</p>
 
     </div>
   
@@ -104,7 +106,7 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/show_exceptions.rb, line 22</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/show_exceptions.rb, line 25</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">app</span>, <span class="ruby-identifier">exceptions_app</span>)
   <span class="ruby-ivar">@app</span> = <span class="ruby-identifier">app</span>
   <span class="ruby-ivar">@exceptions_app</span> = <span class="ruby-identifier">exceptions_app</span>
@@ -144,13 +146,15 @@ layout: default
                 
               </p>
               <div id="method-i-call_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/show_exceptions.rb, line 27</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/show_exceptions.rb, line 30</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">call</span>(<span class="ruby-identifier">env</span>)
-  <span class="ruby-identifier">request</span> = <span class="ruby-constant">ActionDispatch</span><span class="ruby-operator">::</span><span class="ruby-constant">Request</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">env</span>
   <span class="ruby-ivar">@app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>)
 <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Exception</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">exception</span>
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">request</span>.<span class="ruby-identifier">show_exceptions?</span>
-    <span class="ruby-identifier">render_exception</span>(<span class="ruby-identifier">request</span>, <span class="ruby-identifier">exception</span>)
+  <span class="ruby-identifier">request</span> = <span class="ruby-constant">ActionDispatch</span><span class="ruby-operator">::</span><span class="ruby-constant">Request</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">env</span>
+  <span class="ruby-identifier">backtrace_cleaner</span> = <span class="ruby-identifier">request</span>.<span class="ruby-identifier">get_header</span>(<span class="ruby-string">&quot;action_dispatch.backtrace_cleaner&quot;</span>)
+  <span class="ruby-identifier">wrapper</span> = <span class="ruby-constant">ExceptionWrapper</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">backtrace_cleaner</span>, <span class="ruby-identifier">exception</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">wrapper</span>.<span class="ruby-identifier">show?</span>(<span class="ruby-identifier">request</span>)
+    <span class="ruby-identifier">render_exception</span>(<span class="ruby-identifier">request</span>, <span class="ruby-identifier">wrapper</span>)
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">raise</span> <span class="ruby-identifier">exception</span>
   <span class="ruby-keyword">end</span>

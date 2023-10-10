@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -91,7 +91,7 @@ layout: default
                 
               </p>
               <div id="method-i-default_scopes-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/default.rb, line 54</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/default.rb, line 62</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">default_scopes?</span>(<span class="ruby-value">all_queries:</span> <span class="ruby-keyword">false</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">all_queries</span>
     <span class="ruby-keyword">self</span>.<span class="ruby-identifier">default_scopes</span>.<span class="ruby-identifier">any?</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:all_queries</span>)
@@ -116,14 +116,22 @@ layout: default
               <p>Returns a scope for the model without the previously set scopes.</p>
 
 <pre><code>class Post &lt; ActiveRecord::Base
+  belongs_to :user
+
   def self.default_scope
     where(published: true)
   end
 end
 
+class User &lt; ActiveRecord::Base
+  has_many :posts
+end
+
 Post.all                                  # Fires &quot;SELECT * FROM posts WHERE published = true&quot;
 Post.unscoped.all                         # Fires &quot;SELECT * FROM posts&quot;
 Post.where(published: false).unscoped.all # Fires &quot;SELECT * FROM posts&quot;
+User.find(1).posts                        # Fires &quot;SELECT * FROM posts WHERE published = true AND posts.user_id = 1&quot;
+User.find(1).posts.unscoped               # Fires &quot;SELECT * FROM posts&quot;
 </code></pre>
 
 <p>This method also accepts a block. All queries inside the block will not use the previously set scopes.</p>
@@ -148,7 +156,7 @@ Post.where(published: false).unscoped.all # Fires &quot;SELECT * FROM posts&quot
                 
               </p>
               <div id="method-i-unscoped_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/default.rb, line 42</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/default.rb, line 50</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">unscoped</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
   <span class="ruby-identifier">block_given?</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">scoping</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) <span class="ruby-operator">:</span> <span class="ruby-identifier">relation</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -175,7 +183,8 @@ Post.where(published: false).unscoped.all # Fires &quot;SELECT * FROM posts&quot
   default_scope { where(published: true) }
 end
 
-Article.all # =&gt; SELECT * FROM articles WHERE published = true
+Article.all
+# SELECT * FROM articles WHERE published = true
 </code></pre>
 
 <p>The <a href="ClassMethods.html#method-i-default_scope"><code>default_scope</code></a> is also applied while creating/building a record. It is not applied while updating or deleting a record.</p>
@@ -194,7 +203,7 @@ end
 <p>Applying a default scope to all queries will ensure that records are always queried by the additional conditions. Note that only where clauses apply, as it does not make sense to add order to queries that return a single object by primary key.</p>
 
 <pre><code>Article.find(1).destroy
-=&gt; DELETE ... FROM `articles` where ID = 1 AND blog_id = 1;
+# DELETE ... FROM `articles` where ID = 1 AND blog_id = 1;
 </code></pre>
 
 <p>(You can also pass any object which responds to <code>call</code> to the <code>default_scope</code> macro, and it will be called when building the default scope.)</p>
@@ -206,7 +215,8 @@ end
   default_scope { where(rating: &#39;G&#39;) }
 end
 
-Article.all # =&gt; SELECT * FROM articles WHERE published = true AND rating = &#39;G&#39;
+Article.all
+# SELECT * FROM articles WHERE published = true AND rating = &#39;G&#39;
 </code></pre>
 
 <p>This is also the case with inheritance and module includes where the parent or module defines a <a href="ClassMethods.html#method-i-default_scope"><code>default_scope</code></a> and the child or including class defines a second one.</p>
@@ -235,7 +245,7 @@ end
                 
               </p>
               <div id="method-i-default_scope_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/default.rb, line 119</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/default.rb, line 129</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">default_scope</span>(<span class="ruby-identifier">scope</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-value">all_queries:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) <span class="ruby-comment"># :doc:</span>
   <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">block</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
 

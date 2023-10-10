@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -23,7 +23,7 @@ layout: default
   
     <div class="description">
       
-<h2 id="module-ActiveModel::Translation-label-Active+Model+Translation">Active Model Translation</h2>
+<h1 id="module-ActiveModel::Translation-label-Active+Model+Translation">Active Model Translation</h1>
 
 <p>Provides integration between your object and the Rails internationalization (i18n) framework.</p>
 
@@ -130,31 +130,31 @@ TranslatedPerson.human_attribute_name(&#39;my_attribute&#39;)
                 
               </p>
               <div id="method-i-human_attribute_name_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/translation.rb, line 44</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/translation.rb, line 46</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">human_attribute_name</span>(<span class="ruby-identifier">attribute</span>, <span class="ruby-identifier">options</span> = {})
-  <span class="ruby-identifier">options</span>   = { <span class="ruby-value">count:</span> <span class="ruby-value">1</span> }.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">options</span>)
-  <span class="ruby-identifier">parts</span>     = <span class="ruby-identifier">attribute</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;.&quot;</span>)
-  <span class="ruby-identifier">attribute</span> = <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">pop</span>
-  <span class="ruby-identifier">namespace</span> = <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;/&quot;</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">parts</span>.<span class="ruby-identifier">empty?</span>
-  <span class="ruby-identifier">attributes_scope</span> = <span class="ruby-node">&quot;#{i18n_scope}.attributes&quot;</span>
+  <span class="ruby-identifier">attribute</span> = <span class="ruby-identifier">attribute</span>.<span class="ruby-identifier">to_s</span>
 
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">namespace</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">attribute</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-string">&quot;.&quot;</span>)
+    <span class="ruby-identifier">namespace</span>, <span class="ruby-identifier">_</span>, <span class="ruby-identifier">attribute</span> = <span class="ruby-identifier">attribute</span>.<span class="ruby-identifier">rpartition</span>(<span class="ruby-string">&quot;.&quot;</span>)
+    <span class="ruby-identifier">namespace</span>.<span class="ruby-identifier">tr!</span>(<span class="ruby-string">&quot;.&quot;</span>, <span class="ruby-string">&quot;/&quot;</span>)
+
     <span class="ruby-identifier">defaults</span> = <span class="ruby-identifier">lookup_ancestors</span>.<span class="ruby-identifier">map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">klass</span><span class="ruby-operator">|</span>
-      <span class="ruby-value">:&quot;#{attributes_scope}.#{klass.model_name.i18n_key}/#{namespace}.#{attribute}&quot;</span>
+      <span class="ruby-value">:&quot;#{i18n_scope}.attributes.#{klass.model_name.i18n_key}/#{namespace}.#{attribute}&quot;</span>
     <span class="ruby-keyword">end</span>
-    <span class="ruby-identifier">defaults</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-value">:&quot;#{attributes_scope}.#{namespace}.#{attribute}&quot;</span>
+    <span class="ruby-identifier">defaults</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-value">:&quot;#{i18n_scope}.attributes.#{namespace}.#{attribute}&quot;</span>
   <span class="ruby-keyword">else</span>
     <span class="ruby-identifier">defaults</span> = <span class="ruby-identifier">lookup_ancestors</span>.<span class="ruby-identifier">map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">klass</span><span class="ruby-operator">|</span>
-      <span class="ruby-value">:&quot;#{attributes_scope}.#{klass.model_name.i18n_key}.#{attribute}&quot;</span>
+      <span class="ruby-value">:&quot;#{i18n_scope}.attributes.#{klass.model_name.i18n_key}.#{attribute}&quot;</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 
   <span class="ruby-identifier">defaults</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-value">:&quot;attributes.#{attribute}&quot;</span>
-  <span class="ruby-identifier">defaults</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">options</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-value">:default</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:default</span>]
-  <span class="ruby-identifier">defaults</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">attribute</span>.<span class="ruby-identifier">humanize</span>
+  <span class="ruby-identifier">defaults</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:default</span>] <span class="ruby-keyword">if</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:default</span>]
+  <span class="ruby-identifier">defaults</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-constant">MISSING_TRANSLATION</span>
 
-  <span class="ruby-identifier">options</span>[<span class="ruby-value">:default</span>] = <span class="ruby-identifier">defaults</span>
-  <span class="ruby-constant">I18n</span>.<span class="ruby-identifier">translate</span>(<span class="ruby-identifier">defaults</span>.<span class="ruby-identifier">shift</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-identifier">translation</span> = <span class="ruby-constant">I18n</span>.<span class="ruby-identifier">translate</span>(<span class="ruby-identifier">defaults</span>.<span class="ruby-identifier">shift</span>, <span class="ruby-value">count:</span> <span class="ruby-value">1</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>, <span class="ruby-value">default:</span> <span class="ruby-identifier">defaults</span>)
+  <span class="ruby-identifier">translation</span> = <span class="ruby-identifier">attribute</span>.<span class="ruby-identifier">humanize</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">translation</span> <span class="ruby-operator">==</span> <span class="ruby-constant">MISSING_TRANSLATION</span>
+  <span class="ruby-identifier">translation</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>

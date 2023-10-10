@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -35,6 +35,10 @@ layout: default
     <ul>
       
         <li>
+          <a href="#method-i-after_discard">after_discard</a>
+        </li>
+      
+        <li>
           <a href="#method-i-discard_on">discard_on</a>
         </li>
       
@@ -62,6 +66,53 @@ layout: default
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
         <div class="method">
+          <h3 id="method-i-after_discard">
+            
+              after_discard(&amp;blk)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>A block to run when a job is about to be discarded for any reason.</p>
+
+<h4 id="method-i-after_discard-label-Example">Example</h4>
+
+<pre><code>class WorkJob &lt; ActiveJob::Base
+  after_discard do |job, exception|
+    ExceptionNotifier.report(exception)
+  end
+
+  ...
+
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-after_discard_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 130</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">after_discard</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">after_discard_procs</span> <span class="ruby-operator">+=</span> [<span class="ruby-identifier">blk</span>]
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
           <h3 id="method-i-discard_on">
             
               discard_on(*exceptions)
@@ -73,6 +124,8 @@ layout: default
               <p>Discard the job with no attempts to retry, if the exception is raised. This is useful when the subject of the job, like an Active Record, is no longer available, and the job is thus no longer relevant.</p>
 
 <p>You can also pass a block that’ll be invoked. This block is yielded with the job instance as the first and the error instance as the second parameter.</p>
+
+<p>‘retry_on` and `discard_on` handlers are searched from bottom to top, and up the class hierarchy. The handler of the first class for which <code>exception.is_a?(klass)</code> holds true is the one invoked, if any.</p>
 
 <h4 id="method-i-discard_on-label-Example">Example</h4>
 
@@ -104,11 +157,12 @@ end
                 
               </p>
               <div id="method-i-discard_on_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 94</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 109</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">discard_on</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>)
   <span class="ruby-identifier">rescue_from</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">error</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">instrument</span> <span class="ruby-value">:discard</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span> <span class="ruby-keyword">do</span>
       <span class="ruby-keyword">yield</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">error</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+      <span class="ruby-identifier">run_after_discard_procs</span>(<span class="ruby-identifier">error</span>)
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -130,9 +184,11 @@ end
 
 <p>You can also pass a block that’ll be invoked if the retry attempts fail for custom logic rather than letting the exception bubble up. This block is yielded with the job instance as the first and the error instance as the second parameter.</p>
 
+<p>‘retry_on` and `discard_on` handlers are searched from bottom to top, and up the class hierarchy. The handler of the first class for which <code>exception.is_a?(klass)</code> holds true is the one invoked, if any.</p>
+
 <h4 id="method-i-retry_on-label-Options">Options</h4>
 <ul><li>
-<p><code>:wait</code> - Re-enqueues the job with a delay specified either in seconds (default: 3 seconds), as a computing proc that takes the number of executions so far as an argument, or as a symbol reference of <code>:exponentially_longer</code>, which applies the wait algorithm of <code>((executions**4) + (Kernel.rand * (executions**4) * jitter)) + 2</code> (first wait ~3s, then ~18s, then ~83s, etc)</p>
+<p><code>:wait</code> - Re-enqueues the job with a delay specified either in seconds (default: 3 seconds), as a computing proc that takes the number of executions so far as an argument, or as a symbol reference of <code>:polynomially_longer</code>, which applies the wait algorithm of <code>((executions**4) + (Kernel.rand * (executions**4) * jitter)) + 2</code> (first wait ~3s, then ~18s, then ~83s, etc)</p>
 </li><li>
 <p><code>:attempts</code> - Re-enqueues the job the specified number of times (default: 5 attempts) or a symbol reference of <code>:unlimited</code> to retry the job until it succeeds</p>
 </li><li>
@@ -151,11 +207,11 @@ end
   retry_on CustomInfrastructureException, wait: 5.minutes, attempts: :unlimited
 
   retry_on ActiveRecord::Deadlocked, wait: 5.seconds, attempts: 3
-  retry_on Net::OpenTimeout, Timeout::Error, wait: :exponentially_longer, attempts: 10 # retries at most 10 times for Net::OpenTimeout and Timeout::Error combined
+  retry_on Net::OpenTimeout, Timeout::Error, wait: :polynomially_longer, attempts: 10 # retries at most 10 times for Net::OpenTimeout and Timeout::Error combined
   # To retry at most 10 times for each individual exception:
-  # retry_on Net::OpenTimeout, wait: :exponentially_longer, attempts: 10
+  # retry_on Net::OpenTimeout, wait: :polynomially_longer, attempts: 10
   # retry_on Net::ReadTimeout, wait: 5.seconds, jitter: 0.30, attempts: 10
-  # retry_on Timeout::Error, wait: :exponentially_longer, attempts: 10
+  # retry_on Timeout::Error, wait: :polynomially_longer, attempts: 10
 
   retry_on(YetAnotherCustomAppException) do |job, error|
     ExceptionNotifier.caught(error)
@@ -184,24 +240,32 @@ end
                 
               </p>
               <div id="method-i-retry_on_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 58</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retry_on</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>, <span class="ruby-value">wait:</span> <span class="ruby-value">3</span>.<span class="ruby-identifier">seconds</span>, <span class="ruby-value">attempts:</span> <span class="ruby-value">5</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">priority:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">jitter:</span> <span class="ruby-constant">JITTER_DEFAULT</span>)
-  <span class="ruby-identifier">rescue_from</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">error</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">executions</span> = <span class="ruby-identifier">executions_for</span>(<span class="ruby-identifier">exceptions</span>)
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">attempts</span> <span class="ruby-operator">==</span> <span class="ruby-value">:unlimited</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">executions</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">attempts</span>
-      <span class="ruby-identifier">retry_job</span> <span class="ruby-value">wait:</span> <span class="ruby-identifier">determine_delay</span>(<span class="ruby-value">seconds_or_duration_or_algorithm:</span> <span class="ruby-identifier">wait</span>, <span class="ruby-value">executions:</span> <span class="ruby-identifier">executions</span>, <span class="ruby-value">jitter:</span> <span class="ruby-identifier">jitter</span>), <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-value">priority:</span> <span class="ruby-identifier">priority</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span>
-    <span class="ruby-keyword">else</span>
-      <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
-        <span class="ruby-identifier">instrument</span> <span class="ruby-value">:retry_stopped</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span> <span class="ruby-keyword">do</span>
-          <span class="ruby-keyword">yield</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">error</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activejob/lib/active_job/exceptions.rb, line 62</span>
+      <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retry_on</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>, <span class="ruby-value">wait:</span> <span class="ruby-value">3</span>.<span class="ruby-identifier">seconds</span>, <span class="ruby-value">attempts:</span> <span class="ruby-value">5</span>, <span class="ruby-value">queue:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">priority:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">jitter:</span> <span class="ruby-constant">JITTER_DEFAULT</span>)
+        <span class="ruby-keyword">if</span> <span class="ruby-identifier">wait</span> <span class="ruby-operator">==</span> <span class="ruby-value">:exponentially_longer</span>
+          <span class="ruby-constant">ActiveJob</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;~MSG</span>.<span class="ruby-identifier">squish</span>)
+<span class="ruby-value">            `wait: :exponentially_longer` will actually wait polynomially longer and is therefore deprecated.
+            Prefer `wait: :polynomially_longer` to avoid confusion and keep the same behavior.
+</span><span class="ruby-identifier">          MSG</span>
         <span class="ruby-keyword">end</span>
-      <span class="ruby-keyword">else</span>
-        <span class="ruby-identifier">instrument</span> <span class="ruby-value">:retry_stopped</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span>
-        <span class="ruby-identifier">raise</span> <span class="ruby-identifier">error</span>
-      <span class="ruby-keyword">end</span>
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
+        <span class="ruby-identifier">rescue_from</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">exceptions</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">error</span><span class="ruby-operator">|</span>
+          <span class="ruby-identifier">executions</span> = <span class="ruby-identifier">executions_for</span>(<span class="ruby-identifier">exceptions</span>)
+          <span class="ruby-keyword">if</span> <span class="ruby-identifier">attempts</span> <span class="ruby-operator">==</span> <span class="ruby-value">:unlimited</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">executions</span> <span class="ruby-operator">&lt;</span> <span class="ruby-identifier">attempts</span>
+            <span class="ruby-identifier">retry_job</span> <span class="ruby-value">wait:</span> <span class="ruby-identifier">determine_delay</span>(<span class="ruby-value">seconds_or_duration_or_algorithm:</span> <span class="ruby-identifier">wait</span>, <span class="ruby-value">executions:</span> <span class="ruby-identifier">executions</span>, <span class="ruby-value">jitter:</span> <span class="ruby-identifier">jitter</span>), <span class="ruby-value">queue:</span> <span class="ruby-identifier">queue</span>, <span class="ruby-value">priority:</span> <span class="ruby-identifier">priority</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span>
+          <span class="ruby-keyword">else</span>
+            <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
+              <span class="ruby-identifier">instrument</span> <span class="ruby-value">:retry_stopped</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span> <span class="ruby-keyword">do</span>
+                <span class="ruby-keyword">yield</span> <span class="ruby-keyword">self</span>, <span class="ruby-identifier">error</span>
+              <span class="ruby-keyword">end</span>
+              <span class="ruby-identifier">run_after_discard_procs</span>(<span class="ruby-identifier">error</span>)
+            <span class="ruby-keyword">else</span>
+              <span class="ruby-identifier">instrument</span> <span class="ruby-value">:retry_stopped</span>, <span class="ruby-value">error:</span> <span class="ruby-identifier">error</span>
+              <span class="ruby-identifier">run_after_discard_procs</span>(<span class="ruby-identifier">error</span>)
+              <span class="ruby-identifier">raise</span> <span class="ruby-identifier">error</span>
+            <span class="ruby-keyword">end</span>
+          <span class="ruby-keyword">end</span>
+        <span class="ruby-keyword">end</span>
+      <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
             

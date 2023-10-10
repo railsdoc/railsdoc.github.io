@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -33,17 +33,19 @@ layout: default
   
     <div class="description">
       
+<h1 id="class-ActiveRecord::ConnectionAdapters::ConnectionPool-label-Active+Record+Connection+Pool">Active Record Connection Pool</h1>
+
 <p>Connection pool base class for managing Active Record database connections.</p>
 
 <h2 id="class-ActiveRecord::ConnectionAdapters::ConnectionPool-label-Introduction">Introduction</h2>
 
-<p>A connection pool synchronizes thread access to a limited number of database connections. The basic idea is that each thread checks out a database connection from the pool, uses that connection, and checks the connection back in. <a href="ConnectionPool.html"><code>ConnectionPool</code></a> is completely thread-safe, and will ensure that a connection cannot be used by two threads at the same time, as long as ConnectionPool’s contract is correctly followed. It will also handle cases in which there are more threads than connections: if all connections have been checked out, and a thread tries to checkout a connection anyway, then <a href="ConnectionPool.html"><code>ConnectionPool</code></a> will wait until some other thread has checked in a connection.</p>
+<p>A connection pool synchronizes thread access to a limited number of database connections. The basic idea is that each thread checks out a database connection from the pool, uses that connection, and checks the connection back in. <a href="ConnectionPool.html"><code>ConnectionPool</code></a> is completely thread-safe, and will ensure that a connection cannot be used by two threads at the same time, as long as ConnectionPool’s contract is correctly followed. It will also handle cases in which there are more threads than connections: if all connections have been checked out, and a thread tries to checkout a connection anyway, then <a href="ConnectionPool.html"><code>ConnectionPool</code></a> will wait until some other thread has checked in a connection, or the <code>checkout_timeout</code> has expired.</p>
 
 <h2 id="class-ActiveRecord::ConnectionAdapters::ConnectionPool-label-Obtaining+-28checking+out-29+a+connection">Obtaining (checking out) a connection</h2>
 
 <p>Connections can be obtained and used from a connection pool in several ways:</p>
 <ol><li>
-<p>Simply use <a href="../ConnectionHandling.html#method-i-connection">ActiveRecord::Base.connection</a> as with Active Record 2.1 and earlier (pre-connection-pooling). Eventually, when you’re done with the connection(s) and wish it to be returned to the pool, you call <a href="ConnectionHandler.html#method-i-clear_active_connections-21">ActiveRecord::Base.clear_active_connections!</a>. This will be the default behavior for Active Record when used in conjunction with Action Pack’s request handling cycle.</p>
+<p>Simply use <a href="../ConnectionHandling.html#method-i-connection">ActiveRecord::Base.connection</a> as with Active Record 2.1 and earlier (pre-connection-pooling). Eventually, when you’re done with the connection(s) and wish it to be returned to the pool, you call <a href="ConnectionHandler.html#method-i-clear_active_connections-21">ActiveRecord::Base.connection_handler.clear_active_connections!</a>. This will be the default behavior for Active Record when used in conjunction with Action Pack’s request handling cycle.</p>
 </li><li>
 <p>Manually check out a connection from the pool with <a href="ConnectionPool.html#method-i-checkout">ActiveRecord::Base.connection_pool.checkout</a>. You are responsible for returning this connection to the pool when finished by calling <a href="ConnectionPool.html#method-i-checkin">ActiveRecord::Base.connection_pool.checkin(connection)</a>.</p>
 </li><li>
@@ -51,6 +53,8 @@ layout: default
 </li></ol>
 
 <p>Connections in the pool are actually <a href="AbstractAdapter.html"><code>AbstractAdapter</code></a> objects (or objects compatible with AbstractAdapter’s interface).</p>
+
+<p>While a thread has a connection checked out from the pool using one of the above three methods, that connection will automatically be the one used by <a href="../../ActiveRecord.html"><code>ActiveRecord</code></a> queries executing on that thread. It is not required to explicitly pass the checked out connection to Rails models or queries, for example.</p>
 
 <h2 id="class-ActiveRecord::ConnectionAdapters::ConnectionPool-label-Options">Options</h2>
 
@@ -234,22 +238,6 @@ layout: default
             <td class='attr-rw'>
               [R]
             </td>
-            <td class='attr-name'>connection_class</td>
-            <td class='attr-desc'></td>
-          </tr>
-        
-          <tr valign='top'>
-            <td class='attr-rw'>
-              [R]
-            </td>
-            <td class='attr-name'>connection_klass</td>
-            <td class='attr-desc'></td>
-          </tr>
-        
-          <tr valign='top'>
-            <td class='attr-rw'>
-              [R]
-            </td>
             <td class='attr-name'>db_config</td>
             <td class='attr-desc'></td>
           </tr>
@@ -329,13 +317,12 @@ layout: default
                 
               </p>
               <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 120</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 122</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">pool_config</span>)
   <span class="ruby-keyword">super</span>()
 
   <span class="ruby-ivar">@pool_config</span> = <span class="ruby-identifier">pool_config</span>
   <span class="ruby-ivar">@db_config</span> = <span class="ruby-identifier">pool_config</span>.<span class="ruby-identifier">db_config</span>
-  <span class="ruby-ivar">@connection_class</span> = <span class="ruby-identifier">pool_config</span>.<span class="ruby-identifier">connection_class</span>
   <span class="ruby-ivar">@role</span> = <span class="ruby-identifier">pool_config</span>.<span class="ruby-identifier">role</span>
   <span class="ruby-ivar">@shard</span> = <span class="ruby-identifier">pool_config</span>.<span class="ruby-identifier">shard</span>
 
@@ -370,8 +357,6 @@ layout: default
   <span class="ruby-ivar">@lock_thread</span> = <span class="ruby-keyword">false</span>
 
   <span class="ruby-ivar">@async_executor</span> = <span class="ruby-identifier">build_async_executor</span>
-
-  <span class="ruby-identifier">lazily_set_schema_cache</span>
 
   <span class="ruby-ivar">@reaper</span> = <span class="ruby-constant">Reaper</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">db_config</span>.<span class="ruby-identifier">reaping_frequency</span>)
   <span class="ruby-ivar">@reaper</span>.<span class="ruby-identifier">run</span>
@@ -413,7 +398,7 @@ layout: default
                 
               </p>
               <div id="method-i-active_connection-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 189</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 198</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">active_connection?</span>
   <span class="ruby-ivar">@thread_cached_conns</span>[<span class="ruby-identifier">connection_cache_key</span>(<span class="ruby-identifier">current_thread</span>)]
 <span class="ruby-keyword">end</span></code></pre>
@@ -450,7 +435,7 @@ layout: default
                 
               </p>
               <div id="method-i-checkin_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 349</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 365</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">checkin</span>(<span class="ruby-identifier">conn</span>)
   <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
@@ -460,6 +445,7 @@ layout: default
         <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">expire</span>
       <span class="ruby-keyword">end</span>
 
+      <span class="ruby-identifier">conn</span>.<span class="ruby-identifier">lock_thread</span> = <span class="ruby-keyword">nil</span>
       <span class="ruby-ivar">@available</span>.<span class="ruby-identifier">add</span> <span class="ruby-identifier">conn</span>
     <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">end</span>
@@ -506,9 +492,11 @@ layout: default
                 
               </p>
               <div id="method-i-checkout_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 340</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 354</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">checkout</span>(<span class="ruby-identifier">checkout_timeout</span> = <span class="ruby-ivar">@checkout_timeout</span>)
-  <span class="ruby-identifier">checkout_and_verify</span>(<span class="ruby-identifier">acquire_connection</span>(<span class="ruby-identifier">checkout_timeout</span>))
+  <span class="ruby-identifier">connection</span> = <span class="ruby-identifier">checkout_and_verify</span>(<span class="ruby-identifier">acquire_connection</span>(<span class="ruby-identifier">checkout_timeout</span>))
+  <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">lock_thread</span> = <span class="ruby-ivar">@lock_thread</span>
+  <span class="ruby-identifier">connection</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -546,7 +534,7 @@ layout: default
                 
               </p>
               <div id="method-i-clear_reloadable_connections_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 298</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 312</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear_reloadable_connections</span>(<span class="ruby-identifier">raise_on_acquisition_timeout</span> = <span class="ruby-keyword">true</span>)
   <span class="ruby-identifier">with_exclusively_acquired_all_connections</span>(<span class="ruby-identifier">raise_on_acquisition_timeout</span>) <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
@@ -595,7 +583,7 @@ layout: default
                 
               </p>
               <div id="method-i-clear_reloadable_connections-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 322</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 336</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear_reloadable_connections!</span>
   <span class="ruby-identifier">clear_reloadable_connections</span>(<span class="ruby-keyword">false</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -630,7 +618,7 @@ layout: default
                 
               </p>
               <div id="method-i-connected-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 221</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 235</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connected?</span>
   <span class="ruby-identifier">synchronize</span> { <span class="ruby-ivar">@connections</span>.<span class="ruby-identifier">any?</span> }
 <span class="ruby-keyword">end</span></code></pre>
@@ -667,7 +655,7 @@ layout: default
                 
               </p>
               <div id="method-i-connection_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 180</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 183</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connection</span>
   <span class="ruby-ivar">@thread_cached_conns</span>[<span class="ruby-identifier">connection_cache_key</span>(<span class="ruby-identifier">current_thread</span>)] <span class="ruby-operator">||=</span> <span class="ruby-identifier">checkout</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -706,7 +694,7 @@ layout: default
                 
               </p>
               <div id="method-i-connections_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 236</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 250</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">connections</span>
   <span class="ruby-identifier">synchronize</span> { <span class="ruby-ivar">@connections</span>.<span class="ruby-identifier">dup</span> }
 <span class="ruby-keyword">end</span></code></pre>
@@ -746,7 +734,7 @@ layout: default
                 
               </p>
               <div id="method-i-disconnect_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 246</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 260</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">disconnect</span>(<span class="ruby-identifier">raise_on_acquisition_timeout</span> = <span class="ruby-keyword">true</span>)
   <span class="ruby-identifier">with_exclusively_acquired_all_connections</span>(<span class="ruby-identifier">raise_on_acquisition_timeout</span>) <span class="ruby-keyword">do</span>
     <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
@@ -795,7 +783,7 @@ layout: default
                 
               </p>
               <div id="method-i-disconnect-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 268</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 282</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">disconnect!</span>
   <span class="ruby-identifier">disconnect</span>(<span class="ruby-keyword">false</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -830,7 +818,7 @@ layout: default
                 
               </p>
               <div id="method-i-flush_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 420</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 437</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">flush</span>(<span class="ruby-identifier">minimum_idle</span> = <span class="ruby-ivar">@idle_timeout</span>)
   <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">minimum_idle</span>.<span class="ruby-identifier">nil?</span>
 
@@ -881,7 +869,7 @@ layout: default
                 
               </p>
               <div id="method-i-flush-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 442</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 459</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">flush!</span>
   <span class="ruby-identifier">reap</span>
   <span class="ruby-identifier">flush</span>(<span class="ruby-value">-1</span>)
@@ -917,12 +905,16 @@ layout: default
                 
               </p>
               <div id="method-i-lock_thread-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 167</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 166</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">lock_thread=</span>(<span class="ruby-identifier">lock_thread</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">lock_thread</span>
-    <span class="ruby-ivar">@lock_thread</span> = <span class="ruby-constant">Thread</span>.<span class="ruby-identifier">current</span>
+    <span class="ruby-ivar">@lock_thread</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">IsolatedExecutionState</span>.<span class="ruby-identifier">context</span>
   <span class="ruby-keyword">else</span>
     <span class="ruby-ivar">@lock_thread</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-keyword">if</span> (<span class="ruby-identifier">active_connection</span> = <span class="ruby-ivar">@thread_cached_conns</span>[<span class="ruby-identifier">connection_cache_key</span>(<span class="ruby-identifier">current_thread</span>)])
+    <span class="ruby-identifier">active_connection</span>.<span class="ruby-identifier">lock_thread</span> = <span class="ruby-ivar">@lock_thread</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -956,7 +948,7 @@ layout: default
                 
               </p>
               <div id="method-i-reap_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 397</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 414</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reap</span>
   <span class="ruby-identifier">stale_connections</span> = <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">discarded?</span>
@@ -984,7 +976,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-release_connection">
             
-              release_connection(owner_thread = Thread.current)
+              release_connection(owner_thread = ActiveSupport::IsolatedExecutionState.context)
             
           </h3>
 
@@ -1009,8 +1001,8 @@ layout: default
                 
               </p>
               <div id="method-i-release_connection_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 200</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">release_connection</span>(<span class="ruby-identifier">owner_thread</span> = <span class="ruby-constant">Thread</span>.<span class="ruby-identifier">current</span>)
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 209</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">release_connection</span>(<span class="ruby-identifier">owner_thread</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">IsolatedExecutionState</span>.<span class="ruby-identifier">context</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">conn</span> = <span class="ruby-ivar">@thread_cached_conns</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">connection_cache_key</span>(<span class="ruby-identifier">owner_thread</span>))
     <span class="ruby-identifier">checkin</span> <span class="ruby-identifier">conn</span>
   <span class="ruby-keyword">end</span>
@@ -1046,7 +1038,7 @@ layout: default
                 
               </p>
               <div id="method-i-remove_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 365</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 382</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove</span>(<span class="ruby-identifier">conn</span>)
   <span class="ruby-identifier">needs_new_connection</span> = <span class="ruby-keyword">false</span>
 
@@ -1109,7 +1101,7 @@ layout: default
                 
               </p>
               <div id="method-i-stat_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 455</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 472</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">stat</span>
   <span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
     {
@@ -1137,7 +1129,7 @@ layout: default
 
           
             <div class="description">
-              <p>If a connection obtained through <a href="ConnectionPool.html#method-i-connection"><code>connection</code></a> or <a href="ConnectionPool.html#method-i-with_connection"><code>with_connection</code></a> methods already exists yield it to the block. If no such connection exists checkout a connection, yield it to the block, and checkin the connection when finished.</p>
+              <p>Yields a connection from the connection pool to the block. If no connection is already checked out by the current thread, a connection will be checked out from the pool, yielded to the block, and then returned to the pool when the block is finished. If a connection has already been checked out on the current thread, such as via <a href="ConnectionPool.html#method-i-connection"><code>connection</code></a> or <a href="ConnectionPool.html#method-i-with_connection"><code>with_connection</code></a>, that existing connection will be the one yielded and it will not be returned to the pool automatically at the end of the block; it is expected that such an existing connection will be properly returned to the pool by the code that checked it out.</p>
             </div>
           
 
@@ -1154,9 +1146,9 @@ layout: default
                 
               </p>
               <div id="method-i-with_connection_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 210</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 224</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">with_connection</span>
-  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">conn</span> = <span class="ruby-ivar">@thread_cached_conns</span>[<span class="ruby-identifier">connection_cache_key</span>(<span class="ruby-constant">Thread</span>.<span class="ruby-identifier">current</span>)]
+  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">conn</span> = <span class="ruby-ivar">@thread_cached_conns</span>[<span class="ruby-identifier">connection_cache_key</span>(<span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">IsolatedExecutionState</span>.<span class="ruby-identifier">context</span>)]
     <span class="ruby-identifier">conn</span> = <span class="ruby-identifier">connection</span>
     <span class="ruby-identifier">fresh_connection</span> = <span class="ruby-keyword">true</span>
   <span class="ruby-keyword">end</span>

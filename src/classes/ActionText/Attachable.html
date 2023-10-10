@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -16,12 +16,32 @@ layout: default
             
             <li><a href="../../files/actiontext/lib/action_text/attachable_rb.html">actiontext/lib/action_text/attachable.rb</a></li>
             
+            <li><a href="../../files/actiontext/lib/action_text/attachables/missing_attachable_rb.html">actiontext/lib/action_text/attachables/missing_attachable.rb</a></li>
+            
             <li><a href="../../files/actiontext/lib/action_text/fixture_set_rb.html">actiontext/lib/action_text/fixture_set.rb</a></li>
             
         </ul>
     </div>
     <div id="bodyContent">
         <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionText::Attachable-label-Action+Text+Attachable">Action Text Attachable</h1>
+
+<p>Include this module to make a record attachable to an <a href="Content.html"><code>ActionText::Content</code></a>.</p>
+
+<pre><code>class Person &lt; ApplicationRecord
+  include ActionText::Attachable
+end
+
+person = Person.create! name: &quot;Javan&quot;
+html = %Q(&lt;action-text-attachment sgid=&quot;#{person.attachable_sgid}&quot;&gt;&lt;/action-text-attachment&gt;)
+content = ActionText::Content.new(html)
+content.attachables # =&gt; [person]
+</code></pre>
+
+    </div>
   
 
   
@@ -35,10 +55,6 @@ layout: default
   
     <h2 id="methods">Methods</h2>
     <ul>
-      
-        <li>
-          <a href="#method-i-as_json">as_json</a>
-        </li>
       
         <li>
           <a href="#method-i-attachable_content_type">attachable_content_type</a>
@@ -61,11 +77,11 @@ layout: default
         </li>
       
         <li>
-          <a href="#method-i-from_attachable_sgid">from_attachable_sgid</a>
+          <a href="#method-c-from_attachable_sgid">from_attachable_sgid</a>
         </li>
       
         <li>
-          <a href="#method-c-from_attachable_sgid">from_attachable_sgid</a>
+          <a href="#method-i-from_attachable_sgid">from_attachable_sgid</a>
         </li>
       
         <li>
@@ -78,6 +94,10 @@ layout: default
       
         <li>
           <a href="#method-i-to_attachable_partial_path">to_attachable_partial_path</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_missing_attachable_partial_path">to_missing_attachable_partial_path</a>
         </li>
       
         <li>
@@ -150,7 +170,7 @@ layout: default
                 
               </p>
               <div id="method-c-from_attachable_sgid_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 22</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 41</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">from_attachable_sgid</span>(<span class="ruby-identifier">sgid</span>, <span class="ruby-identifier">options</span> = {})
   <span class="ruby-identifier">method</span> = <span class="ruby-identifier">sgid</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">Array</span>) <span class="ruby-operator">?</span> <span class="ruby-value">:locate_many_signed</span> <span class="ruby-operator">:</span> <span class="ruby-value">:locate_signed</span>
   <span class="ruby-identifier">record</span> = <span class="ruby-constant">GlobalID</span><span class="ruby-operator">::</span><span class="ruby-constant">Locator</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">sgid</span>, <span class="ruby-identifier">options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-value">for:</span> <span class="ruby-constant">LOCATOR_NAME</span>))
@@ -170,7 +190,14 @@ layout: default
 
           
             <div class="description">
-              
+              <p>Extracts the <code>ActionText::Attachable</code> from the attachment HTML node:</p>
+
+<pre><code>person = Person.create! name: &quot;Javan&quot;
+html = %Q(&lt;action-text-attachment sgid=&quot;#{person.attachable_sgid}&quot;&gt;&lt;/action-text-attachment&gt;)
+fragment = ActionText::Fragment.wrap(html)
+attachment_node = fragment.find_all(ActionText::Attachment.tag_name).first
+ActionText::Attachable.from_node(attachment_node) # =&gt; person
+</code></pre>
             </div>
           
 
@@ -187,7 +214,7 @@ layout: default
                 
               </p>
               <div id="method-c-from_node_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 10</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 29</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">from_node</span>(<span class="ruby-identifier">node</span>)
   <span class="ruby-keyword">if</span> <span class="ruby-identifier">attachable</span> = <span class="ruby-identifier">attachable_from_sgid</span>(<span class="ruby-identifier">node</span>[<span class="ruby-string">&quot;sgid&quot;</span>])
     <span class="ruby-identifier">attachable</span>
@@ -196,7 +223,7 @@ layout: default
   <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">attachable</span> = <span class="ruby-constant">ActionText</span><span class="ruby-operator">::</span><span class="ruby-constant">Attachables</span><span class="ruby-operator">::</span><span class="ruby-constant">RemoteImage</span>.<span class="ruby-identifier">from_node</span>(<span class="ruby-identifier">node</span>)
     <span class="ruby-identifier">attachable</span>
   <span class="ruby-keyword">else</span>
-    <span class="ruby-constant">ActionText</span><span class="ruby-operator">::</span><span class="ruby-constant">Attachables</span><span class="ruby-operator">::</span><span class="ruby-constant">MissingAttachable</span>
+    <span class="ruby-constant">ActionText</span><span class="ruby-operator">::</span><span class="ruby-constant">Attachables</span><span class="ruby-operator">::</span><span class="ruby-constant">MissingAttachable</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">node</span>[<span class="ruby-string">&quot;sgid&quot;</span>])
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
@@ -208,41 +235,6 @@ layout: default
     
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
-        <div class="method">
-          <h3 id="method-i-as_json">
-            
-              as_json(*)
-            
-          </h3>
-
-          
-            <div class="description">
-              
-            </div>
-          
-
-          
-
-          
-
-          
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-as_json_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 66</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">as_json</span>(<span class="ruby-operator">*</span>)
-  <span class="ruby-keyword">super</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-string">&quot;attachable_sgid&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">persisted?</span> <span class="ruby-operator">?</span> <span class="ruby-identifier">attachable_sgid</span> <span class="ruby-operator">:</span> <span class="ruby-keyword">nil</span>)
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
-        
         <div class="method">
           <h3 id="method-i-attachable_content_type">
             
@@ -269,7 +261,7 @@ layout: default
                 
               </p>
               <div id="method-i-attachable_content_type_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 46</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 81</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attachable_content_type</span>
   <span class="ruby-identifier">try</span>(<span class="ruby-value">:content_type</span>) <span class="ruby-operator">||</span> <span class="ruby-string">&quot;application/octet-stream&quot;</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -304,7 +296,7 @@ layout: default
                 
               </p>
               <div id="method-i-attachable_filename_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 50</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 85</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attachable_filename</span>
   <span class="ruby-identifier">filename</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:filename</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -339,7 +331,7 @@ layout: default
                 
               </p>
               <div id="method-i-attachable_filesize_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 54</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 89</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attachable_filesize</span>
   <span class="ruby-identifier">try</span>(<span class="ruby-value">:byte_size</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">try</span>(<span class="ruby-value">:filesize</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -374,7 +366,7 @@ layout: default
                 
               </p>
               <div id="method-i-attachable_metadata_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 58</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 93</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attachable_metadata</span>
   <span class="ruby-identifier">try</span>(<span class="ruby-value">:metadata</span>) <span class="ruby-operator">||</span> {}
 <span class="ruby-keyword">end</span></code></pre>
@@ -392,7 +384,7 @@ layout: default
 
           
             <div class="description">
-              
+              <p>Returns the Signed Global ID for the attachable. The purpose of the ID is set to ‘attachable’ so it can’t be reused for other purposes.</p>
             </div>
           
 
@@ -409,7 +401,7 @@ layout: default
                 
               </p>
               <div id="method-i-attachable_sgid_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 42</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 77</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attachable_sgid</span>
   <span class="ruby-identifier">to_sgid</span>(<span class="ruby-value">expires_in:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">for:</span> <span class="ruby-constant">LOCATOR_NAME</span>).<span class="ruby-identifier">to_s</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -444,7 +436,7 @@ layout: default
                 
               </p>
               <div id="method-i-from_attachable_sgid_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 37</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 56</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">from_attachable_sgid</span>(<span class="ruby-identifier">sgid</span>)
   <span class="ruby-constant">ActionText</span><span class="ruby-operator">::</span><span class="ruby-constant">Attachable</span>.<span class="ruby-identifier">from_attachable_sgid</span>(<span class="ruby-identifier">sgid</span>, <span class="ruby-value">only:</span> <span class="ruby-keyword">self</span>)
 <span class="ruby-keyword">end</span></code></pre>
@@ -479,7 +471,7 @@ layout: default
                 
               </p>
               <div id="method-i-previewable_attachable-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 62</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 97</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">previewable_attachable?</span>
   <span class="ruby-keyword">false</span>
 <span class="ruby-keyword">end</span></code></pre>
@@ -497,7 +489,16 @@ layout: default
 
           
             <div class="description">
-              
+              <p>Returns the path to the partial that is used for rendering the attachable. Defaults to <code>to_partial_path</code>.</p>
+
+<p>Override to render a different partial:</p>
+
+<pre><code>class User &lt; ApplicationRecord
+  def to_attachable_partial_path
+    &quot;users/attachable&quot;
+  end
+end
+</code></pre>
             </div>
           
 
@@ -514,9 +515,53 @@ layout: default
                 
               </p>
               <div id="method-i-to_attachable_partial_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 74</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 125</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_attachable_partial_path</span>
   <span class="ruby-identifier">to_partial_path</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_missing_attachable_partial_path">
+            
+              to_missing_attachable_partial_path()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the path to the partial that is used for rendering missing attachables. Defaults to “action_text/attachables/missing_attachable”.</p>
+
+<p>Override to render a different partial:</p>
+
+<pre><code>class User &lt; ApplicationRecord
+  def self.to_missing_attachable_partial_path
+    &quot;users/missing_attachable&quot;
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-to_missing_attachable_partial_path_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 70</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_missing_attachable_partial_path</span>
+  <span class="ruby-constant">ActionText</span><span class="ruby-operator">::</span><span class="ruby-constant">Attachables</span><span class="ruby-operator">::</span><span class="ruby-constant">MissingAttachable</span><span class="ruby-operator">::</span><span class="ruby-constant">DEFAULT_PARTIAL_PATH</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
@@ -549,7 +594,7 @@ layout: default
                 
               </p>
               <div id="method-i-to_rich_text_attributes_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 78</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 129</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_rich_text_attributes</span>(<span class="ruby-identifier">attributes</span> = {})
   <span class="ruby-identifier">attributes</span>.<span class="ruby-identifier">dup</span>.<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">attrs</span><span class="ruby-operator">|</span>
     <span class="ruby-identifier">attrs</span>[<span class="ruby-value">:sgid</span>] = <span class="ruby-identifier">attachable_sgid</span>
@@ -575,7 +620,16 @@ layout: default
 
           
             <div class="description">
-              
+              <p>Returns the path to the partial that is used for rendering the attachable in Trix. Defaults to <code>to_partial_path</code>.</p>
+
+<p>Override to render a different partial:</p>
+
+<pre><code>class User &lt; ApplicationRecord
+  def to_trix_content_attachment_partial_path
+    &quot;users/trix_content_attachment&quot;
+  end
+end
+</code></pre>
             </div>
           
 
@@ -592,7 +646,7 @@ layout: default
                 
               </p>
               <div id="method-i-to_trix_content_attachment_partial_path_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 70</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File actiontext/lib/action_text/attachable.rb, line 111</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_trix_content_attachment_partial_path</span>
   <span class="ruby-identifier">to_partial_path</span>
 <span class="ruby-keyword">end</span></code></pre>
