@@ -1,0 +1,216 @@
+---
+title: ActiveRecord::Enum
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Enum
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/enum_rb.html">activerecord/lib/active_record/enum.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/relation/calculations_rb.html">activerecord/lib/active_record/relation/calculations.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Declare an enum attribute where the values map to integers in the database, but can be queried by name. Example:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ]
+end
+
+# conversation.update! status: 0
+conversation.active!
+conversation.active? # =&gt; true
+conversation.status  # =&gt; &quot;active&quot;
+
+# conversation.update! status: 1
+conversation.archived!
+conversation.archived? # =&gt; true
+conversation.status    # =&gt; &quot;archived&quot;
+
+# conversation.status = 1
+conversation.status = &quot;archived&quot;
+
+conversation.status = nil
+conversation.status.nil? # =&gt; true
+conversation.status      # =&gt; nil
+</code></pre>
+
+<p>Scopes based on the allowed values of the enum field will be provided as well. With the above example:</p>
+
+<pre><code>Conversation.active
+Conversation.not_active
+Conversation.archived
+Conversation.not_archived
+</code></pre>
+
+<p>Of course, you can also query them directly if the scopes don’t fit your needs:</p>
+
+<pre><code>Conversation.where(status: [:active, :archived])
+Conversation.where.not(status: :active)
+</code></pre>
+
+<p>Defining scopes can be disabled by setting <code>:scopes</code> to <code>false</code>.</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], scopes: false
+end
+</code></pre>
+
+<p>You can set the default enum value by setting <code>:default</code>, like:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], default: :active
+end
+
+conversation = Conversation.new
+conversation.status # =&gt; &quot;active&quot;
+</code></pre>
+
+<p>It’s possible to explicitly map the relation between attribute and database integer with a hash:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, active: 0, archived: 1
+end
+</code></pre>
+
+<p>Finally it’s also possible to use a string column to persist the enumerated value. Note that this will likely lead to slower database queries:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, active: &quot;active&quot;, archived: &quot;archived&quot;
+end
+</code></pre>
+
+<p>Note that when an array is used, the implicit mapping from the values to database integers is derived from the order the values appear in the array. In the example, <code>:active</code> is mapped to <code>0</code> as it’s the first element, and <code>:archived</code> is mapped to <code>1</code>. In general, the <code>i</code>-th element is mapped to <code>i-1</code> in the database.</p>
+
+<p>Therefore, once a value is added to the enum array, its position in the array must be maintained, and new values should only be added to the end of the array. To remove unused values, the explicit hash syntax should be used.</p>
+
+<p>In rare circumstances you might need to access the mapping directly. The mappings are exposed through a class method with the pluralized attribute name, which return the mapping in a <a href="../ActiveSupport/HashWithIndifferentAccess.html"><code>ActiveSupport::HashWithIndifferentAccess</code></a> :</p>
+
+<pre><code>Conversation.statuses[:active]    # =&gt; 0
+Conversation.statuses[&quot;archived&quot;] # =&gt; 1
+</code></pre>
+
+<p>Use that class method when you need to know the ordinal value of an enum. For example, you can use that when manually building SQL strings:</p>
+
+<pre><code>Conversation.where(&quot;status &lt;&gt; ?&quot;, Conversation.statuses[:archived])
+</code></pre>
+
+<p>You can use the <code>:prefix</code> or <code>:suffix</code> options when you need to define multiple enums with same values. If the passed value is <code>true</code>, the methods are prefixed/suffixed with the name of the enum. It is also possible to supply a custom value:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], suffix: true
+  enum :comments_status, [ :active, :inactive ], prefix: :comments
+end
+</code></pre>
+
+<p>With the above example, the bang and predicate methods along with the associated scopes are now prefixed and/or suffixed accordingly:</p>
+
+<pre><code>conversation.active_status!
+conversation.archived_status? # =&gt; false
+
+conversation.comments_inactive!
+conversation.comments_active? # =&gt; false
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-enum">enum</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-enum">
+            
+              enum(name = nil, values = nil, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-enum_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/enum.rb, line 167</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">enum</span>(<span class="ruby-identifier">name</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">values</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">name</span>
+    <span class="ruby-identifier">values</span>, <span class="ruby-identifier">options</span> = <span class="ruby-identifier">options</span>, {} <span class="ruby-keyword">unless</span> <span class="ruby-identifier">values</span>
+    <span class="ruby-keyword">return</span> <span class="ruby-identifier">_enum</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">values</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">definitions</span> = <span class="ruby-identifier">options</span>.<span class="ruby-identifier">slice!</span>(<span class="ruby-value">:_prefix</span>, <span class="ruby-value">:_suffix</span>, <span class="ruby-value">:_scopes</span>, <span class="ruby-value">:_default</span>)
+  <span class="ruby-identifier">options</span>.<span class="ruby-identifier">transform_keys!</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">key</span><span class="ruby-operator">|</span> <span class="ruby-value">:&quot;#{key[1..-1]}&quot;</span> }
+
+  <span class="ruby-identifier">definitions</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">name</span>, <span class="ruby-identifier">values</span><span class="ruby-operator">|</span> <span class="ruby-identifier">_enum</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">values</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>) }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,794 @@
+---
+title: ActionDispatch::Http::MimeNegotiation
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionDispatch::Http::MimeNegotiation
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionpack/lib/action_dispatch/http/mime_negotiation_rb.html">actionpack/lib/action_dispatch/http/mime_negotiation.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="MimeNegotiation/InvalidType.html">ActionDispatch::Http::MimeNegotiation::InvalidType</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-accepts">accepts</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-content_mime_type">content_mime_type</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-content_type">content_type</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-format">format</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-format-3D">format=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-format_from_path_extension">format_from_path_extension</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-formats">formats</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-formats-3D">formats=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-negotiate_mime">negotiate_mime</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-params_readable-3F">params_readable?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-should_apply_vary_header-3F">should_apply_vary_header?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-use_accept_header">use_accept_header</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-valid_accept_header">valid_accept_header</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-variant">variant</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-variant-3D">variant=</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">BROWSER_LIKE_ACCEPTS</td>
+            <td>=</td>
+            <td class="attr-value">/,\s*\*\/\*|\*\/\*\s*,/</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>We use normal content negotiation unless you include <strong>/</strong> in your list, in which case we assume you’re a browser and send HTML.</p></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">RESCUABLE_MIME_FORMAT_ERRORS</td>
+            <td>=</td>
+            <td class="attr-value">[
+ActionController::BadRequest,
+ActionDispatch::Http::Parameters::ParseError,
+]</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-accepts">
+            
+              accepts()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the accepted MIME type for the request.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-accepts_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 54</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">accepts</span>
+  <span class="ruby-identifier">fetch_header</span>(<span class="ruby-string">&quot;action_dispatch.request.accepts&quot;</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">k</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">header</span> = <span class="ruby-identifier">get_header</span>(<span class="ruby-string">&quot;HTTP_ACCEPT&quot;</span>).<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">strip</span>
+
+    <span class="ruby-identifier">v</span> = <span class="ruby-keyword">if</span> <span class="ruby-identifier">header</span>.<span class="ruby-identifier">empty?</span>
+      [<span class="ruby-identifier">content_mime_type</span>]
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-constant">Mime</span><span class="ruby-operator">::</span><span class="ruby-constant">Type</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">header</span>)
+    <span class="ruby-keyword">end</span>
+    <span class="ruby-identifier">set_header</span> <span class="ruby-identifier">k</span>, <span class="ruby-identifier">v</span>
+  <span class="ruby-keyword">rescue</span> <span class="ruby-operator">::</span><span class="ruby-constant">Mime</span><span class="ruby-operator">::</span><span class="ruby-constant">Type</span><span class="ruby-operator">::</span><span class="ruby-constant">InvalidMimeType</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">e</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">InvalidType</span>, <span class="ruby-identifier">e</span>.<span class="ruby-identifier">message</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-content_mime_type">
+            
+              content_mime_type()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>The MIME type of the HTTP request, such as <a href=":xml">Mime</a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-content_mime_type_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 23</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">content_mime_type</span>
+  <span class="ruby-identifier">fetch_header</span>(<span class="ruby-string">&quot;action_dispatch.request.content_type&quot;</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">k</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">v</span> = <span class="ruby-keyword">if</span> <span class="ruby-identifier">get_header</span>(<span class="ruby-string">&quot;CONTENT_TYPE&quot;</span>) <span class="ruby-operator">=~</span> <span class="ruby-regexp">/^([^,;]*)/</span>
+      <span class="ruby-constant">Mime</span><span class="ruby-operator">::</span><span class="ruby-constant">Type</span>.<span class="ruby-identifier">lookup</span>(<span class="ruby-node">$1</span>.<span class="ruby-identifier">strip</span>.<span class="ruby-identifier">downcase</span>)
+    <span class="ruby-keyword">else</span>
+      <span class="ruby-keyword">nil</span>
+    <span class="ruby-keyword">end</span>
+    <span class="ruby-identifier">set_header</span> <span class="ruby-identifier">k</span>, <span class="ruby-identifier">v</span>
+  <span class="ruby-keyword">rescue</span> <span class="ruby-operator">::</span><span class="ruby-constant">Mime</span><span class="ruby-operator">::</span><span class="ruby-constant">Type</span><span class="ruby-operator">::</span><span class="ruby-constant">InvalidMimeType</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">e</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">InvalidType</span>, <span class="ruby-identifier">e</span>.<span class="ruby-identifier">message</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-content_type">
+            
+              content_type()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-content_type_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 36</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">content_type</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">return_only_media_type_on_content_type</span>
+    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(
+      <span class="ruby-string">&quot;Rails 7.1 will return Content-Type header without modification.&quot;</span> \
+      <span class="ruby-string">&quot; If you want just the MIME type, please use `#media_type` instead.&quot;</span>
+    )
+
+    <span class="ruby-identifier">content_mime_type</span>&amp;.<span class="ruby-identifier">to_s</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-keyword">super</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-format">
+            
+              format(view_path = [])
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the MIME type for the format used in the request.</p>
+
+<pre><code>GET /posts/5.xml   | request.format =&gt; Mime[:xml]
+GET /posts/5.xhtml | request.format =&gt; Mime[:html]
+GET /posts/5       | request.format =&gt; Mime[:html] or Mime[:js], or request.accepts.first
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-format_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 75</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">format</span>(<span class="ruby-identifier">view_path</span> = [])
+  <span class="ruby-identifier">formats</span>.<span class="ruby-identifier">first</span> <span class="ruby-operator">||</span> <span class="ruby-constant">Mime</span><span class="ruby-operator">::</span><span class="ruby-constant">NullType</span>.<span class="ruby-identifier">instance</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-format-3D">
+            
+              format=(extension)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets the format by string extension, which can be used to force custom formats that are not controlled by the extension.</p>
+
+<pre><code>class ApplicationController &lt; ActionController::Base
+  before_action :adjust_format_for_iphone
+
+  private
+    def adjust_format_for_iphone
+      request.format = :iphone if request.env[&quot;HTTP_USER_AGENT&quot;][/iPhone/]
+    end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-format-3D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 127</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">format=</span>(<span class="ruby-identifier">extension</span>)
+  <span class="ruby-identifier">parameters</span>[<span class="ruby-value">:format</span>] = <span class="ruby-identifier">extension</span>.<span class="ruby-identifier">to_s</span>
+  <span class="ruby-identifier">set_header</span> <span class="ruby-string">&quot;action_dispatch.request.formats&quot;</span>, [<span class="ruby-constant">Mime</span><span class="ruby-operator">::</span><span class="ruby-constant">Type</span>.<span class="ruby-identifier">lookup_by_extension</span>(<span class="ruby-identifier">parameters</span>[<span class="ruby-value">:format</span>])]
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-formats">
+            
+              formats()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-formats_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 79</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">formats</span>
+  <span class="ruby-identifier">fetch_header</span>(<span class="ruby-string">&quot;action_dispatch.request.formats&quot;</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">k</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">v</span> = <span class="ruby-keyword">if</span> <span class="ruby-identifier">params_readable?</span>
+      <span class="ruby-constant">Array</span>(<span class="ruby-constant">Mime</span>[<span class="ruby-identifier">parameters</span>[<span class="ruby-value">:format</span>]])
+    <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">use_accept_header</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">valid_accept_header</span>
+      <span class="ruby-identifier">accepts</span>
+    <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">extension_format</span> = <span class="ruby-identifier">format_from_path_extension</span>
+      [<span class="ruby-identifier">extension_format</span>]
+    <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">xhr?</span>
+      [<span class="ruby-constant">Mime</span>[<span class="ruby-value">:js</span>]]
+    <span class="ruby-keyword">else</span>
+      [<span class="ruby-constant">Mime</span>[<span class="ruby-value">:html</span>]]
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-identifier">v</span> = <span class="ruby-identifier">v</span>.<span class="ruby-identifier">select</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">format</span><span class="ruby-operator">|</span>
+      <span class="ruby-identifier">format</span>.<span class="ruby-identifier">symbol</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">format</span>.<span class="ruby-identifier">ref</span> <span class="ruby-operator">==</span> <span class="ruby-string">&quot;*/*&quot;</span>
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-identifier">set_header</span> <span class="ruby-identifier">k</span>, <span class="ruby-identifier">v</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-formats-3D">
+            
+              formats=(extensions)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets the formats by string extensions. This differs from <a href="MimeNegotiation.html#method-i-format-3D"><code>format=</code></a> by allowing you to set multiple, ordered formats, which is useful when you want to have a fallback.</p>
+
+<p>In this example, the <code>:iphone</code> format will be used if it’s available, otherwise it’ll fallback to the <code>:html</code> format.</p>
+
+<pre><code>class ApplicationController &lt; ActionController::Base
+  before_action :adjust_format_for_iphone_with_html_fallback
+
+  private
+    def adjust_format_for_iphone_with_html_fallback
+      request.formats = [ :iphone, :html ] if request.env[&quot;HTTP_USER_AGENT&quot;][/iPhone/]
+    end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-formats-3D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 146</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">formats=</span>(<span class="ruby-identifier">extensions</span>)
+  <span class="ruby-identifier">parameters</span>[<span class="ruby-value">:format</span>] = <span class="ruby-identifier">extensions</span>.<span class="ruby-identifier">first</span>.<span class="ruby-identifier">to_s</span>
+  <span class="ruby-identifier">set_header</span> <span class="ruby-string">&quot;action_dispatch.request.formats&quot;</span>, <span class="ruby-identifier">extensions</span>.<span class="ruby-identifier">collect</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">extension</span><span class="ruby-operator">|</span>
+    <span class="ruby-constant">Mime</span><span class="ruby-operator">::</span><span class="ruby-constant">Type</span>.<span class="ruby-identifier">lookup_by_extension</span>(<span class="ruby-identifier">extension</span>)
+  }
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-negotiate_mime">
+            
+              negotiate_mime(order)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the first MIME type that matches the provided array of MIME types.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-negotiate_mime_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 154</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">negotiate_mime</span>(<span class="ruby-identifier">order</span>)
+  <span class="ruby-identifier">formats</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">priority</span><span class="ruby-operator">|</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">priority</span> <span class="ruby-operator">==</span> <span class="ruby-constant">Mime</span><span class="ruby-operator">::</span><span class="ruby-constant">ALL</span>
+      <span class="ruby-keyword">return</span> <span class="ruby-identifier">order</span>.<span class="ruby-identifier">first</span>
+    <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">order</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">priority</span>)
+      <span class="ruby-keyword">return</span> <span class="ruby-identifier">priority</span>
+    <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">order</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-constant">Mime</span><span class="ruby-operator">::</span><span class="ruby-constant">ALL</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">format</span> <span class="ruby-operator">:</span> <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-should_apply_vary_header-3F">
+            
+              should_apply_vary_header?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-should_apply_vary_header-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 166</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">should_apply_vary_header?</span>
+  <span class="ruby-operator">!</span><span class="ruby-identifier">params_readable?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">use_accept_header</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">valid_accept_header</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-variant">
+            
+              variant()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-variant_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 112</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">variant</span>
+  <span class="ruby-ivar">@variant</span> <span class="ruby-operator">||=</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">ArrayInquirer</span>.<span class="ruby-identifier">new</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-variant-3D">
+            
+              variant=(variant)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets the variant for template.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-variant-3D_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 102</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">variant=</span>(<span class="ruby-identifier">variant</span>)
+  <span class="ruby-identifier">variant</span> = <span class="ruby-constant">Array</span>(<span class="ruby-identifier">variant</span>)
+
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">variant</span>.<span class="ruby-identifier">all?</span>(<span class="ruby-constant">Symbol</span>)
+    <span class="ruby-ivar">@variant</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">ArrayInquirer</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">variant</span>)
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;request.variant must be set to a Symbol or an Array of Symbols.&quot;</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+      <h2 id="instance-private-methods">Instance Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-format_from_path_extension">
+            
+              format_from_path_extension()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-format_from_path_extension_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 190</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">format_from_path_extension</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-identifier">path</span> = <span class="ruby-identifier">get_header</span>(<span class="ruby-string">&quot;action_dispatch.original_path&quot;</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">get_header</span>(<span class="ruby-string">&quot;PATH_INFO&quot;</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">match</span> = <span class="ruby-identifier">path</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">path</span>.<span class="ruby-identifier">match</span>(<span class="ruby-regexp">/\.(\w+)\z/</span>)
+    <span class="ruby-constant">Mime</span>[<span class="ruby-identifier">match</span>.<span class="ruby-identifier">captures</span>.<span class="ruby-identifier">first</span>]
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-params_readable-3F">
+            
+              params_readable?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-params_readable-3F_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 175</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">params_readable?</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-identifier">parameters</span>[<span class="ruby-value">:format</span>]
+<span class="ruby-keyword">rescue</span> <span class="ruby-operator">*</span><span class="ruby-constant">RESCUABLE_MIME_FORMAT_ERRORS</span>
+  <span class="ruby-keyword">false</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-use_accept_header">
+            
+              use_accept_header()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-use_accept_header_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 186</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">use_accept_header</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-operator">!</span><span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">ignore_accept_header</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-valid_accept_header">
+            
+              valid_accept_header()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-valid_accept_header_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/http/mime_negotiation.rb, line 181</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">valid_accept_header</span> <span class="ruby-comment"># :doc:</span>
+  (<span class="ruby-identifier">xhr?</span> <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-identifier">accept</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">content_mime_type</span>)) <span class="ruby-operator">||</span>
+    (<span class="ruby-identifier">accept</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">accept</span>.<span class="ruby-identifier">match?</span>(<span class="ruby-constant">BROWSER_LIKE_ACCEPTS</span>))
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

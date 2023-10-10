@@ -1,0 +1,339 @@
+---
+title: ActionController::Instrumentation
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionController::Instrumentation
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_controller/metal/instrumentation_rb.html">actionpack/lib/action_controller/metal/instrumentation.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Adds instrumentation to several ends in <a href="Base.html"><code>ActionController::Base</code></a>. It also provides some hooks related with process_action. This allows an ORM like Active Record and/or DataMapper to plug in <a href="../ActionController.html"><code>ActionController</code></a> and show related information.</p>
+
+<p>Check ActiveRecord::Railties::ControllerRuntime for an example.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Instrumentation/ClassMethods.html">ActionController::Instrumentation::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-append_info_to_payload">append_info_to_payload</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-cleanup_view_runtime">cleanup_view_runtime</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-redirect_to">redirect_to</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-render">render</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-send_data">send_data</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-send_file">send_file</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-redirect_to">
+            
+              redirect_to(*)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-redirect_to_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 40</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">redirect_to</span>(<span class="ruby-operator">*</span>)
+  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Notifications</span>.<span class="ruby-identifier">instrument</span>(<span class="ruby-string">&quot;redirect_to.action_controller&quot;</span>, <span class="ruby-value">request:</span> <span class="ruby-identifier">request</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">payload</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">result</span> = <span class="ruby-keyword">super</span>
+    <span class="ruby-identifier">payload</span>[<span class="ruby-value">:status</span>]   = <span class="ruby-identifier">response</span>.<span class="ruby-identifier">status</span>
+    <span class="ruby-identifier">payload</span>[<span class="ruby-value">:location</span>] = <span class="ruby-identifier">response</span>.<span class="ruby-identifier">filtered_location</span>
+    <span class="ruby-identifier">result</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-render">
+            
+              render(*)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-render_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 19</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">render</span>(<span class="ruby-operator">*</span>)
+  <span class="ruby-identifier">render_output</span> = <span class="ruby-keyword">nil</span>
+  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">view_runtime</span> = <span class="ruby-identifier">cleanup_view_runtime</span> <span class="ruby-keyword">do</span>
+    <span class="ruby-constant">Benchmark</span>.<span class="ruby-identifier">ms</span> { <span class="ruby-identifier">render_output</span> = <span class="ruby-keyword">super</span> }
+  <span class="ruby-keyword">end</span>
+  <span class="ruby-identifier">render_output</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-send_data">
+            
+              send_data(data, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-send_data_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 34</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">send_data</span>(<span class="ruby-identifier">data</span>, <span class="ruby-identifier">options</span> = {})
+  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Notifications</span>.<span class="ruby-identifier">instrument</span>(<span class="ruby-string">&quot;send_data.action_controller&quot;</span>, <span class="ruby-identifier">options</span>) <span class="ruby-keyword">do</span>
+    <span class="ruby-keyword">super</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-send_file">
+            
+              send_file(path, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-send_file_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 27</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">send_file</span>(<span class="ruby-identifier">path</span>, <span class="ruby-identifier">options</span> = {})
+  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Notifications</span>.<span class="ruby-identifier">instrument</span>(<span class="ruby-string">&quot;send_file.action_controller&quot;</span>,
+    <span class="ruby-identifier">options</span>.<span class="ruby-identifier">merge</span>(<span class="ruby-value">path:</span> <span class="ruby-identifier">path</span>)) <span class="ruby-keyword">do</span>
+    <span class="ruby-keyword">super</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+      <h2 id="instance-private-methods">Instance Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-append_info_to_payload">
+            
+              append_info_to_payload(payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Every time after an action is processed, this method is invoked with the payload, so you can add more information.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-append_info_to_payload_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 96</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">append_info_to_payload</span>(<span class="ruby-identifier">payload</span>) <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-identifier">payload</span>[<span class="ruby-value">:view_runtime</span>] = <span class="ruby-identifier">view_runtime</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-cleanup_view_runtime">
+            
+              cleanup_view_runtime()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>A hook which allows you to clean up any time, wrongly taken into account in views, like database querying time.</p>
+
+<pre><code>def cleanup_view_runtime
+  super - time_taken_in_something_expensive
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-cleanup_view_runtime_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 90</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">cleanup_view_runtime</span> <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-keyword">yield</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

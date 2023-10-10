@@ -1,0 +1,281 @@
+---
+title: ActionDispatch::IntegrationTest
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionDispatch::IntegrationTest
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../ActiveSupport/TestCase.html">ActiveSupport::TestCase</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/testing/integration_rb.html">actionpack/lib/action_dispatch/testing/integration.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>An integration test spans multiple controllers and actions, tying them all together to ensure they work together as expected. It tests more completely than either unit or functional tests do, exercising the entire stack, from the dispatcher to the database.</p>
+
+<p>At its simplest, you simply extend <code>IntegrationTest</code> and write your tests using the get/post methods:</p>
+
+<pre><code>require &quot;test_helper&quot;
+
+class ExampleTest &lt; ActionDispatch::IntegrationTest
+  fixtures :people
+
+  def test_login
+    # get the login page
+    get &quot;/login&quot;
+    assert_equal 200, status
+
+    # post the login and follow through to the home page
+    post &quot;/login&quot;, params: { username: people(:jamis).username,
+      password: people(:jamis).password }
+    follow_redirect!
+    assert_equal 200, status
+    assert_equal &quot;/home&quot;, path
+  end
+end
+</code></pre>
+
+<p>However, you can also have multiple session instances open per test, and even extend those instances with assertions and methods to create a very powerful testing DSL that is specific for your application. You can even reference any named routes you happen to have defined.</p>
+
+<pre><code>require &quot;test_helper&quot;
+
+class AdvancedTest &lt; ActionDispatch::IntegrationTest
+  fixtures :people, :rooms
+
+  def test_login_and_speak
+    jamis, david = login(:jamis), login(:david)
+    room = rooms(:office)
+
+    jamis.enter(room)
+    jamis.speak(room, &quot;anybody home?&quot;)
+
+    david.enter(room)
+    david.speak(room, &quot;hello!&quot;)
+  end
+
+  private
+
+    module CustomAssertions
+      def enter(room)
+        # reference a named route, for maximum internal consistency!
+        get(room_url(id: room.id))
+        assert(...)
+        ...
+      end
+
+      def speak(room, message)
+        post &quot;/say/#{room.id}&quot;, xhr: true, params: { message: message }
+        assert(...)
+        ...
+      end
+    end
+
+    def login(who)
+      open_session do |sess|
+        sess.extend(CustomAssertions)
+        who = people(who)
+        sess.post &quot;/login&quot;, params: { username: who.username,
+          password: who.password }
+        assert(...)
+      end
+    end
+end
+</code></pre>
+
+<p>Another longer example would be:</p>
+
+<p>A simple integration test that exercises multiple controllers:</p>
+
+<pre><code>require &quot;test_helper&quot;
+
+class UserFlowsTest &lt; ActionDispatch::IntegrationTest
+  test &quot;login and browse site&quot; do
+    # login via https
+    https!
+    get &quot;/login&quot;
+    assert_response :success
+
+    post &quot;/login&quot;, params: { username: users(:david).username, password: users(:david).password }
+    follow_redirect!
+    assert_equal &#39;/welcome&#39;, path
+    assert_equal &#39;Welcome david!&#39;, flash[:notice]
+
+    https!(false)
+    get &quot;/articles/all&quot;
+    assert_response :success
+    assert_select &#39;h1&#39;, &#39;Articles&#39;
+  end
+end
+</code></pre>
+
+<p>As you can see the integration test involves multiple controllers and exercises the entire stack from database to dispatcher. In addition you can have multiple session instances open simultaneously in a test and extend those instances with assertion methods to create a very powerful testing DSL (domain-specific language) just for your application.</p>
+
+<p>Here’s an example of multiple sessions and custom DSL in an integration test</p>
+
+<pre><code>require &quot;test_helper&quot;
+
+class UserFlowsTest &lt; ActionDispatch::IntegrationTest
+  test &quot;login and browse site&quot; do
+    # User david logs in
+    david = login(:david)
+    # User guest logs in
+    guest = login(:guest)
+
+    # Both are now available in different sessions
+    assert_equal &#39;Welcome david!&#39;, david.flash[:notice]
+    assert_equal &#39;Welcome guest!&#39;, guest.flash[:notice]
+
+    # User david can browse site
+    david.browses_site
+    # User guest can browse site as well
+    guest.browses_site
+
+    # Continue with other assertions
+  end
+
+  private
+
+    module CustomDsl
+      def browses_site
+        get &quot;/products/all&quot;
+        assert_response :success
+        assert_select &#39;h1&#39;, &#39;Products&#39;
+      end
+    end
+
+    def login(user)
+      open_session do |sess|
+        sess.extend(CustomDsl)
+        u = users(user)
+        sess.https!
+        sess.post &quot;/login&quot;, params: { username: u.username, password: u.password }
+        assert_equal &#39;/welcome&#39;, sess.path
+        sess.https!(false)
+      end
+    end
+end
+</code></pre>
+
+<p>See the <a href="Integration/RequestHelpers.html">request helpers documentation</a> for help on how to use <code>get</code>, etc.</p>
+
+<h3 id="class-ActionDispatch::IntegrationTest-label-Changing+the+request+encoding">Changing the request encoding</h3>
+
+<p>You can also test your JSON API easily by setting what the request should be encoded as:</p>
+
+<pre><code>require &quot;test_helper&quot;
+
+class ApiTest &lt; ActionDispatch::IntegrationTest
+  test &quot;creates articles&quot; do
+    assert_difference -&gt; { Article.count } do
+      post articles_path, params: { article: { title: &quot;Ahoy!&quot; } }, as: :json
+    end
+
+    assert_response :success
+    assert_equal({ id: Article.last.id, title: &quot;Ahoy!&quot; }, response.parsed_body)
+  end
+end
+</code></pre>
+
+<p>The <code>as</code> option passes an “application/json” Accept header (thereby setting the request format to JSON unless overridden), sets the content type to “application/json” and encodes the parameters as JSON.</p>
+
+<p>Calling <code>parsed_body</code> on the response parses the response body based on the last response MIME type.</p>
+
+<p>Out of the box, only <code>:json</code> is supported. But for any custom MIME types you’ve registered, you can add your own encoders with:</p>
+
+<pre><code>ActionDispatch::IntegrationTest.register_encoder :wibble,
+  param_encoder: -&gt; params { params.to_wibble },
+  response_parser: -&gt; body { body }
+</code></pre>
+
+<p>Where <code>param_encoder</code> defines how the params should be encoded and <code>response_parser</code> defines how the response body should be parsed through <code>parsed_body</code>.</p>
+
+<p>Consult the Rails Testing Guide for more.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="IntegrationTest/Behavior.html">ActionDispatch::IntegrationTest::Behavior</a></li>
+      
+        <li><a href="IntegrationTest/UrlOptions.html">ActionDispatch::IntegrationTest::UrlOptions</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="TestProcess/FixtureFile.html">
+              ActionDispatch::TestProcess::FixtureFile
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="IntegrationTest/Behavior.html">
+              ActionDispatch::IntegrationTest::Behavior
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,166 @@
+---
+title: ActiveRecord::Querying
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Querying
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/querying_rb.html">activerecord/lib/active_record/querying.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-count_by_sql">count_by_sql</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-find_by_sql">find_by_sql</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-count_by_sql">
+            
+              count_by_sql(sql)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the result of an SQL statement that should only include a COUNT(*) in the SELECT part. The use of this method should be restricted to complicated SQL queries that can’t be executed using the <a href="Calculations.html"><code>ActiveRecord::Calculations</code></a> class methods. Look into those before using this method, as it could lock you into a specific database engine or require a code change to switch database engines.</p>
+
+<pre><code>Product.count_by_sql &quot;SELECT COUNT(*) FROM sales s, customers c WHERE s.customer_id = c.id&quot;
+# =&gt; 12
+</code></pre>
+
+<h4 id="method-i-count_by_sql-label-Parameters">Parameters</h4>
+<ul><li>
+<p><code>sql</code> - An SQL statement which should return a count query from the database, see the example above.</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-count_by_sql_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/querying.rb, line 93</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">count_by_sql</span>(<span class="ruby-identifier">sql</span>)
+  <span class="ruby-identifier">connection</span>.<span class="ruby-identifier">select_value</span>(<span class="ruby-identifier">sanitize_sql</span>(<span class="ruby-identifier">sql</span>), <span class="ruby-node">&quot;#{name} Count&quot;</span>).<span class="ruby-identifier">to_i</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-find_by_sql">
+            
+              find_by_sql(sql, binds = [], preparable: nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Executes a custom SQL query against your database and returns all the results. The results will be returned as an array, with the requested columns encapsulated as attributes of the model you call this method from. For example, if you call <code>Product.find_by_sql</code>, then the results will be returned in a <code>Product</code> object with the attributes you specified in the SQL query.</p>
+
+<p>If you call a complicated SQL query which spans multiple tables, the columns specified by the SELECT will be attributes of the model, whether or not they are columns of the corresponding table.</p>
+
+<p>The <code>sql</code> parameter is a full SQL query as a string. It will be called as is; there will be no database agnostic conversions performed. This should be a last resort because using database-specific terms will lock you into using that particular database engine, or require you to change your call if you switch engines.</p>
+
+<pre><code># A simple SQL query spanning multiple tables
+Post.find_by_sql &quot;SELECT p.title, c.author FROM posts p, comments c WHERE p.id = c.post_id&quot;
+# =&gt; [#&lt;Post:0x36bff9c @attributes={&quot;title&quot;=&gt;&quot;Ruby Meetup&quot;, &quot;author&quot;=&gt;&quot;Quentin&quot;}&gt;, ...]
+</code></pre>
+
+<p>You can use the same string replacement techniques as you can with <a href="QueryMethods.html#method-i-where"><code>ActiveRecord::QueryMethods#where</code></a> :</p>
+
+<pre><code>Post.find_by_sql [&quot;SELECT title FROM posts WHERE author = ? AND created &gt; ?&quot;, author_id, start_date]
+Post.find_by_sql [&quot;SELECT body FROM comments WHERE author = :user_id OR approved_by = :user_id&quot;, { :user_id =&gt; user_id }]
+</code></pre>
+
+<p>Note that building your own SQL query string from user input may expose your application to injection attacks (<a href="https://guides.rubyonrails.org/security.html#sql-injection">guides.rubyonrails.org/security.html#sql-injection</a>).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-find_by_sql_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/querying.rb, line 49</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">find_by_sql</span>(<span class="ruby-identifier">sql</span>, <span class="ruby-identifier">binds</span> = [], <span class="ruby-value">preparable:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+  <span class="ruby-identifier">_load_from_sql</span>(<span class="ruby-identifier">_query_by_sql</span>(<span class="ruby-identifier">sql</span>, <span class="ruby-identifier">binds</span>, <span class="ruby-value">preparable:</span> <span class="ruby-identifier">preparable</span>), <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

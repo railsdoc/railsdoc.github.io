@@ -1,0 +1,194 @@
+---
+title: ActiveRecord::AttributeMethods::Serialization::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::AttributeMethods::Serialization::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/activerecord/lib/active_record/attribute_methods/serialization_rb.html">activerecord/lib/active_record/attribute_methods/serialization.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-serialize">serialize</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-serialize">
+            
+              serialize(attr_name, class_name_or_coder = Object, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>If you have an attribute that needs to be saved to the database as a serialized object, and retrieved by deserializing into the same object, then specify the name of that attribute using this method and serialization will be handled automatically.</p>
+
+<p>The serialization format may be YAML, JSON, or any custom format using a custom coder class.</p>
+
+<p>Keep in mind that database adapters handle certain serialization tasks for you. For instance: <code>json</code> and <code>jsonb</code> types in PostgreSQL will be converted between JSON object/array syntax and Ruby <code>Hash</code> or <code>Array</code> objects transparently. There is no need to use <a href="ClassMethods.html#method-i-serialize"><code>serialize</code></a> in this case.</p>
+
+<p>For more complex cases, such as conversion to or from your application domain objects, consider using the <a href="../../Attributes.html"><code>ActiveRecord::Attributes</code></a> API.</p>
+
+<h4 id="method-i-serialize-label-Parameters">Parameters</h4>
+<ul><li>
+<p><code>attr_name</code> - The name of the attribute to serialize.</p>
+</li><li>
+<p><code>class_name_or_coder</code> - Optional. May be one of the following:</p>
+<ul><li>
+<p><em>default</em> - The attribute value will be serialized as YAML. The attribute value must respond to <code>to_yaml</code>.</p>
+</li><li>
+<p><code>Array</code> - The attribute value will be serialized as YAML, but an empty <code>Array</code> will be serialized as <code>NULL</code>. The attribute value must be an <code>Array</code>.</p>
+</li><li>
+<p><code>Hash</code> - The attribute value will be serialized as YAML, but an empty <code>Hash</code> will be serialized as <code>NULL</code>. The attribute value must be a <code>Hash</code>.</p>
+</li><li>
+<p><code>JSON</code> - The attribute value will be serialized as JSON. The attribute value must respond to <code>to_json</code>.</p>
+</li><li>
+<p><em>custom coder</em> - The attribute value will be serialized using the coder’s <code>dump(value)</code> method, and will be deserialized using the coder’s <code>load(string)</code> method. The <code>dump</code> method may return <code>nil</code> to serialize the value as <code>NULL</code>.</p>
+</li></ul>
+</li></ul>
+
+<h4 id="method-i-serialize-label-Options">Options</h4>
+<ul><li>
+<p><code>:default</code> - The default value to use when no value is provided. If this option is not passed, the previous default value (if any) will be used. Otherwise, the default will be <code>nil</code>.</p>
+</li></ul>
+
+<h4 id="method-i-serialize-label-Examples">Examples</h4>
+
+<h5 id="method-i-serialize-label-Serialize+the+preferences+attribute+using+YAML">Serialize the <code>preferences</code> attribute using YAML</h5>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  serialize :preferences
+end
+</code></pre>
+
+<h5 id="method-i-serialize-label-Serialize+the+preferences+attribute+using+JSON">Serialize the <code>preferences</code> attribute using JSON</h5>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  serialize :preferences, JSON
+end
+</code></pre>
+
+<h5 id="method-i-serialize-label-Serialize+the+preferences+Hash+using+YAML">Serialize the <code>preferences</code> <code>Hash</code> using YAML</h5>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  serialize :preferences, Hash
+end
+</code></pre>
+
+<h5 id="method-i-serialize-label-Serialize+the+preferences+attribute+using+a+custom+coder">Serialize the <code>preferences</code> attribute using a custom coder</h5>
+
+<pre><code>class Rot13JSON
+  def self.rot13(string)
+    string.tr(&quot;a-zA-Z&quot;, &quot;n-za-mN-ZA-M&quot;)
+  end
+
+  # Serializes an attribute value to a string that will be stored in the database.
+  def self.dump(value)
+    rot13(ActiveSupport::JSON.dump(value))
+  end
+
+  # Deserializes a string from the database to an attribute value.
+  def self.load(string)
+    ActiveSupport::JSON.load(rot13(string))
+  end
+end
+
+class User &lt; ActiveRecord::Base
+  serialize :preferences, Rot13JSON
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-serialize_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods/serialization.rb, line 103</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">serialize</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-identifier">class_name_or_coder</span> = <span class="ruby-constant">Object</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
+  <span class="ruby-comment"># When ::JSON is used, force it to go through the Active Support JSON encoder</span>
+  <span class="ruby-comment"># to ensure special objects (e.g. Active Record models) are dumped correctly</span>
+  <span class="ruby-comment"># using the #as_json hook.</span>
+  <span class="ruby-identifier">coder</span> = <span class="ruby-keyword">if</span> <span class="ruby-identifier">class_name_or_coder</span> <span class="ruby-operator">==</span> <span class="ruby-operator">::</span><span class="ruby-constant">JSON</span>
+    <span class="ruby-constant">Coders</span><span class="ruby-operator">::</span><span class="ruby-constant">JSON</span>
+  <span class="ruby-keyword">elsif</span> [<span class="ruby-value">:load</span>, <span class="ruby-value">:dump</span>].<span class="ruby-identifier">all?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">x</span><span class="ruby-operator">|</span> <span class="ruby-identifier">class_name_or_coder</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-identifier">x</span>) }
+    <span class="ruby-identifier">class_name_or_coder</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-constant">Coders</span><span class="ruby-operator">::</span><span class="ruby-constant">YAMLColumn</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-identifier">class_name_or_coder</span>)
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-identifier">attribute</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">cast_type</span><span class="ruby-operator">|</span>
+    <span class="ruby-keyword">if</span> <span class="ruby-identifier">type_incompatible_with_serialize?</span>(<span class="ruby-identifier">cast_type</span>, <span class="ruby-identifier">class_name_or_coder</span>)
+      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ColumnNotSerializableError</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">attr_name</span>, <span class="ruby-identifier">cast_type</span>)
+    <span class="ruby-keyword">end</span>
+
+    <span class="ruby-identifier">cast_type</span> = <span class="ruby-identifier">cast_type</span>.<span class="ruby-identifier">subtype</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">Type</span><span class="ruby-operator">::</span><span class="ruby-constant">Serialized</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">cast_type</span>
+    <span class="ruby-constant">Type</span><span class="ruby-operator">::</span><span class="ruby-constant">Serialized</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">cast_type</span>, <span class="ruby-identifier">coder</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

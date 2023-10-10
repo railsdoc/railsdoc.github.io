@@ -1,0 +1,506 @@
+---
+title: ActiveSupport::Subscriber
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.0.8</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::Subscriber
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/subscriber_rb.html">activesupport/lib/active_support/subscriber.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p><a href="Subscriber.html"><code>ActiveSupport::Subscriber</code></a> is an object set to consume <a href="Notifications.html"><code>ActiveSupport::Notifications</code></a>. The subscriber dispatches notifications to a registered object based on its given namespace.</p>
+
+<p>An example would be an Active Record subscriber responsible for collecting statistics about queries:</p>
+
+<pre><code>module ActiveRecord
+  class StatsSubscriber &lt; ActiveSupport::Subscriber
+    attach_to :active_record
+
+    def sql(event)
+      Statsd.timing(&quot;sql.#{event.payload[:name]}&quot;, event.duration)
+    end
+  end
+end
+</code></pre>
+
+<p>After configured, whenever a “sql.active_record” notification is published, it will properly dispatch the event (<a href="Notifications/Event.html"><code>ActiveSupport::Notifications::Event</code></a>) to the <code>sql</code> method.</p>
+
+<p>We can detach a subscriber as well:</p>
+
+<pre><code>ActiveRecord::StatsSubscriber.detach_from(:active_record)
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-add_event_subscriber">add_event_subscriber</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-attach_to">attach_to</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-detach_from">detach_from</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-finish">finish</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-method_added">method_added</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-remove_event_subscriber">remove_event_subscriber</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-start">start</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-subscribers">subscribers</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-attach_to">
+            
+              attach_to(namespace, subscriber = new, notifier = ActiveSupport::Notifications, inherit_all: false)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Attach the subscriber to a namespace.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-attach_to_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/subscriber.rb, line 33</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attach_to</span>(<span class="ruby-identifier">namespace</span>, <span class="ruby-identifier">subscriber</span> = <span class="ruby-identifier">new</span>, <span class="ruby-identifier">notifier</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Notifications</span>, <span class="ruby-value">inherit_all:</span> <span class="ruby-keyword">false</span>)
+  <span class="ruby-ivar">@namespace</span>  = <span class="ruby-identifier">namespace</span>
+  <span class="ruby-ivar">@subscriber</span> = <span class="ruby-identifier">subscriber</span>
+  <span class="ruby-ivar">@notifier</span>   = <span class="ruby-identifier">notifier</span>
+  <span class="ruby-ivar">@inherit_all</span> = <span class="ruby-identifier">inherit_all</span>
+
+  <span class="ruby-identifier">subscribers</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">subscriber</span>
+
+  <span class="ruby-comment"># Add event subscribers for all existing methods on the class.</span>
+  <span class="ruby-identifier">fetch_public_methods</span>(<span class="ruby-identifier">subscriber</span>, <span class="ruby-identifier">inherit_all</span>).<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">event</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">add_event_subscriber</span>(<span class="ruby-identifier">event</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-detach_from">
+            
+              detach_from(namespace, notifier = ActiveSupport::Notifications)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Detach the subscriber from a namespace.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-detach_from_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/subscriber.rb, line 48</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">detach_from</span>(<span class="ruby-identifier">namespace</span>, <span class="ruby-identifier">notifier</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Notifications</span>)
+  <span class="ruby-ivar">@namespace</span>  = <span class="ruby-identifier">namespace</span>
+  <span class="ruby-ivar">@subscriber</span> = <span class="ruby-identifier">find_attached_subscriber</span>
+  <span class="ruby-ivar">@notifier</span>   = <span class="ruby-identifier">notifier</span>
+
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">subscriber</span>
+
+  <span class="ruby-identifier">subscribers</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">subscriber</span>)
+
+  <span class="ruby-comment"># Remove event subscribers of all existing methods on the class.</span>
+  <span class="ruby-identifier">fetch_public_methods</span>(<span class="ruby-identifier">subscriber</span>, <span class="ruby-keyword">true</span>).<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">event</span><span class="ruby-operator">|</span>
+    <span class="ruby-identifier">remove_event_subscriber</span>(<span class="ruby-identifier">event</span>)
+  <span class="ruby-keyword">end</span>
+
+  <span class="ruby-comment"># Reset notifier so that event subscribers will not add for new methods added to the class.</span>
+  <span class="ruby-ivar">@notifier</span> = <span class="ruby-keyword">nil</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-method_added">
+            
+              method_added(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Adds event subscribers for all new methods added to the class.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-method_added_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/subscriber.rb, line 67</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">method_added</span>(<span class="ruby-identifier">event</span>)
+  <span class="ruby-comment"># Only public methods are added as subscribers, and only if a notifier</span>
+  <span class="ruby-comment"># has been set up. This means that subscribers will only be set up for</span>
+  <span class="ruby-comment"># classes that call #attach_to.</span>
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">public_method_defined?</span>(<span class="ruby-identifier">event</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">notifier</span>
+    <span class="ruby-identifier">add_event_subscriber</span>(<span class="ruby-identifier">event</span>)
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-new_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/subscriber.rb, line 128</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>
+  <span class="ruby-ivar">@queue_key</span> = [<span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">name</span>, <span class="ruby-identifier">object_id</span>].<span class="ruby-identifier">join</span> <span class="ruby-string">&quot;-&quot;</span>
+  <span class="ruby-ivar">@patterns</span>  = {}
+  <span class="ruby-keyword">super</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-subscribers">
+            
+              subscribers()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-subscribers_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/subscriber.rb, line 76</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">subscribers</span>
+  <span class="ruby-identifier">@@subscribers</span> <span class="ruby-operator">||=</span> []
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+      <h2 id="class-private-methods">Class Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-add_event_subscriber">
+            
+              add_event_subscriber(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-add_event_subscriber_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/subscriber.rb, line 83</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">add_event_subscriber</span>(<span class="ruby-identifier">event</span>) <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">invalid_event?</span>(<span class="ruby-identifier">event</span>)
+
+  <span class="ruby-identifier">pattern</span> = <span class="ruby-identifier">prepare_pattern</span>(<span class="ruby-identifier">event</span>)
+
+  <span class="ruby-comment"># Don&#39;t add multiple subscribers (e.g. if methods are redefined).</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">pattern_subscribed?</span>(<span class="ruby-identifier">pattern</span>)
+
+  <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">patterns</span>[<span class="ruby-identifier">pattern</span>] = <span class="ruby-identifier">notifier</span>.<span class="ruby-identifier">subscribe</span>(<span class="ruby-identifier">pattern</span>, <span class="ruby-identifier">subscriber</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-c-remove_event_subscriber">
+            
+              remove_event_subscriber(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-c-remove_event_subscriber_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/subscriber.rb, line 94</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">remove_event_subscriber</span>(<span class="ruby-identifier">event</span>) <span class="ruby-comment"># :doc:</span>
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">invalid_event?</span>(<span class="ruby-identifier">event</span>)
+
+  <span class="ruby-identifier">pattern</span> = <span class="ruby-identifier">prepare_pattern</span>(<span class="ruby-identifier">event</span>)
+
+  <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">pattern_subscribed?</span>(<span class="ruby-identifier">pattern</span>)
+
+  <span class="ruby-identifier">notifier</span>.<span class="ruby-identifier">unsubscribe</span>(<span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">patterns</span>[<span class="ruby-identifier">pattern</span>])
+  <span class="ruby-identifier">subscriber</span>.<span class="ruby-identifier">patterns</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">pattern</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-finish">
+            
+              finish(name, id, payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-finish_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/subscriber.rb, line 143</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">finish</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">id</span>, <span class="ruby-identifier">payload</span>)
+  <span class="ruby-identifier">event</span> = <span class="ruby-identifier">event_stack</span>.<span class="ruby-identifier">pop</span>
+  <span class="ruby-identifier">event</span>.<span class="ruby-identifier">finish!</span>
+  <span class="ruby-identifier">event</span>.<span class="ruby-identifier">payload</span>.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">payload</span>)
+
+  <span class="ruby-identifier">method</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">split</span>(<span class="ruby-string">&quot;.&quot;</span>).<span class="ruby-identifier">first</span>
+  <span class="ruby-identifier">send</span>(<span class="ruby-identifier">method</span>, <span class="ruby-identifier">event</span>)
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+        <div class="method">
+          <h3 id="method-i-start">
+            
+              start(name, id, payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+            
+            <div class="sourcecode">
+              
+              <p class="source-link">
+                Source:
+                
+              </p>
+              <div id="method-i-start_source">
+                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/subscriber.rb, line 134</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">start</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">id</span>, <span class="ruby-identifier">payload</span>)
+  <span class="ruby-identifier">event</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Notifications</span><span class="ruby-operator">::</span><span class="ruby-constant">Event</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">name</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">id</span>, <span class="ruby-identifier">payload</span>)
+  <span class="ruby-identifier">event</span>.<span class="ruby-identifier">start!</span>
+  <span class="ruby-identifier">parent</span> = <span class="ruby-identifier">event_stack</span>.<span class="ruby-identifier">last</span>
+  <span class="ruby-identifier">parent</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">event</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">parent</span>
+
+  <span class="ruby-identifier">event_stack</span>.<span class="ruby-identifier">push</span> <span class="ruby-identifier">event</span>
+<span class="ruby-keyword">end</span></code></pre>
+              </div>
+            </div>
+            
+          </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
