@@ -20,7 +20,8 @@ end
 
 desc 'Generate adn build documentation for older versions of Rails'
 task :build_multi do
-  config['rails_versions'].each do |version, detail|
+  # WORKAROUND: use `reverse_each` instead of `each` to avoid nokogiri installation error
+  config['rails_versions'].reverse_each do |version, detail|
     dir = "#{SOURCE_DIR}/#{version}"
     mkdir dir unless Dir.exist?(dir)
 
