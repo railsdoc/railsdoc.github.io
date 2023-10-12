@@ -54,19 +54,39 @@
       <li class="nav-item text-nowrap p-1">
         <div class="dropdown">
           <a class="dropdown-toggle nav-link" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            v7.0
+            v7.1
           </a>
           <div class="dropdown-menu dropdown-menu-md-right" aria-labelledby="dropdownMenuLink">
-            <a class="dropdown-item" href="/">v7.0</a>
             
               
-              <a class="dropdown-item" href="/6.1/">v6.1</a>
+              
+              
+                <a class="dropdown-item" href="/">v7.1</a>
+              
             
               
-              <a class="dropdown-item" href="/6.0/">v6.0</a>
+              
+              
+                <a class="dropdown-item" href="/7.0/">v7.0</a>
+              
             
               
-              <a class="dropdown-item" href="/5.2/">v5.2</a>
+              
+              
+                <a class="dropdown-item" href="/6.1/">v6.1</a>
+              
+            
+              
+              
+              
+                <a class="dropdown-item" href="/6.0/">v6.0</a>
+              
+            
+              
+              
+              
+                <a class="dropdown-item" href="/5.2/">v5.2</a>
+              
             
           </div>
         </div>
@@ -86,18 +106,13 @@
 
       <div class="col-12 col-md-3 col-xl-2 toc-content-sticky">
         <div class="toc-content"><ul id="toc" class="section-nav">
-<li class="toc-entry toc-h2"><a href="#namespace">Namespace</a>
-<ul>
-<li class="toc-entry toc-h3"><a href="#module">Module</a></li>
-</ul>
-</li>
 <li class="toc-entry toc-h2"><a href="#methods">Methods</a></li>
 <li class="toc-entry toc-h2"><a href="#constants">Constants</a></li>
 <li class="toc-entry toc-h2"><a href="#class-public-methods">Class Public methods</a>
 <ul>
 <li class="toc-entry toc-h3"><a href="#method-c-sql">
             
-              sql(raw_sql)
+              sql(sql_string, *positional_binds, **named_binds)
             
           </a></li>
 </ul>
@@ -109,7 +124,7 @@
         <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.0.8</span><br />
+            <span>Ruby on Rails 7.1.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -117,12 +132,6 @@
             
         </h1>
         <ul class="files">
-            
-            <li><a href="../files/activerecord/lib/active_record/relation/query_methods_rb.html">activerecord/lib/active_record/relation/query_methods.rb</a></li>
-            
-            <li><a href="../files/activerecord/lib/active_record/relation/where_clause_rb.html">activerecord/lib/active_record/relation/where_clause.rb</a></li>
-            
-            <li><a href="../files/activerecord/lib/active_record/table_metadata_rb.html">activerecord/lib/active_record/table_metadata.rb</a></li>
             
             <li><a href="../files/activerecord/lib/arel_rb.html">activerecord/lib/arel.rb</a></li>
             
@@ -138,19 +147,6 @@
   
 
 
-  
-    <h2 id="namespace">Namespace</h2>
-
-    
-      <h3 id="module">Module</h3>
-      <ul>
-      
-        <li><a href="Arel/Nodes.html">Arel::Nodes</a></li>
-      
-      </ul>
-    
-
-    
   
 
   
@@ -200,7 +196,7 @@
         <div class="method">
           <h3 id="method-c-sql">
             
-              sql(raw_sql)
+              sql(sql_string, *positional_binds, **named_binds)
             
           </h3>
 
@@ -212,6 +208,10 @@
 </code></pre>
 
 <p>Great caution should be taken to avoid SQL injection vulnerabilities. This method should not be used with unsafe values such as request parameters or model attributes.</p>
+
+<p>Take a look at the <a href="https://guides.rubyonrails.org/security.html#sql-injection">security guide</a> for more information.</p>
+
+<p>To construct a more complex query fragment, including the possible use of user-provided values, the <code>sql_string</code> may contain <code>?</code> and <code>:key</code> placeholders, corresponding to the additional arguments. Note that this behavior only applies when bind value parameters are supplied in the call; without them, the placeholder tokens have no special meaning, and will be passed through to the query as-is.</p>
             </div>
           
 
@@ -228,9 +228,13 @@
                 
               </p>
               <div id="method-c-sql_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/arel.rb, line 38</span>
-<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">sql</span>(<span class="ruby-identifier">raw_sql</span>)
-  <span class="ruby-constant">Arel</span><span class="ruby-operator">::</span><span class="ruby-constant">Nodes</span><span class="ruby-operator">::</span><span class="ruby-constant">SqlLiteral</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">raw_sql</span>
+                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/arel.rb, line 48</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">sql</span>(<span class="ruby-identifier">sql_string</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">positional_binds</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">named_binds</span>)
+  <span class="ruby-keyword">if</span> <span class="ruby-identifier">positional_binds</span>.<span class="ruby-identifier">empty?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">named_binds</span>.<span class="ruby-identifier">empty?</span>
+    <span class="ruby-constant">Arel</span><span class="ruby-operator">::</span><span class="ruby-constant">Nodes</span><span class="ruby-operator">::</span><span class="ruby-constant">SqlLiteral</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">sql_string</span>
+  <span class="ruby-keyword">else</span>
+    <span class="ruby-constant">Arel</span><span class="ruby-operator">::</span><span class="ruby-constant">Nodes</span><span class="ruby-operator">::</span><span class="ruby-constant">BoundSqlLiteral</span>.<span class="ruby-identifier">new</span> <span class="ruby-identifier">sql_string</span>, <span class="ruby-identifier">positional_binds</span>, <span class="ruby-identifier">named_binds</span>
+  <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></code></pre>
               </div>
             </div>
