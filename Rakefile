@@ -23,6 +23,13 @@ desc 'Generate adn build documentation for older versions of Rails'
 task :build_multi do
   # WORKAROUND: use `reverse_each` instead of `each` to avoid nokogiri installation error
   config['rails_versions'].reverse_each do |version, detail|
+    if detail['latest']
+      puts "=== Skip Rails v#{version} because it's latest version ==="
+      next
+    else
+      puts "=== Build Rails v#{version} documentation ==="
+    end
+
     dir = "#{SOURCE_DIR}/#{version}"
     mkdir dir unless Dir.exist?(dir)
 
@@ -31,6 +38,7 @@ task :build_multi do
     generate_rails_rdoc
     generate_src(target_version: version)
   end
+  puts
   sh 'bundle exec jekyll build'
 end
 
