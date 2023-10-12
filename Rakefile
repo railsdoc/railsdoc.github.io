@@ -5,17 +5,18 @@ require 'bundler'
 
 SOURCE_DIR = 'src'
 INDEX_HTML = 'files/railties/RDOC_MAIN_rdoc.html'
+NEW_INDEX_HTML = 'files/railties/RDOC_MAIN_md.html'
 
 desc 'Generate documentation for default Rails version and build Jekyll site'
 task build: :switch_default_rails do
   generate_rails_rdoc
-  generate_src
+  generate_src(target_version: default_rails_version)
   sh 'bundle exec jekyll build'
 end
 
 desc 'Switch to default Rails version'
 task :switch_default_rails do
-  switch_rails(config['default_rails_version'])
+  switch_rails(default_rails_version)
 end
 
 desc 'Generate adn build documentation for older versions of Rails'
@@ -34,7 +35,11 @@ task :build_multi do
 end
 
 def config
-  YAML.load_file('./_config.yml')
+  @config ||= YAML.load_file('./_config.yml')
+end
+
+def default_rails_version
+  config['default_rails_version']
 end
 
 def switch_rails(version)
@@ -61,15 +66,18 @@ def generate_rails_rdoc
   end
 end
 
-def generate_src(target_version: nil)
+def generate_src(target_version:)
   copy_sources = Dir.glob('rails/doc/rdoc/*').reject { |path| path.end_with?('panel', 'js', 'created.rid') }
-  target_dir = "#{SOURCE_DIR}/#{target_version}"
+  target_dir = target_version == default_rails_version ? SOURCE_DIR : "#{SOURCE_DIR}/#{target_version}"
   cp_r copy_sources, target_dir
 
   cd target_dir do
-    cp INDEX_HTML, 'index.html'
-    return if target_version.nil?
+    if Gem::Version.new(target_version) >= Gem::Version.new('7.1')
+      cp NEW_INDEX_HTML, 'index.html'
+      return
+    end
 
+    cp INDEX_HTML, 'index.html'
     # Prepend version number to the absolute path in navigation.html
     content = File.read('navigation.html')
     content.gsub!('<a href="/', "<a href=\"/#{target_version}/")
