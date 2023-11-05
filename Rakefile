@@ -64,7 +64,7 @@ def generate_rails_rdoc
 
       # Replace sdoc gem with my forked one
       gemfile = File.read('Gemfile')
-      gemfile.gsub!(/"sdoc".*$/, '"sdoc", github: "toshimaru/sdoc", branch: "railsdoc"')
+      gemfile.gsub!(/"sdoc".*$/, '"sdoc", github: "toshimaru/sdoc", branch: "main"')
       File.write('Gemfile', gemfile)
 
       sh 'bundle install && bundle update sdoc'
