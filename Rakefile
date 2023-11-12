@@ -64,7 +64,7 @@ def generate_rails_rdoc
 
       # Replace sdoc gem with my forked one
       gemfile = File.read('Gemfile')
-      gemfile.gsub!(/"sdoc".*$/, '"sdoc", github: "toshimaru/sdoc", branch: "railsdoc"')
+      gemfile.gsub!(/"sdoc".*$/, '"sdoc", github: "toshimaru/sdoc", branch: "main"')
       File.write('Gemfile', gemfile)
 
       sh 'bundle install && bundle update sdoc'
@@ -77,6 +77,7 @@ end
 def generate_src(target_version:)
   copy_sources = Dir.glob('rails/doc/rdoc/*').reject { |path| path.end_with?('panel', 'js', 'created.rid') }
   target_dir = target_version == default_rails_version ? SOURCE_DIR : "#{SOURCE_DIR}/#{target_version}"
+  remove_existing_files(target_dir)
   cp_r copy_sources, target_dir
 
   cd target_dir do
@@ -90,5 +91,12 @@ def generate_src(target_version:)
     content = File.read('navigation.html')
     content.gsub!('<a href="/', "<a href=\"/#{target_version}/")
     File.write('navigation.html', content)
+  end
+end
+
+EXISTING_DIRS = %w[classes files].freeze
+def remove_existing_files(target_dir)
+  EXISTING_DIRS.each do |dir|
+    rm_rf "#{target_dir}/#{dir}"
   end
 end

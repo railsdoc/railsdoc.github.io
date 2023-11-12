@@ -99,28 +99,28 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-alias_attribute_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 53</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">alias_attribute</span>(<span class="ruby-identifier">new_name</span>, <span class="ruby-identifier">old_name</span>)
-  <span class="ruby-keyword">super</span>
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
 
-  <span class="ruby-keyword">if</span> <span class="ruby-ivar">@alias_attributes_mass_generated</span>
-    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">CodeGenerator</span>.<span class="ruby-identifier">batch</span>(<span class="ruby-identifier">generated_attribute_methods</span>, <span class="ruby-keyword">__FILE__</span>, <span class="ruby-keyword">__LINE__</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">code_generator</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">generate_alias_attribute_methods</span>(<span class="ruby-identifier">code_generator</span>, <span class="ruby-identifier">new_name</span>, <span class="ruby-identifier">old_name</span>)
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 53
+      def alias_attribute(new_name, old_name)
+        super
+
+        if @alias_attributes_mass_generated
+          ActiveSupport::CodeGenerator.batch(generated_attribute_methods, __FILE__, __LINE__) do |code_generator|
+            generate_alias_attribute_methods(code_generator, new_name, old_name)
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/attribute_methods.rb#L53" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-alias_attribute_method_definition">
@@ -140,57 +140,57 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 85
+      def alias_attribute_method_definition(code_generator, pattern, new_name, old_name)
+        method_name = pattern.method_name(new_name).to_s
+        target_name = pattern.method_name(old_name).to_s
+        parameters = pattern.parameters
+        old_name = old_name.to_s
+
+        method_defined = method_defined?(target_name) || private_method_defined?(target_name)
+        manually_defined = method_defined &&
+          !self.instance_method(target_name).owner.is_a?(GeneratedAttributeMethods)
+        reserved_method_name = ::ActiveRecord::AttributeMethods.dangerous_attribute_methods.include?(target_name)
+
+        if !abstract_class? && !has_attribute?(old_name)
+          # We only need to issue this deprecation warning once, so we issue it when defining the original reader method.
+          should_warn = target_name == old_name
+          if should_warn
+            ActiveRecord.deprecator.warn(
+              "#{self} model aliases `#{old_name}`, but `#{old_name}` is not an attribute. " \
+              "Starting in Rails 7.2, alias_attribute with non-attribute targets will raise. " \
+              "Use `alias_method :#{new_name}, :#{old_name}` or define the method manually."
+            )
+          end
+          super
+        elsif manually_defined && !reserved_method_name
+          aliased_method_redefined_as_well = method_defined_within?(method_name, self)
+          return if aliased_method_redefined_as_well
+
+          ActiveRecord.deprecator.warn(
+            "#{self} model aliases `#{old_name}` and has a method called `#{target_name}` defined. " \
+            "Starting in Rails 7.2 `#{method_name}` will not be calling `#{target_name}` anymore. " \
+            "You may want to additionally define `#{method_name}` to preserve the current behavior."
+          )
+          super
+        else
+          define_proxy_call(code_generator, method_name, pattern.proxy_target, parameters, old_name,
+            namespace: :proxy_alias_attribute
+          )
+        end
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-alias_attribute_method_definition_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 85</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">alias_attribute_method_definition</span>(<span class="ruby-identifier">code_generator</span>, <span class="ruby-identifier">pattern</span>, <span class="ruby-identifier">new_name</span>, <span class="ruby-identifier">old_name</span>)
-  <span class="ruby-identifier">method_name</span> = <span class="ruby-identifier">pattern</span>.<span class="ruby-identifier">method_name</span>(<span class="ruby-identifier">new_name</span>).<span class="ruby-identifier">to_s</span>
-  <span class="ruby-identifier">target_name</span> = <span class="ruby-identifier">pattern</span>.<span class="ruby-identifier">method_name</span>(<span class="ruby-identifier">old_name</span>).<span class="ruby-identifier">to_s</span>
-  <span class="ruby-identifier">parameters</span> = <span class="ruby-identifier">pattern</span>.<span class="ruby-identifier">parameters</span>
-  <span class="ruby-identifier">old_name</span> = <span class="ruby-identifier">old_name</span>.<span class="ruby-identifier">to_s</span>
-
-  <span class="ruby-identifier">method_defined</span> = <span class="ruby-identifier">method_defined?</span>(<span class="ruby-identifier">target_name</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">private_method_defined?</span>(<span class="ruby-identifier">target_name</span>)
-  <span class="ruby-identifier">manually_defined</span> = <span class="ruby-identifier">method_defined</span> <span class="ruby-operator">&amp;&amp;</span>
-    <span class="ruby-operator">!</span><span class="ruby-keyword">self</span>.<span class="ruby-identifier">instance_method</span>(<span class="ruby-identifier">target_name</span>).<span class="ruby-identifier">owner</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">GeneratedAttributeMethods</span>)
-  <span class="ruby-identifier">reserved_method_name</span> = <span class="ruby-operator">::</span><span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">AttributeMethods</span>.<span class="ruby-identifier">dangerous_attribute_methods</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">target_name</span>)
-
-  <span class="ruby-keyword">if</span> <span class="ruby-operator">!</span><span class="ruby-identifier">abstract_class?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">has_attribute?</span>(<span class="ruby-identifier">old_name</span>)
-    <span class="ruby-comment"># We only need to issue this deprecation warning once, so we issue it when defining the original reader method.</span>
-    <span class="ruby-identifier">should_warn</span> = <span class="ruby-identifier">target_name</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">old_name</span>
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">should_warn</span>
-      <span class="ruby-constant">ActiveRecord</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(
-        <span class="ruby-node">&quot;#{self} model aliases `#{old_name}`, but `#{old_name}` is not an attribute. &quot;</span> \
-        <span class="ruby-string">&quot;Starting in Rails 7.2, alias_attribute with non-attribute targets will raise. &quot;</span> \
-        <span class="ruby-node">&quot;Use `alias_method :#{new_name}, :#{old_name}` or define the method manually.&quot;</span>
-      )
-    <span class="ruby-keyword">end</span>
-    <span class="ruby-keyword">super</span>
-  <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">manually_defined</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">reserved_method_name</span>
-    <span class="ruby-identifier">aliased_method_redefined_as_well</span> = <span class="ruby-identifier">method_defined_within?</span>(<span class="ruby-identifier">method_name</span>, <span class="ruby-keyword">self</span>)
-    <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">aliased_method_redefined_as_well</span>
-
-    <span class="ruby-constant">ActiveRecord</span>.<span class="ruby-identifier">deprecator</span>.<span class="ruby-identifier">warn</span>(
-      <span class="ruby-node">&quot;#{self} model aliases `#{old_name}` and has a method called `#{target_name}` defined. &quot;</span> \
-      <span class="ruby-node">&quot;Starting in Rails 7.2 `#{method_name}` will not be calling `#{target_name}` anymore. &quot;</span> \
-      <span class="ruby-node">&quot;You may want to additionally define `#{method_name}` to preserve the current behavior.&quot;</span>
-    )
-    <span class="ruby-keyword">super</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">define_proxy_call</span>(<span class="ruby-identifier">code_generator</span>, <span class="ruby-identifier">method_name</span>, <span class="ruby-identifier">pattern</span>.<span class="ruby-identifier">proxy_target</span>, <span class="ruby-identifier">parameters</span>, <span class="ruby-identifier">old_name</span>,
-      <span class="ruby-value">namespace:</span> <span class="ruby-value">:proxy_alias_attribute</span>
-    )
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/attribute_methods.rb#L85" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-attribute_method-3F">
@@ -218,22 +218,22 @@ Person.attribute_method?(:nothing) # =&gt; false
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 219
+      def attribute_method?(attribute)
+        super || (table_exists? && column_names.include?(attribute.to_s.delete_suffix("=")))
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-attribute_method-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 219</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_method?</span>(<span class="ruby-identifier">attribute</span>)
-  <span class="ruby-keyword">super</span> <span class="ruby-operator">||</span> (<span class="ruby-identifier">table_exists?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">column_names</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">attribute</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">delete_suffix</span>(<span class="ruby-string">&quot;=&quot;</span>)))
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/attribute_methods.rb#L219" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-attribute_names">
@@ -260,26 +260,26 @@ Person.attribute_names
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 231
+      def attribute_names
+        @attribute_names ||= if !abstract_class? && table_exists?
+          attribute_types.keys
+        else
+          []
+        end.freeze
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-attribute_names_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 231</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">attribute_names</span>
-  <span class="ruby-ivar">@attribute_names</span> <span class="ruby-operator">||=</span> <span class="ruby-keyword">if</span> <span class="ruby-operator">!</span><span class="ruby-identifier">abstract_class?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">table_exists?</span>
-    <span class="ruby-identifier">attribute_types</span>.<span class="ruby-identifier">keys</span>
-  <span class="ruby-keyword">else</span>
-    []
-  <span class="ruby-keyword">end</span>.<span class="ruby-identifier">freeze</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/attribute_methods.rb#L231" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-dangerous_class_method-3F">
@@ -299,32 +299,32 @@ Person.attribute_names
           
 
           
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-dangerous_class_method-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 196</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">dangerous_class_method?</span>(<span class="ruby-identifier">method_name</span>)
-  <span class="ruby-keyword">return</span> <span class="ruby-keyword">true</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">RESTRICTED_CLASS_METHODS</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">method_name</span>.<span class="ruby-identifier">to_s</span>)
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
 
-  <span class="ruby-keyword">if</span> <span class="ruby-constant">Base</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-identifier">method_name</span>, <span class="ruby-keyword">true</span>)
-    <span class="ruby-keyword">if</span> <span class="ruby-constant">Object</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-identifier">method_name</span>, <span class="ruby-keyword">true</span>)
-      <span class="ruby-constant">Base</span>.<span class="ruby-identifier">method</span>(<span class="ruby-identifier">method_name</span>).<span class="ruby-identifier">owner</span> <span class="ruby-operator">!=</span> <span class="ruby-constant">Object</span>.<span class="ruby-identifier">method</span>(<span class="ruby-identifier">method_name</span>).<span class="ruby-identifier">owner</span>
-    <span class="ruby-keyword">else</span>
-      <span class="ruby-keyword">true</span>
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-keyword">false</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 196
+      def dangerous_class_method?(method_name)
+        return true if RESTRICTED_CLASS_METHODS.include?(method_name.to_s)
+
+        if Base.respond_to?(method_name, true)
+          if Object.respond_to?(method_name, true)
+            Base.method(method_name).owner != Object.method(method_name).owner
+          else
+            true
+          end
+        else
+          false
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/attribute_methods.rb#L196" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-has_attribute-3F">
@@ -354,24 +354,24 @@ Person.has_attribute?(:nothing)   # =&gt; false
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 249
+      def has_attribute?(attr_name)
+        attr_name = attr_name.to_s
+        attr_name = attribute_aliases[attr_name] || attr_name
+        attribute_types.key?(attr_name)
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-has_attribute-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 249</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_attribute?</span>(<span class="ruby-identifier">attr_name</span>)
-  <span class="ruby-identifier">attr_name</span> = <span class="ruby-identifier">attr_name</span>.<span class="ruby-identifier">to_s</span>
-  <span class="ruby-identifier">attr_name</span> = <span class="ruby-identifier">attribute_aliases</span>[<span class="ruby-identifier">attr_name</span>] <span class="ruby-operator">||</span> <span class="ruby-identifier">attr_name</span>
-  <span class="ruby-identifier">attribute_types</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-identifier">attr_name</span>)
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/attribute_methods.rb#L249" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-instance_method_already_implemented-3F">
@@ -404,34 +404,34 @@ Person.instance_method_already_implemented?(:name)
           
 
           
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-instance_method_already_implemented-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/attribute_methods.rb, line 160</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">instance_method_already_implemented?</span>(<span class="ruby-identifier">method_name</span>)
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">dangerous_attribute_method?</span>(<span class="ruby-identifier">method_name</span>)
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">DangerousAttributeError</span>, <span class="ruby-node">&quot;#{method_name} is defined by Active Record. Check to make sure that you don&#39;t have an attribute or method with the same name.&quot;</span>
-  <span class="ruby-keyword">end</span>
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
 
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">superclass</span> <span class="ruby-operator">==</span> <span class="ruby-constant">Base</span>
-    <span class="ruby-keyword">super</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-comment"># If ThisClass &lt; ... &lt; SomeSuperClass &lt; ... &lt; Base and SomeSuperClass</span>
-    <span class="ruby-comment"># defines its own attribute method, then we don&#39;t want to override that.</span>
-    <span class="ruby-identifier">defined</span> = <span class="ruby-identifier">method_defined_within?</span>(<span class="ruby-identifier">method_name</span>, <span class="ruby-identifier">superclass</span>, <span class="ruby-constant">Base</span>) <span class="ruby-operator">&amp;&amp;</span>
-      <span class="ruby-operator">!</span> <span class="ruby-identifier">superclass</span>.<span class="ruby-identifier">instance_method</span>(<span class="ruby-identifier">method_name</span>).<span class="ruby-identifier">owner</span>.<span class="ruby-identifier">is_a?</span>(<span class="ruby-constant">GeneratedAttributeMethods</span>)
-    <span class="ruby-identifier">defined</span> <span class="ruby-operator">||</span> <span class="ruby-keyword">super</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 160
+      def instance_method_already_implemented?(method_name)
+        if dangerous_attribute_method?(method_name)
+          raise DangerousAttributeError, "#{method_name} is defined by Active Record. Check to make sure that you don't have an attribute or method with the same name."
+        end
+
+        if superclass == Base
+          super
+        else
+          # If ThisClass < ... < SomeSuperClass < ... < Base and SomeSuperClass
+          # defines its own attribute method, then we don't want to override that.
+          defined = method_defined_within?(method_name, superclass, Base) &&
+            ! superclass.instance_method(method_name).owner.is_a?(GeneratedAttributeMethods)
+          defined || super
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/attribute_methods.rb#L160" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     
