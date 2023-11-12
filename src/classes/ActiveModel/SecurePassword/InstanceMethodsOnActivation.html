@@ -80,58 +80,58 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/secure_password.rb, line 149
+      def initialize(attribute)
+        attr_reader attribute
+
+        define_method("#{attribute}=") do |unencrypted_password|
+          if unencrypted_password.nil?
+            instance_variable_set("@#{attribute}", nil)
+            self.public_send("#{attribute}_digest=", nil)
+          elsif !unencrypted_password.empty?
+            instance_variable_set("@#{attribute}", unencrypted_password)
+            cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST : BCrypt::Engine.cost
+            self.public_send("#{attribute}_digest=", BCrypt::Password.create(unencrypted_password, cost: cost))
+          end
+        end
+
+        attr_accessor :"#{attribute}_confirmation", :"#{attribute}_challenge"
+
+        # Returns +self+ if the password is correct, otherwise +false+.
+        #
+        #   class User < ActiveRecord::Base
+        #     has_secure_password validations: false
+        #   end
+        #
+        #   user = User.new(name: 'david', password: 'mUc3m00RsqyRe')
+        #   user.save
+        #   user.authenticate_password('notright')      # => false
+        #   user.authenticate_password('mUc3m00RsqyRe') # => user
+        define_method("authenticate_#{attribute}") do |unencrypted_password|
+          attribute_digest = public_send("#{attribute}_digest")
+          attribute_digest.present? && BCrypt::Password.new(attribute_digest).is_password?(unencrypted_password) && self
+        end
+
+        # Returns the salt, a small chunk of random data added to the password before it's hashed.
+        define_method("#{attribute}_salt") do
+          attribute_digest = public_send("#{attribute}_digest")
+          attribute_digest.present? ? BCrypt::Password.new(attribute_digest).salt : nil
+        end
+
+        alias_method :authenticate, :authenticate_password if attribute == :password
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/secure_password.rb, line 149</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">attribute</span>)
-  <span class="ruby-identifier">attr_reader</span> <span class="ruby-identifier">attribute</span>
-
-  <span class="ruby-identifier">define_method</span>(<span class="ruby-node">&quot;#{attribute}=&quot;</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">unencrypted_password</span><span class="ruby-operator">|</span>
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">unencrypted_password</span>.<span class="ruby-identifier">nil?</span>
-      <span class="ruby-identifier">instance_variable_set</span>(<span class="ruby-node">&quot;@#{attribute}&quot;</span>, <span class="ruby-keyword">nil</span>)
-      <span class="ruby-keyword">self</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{attribute}_digest=&quot;</span>, <span class="ruby-keyword">nil</span>)
-    <span class="ruby-keyword">elsif</span> <span class="ruby-operator">!</span><span class="ruby-identifier">unencrypted_password</span>.<span class="ruby-identifier">empty?</span>
-      <span class="ruby-identifier">instance_variable_set</span>(<span class="ruby-node">&quot;@#{attribute}&quot;</span>, <span class="ruby-identifier">unencrypted_password</span>)
-      <span class="ruby-identifier">cost</span> = <span class="ruby-constant">ActiveModel</span><span class="ruby-operator">::</span><span class="ruby-constant">SecurePassword</span>.<span class="ruby-identifier">min_cost</span> <span class="ruby-operator">?</span> <span class="ruby-constant">BCrypt</span><span class="ruby-operator">::</span><span class="ruby-constant">Engine</span><span class="ruby-operator">::</span><span class="ruby-constant">MIN_COST</span> <span class="ruby-operator">:</span> <span class="ruby-constant">BCrypt</span><span class="ruby-operator">::</span><span class="ruby-constant">Engine</span>.<span class="ruby-identifier">cost</span>
-      <span class="ruby-keyword">self</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{attribute}_digest=&quot;</span>, <span class="ruby-constant">BCrypt</span><span class="ruby-operator">::</span><span class="ruby-constant">Password</span>.<span class="ruby-identifier">create</span>(<span class="ruby-identifier">unencrypted_password</span>, <span class="ruby-value">cost:</span> <span class="ruby-identifier">cost</span>))
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">attr_accessor</span> <span class="ruby-value">:&quot;#{attribute}_confirmation&quot;</span>, <span class="ruby-value">:&quot;#{attribute}_challenge&quot;</span>
-
-  <span class="ruby-comment"># Returns +self+ if the password is correct, otherwise +false+.</span>
-  <span class="ruby-comment">#</span>
-  <span class="ruby-comment">#   class User &lt; ActiveRecord::Base</span>
-  <span class="ruby-comment">#     has_secure_password validations: false</span>
-  <span class="ruby-comment">#   end</span>
-  <span class="ruby-comment">#</span>
-  <span class="ruby-comment">#   user = User.new(name: &#39;david&#39;, password: &#39;mUc3m00RsqyRe&#39;)</span>
-  <span class="ruby-comment">#   user.save</span>
-  <span class="ruby-comment">#   user.authenticate_password(&#39;notright&#39;)      # =&gt; false</span>
-  <span class="ruby-comment">#   user.authenticate_password(&#39;mUc3m00RsqyRe&#39;) # =&gt; user</span>
-  <span class="ruby-identifier">define_method</span>(<span class="ruby-node">&quot;authenticate_#{attribute}&quot;</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">unencrypted_password</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">attribute_digest</span> = <span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{attribute}_digest&quot;</span>)
-    <span class="ruby-identifier">attribute_digest</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-constant">BCrypt</span><span class="ruby-operator">::</span><span class="ruby-constant">Password</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">attribute_digest</span>).<span class="ruby-identifier">is_password?</span>(<span class="ruby-identifier">unencrypted_password</span>) <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-keyword">self</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-comment"># Returns the salt, a small chunk of random data added to the password before it&#39;s hashed.</span>
-  <span class="ruby-identifier">define_method</span>(<span class="ruby-node">&quot;#{attribute}_salt&quot;</span>) <span class="ruby-keyword">do</span>
-    <span class="ruby-identifier">attribute_digest</span> = <span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{attribute}_digest&quot;</span>)
-    <span class="ruby-identifier">attribute_digest</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">?</span> <span class="ruby-constant">BCrypt</span><span class="ruby-operator">::</span><span class="ruby-constant">Password</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">attribute_digest</span>).<span class="ruby-identifier">salt</span> <span class="ruby-operator">:</span> <span class="ruby-keyword">nil</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">alias_method</span> <span class="ruby-value">:authenticate</span>, <span class="ruby-value">:authenticate_password</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">attribute</span> <span class="ruby-operator">==</span> <span class="ruby-value">:password</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activemodel/lib/active_model/secure_password.rb#L149" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

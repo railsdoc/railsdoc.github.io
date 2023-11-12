@@ -114,22 +114,22 @@ DiscussionBoard.decrement_counter(:posts_count, 5, touch: true)
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/counter_cache.rb, line 176
+      def decrement_counter(counter_name, id, by: 1, touch: nil)
+        update_counters(id, counter_name => -by, touch: touch)
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-decrement_counter_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/counter_cache.rb, line 176</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">decrement_counter</span>(<span class="ruby-identifier">counter_name</span>, <span class="ruby-identifier">id</span>, <span class="ruby-value">by:</span> <span class="ruby-value">1</span>, <span class="ruby-value">touch:</span> <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">update_counters</span>(<span class="ruby-identifier">id</span>, <span class="ruby-identifier">counter_name</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-operator">-</span><span class="ruby-identifier">by</span>, <span class="ruby-value">touch:</span> <span class="ruby-identifier">touch</span>)
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/counter_cache.rb#L176" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-increment_counter">
@@ -176,22 +176,22 @@ DiscussionBoard.increment_counter(:posts_count, 5, touch: true)
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/counter_cache.rb, line 146
+      def increment_counter(counter_name, id, by: 1, touch: nil)
+        update_counters(id, counter_name => by, touch: touch)
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-increment_counter_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/counter_cache.rb, line 146</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">increment_counter</span>(<span class="ruby-identifier">counter_name</span>, <span class="ruby-identifier">id</span>, <span class="ruby-value">by:</span> <span class="ruby-value">1</span>, <span class="ruby-value">touch:</span> <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">update_counters</span>(<span class="ruby-identifier">id</span>, <span class="ruby-identifier">counter_name</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">by</span>, <span class="ruby-value">touch:</span> <span class="ruby-identifier">touch</span>)
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/counter_cache.rb#L146" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-reset_counters">
@@ -230,58 +230,58 @@ Post.reset_counters(1, :comments, touch: true)
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/counter_cache.rb, line 33
+      def reset_counters(id, *counters, touch: nil)
+        object = find(id)
+
+        updates = {}
+        counters.each do |counter_association|
+          has_many_association = _reflect_on_association(counter_association)
+          unless has_many_association
+            has_many = reflect_on_all_associations(:has_many)
+            has_many_association = has_many.find { |association| association.counter_cache_column && association.counter_cache_column.to_sym == counter_association.to_sym }
+            counter_association = has_many_association.plural_name if has_many_association
+          end
+          raise ArgumentError, "'#{name}' has no association called '#{counter_association}'" unless has_many_association
+
+          if has_many_association.is_a? ActiveRecord::Reflection::ThroughReflection
+            has_many_association = has_many_association.through_reflection
+          end
+
+          foreign_key  = has_many_association.foreign_key.to_s
+          child_class  = has_many_association.klass
+          reflection   = child_class._reflections.values.find { |e| e.belongs_to? && e.foreign_key.to_s == foreign_key && e.options[:counter_cache].present? }
+          counter_name = reflection.counter_cache_column
+
+          count_was = object.send(counter_name)
+          count = object.send(counter_association).count(:all)
+          updates[counter_name] = count if count != count_was
+        end
+
+        if touch
+          names = touch if touch != true
+          names = Array.wrap(names)
+          options = names.extract_options!
+          touch_updates = touch_attributes_with_time(*names, **options)
+          updates.merge!(touch_updates)
+        end
+
+        unscoped.where(primary_key => object.id).update_all(updates) if updates.any?
+
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-reset_counters_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/counter_cache.rb, line 33</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reset_counters</span>(<span class="ruby-identifier">id</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">counters</span>, <span class="ruby-value">touch:</span> <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">object</span> = <span class="ruby-identifier">find</span>(<span class="ruby-identifier">id</span>)
-
-  <span class="ruby-identifier">updates</span> = {}
-  <span class="ruby-identifier">counters</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">counter_association</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">has_many_association</span> = <span class="ruby-identifier">_reflect_on_association</span>(<span class="ruby-identifier">counter_association</span>)
-    <span class="ruby-keyword">unless</span> <span class="ruby-identifier">has_many_association</span>
-      <span class="ruby-identifier">has_many</span> = <span class="ruby-identifier">reflect_on_all_associations</span>(<span class="ruby-value">:has_many</span>)
-      <span class="ruby-identifier">has_many_association</span> = <span class="ruby-identifier">has_many</span>.<span class="ruby-identifier">find</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">association</span><span class="ruby-operator">|</span> <span class="ruby-identifier">association</span>.<span class="ruby-identifier">counter_cache_column</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">association</span>.<span class="ruby-identifier">counter_cache_column</span>.<span class="ruby-identifier">to_sym</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">counter_association</span>.<span class="ruby-identifier">to_sym</span> }
-      <span class="ruby-identifier">counter_association</span> = <span class="ruby-identifier">has_many_association</span>.<span class="ruby-identifier">plural_name</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">has_many_association</span>
-    <span class="ruby-keyword">end</span>
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;&#39;#{name}&#39; has no association called &#39;#{counter_association}&#39;&quot;</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">has_many_association</span>
-
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">has_many_association</span>.<span class="ruby-identifier">is_a?</span> <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Reflection</span><span class="ruby-operator">::</span><span class="ruby-constant">ThroughReflection</span>
-      <span class="ruby-identifier">has_many_association</span> = <span class="ruby-identifier">has_many_association</span>.<span class="ruby-identifier">through_reflection</span>
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-identifier">foreign_key</span>  = <span class="ruby-identifier">has_many_association</span>.<span class="ruby-identifier">foreign_key</span>.<span class="ruby-identifier">to_s</span>
-    <span class="ruby-identifier">child_class</span>  = <span class="ruby-identifier">has_many_association</span>.<span class="ruby-identifier">klass</span>
-    <span class="ruby-identifier">reflection</span>   = <span class="ruby-identifier">child_class</span>.<span class="ruby-identifier">_reflections</span>.<span class="ruby-identifier">values</span>.<span class="ruby-identifier">find</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">e</span><span class="ruby-operator">|</span> <span class="ruby-identifier">e</span>.<span class="ruby-identifier">belongs_to?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">e</span>.<span class="ruby-identifier">foreign_key</span>.<span class="ruby-identifier">to_s</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">foreign_key</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">e</span>.<span class="ruby-identifier">options</span>[<span class="ruby-value">:counter_cache</span>].<span class="ruby-identifier">present?</span> }
-    <span class="ruby-identifier">counter_name</span> = <span class="ruby-identifier">reflection</span>.<span class="ruby-identifier">counter_cache_column</span>
-
-    <span class="ruby-identifier">count_was</span> = <span class="ruby-identifier">object</span>.<span class="ruby-identifier">send</span>(<span class="ruby-identifier">counter_name</span>)
-    <span class="ruby-identifier">count</span> = <span class="ruby-identifier">object</span>.<span class="ruby-identifier">send</span>(<span class="ruby-identifier">counter_association</span>).<span class="ruby-identifier">count</span>(<span class="ruby-value">:all</span>)
-    <span class="ruby-identifier">updates</span>[<span class="ruby-identifier">counter_name</span>] = <span class="ruby-identifier">count</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">count</span> <span class="ruby-operator">!=</span> <span class="ruby-identifier">count_was</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">touch</span>
-    <span class="ruby-identifier">names</span> = <span class="ruby-identifier">touch</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">touch</span> <span class="ruby-operator">!=</span> <span class="ruby-keyword">true</span>
-    <span class="ruby-identifier">names</span> = <span class="ruby-constant">Array</span>.<span class="ruby-identifier">wrap</span>(<span class="ruby-identifier">names</span>)
-    <span class="ruby-identifier">options</span> = <span class="ruby-identifier">names</span>.<span class="ruby-identifier">extract_options!</span>
-    <span class="ruby-identifier">touch_updates</span> = <span class="ruby-identifier">touch_attributes_with_time</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>, <span class="ruby-operator">**</span><span class="ruby-identifier">options</span>)
-    <span class="ruby-identifier">updates</span>.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">touch_updates</span>)
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">unscoped</span>.<span class="ruby-identifier">where</span>(<span class="ruby-identifier">primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">object</span>.<span class="ruby-identifier">id</span>).<span class="ruby-identifier">update_all</span>(<span class="ruby-identifier">updates</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">updates</span>.<span class="ruby-identifier">any?</span>
-
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/counter_cache.rb#L33" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-update_counters">
@@ -338,22 +338,22 @@ Post.update_counters [10, 15], comments_count: 1, touch: true
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/counter_cache.rb, line 114
+      def update_counters(id, counters)
+        unscoped.where!(primary_key => id).update_counters(counters)
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-update_counters_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/counter_cache.rb, line 114</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">update_counters</span>(<span class="ruby-identifier">id</span>, <span class="ruby-identifier">counters</span>)
-  <span class="ruby-identifier">unscoped</span>.<span class="ruby-identifier">where!</span>(<span class="ruby-identifier">primary_key</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">id</span>).<span class="ruby-identifier">update_counters</span>(<span class="ruby-identifier">counters</span>)
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/counter_cache.rb#L114" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

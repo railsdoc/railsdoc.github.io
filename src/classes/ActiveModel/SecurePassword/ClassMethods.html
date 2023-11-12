@@ -166,64 +166,64 @@ account.valid? # =&gt; true
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/secure_password.rb, line 101
+      def has_secure_password(attribute = :password, validations: true)
+        # Load bcrypt gem only when has_secure_password is used.
+        # This is to avoid ActiveModel (and by extension the entire framework)
+        # being dependent on a binary library.
+        begin
+          require "bcrypt"
+        rescue LoadError
+          warn "You don't have bcrypt installed in your application. Please add it to your Gemfile and run bundle install."
+          raise
+        end
+
+        include InstanceMethodsOnActivation.new(attribute)
+
+        if validations
+          include ActiveModel::Validations
+
+          # This ensures the model has a password by checking whether the password_digest
+          # is present, so that this works with both new and existing records. However,
+          # when there is an error, the message is added to the password attribute instead
+          # so that the error message will make sense to the end-user.
+          validate do |record|
+            record.errors.add(attribute, :blank) unless record.public_send("#{attribute}_digest").present?
+          end
+
+          validate do |record|
+            if challenge = record.public_send(:"#{attribute}_challenge")
+              digest_was = record.public_send(:"#{attribute}_digest_was") if record.respond_to?(:"#{attribute}_digest_was")
+
+              unless digest_was.present? && BCrypt::Password.new(digest_was).is_password?(challenge)
+                record.errors.add(:"#{attribute}_challenge")
+              end
+            end
+          end
+
+          # Validates that the password does not exceed the maximum allowed bytes for BCrypt (72 bytes).
+          validate do |record|
+            password_value = record.public_send(attribute)
+            if password_value.present? && password_value.bytesize > ActiveModel::SecurePassword::MAX_PASSWORD_LENGTH_ALLOWED
+              record.errors.add(attribute, :password_too_long)
+            end
+          end
+
+          validates_confirmation_of attribute, allow_blank: true
+        end
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-has_secure_password_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activemodel/lib/active_model/secure_password.rb, line 101</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_secure_password</span>(<span class="ruby-identifier">attribute</span> = <span class="ruby-value">:password</span>, <span class="ruby-value">validations:</span> <span class="ruby-keyword">true</span>)
-  <span class="ruby-comment"># Load bcrypt gem only when has_secure_password is used.</span>
-  <span class="ruby-comment"># This is to avoid ActiveModel (and by extension the entire framework)</span>
-  <span class="ruby-comment"># being dependent on a binary library.</span>
-  <span class="ruby-keyword">begin</span>
-    <span class="ruby-identifier">require</span> <span class="ruby-string">&quot;bcrypt&quot;</span>
-  <span class="ruby-keyword">rescue</span> <span class="ruby-constant">LoadError</span>
-    <span class="ruby-identifier">warn</span> <span class="ruby-string">&quot;You don&#39;t have bcrypt installed in your application. Please add it to your Gemfile and run bundle install.&quot;</span>
-    <span class="ruby-identifier">raise</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">include</span> <span class="ruby-constant">InstanceMethodsOnActivation</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">attribute</span>)
-
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">validations</span>
-    <span class="ruby-identifier">include</span> <span class="ruby-constant">ActiveModel</span><span class="ruby-operator">::</span><span class="ruby-constant">Validations</span>
-
-    <span class="ruby-comment"># This ensures the model has a password by checking whether the password_digest</span>
-    <span class="ruby-comment"># is present, so that this works with both new and existing records. However,</span>
-    <span class="ruby-comment"># when there is an error, the message is added to the password attribute instead</span>
-    <span class="ruby-comment"># so that the error message will make sense to the end-user.</span>
-    <span class="ruby-identifier">validate</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">record</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">record</span>.<span class="ruby-identifier">errors</span>.<span class="ruby-identifier">add</span>(<span class="ruby-identifier">attribute</span>, <span class="ruby-value">:blank</span>) <span class="ruby-keyword">unless</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-node">&quot;#{attribute}_digest&quot;</span>).<span class="ruby-identifier">present?</span>
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-identifier">validate</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">record</span><span class="ruby-operator">|</span>
-      <span class="ruby-keyword">if</span> <span class="ruby-identifier">challenge</span> = <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-value">:&quot;#{attribute}_challenge&quot;</span>)
-        <span class="ruby-identifier">digest_was</span> = <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-value">:&quot;#{attribute}_digest_was&quot;</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">record</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:&quot;#{attribute}_digest_was&quot;</span>)
-
-        <span class="ruby-keyword">unless</span> <span class="ruby-identifier">digest_was</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-constant">BCrypt</span><span class="ruby-operator">::</span><span class="ruby-constant">Password</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">digest_was</span>).<span class="ruby-identifier">is_password?</span>(<span class="ruby-identifier">challenge</span>)
-          <span class="ruby-identifier">record</span>.<span class="ruby-identifier">errors</span>.<span class="ruby-identifier">add</span>(<span class="ruby-value">:&quot;#{attribute}_challenge&quot;</span>)
-        <span class="ruby-keyword">end</span>
-      <span class="ruby-keyword">end</span>
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-comment"># Validates that the password does not exceed the maximum allowed bytes for BCrypt (72 bytes).</span>
-    <span class="ruby-identifier">validate</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">record</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">password_value</span> = <span class="ruby-identifier">record</span>.<span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">attribute</span>)
-      <span class="ruby-keyword">if</span> <span class="ruby-identifier">password_value</span>.<span class="ruby-identifier">present?</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">password_value</span>.<span class="ruby-identifier">bytesize</span> <span class="ruby-operator">&gt;</span> <span class="ruby-constant">ActiveModel</span><span class="ruby-operator">::</span><span class="ruby-constant">SecurePassword</span><span class="ruby-operator">::</span><span class="ruby-constant">MAX_PASSWORD_LENGTH_ALLOWED</span>
-        <span class="ruby-identifier">record</span>.<span class="ruby-identifier">errors</span>.<span class="ruby-identifier">add</span>(<span class="ruby-identifier">attribute</span>, <span class="ruby-value">:password_too_long</span>)
-      <span class="ruby-keyword">end</span>
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-identifier">validates_confirmation_of</span> <span class="ruby-identifier">attribute</span>, <span class="ruby-value">allow_blank:</span> <span class="ruby-keyword">true</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activemodel/lib/active_model/secure_password.rb#L101" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

@@ -90,54 +90,54 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/errors.rb, line 218</span>
-    <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(
-      <span class="ruby-value">message:</span> <span class="ruby-keyword">nil</span>,
-      <span class="ruby-value">sql:</span> <span class="ruby-keyword">nil</span>,
-      <span class="ruby-value">binds:</span> <span class="ruby-keyword">nil</span>,
-      <span class="ruby-value">table:</span> <span class="ruby-keyword">nil</span>,
-      <span class="ruby-value">foreign_key:</span> <span class="ruby-keyword">nil</span>,
-      <span class="ruby-value">target_table:</span> <span class="ruby-keyword">nil</span>,
-      <span class="ruby-value">primary_key:</span> <span class="ruby-keyword">nil</span>,
-      <span class="ruby-value">primary_key_column:</span> <span class="ruby-keyword">nil</span>,
-      <span class="ruby-value">query_parser:</span> <span class="ruby-keyword">nil</span>,
-      <span class="ruby-value">connection_pool:</span> <span class="ruby-keyword">nil</span>
-    )
-      <span class="ruby-ivar">@original_message</span> = <span class="ruby-identifier">message</span>
-      <span class="ruby-ivar">@query_parser</span> = <span class="ruby-identifier">query_parser</span>
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
 
-      <span class="ruby-keyword">if</span> <span class="ruby-identifier">table</span>
-        <span class="ruby-identifier">type</span> = <span class="ruby-identifier">primary_key_column</span>.<span class="ruby-identifier">bigint?</span> <span class="ruby-operator">?</span> <span class="ruby-value">:bigint</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">primary_key_column</span>.<span class="ruby-identifier">type</span>
-        <span class="ruby-identifier">msg</span> = <span class="ruby-identifier">&lt;&lt;~EOM</span>.<span class="ruby-identifier">squish</span>
-<span class="ruby-value">          Column `#{foreign_key}` on table `#{table}` does not match column `#{primary_key}` on `#{target_table}`,
+              <pre><code class="ruby"># File activerecord/lib/active_record/errors.rb, line 218
+    def initialize(
+      message: nil,
+      sql: nil,
+      binds: nil,
+      table: nil,
+      foreign_key: nil,
+      target_table: nil,
+      primary_key: nil,
+      primary_key_column: nil,
+      query_parser: nil,
+      connection_pool: nil
+    )
+      @original_message = message
+      @query_parser = query_parser
+
+      if table
+        type = primary_key_column.bigint? ? :bigint : primary_key_column.type
+        msg = <<~EOM.squish
+          Column `#{foreign_key}` on table `#{table}` does not match column `#{primary_key}` on `#{target_table}`,
           which has type `#{primary_key_column.sql_type}`.
           To resolve this issue, change the type of the `#{foreign_key}` column on `#{table}` to be :#{type}.
           (For example `t.#{type} :#{foreign_key}`).
-</span><span class="ruby-identifier">        EOM</span>
-      <span class="ruby-keyword">else</span>
-        <span class="ruby-identifier">msg</span> = <span class="ruby-identifier">&lt;&lt;~EOM</span>.<span class="ruby-identifier">squish</span>
-<span class="ruby-value">          There is a mismatch between the foreign key and primary key column types.
+        EOM
+      else
+        msg = <<~EOM.squish
+          There is a mismatch between the foreign key and primary key column types.
           Verify that the foreign key column type and the primary key of the associated table match types.
-</span><span class="ruby-identifier">        EOM</span>
-      <span class="ruby-keyword">end</span>
-      <span class="ruby-keyword">if</span> <span class="ruby-identifier">message</span>
-        <span class="ruby-identifier">msg</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-node">&quot;\nOriginal message: #{message}&quot;</span>
-      <span class="ruby-keyword">end</span>
+        EOM
+      end
+      if message
+        msg << "\nOriginal message: #{message}"
+      end
 
-      <span class="ruby-keyword">super</span>(<span class="ruby-identifier">msg</span>, <span class="ruby-value">sql:</span> <span class="ruby-identifier">sql</span>, <span class="ruby-value">binds:</span> <span class="ruby-identifier">binds</span>, <span class="ruby-value">connection_pool:</span> <span class="ruby-identifier">connection_pool</span>)
-    <span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+      super(msg, sql: sql, binds: binds, connection_pool: connection_pool)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/errors.rb#L218" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     
@@ -161,34 +161,34 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/errors.rb, line 254
+    def set_query(sql, binds)
+      if @query_parser && !@sql
+        self.class.new(
+          message: @original_message,
+          sql: sql,
+          binds: binds,
+          connection_pool: @connection_pool,
+          **@query_parser.call(sql)
+        ).tap do |exception|
+          exception.set_backtrace backtrace
+        end
+      else
+        super
+      end
+    end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-set_query_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/errors.rb, line 254</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">set_query</span>(<span class="ruby-identifier">sql</span>, <span class="ruby-identifier">binds</span>)
-  <span class="ruby-keyword">if</span> <span class="ruby-ivar">@query_parser</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-ivar">@sql</span>
-    <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">new</span>(
-      <span class="ruby-value">message:</span> <span class="ruby-ivar">@original_message</span>,
-      <span class="ruby-value">sql:</span> <span class="ruby-identifier">sql</span>,
-      <span class="ruby-value">binds:</span> <span class="ruby-identifier">binds</span>,
-      <span class="ruby-value">connection_pool:</span> <span class="ruby-ivar">@connection_pool</span>,
-      <span class="ruby-operator">**</span><span class="ruby-ivar">@query_parser</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">sql</span>)
-    ).<span class="ruby-identifier">tap</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">exception</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">exception</span>.<span class="ruby-identifier">set_backtrace</span> <span class="ruby-identifier">backtrace</span>
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-keyword">super</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/d39db5d1891f7509cde2efc425c9d69bbb77e670/activerecord/lib/active_record/errors.rb#L254" target="_blank" class="github_url">See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     
