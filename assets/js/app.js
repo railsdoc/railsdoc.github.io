@@ -4,6 +4,9 @@ $(() => {
   anchors.add();
 
   // highlight.js
+  hljs.configure({
+    languages: ['ruby', 'html', 'bash']
+  });
   hljs.highlightAll();
 
   $("#navigation").load(`${config.rootPath}navigation.html`, function() {
