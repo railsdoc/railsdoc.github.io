@@ -5,12 +5,13 @@ $(() => {
 
   // highlight.js
   hljs.configure({
-    languages: ['ruby', 'html', 'bash']
+    languages: ['ruby', 'html', 'bash', 'sql']
   });
   hljs.highlightAll();
 
   $("#navigation").load(`${config.rootPath}navigation.html`, function() {
     $(".sidebar-sticky .icon").on("click", function (e) {
+      e.preventDefault();
       $(this).siblings("ul").toggle();
       this.classList.toggle("icon-opened");
     });
