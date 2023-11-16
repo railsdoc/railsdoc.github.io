@@ -6,6 +6,7 @@ require 'bundler'
 SOURCE_DIR = 'src'
 INDEX_HTML = 'files/railties/RDOC_MAIN_rdoc.html'
 NEW_INDEX_HTML = 'files/railties/RDOC_MAIN_md.html'
+MY_SDOC_BRANCH = 'main'
 
 desc 'Generate documentation for default Rails version and build Jekyll site'
 task build: :switch_default_rails do
@@ -64,7 +65,7 @@ def generate_rails_rdoc
 
       # Replace sdoc gem with my forked one
       gemfile = File.read('Gemfile')
-      gemfile.gsub!(/"sdoc".*$/, '"sdoc", github: "toshimaru/sdoc", branch: "main"')
+      gemfile.gsub!(/"sdoc".*$/, %("sdoc", github: "toshimaru/sdoc", branch: "#{MY_SDOC_BRANCH}"))
       File.write('Gemfile', gemfile)
 
       sh 'bundle install && bundle update sdoc'
