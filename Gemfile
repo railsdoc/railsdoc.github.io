@@ -1,6 +1,7 @@
 source 'https://rubygems.org'
 
 gem 'jekyll'
+gem 'nokogiri', '1.15.6'
 gem 'rake'
 gem 'webrick'
 
