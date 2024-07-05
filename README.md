@@ -1,6 +1,7 @@
 # [railsdoc.github.io](https://railsdoc.github.io/) 
 
 [![CI](https://github.com/railsdoc/railsdoc.github.io/actions/workflows/ci.yml/badge.svg)](https://github.com/railsdoc/railsdoc.github.io/actions/workflows/ci.yml)
+[![Deploy](https://github.com/railsdoc/railsdoc.github.io/actions/workflows/deploy.yml/badge.svg)](https://github.com/railsdoc/railsdoc.github.io/actions/workflows/deploy.yml)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/c964029a-6d5a-4f3a-95e9-d35830a2fe83/deploy-status)](https://app.netlify.com/sites/railsdoc-preview/deploys)
 
 railsdoc.github.io is yet another Rails API documentation website.
