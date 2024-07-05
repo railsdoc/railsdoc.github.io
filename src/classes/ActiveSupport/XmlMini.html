@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -27,7 +27,7 @@ layout: default
 
 <p>To use the much faster libxml parser:</p>
 
-<pre><code>gem &#39;libxml-ruby&#39;
+<pre><code>gem &quot;libxml-ruby&quot;
 XmlMini.backend = &#39;LibXML&#39;
 </code></pre>
 
@@ -97,6 +97,7 @@ XmlMini.backend = &#39;LibXML&#39;
 &quot;symbol&quot;   =&gt; Proc.new { |symbol| symbol.to_s },
 &quot;date&quot;     =&gt; Proc.new { |date| date.to_fs(:db) },
 &quot;dateTime&quot; =&gt; Proc.new { |time| time.xmlschema },
+&quot;duration&quot; =&gt; Proc.new { |duration| duration.iso8601 },
 &quot;binary&quot;   =&gt; Proc.new { |binary| ::Base64.encode64(binary) },
 &quot;yaml&quot;     =&gt; Proc.new { |yaml| yaml.to_yaml }
 } unless defined?(FORMATTING)</td>
@@ -110,6 +111,7 @@ XmlMini.backend = &#39;LibXML&#39;
 &quot;symbol&quot;       =&gt; Proc.new { |symbol|  symbol.to_s.to_sym },
 &quot;date&quot;         =&gt; Proc.new { |date|    ::Date.parse(date) },
 &quot;datetime&quot;     =&gt; Proc.new { |time|    Time.xmlschema(time).utc rescue ::DateTime.parse(time).utc },
+&quot;duration&quot;     =&gt; Proc.new { |duration| Duration.parse(duration) },
 &quot;integer&quot;      =&gt; Proc.new { |integer| integer.to_i },
 &quot;float&quot;        =&gt; Proc.new { |float|   float.to_f },
 &quot;decimal&quot;      =&gt; Proc.new do |number|
@@ -123,6 +125,7 @@ end,
 &quot;string&quot;       =&gt; Proc.new { |string|  string.to_s },
 &quot;yaml&quot;         =&gt; Proc.new { |yaml|    YAML.load(yaml) rescue yaml },
 &quot;base64Binary&quot; =&gt; Proc.new { |bin|     ::Base64.decode64(bin) },
+&quot;hexBinary&quot;    =&gt; Proc.new { |bin|     _parse_hex_binary(bin) },
 &quot;binary&quot;       =&gt; Proc.new { |bin, entity| _parse_binary(bin, entity) },
 &quot;file&quot;         =&gt; Proc.new { |file, entity| _parse_file(file, entity) }
 }</td>
@@ -142,6 +145,7 @@ end,
 &quot;Date&quot;       =&gt; &quot;date&quot;,
 &quot;DateTime&quot;   =&gt; &quot;dateTime&quot;,
 &quot;Time&quot;       =&gt; &quot;dateTime&quot;,
+&quot;ActiveSupport::Duration&quot; =&gt; &quot;duration&quot;,
 &quot;Array&quot;      =&gt; &quot;array&quot;,
 &quot;Hash&quot;       =&gt; &quot;hash&quot;
 }</td>
@@ -196,12 +200,12 @@ end,
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 97
+              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 101
     def backend
       current_thread_backend || @backend
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/xml_mini.rb#L97" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/xml_mini.rb#L101" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -231,14 +235,14 @@ end,
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 101
+              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 105
     def backend=(name)
       backend = name &amp;&amp; cast_backend_name_to_module(name)
       self.current_thread_backend = backend if current_thread_backend
       @backend = backend
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/xml_mini.rb#L101" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/xml_mini.rb#L105" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -268,7 +272,7 @@ end,
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 148
+              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 152
     def rename_key(key, options = {})
       camelize  = options[:camelize]
       dasherize = !options.has_key?(:dasherize) || options[:dasherize]
@@ -279,7 +283,7 @@ end,
       key
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/xml_mini.rb#L148" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/xml_mini.rb#L152" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -309,7 +313,7 @@ end,
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 115
+              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 119
     def to_tag(key, value, options)
       type_name = options.delete(:type)
       merged_options = options.merge(root: key, skip_instruct: true)
@@ -343,7 +347,7 @@ end,
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/xml_mini.rb#L115" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/xml_mini.rb#L119" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -373,7 +377,7 @@ end,
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 107
+              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 111
     def with_backend(name)
       old_backend = current_thread_backend
       self.current_thread_backend = name &amp;&amp; cast_backend_name_to_module(name)
@@ -382,7 +386,7 @@ end,
       self.current_thread_backend = old_backend
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/xml_mini.rb#L107" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/xml_mini.rb#L111" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -230,13 +230,20 @@ end
         <div class="method">
           <h3 id="method-c-attribute">
             
-              attribute(*names)
+              attribute(*names, default: nil)
             
           </h3>
 
           
             <div class="description">
               <p>Declares one or more attributes that will be given both class and instance accessor methods.</p>
+
+<h4 id="method-c-attribute-label-Options">Options</h4>
+<ul><li>
+<p><code>:default</code> - The default value for the attributes. If the value</p>
+</li></ul>
+
+<p>is a proc or lambda, it will be called whenever an instance is constructed. Otherwise, the value will be duplicated with <code>#dup</code>. Default values are re-assigned when the attributes are reset.</p>
             </div>
           
 
@@ -251,8 +258,8 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 104
-      def attribute(*names)
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 112
+      def attribute(*names, default: nil)
         invalid_attribute_names = names.map(&amp;:to_sym) &amp; INVALID_ATTRIBUTE_NAMES
         if invalid_attribute_names.any?
           raise ArgumentError, &quot;Restricted attribute names: #{invalid_attribute_names.join(&quot;, &quot;)}&quot;
@@ -275,25 +282,13 @@ end
           end
         end
 
-        ActiveSupport::CodeGenerator.batch(singleton_class, __FILE__, __LINE__) do |owner|
-          names.each do |name|
-            owner.define_cached_method(name, namespace: :current_attributes_delegation) do |batch|
-              batch &lt;&lt;
-                &quot;def #{name}&quot; &lt;&lt;
-                &quot;instance.#{name}&quot; &lt;&lt;
-                &quot;end&quot;
-            end
-            owner.define_cached_method(&quot;#{name}=&quot;, namespace: :current_attributes_delegation) do |batch|
-              batch &lt;&lt;
-                &quot;def #{name}=(value)&quot; &lt;&lt;
-                &quot;instance.#{name} = value&quot; &lt;&lt;
-                &quot;end&quot;
-            end
-          end
-        end
+        Delegation.generate(singleton_class, names, to: :instance, nilable: false, signature: &quot;&quot;)
+        Delegation.generate(singleton_class, names.map { |n| &quot;#{n}=&quot; }, to: :instance, nilable: false, signature: &quot;value&quot;)
+
+        self.defaults = defaults.merge(names.index_with { default })
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L104" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/current_attributes.rb#L112" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -323,12 +318,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 146
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 142
       def before_reset(*methods, &amp;block)
         set_callback :reset, :before, *methods, &amp;block
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L146" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/current_attributes.rb#L142" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -358,12 +353,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 99
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 100
       def instance
         current_instances[current_instances_key] ||= new
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L99" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/current_attributes.rb#L100" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -393,12 +388,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 197
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 196
     def initialize
-      @attributes = {}
+      @attributes = resolve_defaults
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L197" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/current_attributes.rb#L196" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -432,12 +427,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 151
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 147
       def resets(*methods, &amp;block)
         set_callback :reset, :after, *methods, &amp;block
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L151" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/current_attributes.rb#L147" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -471,14 +466,14 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 220
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 215
     def reset
       run_callbacks :reset do
-        self.attributes = {}
+        self.attributes = resolve_defaults
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L220" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/current_attributes.rb#L215" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -487,7 +482,7 @@ end
         <div class="method">
           <h3 id="method-i-set">
             
-              set(set_attributes)
+              set(attributes, &amp;block)
             
           </h3>
 
@@ -517,16 +512,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 211
-    def set(set_attributes)
-      old_attributes = compute_attributes(set_attributes.keys)
-      assign_attributes(set_attributes)
-      yield
-    ensure
-      assign_attributes(old_attributes)
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 210
+    def set(attributes, &amp;block)
+      with(**attributes, &amp;block)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L211" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/current_attributes.rb#L210" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

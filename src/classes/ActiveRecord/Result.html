@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -33,7 +33,7 @@ layout: default
 
 <p>This class encapsulates a result returned from calling <a href="ConnectionAdapters/DatabaseStatements.html#method-i-exec_query">#exec_query</a> on any database connection adapter. For example:</p>
 
-<pre><code>result = ActiveRecord::Base.connection.exec_query(&#39;SELECT id, title, body FROM posts&#39;)
+<pre><code>result = ActiveRecord::Base.lease_connection.exec_query(&#39;SELECT id, title, body FROM posts&#39;)
 result # =&gt; #&lt;ActiveRecord::Result:0xdeadbeef&gt;
 
 # Get the column names of the result:
@@ -180,7 +180,7 @@ end
         <div class="method">
           <h3 id="method-c-new">
             
-              new(columns, rows, column_types = {})
+              new(columns, rows, column_types = nil)
             
           </h3>
 
@@ -202,14 +202,17 @@ end
               </summary>
 
               <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 49
-    def initialize(columns, rows, column_types = {})
-      @columns      = columns
+    def initialize(columns, rows, column_types = nil)
+      # We freeze the strings to prevent them getting duped when
+      # used as keys in ActiveRecord::Base&#39;s @attributes hash
+      @columns      = columns.each(&amp;:-@).freeze
       @rows         = rows
       @hash_rows    = nil
-      @column_types = column_types
+      @column_types = column_types || EMPTY_HASH
+      @column_indexes = nil
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/result.rb#L49" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/result.rb#L49" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -243,12 +246,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 90
+              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 93
     def [](idx)
       hash_rows[idx]
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/result.rb#L90" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/result.rb#L93" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -280,7 +283,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 70
+              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 73
     def each(&amp;block)
       if block_given?
         hash_rows.each(&amp;block)
@@ -289,7 +292,7 @@ end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/result.rb#L70" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/result.rb#L73" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -319,12 +322,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 79
+              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 82
     def empty?
       rows.empty?
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/result.rb#L79" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/result.rb#L82" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -354,12 +357,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 57
+              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 60
     def includes_column?(name)
       @columns.include? name
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/result.rb#L57" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/result.rb#L60" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -389,15 +392,15 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 133
+              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 136
     def initialize_copy(other)
-      @columns      = columns.dup
+      @columns      = columns
       @rows         = rows.dup
       @column_types = column_types.dup
       @hash_rows    = nil
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/result.rb#L133" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/result.rb#L136" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -427,12 +430,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 95
+              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 98
     def last(n = nil)
       n ? hash_rows.last(n) : hash_rows.last
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/result.rb#L95" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/result.rb#L98" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -462,12 +465,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 62
+              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 65
     def length
       @rows.length
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/result.rb#L62" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/result.rb#L65" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -526,12 +529,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 84
+              <pre><code class="ruby"># File activerecord/lib/active_record/result.rb, line 87
     def to_ary
       hash_rows
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/result.rb#L84" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/result.rb#L87" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

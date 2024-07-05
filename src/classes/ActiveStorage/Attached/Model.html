@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -67,14 +67,6 @@ layout: default
         </li>
       
         <li>
-          <a href="#method-i-validate_global_service_configuration">validate_global_service_configuration</a>
-        </li>
-      
-        <li>
-          <a href="#method-i-validate_service_configuration">validate_service_configuration</a>
-        </li>
-      
-        <li>
           <a href="#method-i-with_attached_-2A">with_attached_*</a>
         </li>
       
@@ -119,7 +111,7 @@ layout: default
 
           
           
-            <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/attached/model.rb#L13" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activestorage/lib/active_storage/attached/model.rb#L13" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -145,7 +137,7 @@ layout: default
 
           
           
-            <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/attached/model.rb#L20" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activestorage/lib/active_storage/attached/model.rb#L20" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -171,7 +163,7 @@ layout: default
 
           
           
-            <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/attached/model.rb#L27" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activestorage/lib/active_storage/attached/model.rb#L27" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -197,7 +189,7 @@ layout: default
 
           
           
-            <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/attached/model.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activestorage/lib/active_storage/attached/model.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -228,12 +220,19 @@ end
 
 <p>The system has been designed to having you go through the <a href="Many.html"><code>ActiveStorage::Attached::Many</code></a> proxy that provides the dynamic proxy to the associations and factory methods, like <code>#attach</code>.</p>
 
-<p>If the <code>:dependent</code> option isn’t set, all the attachments will be purged (i.e. destroyed) whenever the record is destroyed.</p>
+<p>The <code>:dependent</code> option defaults to <code>:purge_later</code>. This means the attachments will be purged (i.e. destroyed) in the background whenever the record is destroyed. If an ActiveJob::Backend queue adapter is not set in the application set it to <code>purge</code> instead.</p>
 
-<p>If you need the attachment to use a service which differs from the globally configured one, pass the <code>:service</code> option. For instance:</p>
+<p>If you need the attachment to use a service which differs from the globally configured one, pass the <code>:service</code> option. For example:</p>
 
 <pre><code>class Gallery &lt; ActiveRecord::Base
   has_many_attached :photos, service: :s3
+end
+</code></pre>
+
+<p><code>:service</code> can also be specified as a proc, and it will be called with the model instance:</p>
+
+<pre><code>class Gallery &lt; ActiveRecord::Base
+  has_many_attached :photos, service: -&gt;(gallery) { gallery.personal? ? :personal_s3 : :s3 }
 end
 </code></pre>
 
@@ -243,6 +242,8 @@ end
   has_many_attached :photos, strict_loading: true
 end
 </code></pre>
+
+<p>Note: Active Storage relies on polymorphic associations, which in turn store class names in the database. When renaming classes that use <code>has_many</code>, make sure to also update the class names in the <code>active_storage_attachments.record_type</code> polymorphic type column of the corresponding rows.</p>
             </div>
           
 
@@ -257,9 +258,9 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activestorage/lib/active_storage/attached/model.rb, line 182
+              <pre><code class="ruby"># File activestorage/lib/active_storage/attached/model.rb, line 206
       def has_many_attached(name, dependent: :purge_later, service: nil, strict_loading: false)
-        validate_service_configuration(name, service)
+        ActiveStorage::Blob.validate_service_configuration(service, self, name) unless service.is_a?(Proc)
 
         generated_association_methods.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
           # frozen_string_literal: true
@@ -309,7 +310,7 @@ end
         ActiveRecord::Reflection.add_attachment_reflection(self, name, reflection)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/attached/model.rb#L182" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activestorage/lib/active_storage/attached/model.rb#L206" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -342,12 +343,19 @@ end
 
 <p>The system has been designed to having you go through the <a href="One.html"><code>ActiveStorage::Attached::One</code></a> proxy that provides the dynamic proxy to the associations and factory methods, like <code>attach</code>.</p>
 
-<p>If the <code>:dependent</code> option isn’t set, the attachment will be purged (i.e. destroyed) whenever the record is destroyed.</p>
+<p>The <code>:dependent</code> option defaults to <code>:purge_later</code>. This means the attachment will be purged (i.e. destroyed) in the background whenever the record is destroyed. If an ActiveJob::Backend queue adapter is not set in the application set it to <code>purge</code> instead.</p>
 
-<p>If you need the attachment to use a service which differs from the globally configured one, pass the <code>:service</code> option. For instance:</p>
+<p>If you need the attachment to use a service which differs from the globally configured one, pass the <code>:service</code> option. For example:</p>
 
 <pre><code>class User &lt; ActiveRecord::Base
   has_one_attached :avatar, service: :s3
+end
+</code></pre>
+
+<p><code>:service</code> can also be specified as a proc, and it will be called with the model instance:</p>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  has_one_attached :avatar, service: -&gt;(user) { user.in_europe_region? ? :s3_europe : :s3_usa }
 end
 </code></pre>
 
@@ -357,6 +365,8 @@ end
   has_one_attached :avatar, strict_loading: true
 end
 </code></pre>
+
+<p>Note: Active Storage relies on polymorphic associations, which in turn store class names in the database. When renaming classes that use <code>has_one_attached</code>, make sure to also update the class names in the <code>active_storage_attachments.record_type</code> polymorphic type column of the corresponding rows.</p>
             </div>
           
 
@@ -371,9 +381,9 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activestorage/lib/active_storage/attached/model.rb, line 94
+              <pre><code class="ruby"># File activestorage/lib/active_storage/attached/model.rb, line 106
       def has_one_attached(name, dependent: :purge_later, service: nil, strict_loading: false)
-        validate_service_configuration(name, service)
+        ActiveStorage::Blob.validate_service_configuration(service, self, name) unless service.is_a?(Proc)
 
         generated_association_methods.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
           # frozen_string_literal: true
@@ -421,85 +431,7 @@ end
         ActiveRecord::Reflection.add_attachment_reflection(self, name, reflection)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/attached/model.rb#L94" target="_blank" class="github_url">🔎 See on GitHub</a>
-              
-            </details>
-          
-        </div>
-        
-        <div class="method">
-          <h3 id="method-i-validate_global_service_configuration">
-            
-              validate_global_service_configuration()
-            
-          </h3>
-
-          
-            <div class="description">
-              
-            </div>
-          
-
-          
-
-          
-
-          
-          
-            <details class="method__source">
-              <summary>
-                <span class="label">📝 Source code</span>
-              </summary>
-
-              <pre><code class="ruby"># File activestorage/lib/active_storage/attached/model.rb, line 244
-        def validate_global_service_configuration
-          if connected? &amp;&amp; ActiveStorage::Blob.table_exists? &amp;&amp; Rails.configuration.active_storage.service.nil?
-            raise RuntimeError, &quot;Missing Active Storage service name. Specify Active Storage service name for config.active_storage.service in config/environments/#{Rails.env}.rb&quot;
-          end
-        end</code></pre>
-              
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/attached/model.rb#L244" target="_blank" class="github_url">🔎 See on GitHub</a>
-              
-            </details>
-          
-        </div>
-        
-        <div class="method">
-          <h3 id="method-i-validate_service_configuration">
-            
-              validate_service_configuration(association_name, service)
-            
-          </h3>
-
-          
-            <div class="description">
-              
-            </div>
-          
-
-          
-
-          
-
-          
-          
-            <details class="method__source">
-              <summary>
-                <span class="label">📝 Source code</span>
-              </summary>
-
-              <pre><code class="ruby"># File activestorage/lib/active_storage/attached/model.rb, line 234
-        def validate_service_configuration(association_name, service)
-          if service.present?
-            ActiveStorage::Blob.services.fetch(service) do
-              raise ArgumentError, &quot;Cannot configure service :#{service} for #{name}##{association_name}&quot;
-            end
-          else
-            validate_global_service_configuration
-          end
-        end</code></pre>
-              
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/attached/model.rb#L234" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activestorage/lib/active_storage/attached/model.rb#L106" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -563,14 +495,22 @@ end
       # The system has been designed to having you go through the ActiveStorage::Attached::One
       # proxy that provides the dynamic proxy to the associations and factory methods, like +attach+.
       #
-      # If the +:dependent+ option isn&#39;t set, the attachment will be purged
-      # (i.e. destroyed) whenever the record is destroyed.
+      # The +:dependent+ option defaults to +:purge_later+. This means the attachment will be
+      # purged (i.e. destroyed) in the background whenever the record is destroyed.
+      # If an ActiveJob::Backend queue adapter is not set in the application set it to
+      # +purge+ instead.
       #
       # If you need the attachment to use a service which differs from the globally configured one,
-      # pass the +:service+ option. For instance:
+      # pass the +:service+ option. For example:
       #
       #   class User &lt; ActiveRecord::Base
       #     has_one_attached :avatar, service: :s3
+      #   end
+      #
+      # +:service+ can also be specified as a proc, and it will be called with the model instance:
+      #
+      #   class User &lt; ActiveRecord::Base
+      #     has_one_attached :avatar, service: -&gt;(user) { user.in_europe_region? ? :s3_europe : :s3_usa }
       #   end
       #
       # If you need to enable +strict_loading+ to prevent lazy loading of attachment,
@@ -580,8 +520,12 @@ end
       #     has_one_attached :avatar, strict_loading: true
       #   end
       #
+      # Note: Active Storage relies on polymorphic associations, which in turn store class names in the database.
+      # When renaming classes that use &lt;tt&gt;has_one_attached&lt;/tt&gt;, make sure to also update the class names in the
+      # &lt;tt&gt;active_storage_attachments.record_type&lt;/tt&gt; polymorphic type column of
+      # the corresponding rows.
       def has_one_attached(name, dependent: :purge_later, service: nil, strict_loading: false)
-        validate_service_configuration(name, service)
+        ActiveStorage::Blob.validate_service_configuration(service, self, name) unless service.is_a?(Proc)
 
         generated_association_methods.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
           # frozen_string_literal: true
@@ -651,14 +595,22 @@ end
       # The system has been designed to having you go through the ActiveStorage::Attached::Many
       # proxy that provides the dynamic proxy to the associations and factory methods, like +#attach+.
       #
-      # If the +:dependent+ option isn&#39;t set, all the attachments will be purged
-      # (i.e. destroyed) whenever the record is destroyed.
+      # The +:dependent+ option defaults to +:purge_later+. This means the attachments will be
+      # purged (i.e. destroyed) in the background whenever the record is destroyed.
+      # If an ActiveJob::Backend queue adapter is not set in the application set it to
+      # +purge+ instead.
       #
       # If you need the attachment to use a service which differs from the globally configured one,
-      # pass the +:service+ option. For instance:
+      # pass the +:service+ option. For example:
       #
       #   class Gallery &lt; ActiveRecord::Base
       #     has_many_attached :photos, service: :s3
+      #   end
+      #
+      # +:service+ can also be specified as a proc, and it will be called with the model instance:
+      #
+      #   class Gallery &lt; ActiveRecord::Base
+      #     has_many_attached :photos, service: -&gt;(gallery) { gallery.personal? ? :personal_s3 : :s3 }
       #   end
       #
       # If you need to enable +strict_loading+ to prevent lazy loading of attachments,
@@ -668,8 +620,12 @@ end
       #     has_many_attached :photos, strict_loading: true
       #   end
       #
+      # Note: Active Storage relies on polymorphic associations, which in turn store class names in the database.
+      # When renaming classes that use &lt;tt&gt;has_many&lt;/tt&gt;, make sure to also update the class names in the
+      # &lt;tt&gt;active_storage_attachments.record_type&lt;/tt&gt; polymorphic type column of
+      # the corresponding rows.
       def has_many_attached(name, dependent: :purge_later, service: nil, strict_loading: false)
-        validate_service_configuration(name, service)
+        ActiveStorage::Blob.validate_service_configuration(service, self, name) unless service.is_a?(Proc)
 
         generated_association_methods.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
           # frozen_string_literal: true
@@ -718,26 +674,9 @@ end
         yield reflection if block_given?
         ActiveRecord::Reflection.add_attachment_reflection(self, name, reflection)
       end
-
-      private
-        def validate_service_configuration(association_name, service)
-          if service.present?
-            ActiveStorage::Blob.services.fetch(service) do
-              raise ArgumentError, &quot;Cannot configure service :#{service} for #{name}##{association_name}&quot;
-            end
-          else
-            validate_global_service_configuration
-          end
-        end
-
-        def validate_global_service_configuration
-          if connected? &amp;&amp; ActiveStorage::Blob.table_exists? &amp;&amp; Rails.configuration.active_storage.service.nil?
-            raise RuntimeError, &quot;Missing Active Storage service name. Specify Active Storage service name for config.active_storage.service in config/environments/#{Rails.env}.rb&quot;
-          end
-        end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/attached/model.rb#L54" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activestorage/lib/active_storage/attached/model.rb#L54" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

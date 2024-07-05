@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -984,10 +984,14 @@ belongs_to :level, -&gt;(game) { where(&quot;game_level &gt; ?&quot;, game.curre
 <p>If set to <code>:destroy</code>, the associated object is destroyed when this object is. If set to <code>:delete</code>, the associated object is deleted <strong>without</strong> calling its destroy method. If set to <code>:destroy_async</code>, the associated object is scheduled to be destroyed in a background job. This option should not be specified when <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a> is used in conjunction with a <a href="ClassMethods.html#method-i-has_many"><code>has_many</code></a> relationship on another class because of the potential to leave orphaned records behind.</p>
 </dd><dt><code>:counter_cache</code>
 <dd>
-<p>Caches the number of belonging objects on the associate class through the use of <a href="../CounterCache/ClassMethods.html#method-i-increment_counter"><code>CounterCache::ClassMethods#increment_counter</code></a> and <a href="../CounterCache/ClassMethods.html#method-i-decrement_counter"><code>CounterCache::ClassMethods#decrement_counter</code></a>. The counter cache is incremented when an object of this class is created and decremented when it’s destroyed. This requires that a column named <code>#{table_name}_count</code> (such as <code>comments_count</code> for a belonging Comment class) is used on the associate class (such as a Post class) - that is the migration for <code>#{table_name}_count</code> is created on the associate class (such that <code>Post.comments_count</code> will return the count cached, see note below). You can also specify a custom counter cache column by providing a column name instead of a <code>true</code>/<code>false</code> value to this option (e.g., <code>counter_cache: :my_custom_counter</code>.) Note: Specifying a counter cache will add it to that model’s list of readonly attributes using <code>attr_readonly</code>.</p>
+<p>Caches the number of belonging objects on the associate class through the use of <a href="../CounterCache/ClassMethods.html#method-i-increment_counter"><code>CounterCache::ClassMethods#increment_counter</code></a> and <a href="../CounterCache/ClassMethods.html#method-i-decrement_counter"><code>CounterCache::ClassMethods#decrement_counter</code></a>. The counter cache is incremented when an object of this class is created and decremented when it’s destroyed. This requires that a column named <code>#{table_name}_count</code> (such as <code>comments_count</code> for a belonging Comment class) is used on the associate class (such as a Post class) - that is the migration for <code>#{table_name}_count</code> is created on the associate class (such that <code>Post.comments_count</code> will return the count cached). You can also specify a custom counter cache column by providing a column name instead of a <code>true</code>/<code>false</code> value to this option (e.g., <code>counter_cache: :my_custom_counter</code>.)</p>
+
+<p>Starting to use counter caches on existing large tables can be troublesome, because the column values must be backfilled separately of the column addition (to not lock the table for too long) and before the use of <code>:counter_cache</code> (otherwise methods like <code>size</code>/<code>any?</code>/etc, which use counter caches internally, can produce incorrect results). To safely backfill the values while keeping counter cache columns updated with the child records creation/removal and to avoid the mentioned methods use the possibly incorrect counter cache column values and always get the results from the database, use <code>counter_cache: { active: false }</code>. If you also need to specify a custom column name, use <code>counter_cache: { active: false, column: :my_custom_counter }</code>.</p>
+
+<p>Note: If you’ve enabled the counter cache, then you may want to add the counter cache attribute to the <code>attr_readonly</code> list in the associated classes (e.g. <code>class Post; attr_readonly :comments_count; end</code>).</p>
 </dd><dt><code>:polymorphic</code>
 <dd>
-<p>Specify this association is a polymorphic association by passing <code>true</code>. Note: If you’ve enabled the counter cache, then you may want to add the counter cache attribute to the <code>attr_readonly</code> list in the associated classes (e.g. <code>class Post; attr_readonly :comments_count; end</code>).</p>
+<p>Specify this association is a polymorphic association by passing <code>true</code>. Note: Since polymorphic associations rely on storing class names in the database, make sure to update the class names in the <code>*_type</code> polymorphic type column of the corresponding rows.</p>
 </dd><dt><code>:validate</code>
 <dd>
 <p>When set to <code>true</code>, validates new objects added to association when saving the parent object. <code>false</code> by default. If you want to ensure associated objects are revalidated on every update, use <code>validates_associated</code>.</p>
@@ -1037,7 +1041,7 @@ belongs_to :company, touch: :employees_last_updated_at
 belongs_to :user, optional: true
 belongs_to :account, default: -&gt; { company.account }
 belongs_to :account, strict_loading: true
-belong_to  :note, query_constraints: [:organization_id, :note_id]
+belongs_to :note, query_constraints: [:organization_id, :note_id]
 </code></pre>
             </div>
           
@@ -1053,13 +1057,13 @@ belong_to  :note, query_constraints: [:organization_id, :note_id]
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1886
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1909
         def belongs_to(name, scope = nil, **options)
           reflection = Builder::BelongsTo.build(self, name, scope, options)
           Reflection.add_reflection self, name, reflection
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/associations.rb#L1886" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/associations.rb#L1909" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1078,7 +1082,7 @@ belong_to  :note, query_constraints: [:organization_id, :note_id]
 
 <p>The join table should not have a primary key or a model associated with it. You must manually generate the join table with a migration such as this:</p>
 
-<pre><code>class CreateDevelopersProjectsJoinTable &lt; ActiveRecord::Migration[7.1]
+<pre><code>class CreateDevelopersProjectsJoinTable &lt; ActiveRecord::Migration[7.2]
   def change
     create_join_table :developers, :projects
   end
@@ -1245,7 +1249,7 @@ has_and_belongs_to_many :categories, strict_loading: true
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 2067
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 2090
         def has_and_belongs_to_many(name, scope = nil, **options, &amp;extension)
           habtm_reflection = ActiveRecord::Reflection::HasAndBelongsToManyReflection.new(name, scope, options, self)
 
@@ -1281,10 +1285,10 @@ has_and_belongs_to_many :categories, strict_loading: true
           end
 
           has_many name, scope, **hm_options, &amp;extension
-          _reflections[name.to_s].parent_reflection = habtm_reflection
+          _reflections[name].parent_reflection = habtm_reflection
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/associations.rb#L2067" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/associations.rb#L2090" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1495,6 +1499,9 @@ end
 </dd><dt><code>:query_constraints</code>
 <dd>
 <p>Serves as a composite foreign key. Defines the list of columns to be used to query the associated object. This is an optional option. By default <a href="../../Rails.html"><code>Rails</code></a> will attempt to derive the value automatically. When the value is set the <a href="../../Array.html"><code>Array</code></a> size must match associated model’s primary key or <code>query_constraints</code> size.</p>
+</dd><dt>:index_errors
+<dd>
+<p>Allows differentiation of multiple validation errors from the association records, by including an index in the error attribute name, e.g. ‘<a href="2">roles</a>.level`. When set to <code>true</code>, the index is based on association order, i.e. database order, with yet to be persisted new records placed at the end. When set to <code>:nested_attributes_order</code>, the index is based on the record order received by nested attributes setter, when accepts_nested_attributes_for is used.</p>
 </dd></dl>
 
 <p>Option examples:</p>
@@ -1510,6 +1517,7 @@ has_many :subscribers, through: :subscriptions, source: :user
 has_many :subscribers, through: :subscriptions, disable_joins: true
 has_many :comments, strict_loading: true
 has_many :comments, query_constraints: [:blog_id, :post_id]
+has_many :comments, index_errors: :nested_attributes_order
 </code></pre>
             </div>
           
@@ -1525,13 +1533,13 @@ has_many :comments, query_constraints: [:blog_id, :post_id]
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1522
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1530
         def has_many(name, scope = nil, **options, &amp;extension)
           reflection = Builder::HasMany.build(self, name, scope, options, &amp;extension)
           Reflection.add_reflection self, name, reflection
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/associations.rb#L1522" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/associations.rb#L1530" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1669,7 +1677,9 @@ has_one :latest_post, -&gt;(blog) { where(&quot;created_at &gt; ?&quot;, blog.en
 <p>When set to <code>true</code>, validates new objects added to association when saving the parent object. <code>false</code> by default. If you want to ensure associated objects are revalidated on every update, use <code>validates_associated</code>.</p>
 </dd><dt><code>:autosave</code>
 <dd>
-<p>If true, always save the associated object or destroy it if marked for destruction, when saving the parent object. If false, never save or destroy the associated object. By default, only save the associated object if it’s a new record.</p>
+<p>If <code>true</code>, always saves the associated object or destroys it if marked for destruction, when saving the parent object. If <code>false</code>, never save or destroy the associated object.</p>
+
+<p>By default, only saves the associated object if it’s a new record. Setting this option to <code>true</code> also enables validations on the associated object unless explicitly disabled with <code>validate: false</code>. This is because saving an object with invalid associated objects would fail, so any associated objects will go through validation checks.</p>
 
 <p>Note that <a href="../NestedAttributes/ClassMethods.html#method-i-accepts_nested_attributes_for"><code>NestedAttributes::ClassMethods#accepts_nested_attributes_for</code></a> sets <code>:autosave</code> to <code>true</code>.</p>
 </dd><dt><code>:touch</code>
@@ -1722,13 +1732,13 @@ has_one :employment_record_book, query_constraints: [:organization_id, :employee
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1708
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1721
         def has_one(name, scope = nil, **options)
           reflection = Builder::HasOne.build(self, name, scope, options)
           Reflection.add_reflection self, name, reflection
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/associations.rb#L1708" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/associations.rb#L1721" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
