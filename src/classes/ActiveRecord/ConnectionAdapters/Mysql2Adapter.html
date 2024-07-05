@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -51,6 +51,10 @@ layout: default
         </li>
       
         <li>
+          <a href="#method-i-connected-3F">connected?</a>
+        </li>
+      
+        <li>
           <a href="#method-i-disconnect-21">disconnect!</a>
         </li>
       
@@ -64,10 +68,6 @@ layout: default
       
         <li>
           <a href="#method-c-new_client">new_client</a>
-        </li>
-      
-        <li>
-          <a href="#method-i-quote_string">quote_string</a>
         </li>
       
         <li>
@@ -205,7 +205,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 66
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 55
       def initialize(...)
         super
 
@@ -220,7 +220,7 @@ layout: default
         @connection_parameters ||= @config
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L66" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L55" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -250,7 +250,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 35
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 24
         def new_client(config)
           ::Mysql2::Client.new(config)
         rescue ::Mysql2::Error =&gt; error
@@ -266,7 +266,7 @@ layout: default
           end
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L35" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L24" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -300,12 +300,47 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 133
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 115
       def active?
-        !!@raw_connection&amp;.ping
+        connected? &amp;&amp; @lock.synchronize { @raw_connection&amp;.ping } || false
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L133" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L115" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-connected-3F">
+            
+              connected?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 111
+      def connected?
+        !(@raw_connection.nil? || @raw_connection.closed?)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L111" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -335,14 +370,16 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 141
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 123
       def disconnect!
-        super
-        @raw_connection&amp;.close
-        @raw_connection = nil
+        @lock.synchronize do
+          super
+          @raw_connection&amp;.close
+          @raw_connection = nil
+        end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L141" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L123" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -372,49 +409,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 114
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 103
       def error_number(exception)
         exception.error_number if exception.respond_to?(:error_number)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L114" target="_blank" class="github_url">🔎 See on GitHub</a>
-              
-            </details>
-          
-        </div>
-        
-        <div class="method">
-          <h3 id="method-i-quote_string">
-            
-              quote_string(string)
-            
-          </h3>
-
-          
-            <div class="description">
-              <p>Quotes strings for use in SQL input.</p>
-            </div>
-          
-
-          
-
-          
-
-          
-          
-            <details class="method__source">
-              <summary>
-                <span class="label">📝 Source code</span>
-              </summary>
-
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 123
-      def quote_string(string)
-        with_raw_connection(allow_retry: true, materialize_transactions: false) do |connection|
-          connection.escape(string)
-        end
-      end</code></pre>
-              
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L123" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L103" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -444,12 +444,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 96
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 85
       def savepoint_errors_invalidate_transactions?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L96" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L85" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -479,12 +479,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 84
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 73
       def supports_comments?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L84" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L73" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -514,12 +514,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 88
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 77
       def supports_comments_in_create?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L88" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L77" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -549,12 +549,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 80
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 69
       def supports_json?
         !mariadb? &amp;&amp; database_version &gt;= &quot;5.7.8&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L80" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L69" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -584,12 +584,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 100
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 89
       def supports_lazy_transactions?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L100" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L89" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -619,12 +619,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 92
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb, line 81
       def supports_savepoints?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L92" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/mysql2_adapter.rb#L81" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

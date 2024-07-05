@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -29,13 +29,13 @@ layout: default
   
     <div class="description">
       
-<h1 id="class-ActionDispatch::ShowExceptions-label-Action+Dispatch+ShowExceptions">Action Dispatch ShowExceptions</h1>
+<h1 id="class-ActionDispatch::ShowExceptions-label-Action+Dispatch+ShowExceptions">Action Dispatch <a href="ShowExceptions.html"><code>ShowExceptions</code></a></h1>
 
 <p>This middleware rescues any exception returned by the application and calls an exceptions app that will wrap it in a format for the end user.</p>
 
 <p>The exceptions app should be passed as a parameter on initialization of <code>ShowExceptions</code>. Every time there is an exception, <code>ShowExceptions</code> will store the exception in <code>env[&quot;action_dispatch.exception&quot;]</code>, rewrite the <code>PATH_INFO</code> to the exception status code, and call the Rack app.</p>
 
-<p>In Rails applications, the exceptions app can be configured with <code>config.exceptions_app</code>, which defaults to <a href="PublicExceptions.html"><code>ActionDispatch::PublicExceptions</code></a>.</p>
+<p>In <a href="../Rails.html"><code>Rails</code></a> applications, the exceptions app can be configured with <code>config.exceptions_app</code>, which defaults to <a href="PublicExceptions.html"><code>ActionDispatch::PublicExceptions</code></a>.</p>
 
 <p>If the application returns a response with the <code>X-Cascade</code> header set to <code>&quot;pass&quot;</code>, this middleware will send an empty response as a result with the correct status code. If any exception happens inside the exceptions app, this middleware catches the exceptions and returns a failsafe response.</p>
 
@@ -104,13 +104,13 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/show_exceptions.rb, line 25
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/show_exceptions.rb, line 26
     def initialize(app, exceptions_app)
       @app = app
       @exceptions_app = exceptions_app
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/middleware/show_exceptions.rb#L25" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/actionpack/lib/action_dispatch/middleware/show_exceptions.rb#L26" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -144,21 +144,24 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/show_exceptions.rb, line 30
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/show_exceptions.rb, line 31
     def call(env)
       @app.call(env)
     rescue Exception =&gt; exception
       request = ActionDispatch::Request.new env
       backtrace_cleaner = request.get_header(&quot;action_dispatch.backtrace_cleaner&quot;)
       wrapper = ExceptionWrapper.new(backtrace_cleaner, exception)
+      request.set_header &quot;action_dispatch.exception&quot;, wrapper.unwrapped_exception
+      request.set_header &quot;action_dispatch.report_exception&quot;, !wrapper.rescue_response?
+
       if wrapper.show?(request)
-        render_exception(request, wrapper)
+        render_exception(request.dup, wrapper)
       else
         raise exception
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/middleware/show_exceptions.rb#L30" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/actionpack/lib/action_dispatch/middleware/show_exceptions.rb#L31" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

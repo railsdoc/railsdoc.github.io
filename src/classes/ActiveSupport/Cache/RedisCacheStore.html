@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -253,7 +253,7 @@ cache.exist?(&#39;bar&#39;) # =&gt; false
         super(universal_options)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/redis_cache_store.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/cache/redis_cache_store.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -288,7 +288,7 @@ cache.exist?(&#39;bar&#39;) # =&gt; false
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/redis_cache_store.rb#L63" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/cache/redis_cache_store.rb#L63" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -324,12 +324,12 @@ cache.exist?(&#39;bar&#39;) # =&gt; false
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 276
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 279
       def cleanup(options = nil)
         super
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/redis_cache_store.rb#L276" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/cache/redis_cache_store.rb#L279" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -361,7 +361,7 @@ cache.exist?(&#39;bar&#39;) # =&gt; false
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 284
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 287
       def clear(options = nil)
         failsafe :clear do
           if namespace = merged_options(options)[:namespace]
@@ -372,7 +372,7 @@ cache.exist?(&#39;bar&#39;) # =&gt; false
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/redis_cache_store.rb#L284" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/cache/redis_cache_store.rb#L287" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -417,18 +417,19 @@ cache.decrement(&quot;baz&quot;) # =&gt; 4
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 262
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 264
       def decrement(name, amount = 1, options = nil)
-        instrument :decrement, name, amount: amount do
+        options = merged_options(options)
+        key = normalize_key(name, options)
+
+        instrument :decrement, key, amount: amount do
           failsafe :decrement do
-            options = merged_options(options)
-            key = normalize_key(name, options)
             change_counter(key, -amount, options)
           end
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/redis_cache_store.rb#L262" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/cache/redis_cache_store.rb#L264" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -475,12 +476,13 @@ h[a-b]llo matches hallo and hbllo
 
               <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 198
       def delete_matched(matcher, options = nil)
-        instrument :delete_matched, matcher do
-          unless String === matcher
-            raise ArgumentError, &quot;Only Redis glob strings are supported: #{matcher.inspect}&quot;
-          end
+        unless String === matcher
+          raise ArgumentError, &quot;Only Redis glob strings are supported: #{matcher.inspect}&quot;
+        end
+        pattern = namespace_key(matcher, options)
+
+        instrument :delete_matched, pattern do
           redis.then do |c|
-            pattern = namespace_key(matcher, options)
             cursor = &quot;0&quot;
             # Fetch keys in batches using SCAN to avoid blocking the Redis server.
             nodes = c.respond_to?(:nodes) ? c.nodes : [c]
@@ -495,7 +497,7 @@ h[a-b]llo matches hallo and hbllo
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/redis_cache_store.rb#L198" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/cache/redis_cache_store.rb#L198" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -541,18 +543,19 @@ cache.increment(&quot;baz&quot;) # =&gt; 6
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 236
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 237
       def increment(name, amount = 1, options = nil)
-        instrument :increment, name, amount: amount do
+        options = merged_options(options)
+        key = normalize_key(name, options)
+
+        instrument :increment, key, amount: amount do
           failsafe :increment do
-            options = merged_options(options)
-            key = normalize_key(name, options)
             change_counter(key, amount, options)
           end
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/redis_cache_store.rb#L236" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/cache/redis_cache_store.rb#L237" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -587,7 +590,7 @@ cache.increment(&quot;baz&quot;) # =&gt; 6
         &quot;#&lt;#{self.class} options=#{options.inspect} redis=#{redis.inspect}&gt;&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/redis_cache_store.rb#L164" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/cache/redis_cache_store.rb#L164" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -631,7 +634,7 @@ cache.increment(&quot;baz&quot;) # =&gt; 6
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/redis_cache_store.rb#L172" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/cache/redis_cache_store.rb#L172" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -661,12 +664,12 @@ cache.increment(&quot;baz&quot;) # =&gt; 6
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 295
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 298
       def stats
         redis.then { |c| c.info }
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/redis_cache_store.rb#L295" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/cache/redis_cache_store.rb#L298" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

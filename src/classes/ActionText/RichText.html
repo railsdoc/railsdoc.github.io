@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -29,7 +29,7 @@ layout: default
   
     <div class="description">
       
-<h1 id="class-ActionText::RichText-label-Action+Text+RichText">Action Text RichText</h1>
+<h1 id="class-ActionText::RichText-label-Action+Text+RichText">Action Text <a href="RichText.html"><code>RichText</code></a></h1>
 
 <p>The <a href="RichText.html"><code>RichText</code></a> record holds the content produced by the Trix editor in a serialized <code>body</code> attribute. It also holds all the references to the embedded files, which are stored using Active Storage. This record is then associated with the Active Record model the application desires to have rich text content using the <code>has_rich_text</code> class method.</p>
 
@@ -41,6 +41,11 @@ message = Message.create!(content: &quot;&lt;h1&gt;Funny times!&lt;/h1&gt;&quot;
 message.content #=&gt; #&lt;ActionText::RichText....
 message.content.to_s # =&gt; &quot;&lt;h1&gt;Funny times!&lt;/h1&gt;&quot;
 message.content.to_plain_text # =&gt; &quot;Funny times!&quot;
+
+message = Message.create!(content: &quot;&lt;div onclick=&#39;action()&#39;&gt;safe&lt;script&gt;unsafe&lt;/script&gt;&lt;/div&gt;&quot;)
+message.content #=&gt; #&lt;ActionText::RichText....
+message.content.to_s # =&gt; &quot;&lt;div&gt;safeunsafe&lt;/div&gt;&quot;
+message.content.to_plain_text # =&gt; &quot;safeunsafe&quot;
 </code></pre>
 
     </div>
@@ -59,7 +64,19 @@ message.content.to_plain_text # =&gt; &quot;Funny times!&quot;
     <ul>
       
         <li>
+          <a href="#method-i-embeds">embeds</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-record">record</a>
+        </li>
+      
+        <li>
           <a href="#method-i-to_plain_text">to_plain_text</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_s">to_s</a>
         </li>
       
         <li>
@@ -86,6 +103,74 @@ message.content.to_plain_text # =&gt; &quot;Funny times!&quot;
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
         <div class="method">
+          <h3 id="method-i-embeds">
+            
+              embeds
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the <code>ActiveStorage::Blob</code>s of the embedded files.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/app/models/action_text/rich_text.rb, line 52
+    has_many_attached :embeds
+</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/actiontext/app/models/action_text/rich_text.rb#L52" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-record">
+            
+              record
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the associated record.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/app/models/action_text/rich_text.rb, line 46
+    belongs_to :record, polymorphic: true, touch: true
+</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/actiontext/app/models/action_text/rich_text.rb#L46" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
           <h3 id="method-i-to_plain_text">
             
               to_plain_text()
@@ -94,10 +179,16 @@ message.content.to_plain_text # =&gt; &quot;Funny times!&quot;
 
           
             <div class="description">
-              <p>Returns the <code>body</code> attribute as plain text with all HTML tags removed.</p>
+              <p>Returns a plain-text version of the markup contained by the <code>body</code> attribute, with tags removed but HTML entities encoded.</p>
 
 <pre><code>message = Message.create!(content: &quot;&lt;h1&gt;Funny times!&lt;/h1&gt;&quot;)
 message.content.to_plain_text # =&gt; &quot;Funny times!&quot;
+</code></pre>
+
+<p>NOTE: that the returned string is not HTML safe and should not be rendered in browsers.</p>
+
+<pre><code>message = Message.create!(content: &quot;&amp;lt;script&amp;gt;alert()&amp;lt;/script&amp;gt;&quot;)
+message.content.to_plain_text # =&gt; &quot;&lt;script&gt;alert()&lt;/script&gt;&quot;
 </code></pre>
             </div>
           
@@ -113,12 +204,53 @@ message.content.to_plain_text # =&gt; &quot;Funny times!&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actiontext/app/models/action_text/rich_text.rb, line 37
+              <pre><code class="ruby"># File actiontext/app/models/action_text/rich_text.rb, line 69
     def to_plain_text
       body&amp;.to_plain_text.to_s
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actiontext/app/models/action_text/rich_text.rb#L37" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/actiontext/app/models/action_text/rich_text.rb#L69" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_s">
+            
+              to_s
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Safely transforms <a href="RichText.html"><code>RichText</code></a> into an HTML <a href="../String.html"><code>String</code></a>.</p>
+
+<pre><code>message = Message.create!(content: &quot;&lt;h1&gt;Funny times!&lt;/h1&gt;&quot;)
+message.content.to_s # =&gt; &quot;&lt;h1&gt;Funny times!&lt;/h1&gt;&quot;
+
+message = Message.create!(content: &quot;&lt;div onclick=&#39;action()&#39;&gt;safe&lt;script&gt;unsafe&lt;/script&gt;&lt;/div&gt;&quot;)
+message.content.to_s # =&gt; &quot;&lt;div&gt;safeunsafe&lt;/div&gt;&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/app/models/action_text/rich_text.rb, line 39
+    serialize :body, coder: ActionText::Content
+</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/actiontext/app/models/action_text/rich_text.rb#L39" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -159,12 +291,12 @@ message.content.to_trix_html # =&gt;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actiontext/app/models/action_text/rich_text.rb, line 53
+              <pre><code class="ruby"># File actiontext/app/models/action_text/rich_text.rb, line 85
     def to_trix_html
       body&amp;.to_trix_html
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actiontext/app/models/action_text/rich_text.rb#L53" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/actiontext/app/models/action_text/rich_text.rb#L85" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

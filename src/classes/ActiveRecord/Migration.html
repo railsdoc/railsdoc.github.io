@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -49,7 +49,7 @@ layout: default
 
 <p>Example of a simple migration:</p>
 
-<pre><code>class AddSsl &lt; ActiveRecord::Migration[7.1]
+<pre><code>class AddSsl &lt; ActiveRecord::Migration[7.2]
   def up
     add_column :accounts, :ssl_enabled, :boolean, default: true
   end
@@ -64,7 +64,7 @@ end
 
 <p>Example of a more complex migration that also needs to initialize data:</p>
 
-<pre><code>class AddSystemSettings &lt; ActiveRecord::Migration[7.1]
+<pre><code>class AddSystemSettings &lt; ActiveRecord::Migration[7.2]
   def up
     create_table :system_settings do |t|
       t.string  :name
@@ -166,7 +166,7 @@ end
 
 <p>This will generate the file <code>timestamp_add_fieldname_to_tablename.rb</code>, which will look like this:</p>
 
-<pre><code>class AddFieldnameToTablename &lt; ActiveRecord::Migration[7.1]
+<pre><code>class AddFieldnameToTablename &lt; ActiveRecord::Migration[7.2]
   def change
     add_column :tablenames, :fieldname, :string
   end
@@ -183,7 +183,7 @@ end
 
 <p>Not all migrations change the schema. Some just fix the data:</p>
 
-<pre><code>class RemoveEmptyTags &lt; ActiveRecord::Migration[7.1]
+<pre><code>class RemoveEmptyTags &lt; ActiveRecord::Migration[7.2]
   def up
     Tag.all.each { |tag| tag.destroy if tag.pages.empty? }
   end
@@ -197,7 +197,7 @@ end
 
 <p>Others remove columns when they migrate up instead of down:</p>
 
-<pre><code>class RemoveUnnecessaryItemAttributes &lt; ActiveRecord::Migration[7.1]
+<pre><code>class RemoveUnnecessaryItemAttributes &lt; ActiveRecord::Migration[7.2]
   def up
     remove_column :items, :incomplete_items_count
     remove_column :items, :completed_items_count
@@ -212,7 +212,7 @@ end
 
 <p>And sometimes you need to do something in SQL not abstracted directly by migrations:</p>
 
-<pre><code>class MakeJoinUnique &lt; ActiveRecord::Migration[7.1]
+<pre><code>class MakeJoinUnique &lt; ActiveRecord::Migration[7.2]
   def up
     execute &quot;ALTER TABLE `pages_linked_pages` ADD UNIQUE `page_id_linked_page_id` (`page_id`,`linked_page_id`)&quot;
   end
@@ -227,7 +227,7 @@ end
 
 <p>Sometimes you’ll want to add a column in a migration and populate it immediately after. In that case, you’ll need to make a call to <code>Base#reset_column_information</code> in order to ensure that the model has the latest column data from after the new column was added. Example:</p>
 
-<pre><code>class AddPeopleSalary &lt; ActiveRecord::Migration[7.1]
+<pre><code>class AddPeopleSalary &lt; ActiveRecord::Migration[7.2]
   def up
     add_column :people, :salary, :integer
     Person.reset_column_information
@@ -242,7 +242,7 @@ end
 
 <p>By default, migrations will describe the actions they are taking, writing them to the console as they happen, along with benchmarks describing how long each step took.</p>
 
-<p>You can quiet them down by setting ActiveRecord::Migration.verbose = false.</p>
+<p>You can quiet them down by setting <code>ActiveRecord::Migration.verbose = false</code>.</p>
 
 <p>You can also insert your own messages and benchmarks by using the <code>say_with_time</code> method:</p>
 
@@ -266,7 +266,10 @@ end
 <pre><code>20080717013526_your_migration_name.rb
 </code></pre>
 
-<p>The prefix is a generation timestamp (in UTC).</p>
+<p>The prefix is a generation timestamp (in UTC). Timestamps should not be modified manually. To validate that migration timestamps adhere to the format Active Record expects, you can use the following configuration option:</p>
+
+<pre><code>config.active_record.validate_migration_timestamps = true
+</code></pre>
 
 <p>If you’d prefer to use numeric prefixes, you can turn timestamped migrations off by setting:</p>
 
@@ -281,7 +284,7 @@ end
 
 <p>To define a reversible migration, define the <code>change</code> method in your migration like this:</p>
 
-<pre><code>class TenderloveMigration &lt; ActiveRecord::Migration[7.1]
+<pre><code>class TenderloveMigration &lt; ActiveRecord::Migration[7.2]
   def change
     create_table(:horses) do |t|
       t.column :content, :text
@@ -303,7 +306,7 @@ end
 
 <p>If the database adapter supports DDL transactions, all migrations will automatically be wrapped in a transaction. There are queries that you can’t execute inside a transaction though, and for these situations you can turn the automatic transactions off.</p>
 
-<pre><code>class ChangeEnum &lt; ActiveRecord::Migration[7.1]
+<pre><code>class ChangeEnum &lt; ActiveRecord::Migration[7.2]
   disable_ddl_transaction!
 
   def up
@@ -364,11 +367,11 @@ end
         </li>
       
         <li>
-          <a href="#method-c-check_pending-21">check_pending!</a>
+          <a href="#method-i-connection">connection</a>
         </li>
       
         <li>
-          <a href="#method-i-connection">connection</a>
+          <a href="#method-i-connection_pool">connection_pool</a>
         </li>
       
         <li>
@@ -404,11 +407,11 @@ end
         </li>
       
         <li>
-          <a href="#method-c-migrate">migrate</a>
+          <a href="#method-i-migrate">migrate</a>
         </li>
       
         <li>
-          <a href="#method-i-migrate">migrate</a>
+          <a href="#method-c-migrate">migrate</a>
         </li>
       
         <li>
@@ -457,6 +460,10 @@ end
       
         <li>
           <a href="#method-i-up_only">up_only</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-verbose">verbose</a>
         </li>
       
         <li>
@@ -527,12 +534,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 613
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 632
     def self.[](version)
       Compatibility.find(version)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L613" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L632" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -562,12 +569,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 698
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 700
       def check_all_pending!
         pending_migrations = []
 
-        ActiveRecord::Tasks::DatabaseTasks.with_temporary_connection_for_each(env: env) do |connection|
-          if pending = connection.migration_context.open.pending_migrations
+        ActiveRecord::Tasks::DatabaseTasks.with_temporary_pool_for_each(env: env) do |pool|
+          if pending = pool.migration_context.open.pending_migrations
             pending_migrations &lt;&lt; pending
           end
         end
@@ -579,54 +586,7 @@ end
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L698" target="_blank" class="github_url">🔎 See on GitHub</a>
-              
-            </details>
-          
-        </div>
-        
-        <div class="method">
-          <h3 id="method-c-check_pending-21">
-            
-              check_pending!(connection = ActiveRecord::Tasks::DatabaseTasks.migration_connection)
-            
-          </h3>
-
-          
-            <div class="description">
-              <p>Raises ActiveRecord::PendingMigrationError error if any migrations are pending.</p>
-
-<p>This is deprecated in favor of <code>check_all_pending!</code></p>
-            </div>
-          
-
-          
-
-          
-
-          
-          
-            <details class="method__source">
-              <summary>
-                <span class="label">📝 Source code</span>
-              </summary>
-
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 682
-      def check_pending!(connection = ActiveRecord::Tasks::DatabaseTasks.migration_connection)
-        ActiveRecord.deprecator.warn(&lt;&lt;-MSG.squish)
-          The `check_pending!` method is deprecated in favor of `check_all_pending!`. The
-          new implementation will loop through all available database configurations and find
-          pending migrations. The prior implementation did not permit this.
-        MSG
-
-        pending_migrations = connection.migration_context.open.pending_migrations
-
-        if pending_migrations.any?
-          raise ActiveRecord::PendingMigrationError.new(pending_migrations: pending_migrations)
-        end
-      end</code></pre>
-              
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L682" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L700" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -656,12 +616,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 617
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 636
     def self.current_version
       ActiveRecord::VERSION::STRING.to_f
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L617" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L636" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -693,12 +653,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 747
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 748
       def disable_ddl_transaction!
         @disable_ddl_transaction = true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L747" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L748" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -728,7 +688,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 714
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 716
       def load_schema_if_pending!
         if any_schema_needs_update?
           # Roundtrip to Rake to allow plugins to hook into database initialization.
@@ -743,7 +703,7 @@ end
         check_pending_migrations
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L714" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L716" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -773,12 +733,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 739
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 740
       def migrate(direction)
         new.migrate direction
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L739" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L740" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -808,14 +768,49 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 796
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 803
     def initialize(name = self.class.name, version = nil)
       @name       = name
       @version    = version
       @connection = nil
+      @pool       = nil
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L796" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L803" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-verbose">
+            
+              verbose
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Specifies if migrations will write the actions they are taking to the console as they happen, along with benchmarks describing how long each step took. Defaults to true.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 800
+    cattr_accessor :verbose
+</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L800" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -849,14 +844,14 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1000
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1008
     def announce(message)
       text = &quot;#{version} #{name}: #{message}&quot;
       length = [0, 75 - text.length].max
       write &quot;== %s %s&quot; % [text, &quot;=&quot; * length]
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L1000" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L1008" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -886,12 +881,47 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1031
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1039
     def connection
       @connection || ActiveRecord::Tasks::DatabaseTasks.migration_connection
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L1031" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L1039" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-connection_pool">
+            
+              connection_pool()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1043
+    def connection_pool
+      @pool || ActiveRecord::Tasks::DatabaseTasks.migration_connection_pool
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L1043" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -921,7 +951,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1052
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1064
     def copy(destination, sources, options = {})
       copied = []
 
@@ -977,7 +1007,7 @@ end
       copied
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L1052" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L1064" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1007,14 +1037,14 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 952
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 960
     def down
       self.class.delegate = self
       return unless self.class.respond_to?(:down)
       self.class.down
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L952" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L960" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1044,7 +1074,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 980
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 988
     def exec_migration(conn, direction)
       @connection = conn
       if respond_to?(:change)
@@ -1061,7 +1091,7 @@ end
       @execution_strategy = nil
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L980" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L988" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1091,12 +1121,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 802
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 810
     def execution_strategy
       @execution_strategy ||= ActiveRecord.migration_strategy.new(self)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L802" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L810" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1126,7 +1156,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1035
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1047
     def method_missing(method, *arguments, &amp;block)
       say_with_time &quot;#{method}(#{format_arguments(arguments)})&quot; do
         unless connection.respond_to? :revert
@@ -1143,7 +1173,7 @@ end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L1035" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L1047" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1173,7 +1203,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 959
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 967
     def migrate(direction)
       return unless respond_to?(direction)
 
@@ -1195,7 +1225,7 @@ end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L959" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L967" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1225,7 +1255,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1119
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1131
     def next_migration_number(number)
       if ActiveRecord.timestamped_migrations
         [Time.now.utc.strftime(&quot;%Y%m%d%H%M%S&quot;), &quot;%.14d&quot; % number].max
@@ -1234,7 +1264,7 @@ end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L1119" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L1131" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1264,7 +1294,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1110
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1122
     def proper_table_name(name, options = {})
       if name.respond_to? :table_name
         name.table_name
@@ -1273,7 +1303,7 @@ end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L1110" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L1122" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1292,7 +1322,7 @@ end
 
 <p>In the following example, the looping on users will always be done when the three columns ‘first_name’, ‘last_name’ and ‘full_name’ exist, even when migrating down:</p>
 
-<pre><code>class SplitNameMigration &lt; ActiveRecord::Migration[7.1]
+<pre><code>class SplitNameMigration &lt; ActiveRecord::Migration[7.2]
   def change
     add_column :users, :first_name, :string
     add_column :users, :last_name, :string
@@ -1324,13 +1354,13 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 904
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 912
     def reversible
       helper = ReversibleBlockHelper.new(reverting?)
       execute_block { yield helper }
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L904" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L912" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1349,7 +1379,7 @@ end
 
 <p>The following migration will remove the table ‘horses’ and create the table ‘apples’ on the way up, and the reverse on the way down.</p>
 
-<pre><code>class FixTLMigration &lt; ActiveRecord::Migration[7.1]
+<pre><code>class FixTLMigration &lt; ActiveRecord::Migration[7.2]
   def change
     revert do
       create_table(:horses) do |t|
@@ -1368,7 +1398,7 @@ end
 
 <pre><code>require_relative &quot;20121212123456_tenderlove_migration&quot;
 
-class FixupTLMigration &lt; ActiveRecord::Migration[7.1]
+class FixupTLMigration &lt; ActiveRecord::Migration[7.2]
   def change
     revert TenderloveMigration
 
@@ -1394,7 +1424,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 847
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 855
     def revert(*migration_classes, &amp;block)
       run(*migration_classes.reverse, revert: true) unless migration_classes.empty?
       if block_given?
@@ -1412,7 +1442,7 @@ end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L847" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L855" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1442,12 +1472,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 864
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 872
     def reverting?
       connection.respond_to?(:reverting) &amp;&amp; connection.reverting
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L864" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L872" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1482,7 +1512,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 932
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 940
     def run(*migration_classes)
       opts = migration_classes.extract_options!
       dir = opts[:direction] || :up
@@ -1497,7 +1527,7 @@ end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L932" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L940" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1527,12 +1557,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1008
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1016
     def say(message, subitem = false)
       write &quot;#{subitem ? &quot;   -&gt;&quot; : &quot;--&quot;} #{message}&quot;
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L1008" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L1016" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1562,7 +1592,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1014
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1022
     def say_with_time(message)
       say(message)
       result = nil
@@ -1572,7 +1602,7 @@ end
       result
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L1014" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L1022" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1602,7 +1632,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1024
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1032
     def suppress_messages
       save, self.verbose = verbose, false
       yield
@@ -1610,7 +1640,7 @@ end
       self.verbose = save
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L1024" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L1032" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1640,14 +1670,14 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 946
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 954
     def up
       self.class.delegate = self
       return unless self.class.respond_to?(:up)
       self.class.up
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L946" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L954" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1666,7 +1696,7 @@ end
 
 <p>In the following example, the new column <code>published</code> will be given the value <code>true</code> for all existing records.</p>
 
-<pre><code>class AddPublishedToPosts &lt; ActiveRecord::Migration[7.1]
+<pre><code>class AddPublishedToPosts &lt; ActiveRecord::Migration[7.2]
   def change
     add_column :posts, :published, :boolean, default: false
     up_only do
@@ -1689,12 +1719,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 923
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 931
     def up_only(&amp;block)
       execute_block(&amp;block) unless reverting?
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L923" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L931" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1724,12 +1754,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 996
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1004
     def write(text = &quot;&quot;)
       puts(text) if verbose
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/migration.rb#L996" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/migration.rb#L1004" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

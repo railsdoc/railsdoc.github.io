@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -48,6 +48,14 @@ layout: default
           <a href="#method-i-define_attribute">define_attribute</a>
         </li>
       
+        <li>
+          <a href="#method-i-reload_schema_from_cache">reload_schema_from_cache</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-type_for_attribute">type_for_attribute</a>
+        </li>
+      
     </ul>
   
 
@@ -70,7 +78,8 @@ layout: default
         <div class="method">
           <h3 id="method-i-attribute">
             
-              attribute(name, cast_type = nil, default: NO_DEFAULT_PROVIDED, **options)
+              attribute(name, cast_type = nil, **options)
+
             
           </h3>
 
@@ -183,7 +192,7 @@ MyModel.create(small_int: 65537)
 
 <p>Users may also define their own custom types, as long as they respond to the methods defined on the value type. The method <code>deserialize</code> or <code>cast</code> will be called on your type object, with raw input from the database or from your controllers. See <a href="../../ActiveModel/Type/Value.html"><code>ActiveModel::Type::Value</code></a> for the expected API. It is recommended that your type objects inherit from an existing type, or from <a href="../../ActiveModel/Type/Value.html"><code>ActiveRecord::Type::Value</code></a></p>
 
-<pre><code>class MoneyType &lt; ActiveRecord::Type::Integer
+<pre><code>class PriceType &lt; ActiveRecord::Type::Integer
   def cast(value)
     if !value.kind_of?(Numeric) &amp;&amp; value.include?(&#39;$&#39;)
       price_in_dollars = value.gsub(/\$/, &#39;&#39;).to_f
@@ -195,11 +204,11 @@ MyModel.create(small_int: 65537)
 end
 
 # config/initializers/types.rb
-ActiveRecord::Type.register(:money, MoneyType)
+ActiveRecord::Type.register(:price, PriceType)
 
 # app/models/store_listing.rb
 class StoreListing &lt; ActiveRecord::Base
-  attribute :price_in_cents, :money
+  attribute :price_in_cents, :price
 end
 
 store_listing = StoreListing.new(price_in_cents: &#39;$10.00&#39;)
@@ -215,7 +224,7 @@ store_listing.price_in_cents # =&gt; 1000
 <pre><code>class Money &lt; Struct.new(:amount, :currency)
 end
 
-class MoneyType &lt; ActiveRecord::Type::Value
+class PriceType &lt; ActiveRecord::Type::Value
   def initialize(currency_converter:)
     @currency_converter = currency_converter
   end
@@ -230,12 +239,12 @@ class MoneyType &lt; ActiveRecord::Type::Value
 end
 
 # config/initializers/types.rb
-ActiveRecord::Type.register(:money, MoneyType)
+ActiveRecord::Type.register(:price, PriceType)
 
 # app/models/product.rb
 class Product &lt; ActiveRecord::Base
   currency_converter = ConversionRatesFromTheInternet.new
-  attribute :price_in_bitcoins, :money, currency_converter: currency_converter
+  attribute :price_in_bitcoins, :price, currency_converter: currency_converter
 end
 
 Product.where(price_in_bitcoins: Money.new(5, &quot;USD&quot;))
@@ -257,42 +266,7 @@ Product.where(price_in_bitcoins: Money.new(5, &quot;GBP&quot;))
 
           
           
-            <details class="method__source">
-              <summary>
-                <span class="label">📝 Source code</span>
-              </summary>
-
-              <pre><code class="ruby"># File activerecord/lib/active_record/attributes.rb, line 208
-      def attribute(name, cast_type = nil, default: NO_DEFAULT_PROVIDED, **options)
-        name = name.to_s
-        name = attribute_aliases[name] || name
-
-        reload_schema_from_cache
-
-        case cast_type
-        when Symbol
-          cast_type = Type.lookup(cast_type, **options, adapter: Type.adapter_name_from(self))
-        when nil
-          if (prev_cast_type, prev_default = attributes_to_define_after_schema_loads[name])
-            default = prev_default if default == NO_DEFAULT_PROVIDED
-          else
-            prev_cast_type = -&gt; subtype { subtype }
-          end
-
-          cast_type = if block_given?
-            -&gt; subtype { yield Proc === prev_cast_type ? prev_cast_type[subtype] : prev_cast_type }
-          else
-            prev_cast_type
-          end
-        end
-
-        self.attributes_to_define_after_schema_loads =
-          attributes_to_define_after_schema_loads.merge(name =&gt; [cast_type, default])
-      end</code></pre>
-              
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/attributes.rb#L208" target="_blank" class="github_url">🔎 See on GitHub</a>
-              
-            </details>
+            <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/attributes.rb#L13" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -305,7 +279,7 @@ Product.where(price_in_bitcoins: Money.new(5, &quot;GBP&quot;))
 
           
             <div class="description">
-              <p>This is the low level API which sits beneath <code>attribute</code>. It only accepts type objects, and will do its work immediately instead of waiting for the schema to load. Automatic schema detection and <a href="ClassMethods.html#method-i-attribute"><code>ClassMethods#attribute</code></a> both call this under the hood. While this method is provided so it can be used by plugin authors, application code should probably use <a href="ClassMethods.html#method-i-attribute"><code>ClassMethods#attribute</code></a>.</p>
+              <p>This is the low level API which sits beneath <code>attribute</code>. It only accepts type objects, and will do its work immediately instead of waiting for the schema to load. While this method is provided so it can be used by plugin authors, application code should probably use <a href="ClassMethods.html#method-i-attribute"><code>ClassMethods#attribute</code></a>.</p>
 
 <p><code>name</code> The name of the attribute being defined. Expected to be a <code>String</code>.</p>
 
@@ -328,7 +302,7 @@ Product.where(price_in_bitcoins: Money.new(5, &quot;GBP&quot;))
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/attributes.rb, line 253
+              <pre><code class="ruby"># File activerecord/lib/active_record/attributes.rb, line 230
       def define_attribute(
         name,
         cast_type,
@@ -339,7 +313,72 @@ Product.where(price_in_bitcoins: Money.new(5, &quot;GBP&quot;))
         define_default_attribute(name, default, cast_type, from_user: user_provided_default)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/attributes.rb#L253" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/attributes.rb#L230" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-type_for_attribute">
+            
+              type_for_attribute(attribute_name, &block)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>See <a href="../../ActiveModel/Attributes/ClassMethods.html#method-i-type_for_attribute"><code>ActiveModel::Attributes::ClassMethods#type_for_attribute</code></a>.</p>
+
+<p>This method will access the database and load the model’s schema if necessary.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/attributes.rb#L255" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+      
+      <h2 id="instance-protected-methods">Instance Protected methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-reload_schema_from_cache">
+            
+              reload_schema_from_cache(*)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attributes.rb, line 267
+        def reload_schema_from_cache(*)
+          reset_default_attributes!
+          super
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/attributes.rb#L267" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

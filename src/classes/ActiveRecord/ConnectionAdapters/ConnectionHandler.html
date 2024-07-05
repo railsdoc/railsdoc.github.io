@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -88,10 +88,6 @@ library_db:
       
         <li>
           <a href="#method-i-active_connections-3F">active_connections?</a>
-        </li>
-      
-        <li>
-          <a href="#method-i-all_connection_pools">all_connection_pools</a>
         </li>
       
         <li>
@@ -180,16 +176,13 @@ library_db:
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 77
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 74
       def initialize
         # These caches are keyed by pool_config.connection_name (PoolConfig#connection_name).
         @connection_name_to_pool_manager = Concurrent::Map.new(initial_capacity: 2)
-
-        # Backup finalizer: if the forked child skipped Kernel#fork the early discard has not occurred
-        ObjectSpace.define_finalizer self, FINALIZER
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L77" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L74" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -223,56 +216,12 @@ library_db:
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 173
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 155
       def active_connections?(role = nil)
-        if role.nil?
-          deprecation_for_pool_handling(__method__)
-          role = ActiveRecord::Base.current_role
-        end
-
         each_connection_pool(role).any?(&amp;:active_connection?)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L173" target="_blank" class="github_url">🔎 See on GitHub</a>
-              
-            </details>
-          
-        </div>
-        
-        <div class="method">
-          <h3 id="method-i-all_connection_pools">
-            
-              all_connection_pools()
-            
-          </h3>
-
-          
-            <div class="description">
-              
-            </div>
-          
-
-          
-
-          
-
-          
-          
-            <details class="method__source">
-              <summary>
-                <span class="label">📝 Source code</span>
-              </summary>
-
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 97
-      def all_connection_pools
-        ActiveRecord.deprecator.warn(&lt;&lt;-MSG.squish)
-          The `all_connection_pools` method is deprecated in favor of `connection_pool_list`.
-          Call `connection_pool_list(:all)` to get the same behavior as `all_connection_pools`.
-        MSG
-        connection_name_to_pool_manager.values.flat_map { |m| m.pool_configs.map(&amp;:pool) }
-      end</code></pre>
-              
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L97" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L155" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -302,17 +251,15 @@ library_db:
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 185
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 162
       def clear_active_connections!(role = nil)
-        if role.nil?
-          deprecation_for_pool_handling(__method__)
-          role = ActiveRecord::Base.current_role
+        each_connection_pool(role).each do |pool|
+          pool.release_connection
+          pool.disable_query_cache!
         end
-
-        each_connection_pool(role).each(&amp;:release_connection)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L185" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L162" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -342,17 +289,12 @@ library_db:
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 206
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 176
       def clear_all_connections!(role = nil)
-        if role.nil?
-          deprecation_for_pool_handling(__method__)
-          role = ActiveRecord::Base.current_role
-        end
-
         each_connection_pool(role).each(&amp;:disconnect!)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L206" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L176" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -384,17 +326,12 @@ library_db:
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 197
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 172
       def clear_reloadable_connections!(role = nil)
-        if role.nil?
-          deprecation_for_pool_handling(__method__)
-          role = ActiveRecord::Base.current_role
-        end
-
         each_connection_pool(role).each(&amp;:clear_reloadable_connections!)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L197" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L172" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -424,13 +361,13 @@ library_db:
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 251
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 198
       def connected?(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard)
         pool = retrieve_connection_pool(connection_name, role: role, shard: shard)
         pool &amp;&amp; pool.connected?
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L251" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L198" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -445,7 +382,7 @@ library_db:
 
           
             <div class="description">
-              <p>Returns the pools for a connection handler and  given role. If <code>:all</code> is passed, all pools belonging to the connection handler will be returned.</p>
+              <p>Returns the pools for a connection handler and given role. If <code>:all</code> is passed, all pools belonging to the connection handler will be returned.</p>
             </div>
           
 
@@ -464,20 +401,16 @@ library_db:
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 107
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 93
       def connection_pool_list(role = nil)
-        if role.nil?
-          deprecation_for_pool_handling(__method__)
-          role = ActiveRecord::Base.current_role
-          connection_name_to_pool_manager.values.flat_map { |m| m.pool_configs(role).map(&amp;:pool) }
-        elsif role == :all
+        if role.nil? || role == :all
           connection_name_to_pool_manager.values.flat_map { |m| m.pool_configs.map(&amp;:pool) }
         else
           connection_name_to_pool_manager.values.flat_map { |m| m.pool_configs(role).map(&amp;:pool) }
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L107" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L93" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -532,7 +465,7 @@ library_db:
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 131
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 113
       def establish_connection(config, owner_name: Base, role: Base.current_role, shard: Base.current_shard, clobber: false)
         owner_name = determine_owner_name(owner_name, config)
 
@@ -573,7 +506,7 @@ library_db:
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L131" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L113" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -605,17 +538,12 @@ library_db:
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 218
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 183
       def flush_idle_connections!(role = nil)
-        if role.nil?
-          deprecation_for_pool_handling(__method__)
-          role = ActiveRecord::Base.current_role
-        end
-
         each_connection_pool(role).each(&amp;:flush!)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L218" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L183" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -645,14 +573,14 @@ library_db:
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 256
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 203
       def remove_connection_pool(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard)
         if pool_manager = get_pool_manager(connection_name)
           disconnect_pool_from_pool_manager(pool_manager, role, shard)
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L256" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L203" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -661,7 +589,7 @@ library_db:
         <div class="method">
           <h3 id="method-i-retrieve_connection_pool">
             
-              retrieve_connection_pool(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard)
+              retrieve_connection_pool(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard, strict: false)
             
           </h3>
 
@@ -682,13 +610,26 @@ library_db:
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 265
-      def retrieve_connection_pool(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard)
-        pool_config = get_pool_manager(connection_name)&amp;.get_pool_config(role, shard)
-        pool_config&amp;.pool
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 212
+      def retrieve_connection_pool(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard, strict: false)
+        pool = get_pool_manager(connection_name)&amp;.get_pool_config(role, shard)&amp;.pool
+
+        if strict &amp;&amp; !pool
+          if shard != ActiveRecord::Base.default_shard
+            message = &quot;No connection pool for &#39;#{connection_name}&#39; found for the &#39;#{shard}&#39; shard.&quot;
+          elsif role != ActiveRecord::Base.default_role
+            message = &quot;No connection pool for &#39;#{connection_name}&#39; found for the &#39;#{role}&#39; role.&quot;
+          else
+            message = &quot;No connection pool for &#39;#{connection_name}&#39; found.&quot;
+          end
+
+          raise ConnectionNotEstablished, message
+        end
+
+        pool
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L265" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L212" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

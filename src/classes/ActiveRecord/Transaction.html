@@ -1,0 +1,395 @@
+---
+title: ActiveRecord::Transaction
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::Transaction
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/transaction_rb.html">activerecord/lib/active_record/transaction.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>This abstract class specifies the interface to interact with the current transaction state.</p>
+
+<p>Any other methods not specified here are considered to be private interfaces.</p>
+
+<h2 id="class-ActiveRecord::Transaction-label-Callbacks"><a href="Callbacks.html"><code>Callbacks</code></a></h2>
+
+<p>After updating the database state, you may sometimes need to perform some extra work, or reflect these changes in a remote system like clearing or updating a cache:</p>
+
+<pre><code>def publish_article(article)
+  article.update!(published: true)
+  NotificationService.article_published(article)
+end
+</code></pre>
+
+<p>The above code works but has one important flaw, which is that it no longer works properly if called inside a transaction, as it will interact with the remote system before the changes are persisted:</p>
+
+<pre><code>Article.transaction do
+  article = create_article(article)
+  publish_article(article)
+end
+</code></pre>
+
+<p>The callbacks offered by <a href="Transaction.html"><code>ActiveRecord::Transaction</code></a> allow to rewriting this method in a way that is compatible with transactions:</p>
+
+<pre><code>def publish_article(article)
+  article.update!(published: true)
+  Article.current_transaction.after_commit do
+    NotificationService.article_published(article)
+  end
+end
+</code></pre>
+
+<p>In the above example, if <code>publish_article</code> is called inside a transaction, the callback will be invoked after the transaction is successfully committed, and if called outside a transaction, the callback will be invoked immediately.</p>
+
+<h2 id="class-ActiveRecord::Transaction-label-Caveats">Caveats</h2>
+
+<p>When using <a href="Transaction.html#method-i-after_commit"><code>after_commit</code></a> callbacks, it is important to note that if the callback raises an error, the transaction won’t be rolled back. Relying solely on these to synchronize state between multiple systems may lead to consistency issues.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-after_commit">after_commit</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-after_rollback">after_rollback</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-before_commit">before_commit</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-blank-3F">blank?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-closed-3F">closed?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-open-3F">open?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-uuid">uuid</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-after_commit">
+            
+              after_commit(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Registers a block to be called after the current transaction is fully committed.</p>
+
+<p>If there is no currently open transactions, the block is called immediately.</p>
+
+<p>If the current transaction has a parent transaction, the callback is transferred to the parent when the current transaction commits, or dropped when the current transaction is rolled back. This operation is repeated until the outermost transaction is reached.</p>
+
+<p>If the callback raises an error, the transaction remains committed.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transaction.rb, line 93
+    def after_commit(&amp;block)
+      (@callbacks ||= []) &lt;&lt; Callback.new(:after_commit, block)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/transaction.rb#L93" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-after_rollback">
+            
+              after_rollback(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Registers a block to be called after the current transaction is rolled back.</p>
+
+<p>If there is no currently open transactions, the block is never called.</p>
+
+<p>If the current transaction is successfully committed but has a parent transaction, the callback is automatically added to the parent transaction.</p>
+
+<p>If the entire chain of nested transactions are all successfully committed, the block is never called.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transaction.rb, line 106
+    def after_rollback(&amp;block)
+      (@callbacks ||= []) &lt;&lt; Callback.new(:after_rollback, block)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/transaction.rb#L106" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-before_commit">
+            
+              before_commit(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Registers a block to be called before the current transaction is fully committed.</p>
+
+<p>If there is no currently open transactions, the block is called immediately.</p>
+
+<p>If the current transaction has a parent transaction, the callback is transferred to the parent when the current transaction commits, or dropped when the current transaction is rolled back. This operation is repeated until the outermost transaction is reached.</p>
+
+<p>If the callback raises an error, the transaction is rolled back.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transaction.rb, line 80
+    def before_commit(&amp;block)
+      (@callbacks ||= []) &lt;&lt; Callback.new(:before_commit, block)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/transaction.rb#L80" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-blank-3F">
+            
+              blank?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+            <div class="aka">
+              Alias for: <a href="Transaction.html#method-i-closed-3F">closed?</a>
+            </div>
+          
+
+          
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-closed-3F">
+            
+              closed?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if no transaction is currently active.</p>
+            </div>
+          
+
+          
+            <div class="aka">
+              Also aliased as: <a href="Transaction.html#method-i-blank-3F">blank?</a>
+            </div>
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transaction.rb, line 116
+    def closed?
+      false
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/transaction.rb#L116" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-open-3F">
+            
+              open?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if a transaction was started.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transaction.rb, line 111
+    def open?
+      true
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/transaction.rb#L111" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-uuid">
+            
+              uuid()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a UUID for this transaction.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transaction.rb, line 122
+    def uuid
+      @uuid ||= Digest::UUID.uuid_v4
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/transaction.rb#L122" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

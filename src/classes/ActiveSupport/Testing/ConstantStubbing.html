@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -60,7 +60,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-stub_const">
             
-              stub_const(mod, constant, new_value)
+              stub_const(mod, constant, new_value, exists: true)
             
           </h3>
 
@@ -78,6 +78,13 @@ assert_equal 5000, World::List::Import::LARGE_IMPORT_THRESHOLD
 
 <p>Using this method rather than forcing <code>World::List::Import::LARGE_IMPORT_THRESHOLD = 5000</code> prevents warnings from being thrown, and ensures that the old value is returned after the test has completed.</p>
 
+<p>If the constant doesn’t already exists, but you need it set for the duration of the block you can do so by passing ‘exists: false`.</p>
+
+<pre><code>stub_const(object, :SOME_CONST, 1, exists: false) do
+  assert_equal 1, SOME_CONST
+end
+</code></pre>
+
 <p>Note: Stubbing a const will stub it across all threads. So if you have concurrent threads (like separate test suites running in parallel) that all depend on the same constant, it’s possible divergent stubbing will trample on each other.</p>
             </div>
           
@@ -93,18 +100,33 @@ assert_equal 5000, World::List::Import::LARGE_IMPORT_THRESHOLD
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/testing/constant_stubbing.rb, line 21
-      def stub_const(mod, constant, new_value)
-        old_value = mod.const_get(constant, false)
-        mod.send(:remove_const, constant)
-        mod.const_set(constant, new_value)
-        yield
-      ensure
-        mod.send(:remove_const, constant)
-        mod.const_set(constant, old_value)
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/constant_stubbing.rb, line 28
+      def stub_const(mod, constant, new_value, exists: true)
+        if exists
+          begin
+            old_value = mod.const_get(constant, false)
+            mod.send(:remove_const, constant)
+            mod.const_set(constant, new_value)
+            yield
+          ensure
+            mod.send(:remove_const, constant)
+            mod.const_set(constant, old_value)
+          end
+        else
+          if mod.const_defined?(constant)
+            raise NameError, &quot;already defined constant #{constant} in #{mod.name}&quot;
+          end
+
+          begin
+            mod.const_set(constant, new_value)
+            yield
+          ensure
+            mod.send(:remove_const, constant)
+          end
+        end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/testing/constant_stubbing.rb#L21" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/testing/constant_stubbing.rb#L28" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

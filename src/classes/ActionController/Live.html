@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.2.0.beta2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -25,7 +25,7 @@ layout: default
   
     <div class="description">
       
-<h1 id="module-ActionController::Live-label-Action+Controller+Live">Action Controller Live</h1>
+<h1 id="module-ActionController::Live-label-Action+Controller+Live">Action Controller <a href="Live.html"><code>Live</code></a></h1>
 
 <p>Mix this module into your controller, and all actions in that controller will be able to stream data to the client as it’s written.</p>
 
@@ -50,7 +50,7 @@ end
 
 <p>The final caveat is that your actions are executed in a separate thread than the main thread. Make sure your actions are thread safe, and this shouldn’t be a problem (don’t share state across threads, etc).</p>
 
-<p>Note that Rails includes <code>Rack::ETag</code> by default, which will buffer your response. As a result, streaming responses may not work properly with Rack 2.2.x, and you may need to implement workarounds in your application. You can either set the <code>ETag</code> or <code>Last-Modified</code> response headers or remove <code>Rack::ETag</code> from the middleware stack to address this issue.</p>
+<p>Note that <a href="../Rails.html"><code>Rails</code></a> includes <code>Rack::ETag</code> by default, which will buffer your response. As a result, streaming responses may not work properly with Rack 2.2.x, and you may need to implement workarounds in your application. You can either set the <code>ETag</code> or <code>Last-Modified</code> response headers or remove <code>Rack::ETag</code> from the middleware stack to address this issue.</p>
 
 <p>Here’s an example of how you can set the <code>Last-Modified</code> header if your Rack version is 2.2.x:</p>
 
@@ -159,15 +159,15 @@ end
       locals = t1.keys.map { |key| [key, t1[key]] }
 
       error = nil
-      # This processes the action in a child thread. It lets us return the
-      # response code and headers back up the Rack stack, and still process
-      # the body in parallel with sending data to the client.
+      # This processes the action in a child thread. It lets us return the response
+      # code and headers back up the Rack stack, and still process the body in
+      # parallel with sending data to the client.
       new_controller_thread {
         ActiveSupport::Dependencies.interlock.running do
           t2 = Thread.current
 
-          # Since we&#39;re processing the view in a different thread, copy the
-          # thread locals from the main thread to the child thread. :&#39;(
+          # Since we&#39;re processing the view in a different thread, copy the thread locals
+          # from the main thread to the child thread. :&#39;(
           locals.each { |k, v| t2[k] = v }
           ActiveSupport::IsolatedExecutionState.share_with(t1)
 
@@ -200,7 +200,7 @@ end
       raise error if error
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/live.rb#L273" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/actionpack/lib/action_controller/metal/live.rb#L273" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -236,7 +236,7 @@ end
       response.close if response
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/live.rb#L319" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/actionpack/lib/action_controller/metal/live.rb#L319" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -253,14 +253,7 @@ end
             <div class="description">
               <p>Sends a stream to the browser, which is helpful when you’re generating exports or other running data where you don’t want the entire file buffered in memory first. Similar to send_data, but where the data is generated live.</p>
 
-<p>Options:</p>
-<ul><li>
-<p><code>:filename</code> - suggests a filename for the browser to use.</p>
-</li><li>
-<p><code>:type</code> - specifies an HTTP content type. You can specify either a string or a symbol for a registered type with <code>Mime::Type.register</code>, for example :json. If omitted, type will be inferred from the file extension specified in <code>:filename</code>. If no content type is registered for the extension, the default type ‘application/octet-stream’ will be used.</p>
-</li><li>
-<p><code>:disposition</code> - specifies whether the file will be shown inline or downloaded. Valid values are ‘inline’ and ‘attachment’ (default).</p>
-</li></ul>
+<p>Options: * <code>:filename</code> - suggests a filename for the browser to use. * <code>:type</code> - specifies an HTTP content type. You can specify either a string or a symbol for a registered type with <code>Mime::Type.register</code>, for example :json. If omitted, type will be inferred from the file extension specified in <code>:filename</code>. If no content type is registered for the extension, the default type ‘application/octet-stream’ will be used. * <code>:disposition</code> - specifies whether the file will be shown inline or downloaded. Valid values are ‘inline’ and ‘attachment’ (default).</p>
 
 <p>Example of generating a csv export:</p>
 
@@ -286,22 +279,25 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/live.rb, line 345
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/live.rb, line 348
     def send_stream(filename:, disposition: &quot;attachment&quot;, type: nil)
-      response.headers[&quot;Content-Type&quot;] =
-        (type.is_a?(Symbol) ? Mime[type].to_s : type) ||
-        Mime::Type.lookup_by_extension(File.extname(filename).downcase.delete(&quot;.&quot;))&amp;.to_s ||
-        &quot;application/octet-stream&quot;
+      payload = { filename: filename, disposition: disposition, type: type }
+      ActiveSupport::Notifications.instrument(&quot;send_stream.action_controller&quot;, payload) do
+        response.headers[&quot;Content-Type&quot;] =
+          (type.is_a?(Symbol) ? Mime[type].to_s : type) ||
+          Mime::Type.lookup_by_extension(File.extname(filename).downcase.delete(&quot;.&quot;))&amp;.to_s ||
+          &quot;application/octet-stream&quot;
 
-      response.headers[&quot;Content-Disposition&quot;] =
-        ActionDispatch::Http::ContentDisposition.format(disposition: disposition, filename: filename)
+        response.headers[&quot;Content-Disposition&quot;] =
+          ActionDispatch::Http::ContentDisposition.format(disposition: disposition, filename: filename)
 
-      yield response.stream
+        yield response.stream
+      end
     ensure
       response.stream.close
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/live.rb#L345" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/actionpack/lib/action_controller/metal/live.rb#L348" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
