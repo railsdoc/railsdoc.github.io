@@ -1,0 +1,239 @@
+---
+title: ActionController::RequestForgeryProtection::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionController::RequestForgeryProtection::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionpack/lib/action_controller/metal/request_forgery_protection_rb.html">actionpack/lib/action_controller/metal/request_forgery_protection.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-protect_from_forgery">protect_from_forgery</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-skip_forgery_protection">skip_forgery_protection</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-protect_from_forgery">
+            
+              protect_from_forgery(options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Turn on request forgery protection. Bear in mind that GET and HEAD requests are not checked.</p>
+
+<pre><code>class ApplicationController &lt; ActionController::Base
+  protect_from_forgery
+end
+
+class FooController &lt; ApplicationController
+  protect_from_forgery except: :index
+end
+</code></pre>
+
+<p>You can disable forgery protection on a controller using <a href="ClassMethods.html#method-i-skip_forgery_protection"><code>skip_forgery_protection</code></a>:</p>
+
+<pre><code>class BarController &lt; ApplicationController
+  skip_forgery_protection
+end
+</code></pre>
+
+<p>Valid Options:</p>
+<ul><li>
+<p><code>:only</code> / <code>:except</code> - Only apply forgery protection to a subset of actions. For example <code>only: [ :create, :create_all ]</code>.</p>
+</li><li>
+<p><code>:if</code> / <code>:unless</code> - Turn off the forgery protection entirely depending on the passed Proc or method reference.</p>
+</li><li>
+<p><code>:prepend</code> - By default, the verification of the authentication token will be added at the position of the <a href="ClassMethods.html#method-i-protect_from_forgery"><code>protect_from_forgery</code></a> call in your application. This means any callbacks added before are run first. This is useful when you want your forgery protection to depend on other callbacks, like authentication methods (Oauth vs Cookie auth).</p>
+
+<p>If you need to add verification to the beginning of the callback chain, use <code>prepend: true</code>.</p>
+</li><li>
+<p><code>:with</code> - Set the method to handle unverified request. Note if <code>default_protect_from_forgery</code> is true, <a href="../../Rails.html"><code>Rails</code></a> call <a href="ClassMethods.html#method-i-protect_from_forgery"><code>protect_from_forgery</code></a> with <code>with :exception</code>.</p>
+</li></ul>
+
+<p>Built-in unverified request handling methods are:</p>
+<ul><li>
+<p><code>:exception</code> - Raises ActionController::InvalidAuthenticityToken exception.</p>
+</li><li>
+<p><code>:reset_session</code> - Resets the session.</p>
+</li><li>
+<p><code>:null_session</code> - Provides an empty session during request but doesn’t reset it completely. Used as default if <code>:with</code> option is not specified.</p>
+</li></ul>
+
+<p>You can also implement custom strategy classes for unverified request handling:</p>
+
+<pre><code>class CustomStrategy
+  def initialize(controller)
+    @controller = controller
+  end
+
+  def handle_unverified_request
+    # Custom behavior for unverfied request
+  end
+end
+
+class ApplicationController &lt; ActionController::Base
+  protect_from_forgery with: CustomStrategy
+end
+</code></pre>
+<ul><li>
+<p><code>:store</code> - Set the strategy to store and retrieve CSRF tokens.</p>
+</li></ul>
+
+<p>Built-in session token strategies are:</p>
+<ul><li>
+<p><code>:session</code> - Store the CSRF token in the session.  Used as default if <code>:store</code> option is not specified.</p>
+</li><li>
+<p><code>:cookie</code> - Store the CSRF token in an encrypted cookie.</p>
+</li></ul>
+
+<p>You can also implement custom strategy classes for CSRF token storage:</p>
+
+<pre><code>class CustomStore
+  def fetch(request)
+    # Return the token from a custom location
+  end
+
+  def store(request, csrf_token)
+    # Store the token in a custom location
+  end
+
+  def reset(request)
+    # Delete the stored session token
+  end
+end
+
+class ApplicationController &lt; ActionController::Base
+  protect_from_forgery store: CustomStore.new
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/request_forgery_protection.rb, line 179
+      def protect_from_forgery(options = {})
+        options = options.reverse_merge(prepend: false)
+
+        self.forgery_protection_strategy = protection_method_class(options[:with] || :null_session)
+        self.request_forgery_protection_token ||= :authenticity_token
+
+        self.csrf_token_storage_strategy = storage_strategy(options[:store] || SessionStore.new)
+
+        before_action :verify_authenticity_token, options
+        append_after_action :verify_same_origin_request
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/request_forgery_protection.rb#L179" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-skip_forgery_protection">
+            
+              skip_forgery_protection(options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Turn off request forgery protection. This is a wrapper for:</p>
+
+<pre><code>skip_before_action :verify_authenticity_token
+</code></pre>
+
+<p>See <code>skip_before_action</code> for allowed options.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/request_forgery_protection.rb, line 196
+      def skip_forgery_protection(options = {})
+        skip_before_action :verify_authenticity_token, options.reverse_merge(raise: false)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/request_forgery_protection.rb#L196" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

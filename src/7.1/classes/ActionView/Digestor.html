@@ -1,0 +1,256 @@
+---
+title: ActionView::Digestor
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionView::Digestor
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionview/lib/action_view/digestor_rb.html">actionview/lib/action_view/digestor.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Digestor/Injected.html">ActionView::Digestor::Injected</a></li>
+      
+        <li><a href="Digestor/Missing.html">ActionView::Digestor::Missing</a></li>
+      
+        <li><a href="Digestor/Node.html">ActionView::Digestor::Node</a></li>
+      
+        <li><a href="Digestor/NullLogger.html">ActionView::Digestor::NullLogger</a></li>
+      
+        <li><a href="Digestor/Partial.html">ActionView::Digestor::Partial</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-digest">digest</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-logger">logger</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-tree">tree</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-digest">
+            
+              digest(name:, format: nil, finder:, dependencies: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Supported options:</p>
+<ul><li>
+<p><code>name</code>         - <a href="Template.html"><code>Template</code></a> name</p>
+</li><li>
+<p><code>format</code>       - <a href="Template.html"><code>Template</code></a> format</p>
+</li><li>
+<p><code>finder</code>              - An instance of <a href="LookupContext.html"><code>ActionView::LookupContext</code></a></p>
+</li><li>
+<p><code>dependencies</code> - An array of dependent views</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/digestor.rb, line 16
+      def digest(name:, format: nil, finder:, dependencies: nil)
+        if dependencies.nil? || dependencies.empty?
+          cache_key = &quot;#{name}.#{format}&quot;
+        else
+          dependencies_suffix = dependencies.flatten.tap(&amp;:compact!).join(&quot;.&quot;)
+          cache_key = &quot;#{name}.#{format}.#{dependencies_suffix}&quot;
+        end
+
+        # this is a correctly done double-checked locking idiom
+        # (Concurrent::Map&#39;s lookups have volatile semantics)
+        finder.digest_cache[cache_key] || @@digest_mutex.synchronize do
+          finder.digest_cache.fetch(cache_key) do # re-check under lock
+            path = TemplatePath.parse(name)
+            root = tree(path.to_s, finder, path.partial?)
+            dependencies.each do |injected_dep|
+              root.children &lt;&lt; Injected.new(injected_dep, nil, nil)
+            end if dependencies
+            finder.digest_cache[cache_key] = root.digest(finder)
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionview/lib/action_view/digestor.rb#L16" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-logger">
+            
+              logger()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/digestor.rb, line 38
+      def logger
+        ActionView::Base.logger || NullLogger
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionview/lib/action_view/digestor.rb#L38" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-tree">
+            
+              tree(name, finder, partial = false, seen = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Create a dependency tree for template named <code>name</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/digestor.rb, line 43
+      def tree(name, finder, partial = false, seen = {})
+        logical_name = name.gsub(%r|/_|, &quot;/&quot;)
+        interpolated = name.include?(&quot;#&quot;)
+
+        path = TemplatePath.parse(name)
+
+        if !interpolated &amp;&amp; (template = find_template(finder, path.name, [path.prefix], partial, []))
+          if node = seen[template.identifier] # handle cycles in the tree
+            node
+          else
+            node = seen[template.identifier] = Node.create(name, logical_name, template, partial)
+
+            deps = DependencyTracker.find_dependencies(name, template, finder.view_paths)
+            deps.uniq { |n| n.gsub(%r|/_|, &quot;/&quot;) }.each do |dep_file|
+              node.children &lt;&lt; tree(dep_file, finder, true, seen)
+            end
+            node
+          end
+        else
+          unless interpolated # Dynamic template partial names can never be tracked
+            logger.error &quot;  Couldn&#39;t find template for digesting: #{name}&quot;
+          end
+
+          seen[name] ||= Missing.new(name, logical_name, nil)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionview/lib/action_view/digestor.rb#L43" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+    
+  
+</div>
+
+    </div>
+</div>

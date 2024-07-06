@@ -1,0 +1,297 @@
+---
+title: ActiveRecord::Aggregations::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Aggregations::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/aggregations_rb.html">activerecord/lib/active_record/aggregations.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveRecord::Aggregations::ClassMethods-label-Active+Record+Aggregations">Active Record Aggregations</h1>
+
+<p>Active Record implements aggregation through a macro-like class method called <a href="ClassMethods.html#method-i-composed_of"><code>composed_of</code></a> for representing attributes as value objects. It expresses relationships like “Account [is] composed of Money [among other things]” or “Person [is] composed of [an] address”. Each call to the macro adds a description of how the value objects are created from the attributes of the entity object (when the entity is initialized either as a new object or from finding an existing object) and how it can be turned back into attributes (when the entity is saved to the database).</p>
+
+<pre><code>class Customer &lt; ActiveRecord::Base
+  composed_of :balance, class_name: &quot;Money&quot;, mapping: { balance: :amount }
+  composed_of :address, mapping: { address_street: :street, address_city: :city }
+end
+</code></pre>
+
+<p>The customer class now has the following methods to manipulate the value objects:</p>
+<ul><li>
+<p><code>Customer#balance, Customer#balance=(money)</code></p>
+</li><li>
+<p><code>Customer#address, Customer#address=(address)</code></p>
+</li></ul>
+
+<p>These methods will operate with value objects like the ones described below:</p>
+
+<pre><code>class Money
+  include Comparable
+  attr_reader :amount, :currency
+  EXCHANGE_RATES = { &quot;USD_TO_DKK&quot; =&gt; 6 }
+
+  def initialize(amount, currency = &quot;USD&quot;)
+    @amount, @currency = amount, currency
+  end
+
+  def exchange_to(other_currency)
+    exchanged_amount = (amount * EXCHANGE_RATES[&quot;#{currency}_TO_#{other_currency}&quot;]).floor
+    Money.new(exchanged_amount, other_currency)
+  end
+
+  def ==(other_money)
+    amount == other_money.amount &amp;&amp; currency == other_money.currency
+  end
+
+  def &lt;=&gt;(other_money)
+    if currency == other_money.currency
+      amount &lt;=&gt; other_money.amount
+    else
+      amount &lt;=&gt; other_money.exchange_to(currency).amount
+    end
+  end
+end
+
+class Address
+  attr_reader :street, :city
+  def initialize(street, city)
+    @street, @city = street, city
+  end
+
+  def close_to?(other_address)
+    city == other_address.city
+  end
+
+  def ==(other_address)
+    city == other_address.city &amp;&amp; street == other_address.street
+  end
+end
+</code></pre>
+
+<p>Now it’s possible to access attributes from the database through the value objects instead. If you choose to name the composition the same as the attribute’s name, it will be the only way to access that attribute. That’s the case with our <code>balance</code> attribute. You interact with the value objects just like you would with any other attribute:</p>
+
+<pre><code>customer.balance = Money.new(20)     # sets the Money value object and the attribute
+customer.balance                     # =&gt; Money value object
+customer.balance.exchange_to(&quot;DKK&quot;)  # =&gt; Money.new(120, &quot;DKK&quot;)
+customer.balance &gt; Money.new(10)     # =&gt; true
+customer.balance == Money.new(20)    # =&gt; true
+customer.balance &lt; Money.new(5)      # =&gt; false
+</code></pre>
+
+<p>Value objects can also be composed of multiple attributes, such as the case of Address. The order of the mappings will determine the order of the parameters.</p>
+
+<pre><code>customer.address_street = &quot;Hyancintvej&quot;
+customer.address_city   = &quot;Copenhagen&quot;
+customer.address        # =&gt; Address.new(&quot;Hyancintvej&quot;, &quot;Copenhagen&quot;)
+
+customer.address = Address.new(&quot;May Street&quot;, &quot;Chicago&quot;)
+customer.address_street # =&gt; &quot;May Street&quot;
+customer.address_city   # =&gt; &quot;Chicago&quot;
+</code></pre>
+
+<h2 id="module-ActiveRecord::Aggregations::ClassMethods-label-Writing+value+objects">Writing value objects</h2>
+
+<p>Value objects are immutable and interchangeable objects that represent a given value, such as a Money object representing $5. Two Money objects both representing $5 should be equal (through methods such as <code>==</code> and <code>&lt;=&gt;</code> from Comparable if ranking makes sense). This is unlike entity objects where equality is determined by identity. An entity class such as Customer can easily have two different objects that both have an address on Hyancintvej. Entity identity is determined by object or relational unique identifiers (such as primary keys). Normal <a href="../Base.html"><code>ActiveRecord::Base</code></a> classes are entity objects.</p>
+
+<p>It’s also important to treat the value objects as immutable. Don’t allow the Money object to have its amount changed after creation. Create a new Money object with the new value instead. The <code>Money#exchange_to</code> method is an example of this. It returns a new value object instead of changing its own values. Active Record won’t persist value objects that have been changed through means other than the writer method.</p>
+
+<p>The immutable requirement is enforced by Active Record by freezing any object assigned as a value object. Attempting to change it afterwards will result in a <code>RuntimeError</code>.</p>
+
+<p>Read more about value objects on <a href="http://c2.com/cgi/wiki?ValueObject">c2.com/cgi/wiki?ValueObject</a> and on the dangers of not keeping value objects immutable on <a href="http://c2.com/cgi/wiki?ValueObjectsShouldBeImmutable">c2.com/cgi/wiki?ValueObjectsShouldBeImmutable</a></p>
+
+<h2 id="module-ActiveRecord::Aggregations::ClassMethods-label-Custom+constructors+and+converters">Custom constructors and converters</h2>
+
+<p>By default value objects are initialized by calling the <code>new</code> constructor of the value class passing each of the mapped attributes, in the order specified by the <code>:mapping</code> option, as arguments. If the value class doesn’t support this convention then <a href="ClassMethods.html#method-i-composed_of"><code>composed_of</code></a> allows a custom constructor to be specified.</p>
+
+<p>When a new value is assigned to the value object, the default assumption is that the new value is an instance of the value class. Specifying a custom converter allows the new value to be automatically converted to an instance of value class if necessary.</p>
+
+<p>For example, the <code>NetworkResource</code> model has <code>network_address</code> and <code>cidr_range</code> attributes that should be aggregated using the <code>NetAddr::CIDR</code> value class (<a href="https://www.rubydoc.info/gems/netaddr/1.5.0/NetAddr/CIDR">www.rubydoc.info/gems/netaddr/1.5.0/NetAddr/CIDR</a>). The constructor for the value class is called <code>create</code> and it expects a CIDR address string as a parameter. New values can be assigned to the value object using either another <code>NetAddr::CIDR</code> object, a string or an array. The <code>:constructor</code> and <code>:converter</code> options can be used to meet these requirements:</p>
+
+<pre><code>class NetworkResource &lt; ActiveRecord::Base
+  composed_of :cidr,
+              class_name: &#39;NetAddr::CIDR&#39;,
+              mapping: { network_address: :network, cidr_range: :bits },
+              allow_nil: true,
+              constructor: Proc.new { |network_address, cidr_range| NetAddr::CIDR.create(&quot;#{network_address}/#{cidr_range}&quot;) },
+              converter: Proc.new { |value| NetAddr::CIDR.create(value.is_a?(Array) ? value.join(&#39;/&#39;) : value) }
+end
+
+# This calls the :constructor
+network_resource = NetworkResource.new(network_address: &#39;192.168.0.1&#39;, cidr_range: 24)
+
+# These assignments will both use the :converter
+network_resource.cidr = [ &#39;192.168.2.1&#39;, 8 ]
+network_resource.cidr = &#39;192.168.0.1/24&#39;
+
+# This assignment won&#39;t use the :converter as the value is already an instance of the value class
+network_resource.cidr = NetAddr::CIDR.create(&#39;192.168.2.1/8&#39;)
+
+# Saving and then reloading will use the :constructor on reload
+network_resource.save
+network_resource.reload
+</code></pre>
+
+<h2 id="module-ActiveRecord::Aggregations::ClassMethods-label-Finding+records+by+a+value+object">Finding records by a value object</h2>
+
+<p>Once a <a href="ClassMethods.html#method-i-composed_of"><code>composed_of</code></a> relationship is specified for a model, records can be loaded from the database by specifying an instance of the value object in the conditions hash. The following example finds all customers with <code>address_street</code> equal to “May Street” and <code>address_city</code> equal to “Chicago”:</p>
+
+<pre><code>Customer.where(address: Address.new(&quot;May Street&quot;, &quot;Chicago&quot;))
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-composed_of">composed_of</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="../Aggregations.html">
+              ActiveRecord::Aggregations
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-composed_of">
+            
+              composed_of(part_id, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Adds reader and writer methods for manipulating a value object: <code>composed_of :address</code> adds <code>address</code> and <code>address=(new_address)</code> methods.</p>
+
+<p>Options are:</p>
+<ul><li>
+<p><code>:class_name</code> - Specifies the class name of the association. Use it only if that name can’t be inferred from the part id. So <code>composed_of :address</code> will by default be linked to the Address class, but if the real class name is <code>CompanyAddress</code>, you’ll have to specify it with this option.</p>
+</li><li>
+<p><code>:mapping</code> - Specifies the mapping of entity attributes to attributes of the value object. Each mapping is represented as a key-value pair where the key is the name of the entity attribute and the value is the name of the attribute in the value object. The order in which mappings are defined determines the order in which attributes are sent to the value class constructor. The mapping can be written as a hash or as an array of pairs.</p>
+</li><li>
+<p><code>:allow_nil</code> - Specifies that the value object will not be instantiated when all mapped attributes are <code>nil</code>. Setting the value object to <code>nil</code> has the effect of writing <code>nil</code> to all mapped attributes. This defaults to <code>false</code>.</p>
+</li><li>
+<p><code>:constructor</code> - A symbol specifying the name of the constructor method or a Proc that is called to initialize the value object. The constructor is passed all of the mapped attributes, in the order that they are defined in the <code>:mapping option</code>, as arguments and uses them to instantiate a <code>:class_name</code> object. The default is <code>:new</code>.</p>
+</li><li>
+<p><code>:converter</code> - A symbol specifying the name of a class method of <code>:class_name</code> or a Proc that is called when a new value is assigned to the value object. The converter is passed the single value that is used in the assignment and is only called if the new value is not an instance of <code>:class_name</code>. If <code>:allow_nil</code> is set to true, the converter can return <code>nil</code> to skip the assignment.</p>
+</li></ul>
+
+<p>Option examples:</p>
+
+<pre><code>composed_of :temperature, mapping: { reading: :celsius }
+composed_of :balance, class_name: &quot;Money&quot;, mapping: { balance: :amount }
+composed_of :address, mapping: { address_street: :street, address_city: :city }
+composed_of :address, mapping: [ %w(address_street street), %w(address_city city) ]
+composed_of :gps_location
+composed_of :gps_location, allow_nil: true
+composed_of :ip_address,
+            class_name: &#39;IPAddr&#39;,
+            mapping: { ip: :to_i },
+            constructor: Proc.new { |ip| IPAddr.new(ip, Socket::AF_INET) },
+            converter: Proc.new { |ip| ip.is_a?(Integer) ? IPAddr.new(ip, Socket::AF_INET) : IPAddr.new(ip.to_s) }
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/aggregations.rb, line 225
+        def composed_of(part_id, options = {})
+          options.assert_valid_keys(:class_name, :mapping, :allow_nil, :constructor, :converter)
+
+          unless self &lt; Aggregations
+            include Aggregations
+          end
+
+          name        = part_id.id2name
+          class_name  = options[:class_name]  || name.camelize
+          mapping     = options[:mapping]     || [ name, name ]
+          mapping     = [ mapping ] unless mapping.first.is_a?(Array)
+          allow_nil   = options[:allow_nil]   || false
+          constructor = options[:constructor] || :new
+          converter   = options[:converter]
+
+          reader_method(name, class_name, mapping, allow_nil, constructor)
+          writer_method(name, class_name, mapping, allow_nil, converter)
+
+          reflection = ActiveRecord::Reflection.create(:composed_of, part_id, nil, options, self)
+          Reflection.add_aggregate_reflection self, part_id, reflection
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/aggregations.rb#L225" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

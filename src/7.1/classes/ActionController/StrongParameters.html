@@ -1,0 +1,215 @@
+---
+title: ActionController::StrongParameters
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionController::StrongParameters
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_controller/metal/strong_parameters_rb.html">actionpack/lib/action_controller/metal/strong_parameters.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionController::StrongParameters-label-Strong+Parameters">Strong Parameters</h1>
+
+<p>It provides an interface for protecting attributes from end-user assignment. This makes Action Controller parameters forbidden to be used in Active Model mass assignment until they have been explicitly enumerated.</p>
+
+<p>In addition, parameters can be marked as required and flow through a predefined raise/rescue flow to end up as a <code>400 Bad Request</code> with no effort.</p>
+
+<pre><code>class PeopleController &lt; ActionController::Base
+  # Using &quot;Person.create(params[:person])&quot; would raise an
+  # ActiveModel::ForbiddenAttributesError exception because it&#39;d
+  # be using mass assignment without an explicit permit step.
+  # This is the recommended form:
+  def create
+    Person.create(person_params)
+  end
+
+  # This will pass with flying colors as long as there&#39;s a person key in the
+  # parameters, otherwise it&#39;ll raise an ActionController::ParameterMissing
+  # exception, which will get caught by ActionController::Base and turned
+  # into a 400 Bad Request reply.
+  def update
+    redirect_to current_account.people.find(params[:id]).tap { |person|
+      person.update!(person_params)
+    }
+  end
+
+  private
+    # Using a private method to encapsulate the permissible parameters is
+    # a good pattern since you&#39;ll be able to reuse the same permit
+    # list between create and update. Also, you can specialize this method
+    # with per-user checking of permissible attributes.
+    def person_params
+      params.require(:person).permit(:name, :age)
+    end
+end
+</code></pre>
+
+<p>In order to use <code>accepts_nested_attributes_for</code> with Strong Parameters, you will need to specify which nested attributes should be permitted. You might want to allow <code>:id</code> and <code>:_destroy</code>, see <a href="../ActiveRecord/NestedAttributes.html"><code>ActiveRecord::NestedAttributes</code></a> for more information.</p>
+
+<pre><code>class Person
+  has_many :pets
+  accepts_nested_attributes_for :pets
+end
+
+class PeopleController &lt; ActionController::Base
+  def create
+    Person.create(person_params)
+  end
+
+  ...
+
+  private
+
+    def person_params
+      # It&#39;s mandatory to specify the nested attributes that should be permitted.
+      # If you use `permit` with just the key that points to the nested attributes hash,
+      # it will return an empty hash.
+      params.require(:person).permit(:name, :age, pets_attributes: [ :id, :name, :category ])
+    end
+end
+</code></pre>
+
+<p>See <a href="Parameters.html#method-i-require"><code>ActionController::Parameters.require</code></a> and <a href="Parameters.html#method-i-permit"><code>ActionController::Parameters.permit</code></a> for more information.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-params">params</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-params-3D">params=</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-params">
+            
+              params()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a new <a href="Parameters.html"><code>ActionController::Parameters</code></a> object that has been instantiated with the <code>request.parameters</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/strong_parameters.rb, line 1281
+    def params
+      @_params ||= begin
+        context = {
+          controller: self.class.name,
+          action: action_name,
+          request: request,
+          params: request.filtered_parameters
+        }
+        Parameters.new(request.parameters, context)
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/strong_parameters.rb#L1281" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-params-3D">
+            
+              params=(value)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Assigns the given <code>value</code> to the <code>params</code> hash. If <code>value</code> is a <a href="../Hash.html"><code>Hash</code></a>, this will create an <a href="Parameters.html"><code>ActionController::Parameters</code></a> object that has been instantiated with the given <code>value</code> hash.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/strong_parameters.rb, line 1296
+    def params=(value)
+      @_params = value.is_a?(Hash) ? Parameters.new(value) : value
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/strong_parameters.rb#L1296" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

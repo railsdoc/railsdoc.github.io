@@ -1,0 +1,401 @@
+---
+title: ActiveSupport::Testing::Parallelization::Worker
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::Testing::Parallelization::Worker
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/activesupport/lib/active_support/testing/parallelization/worker_rb.html">activesupport/lib/active_support/testing/parallelization/worker.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-after_fork">after_fork</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-perform_job">perform_job</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-run_cleanup">run_cleanup</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-safe_record">safe_record</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-start">start</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-work_from_queue">work_from_queue</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(number, url)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 7
+        def initialize(number, url)
+          @id = SecureRandom.uuid
+          @number = number
+          @url = url
+          @setup_exception = nil
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/testing/parallelization/worker.rb#L7" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-after_fork">
+            
+              after_fork()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 80
+        def after_fork
+          Parallelization.after_fork_hooks.each do |cb|
+            cb.call(@number)
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/testing/parallelization/worker.rb#L80" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-perform_job">
+            
+              perform_job(job)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 42
+        def perform_job(job)
+          klass    = job[0]
+          method   = job[1]
+          reporter = job[2]
+
+          set_process_title(&quot;#{klass}##{method}&quot;)
+
+          result = klass.with_info_handler reporter do
+            Minitest.run_one_method(klass, method)
+          end
+
+          safe_record(reporter, result)
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/testing/parallelization/worker.rb#L42" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-run_cleanup">
+            
+              run_cleanup()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 86
+        def run_cleanup
+          Parallelization.run_cleanup_hooks.each do |cb|
+            cb.call(@number)
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/testing/parallelization/worker.rb#L86" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-safe_record">
+            
+              safe_record(reporter, result)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 56
+        def safe_record(reporter, result)
+          add_setup_exception(result) if @setup_exception
+
+          begin
+            @queue.record(reporter, result)
+          rescue DRb::DRbConnError
+            result.failures.map! do |failure|
+              if failure.respond_to?(:error)
+                # minitest &gt;5.14.0
+                error = DRb::DRbRemoteError.new(failure.error)
+              else
+                error = DRb::DRbRemoteError.new(failure.exception)
+              end
+              Minitest::UnexpectedError.new(error)
+            end
+            @queue.record(reporter, result)
+          rescue Interrupt
+            @queue.interrupt
+            raise
+          end
+
+          set_process_title(&quot;(idle)&quot;)
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/testing/parallelization/worker.rb#L56" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-start">
+            
+              start()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 14
+        def start
+          fork do
+            set_process_title(&quot;(starting)&quot;)
+
+            DRb.stop_service
+
+            @queue = DRbObject.new_with_uri(@url)
+            @queue.start_worker(@id)
+
+            begin
+              after_fork
+            rescue =&gt; @setup_exception; end
+
+            work_from_queue
+          ensure
+            set_process_title(&quot;(stopping)&quot;)
+
+            run_cleanup
+            @queue.stop_worker(@id)
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/testing/parallelization/worker.rb#L14" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-work_from_queue">
+            
+              work_from_queue()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/parallelization/worker.rb, line 36
+        def work_from_queue
+          while job = @queue.pop
+            perform_job(job)
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/testing/parallelization/worker.rb#L36" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

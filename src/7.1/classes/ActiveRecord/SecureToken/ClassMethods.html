@@ -1,0 +1,178 @@
+---
+title: ActiveRecord::SecureToken::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::SecureToken::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/secure_token_rb.html">activerecord/lib/active_record/secure_token.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-generate_unique_secure_token">generate_unique_secure_token</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-has_secure_token">has_secure_token</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-generate_unique_secure_token">
+            
+              generate_unique_secure_token(length: MINIMUM_TOKEN_LENGTH)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/secure_token.rb, line 61
+      def generate_unique_secure_token(length: MINIMUM_TOKEN_LENGTH)
+        SecureRandom.base58(length)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/secure_token.rb#L61" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-has_secure_token">
+            
+              has_secure_token(attribute = :token, length: MINIMUM_TOKEN_LENGTH, on: ActiveRecord.generate_secure_token_on)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Example using <a href="ClassMethods.html#method-i-has_secure_token"><code>has_secure_token</code></a></p>
+
+<pre><code># Schema: User(token:string, auth_token:string)
+class User &lt; ActiveRecord::Base
+  has_secure_token
+  has_secure_token :auth_token, length: 36
+end
+
+user = User.new
+user.save
+user.token # =&gt; &quot;pX27zsMN2ViQKta1bGfLmVJE&quot;
+user.auth_token # =&gt; &quot;tU9bLuZseefXQ4yQxQo8wjtBvsAfPc78os6R&quot;
+user.regenerate_token # =&gt; true
+user.regenerate_auth_token # =&gt; true
+</code></pre>
+
+<p><code>SecureRandom::base58</code> is used to generate at minimum a 24-character unique token, so collisions are highly unlikely.</p>
+
+<p>Note that it’s still possible to generate a race condition in the database in the same way that <a href="../Validations/ClassMethods.html#method-i-validates_uniqueness_of">validates_uniqueness_of</a> can. You’re encouraged to add a unique index in the database to deal with this even more unlikely scenario.</p>
+
+<h3 id="method-i-has_secure_token-label-Options">Options</h3>
+<dl class="rdoc-list label-list"><dt>:length
+<dd>
+<p>Length of the Secure Random, with a minimum of 24 characters. It will default to 24.</p>
+</dd><dt>:on
+<dd>
+<p>The callback when the value is generated. When called with <code>on: :initialize</code>, the value is generated in an <code>after_initialize</code> callback, otherwise the value will be used in a <code>before_</code> callback. When not specified, <code>:on</code> will use the value of <code>config.active_record.generate_secure_token_on</code>, which defaults to <code>:initialize</code> starting in Rails 7.1.</p>
+</dd></dl>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/secure_token.rb, line 46
+      def has_secure_token(attribute = :token, length: MINIMUM_TOKEN_LENGTH, on: ActiveRecord.generate_secure_token_on)
+        if length &lt; MINIMUM_TOKEN_LENGTH
+          raise MinimumLengthError, &quot;Token requires a minimum length of #{MINIMUM_TOKEN_LENGTH} characters.&quot;
+        end
+
+        # Load securerandom only when has_secure_token is used.
+        require &quot;active_support/core_ext/securerandom&quot;
+        define_method(&quot;regenerate_#{attribute}&quot;) { update! attribute =&gt; self.class.generate_unique_secure_token(length: length) }
+        set_callback on, on == :initialize ? :after : :before do
+          if new_record? &amp;&amp; !query_attribute(attribute)
+            send(&quot;#{attribute}=&quot;, self.class.generate_unique_secure_token(length: length))
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/secure_token.rb#L46" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

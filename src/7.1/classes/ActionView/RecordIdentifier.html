@@ -1,0 +1,285 @@
+---
+title: ActionView::RecordIdentifier
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionView::RecordIdentifier
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionview/lib/action_view/record_identifier_rb.html">actionview/lib/action_view/record_identifier.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionView::RecordIdentifier-label-Action+View+Record+Identifier">Action View Record Identifier</h1>
+
+<p><a href="RecordIdentifier.html"><code>RecordIdentifier</code></a> encapsulates methods used by various <a href="../ActionView.html"><code>ActionView</code></a> helpers to associate records with DOM elements.</p>
+
+<p>Consider for example the following code that form of post:</p>
+
+<pre><code>&lt;%= form_for(post) do |f| %&gt;
+  &lt;%= f.text_field :body %&gt;
+&lt;% end %&gt;
+</code></pre>
+
+<p>When <code>post</code> is a new, unsaved <a href="../ActiveRecord/Base.html"><code>ActiveRecord::Base</code></a> instance, the resulting HTML is:</p>
+
+<pre><code>&lt;form class=&quot;new_post&quot; id=&quot;new_post&quot; action=&quot;/posts&quot; accept-charset=&quot;UTF-8&quot; method=&quot;post&quot;&gt;
+  &lt;input type=&quot;text&quot; name=&quot;post[body]&quot; id=&quot;post_body&quot; /&gt;
+&lt;/form&gt;
+</code></pre>
+
+<p>When <code>post</code> is a persisted <a href="../ActiveRecord/Base.html"><code>ActiveRecord::Base</code></a> instance, the resulting HTML is:</p>
+
+<pre><code>&lt;form class=&quot;edit_post&quot; id=&quot;edit_post_42&quot; action=&quot;/posts/42&quot; accept-charset=&quot;UTF-8&quot; method=&quot;post&quot;&gt;
+  &lt;input type=&quot;text&quot; value=&quot;What a wonderful world!&quot; name=&quot;post[body]&quot; id=&quot;post_body&quot; /&gt;
+&lt;/form&gt;
+</code></pre>
+
+<p>In both cases, the <code>id</code> and <code>class</code> of the wrapping DOM element are automatically generated, following naming conventions encapsulated by the <a href="RecordIdentifier.html"><code>RecordIdentifier</code></a> methods <a href="RecordIdentifier.html#method-i-dom_id"><code>dom_id</code></a> and <a href="RecordIdentifier.html#method-i-dom_class"><code>dom_class</code></a>:</p>
+
+<pre><code>dom_id(Post)             # =&gt; &quot;new_post&quot;
+dom_class(Post)          # =&gt; &quot;post&quot;
+dom_id(Post.new)         # =&gt; &quot;new_post&quot;
+dom_class(Post.new)      # =&gt; &quot;post&quot;
+dom_id(Post.find 42)     # =&gt; &quot;post_42&quot;
+dom_class(Post.find 42)  # =&gt; &quot;post&quot;
+</code></pre>
+
+<p>Note that these methods do not strictly require <code>Post</code> to be a subclass of <a href="../ActiveRecord/Base.html"><code>ActiveRecord::Base</code></a>. Any <code>Post</code> class will work as long as its instances respond to <code>to_key</code> and <code>model_name</code>, given that <code>model_name</code> responds to <code>param_key</code>. For instance:</p>
+
+<pre><code>class Post
+  attr_accessor :to_key
+
+  def model_name
+    OpenStruct.new param_key: &#39;post&#39;
+  end
+
+  def self.find(id)
+    new.tap { |post| post.to_key = [id] }
+  end
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-dom_class">dom_class</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-dom_id">dom_id</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-record_key_for_dom_id">record_key_for_dom_id</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">JOIN</td>
+            <td>=</td>
+            <td class="attr-value">&quot;_&quot;</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">NEW</td>
+            <td>=</td>
+            <td class="attr-value">&quot;new&quot;</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-dom_class">
+            
+              dom_class(record_or_class, prefix = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>The DOM class convention is to use the singular form of an object or class.</p>
+
+<pre><code>dom_class(post)   # =&gt; &quot;post&quot;
+dom_class(Person) # =&gt; &quot;person&quot;
+</code></pre>
+
+<p>If you need to address multiple instances of the same class in the same view, you can prefix the <a href="RecordIdentifier.html#method-i-dom_class"><code>dom_class</code></a>:</p>
+
+<pre><code>dom_class(post, :edit)   # =&gt; &quot;edit_post&quot;
+dom_class(Person, :edit) # =&gt; &quot;edit_person&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/record_identifier.rb, line 78
+    def dom_class(record_or_class, prefix = nil)
+      singular = model_name_from_record_or_class(record_or_class).param_key
+      prefix ? &quot;#{prefix}#{JOIN}#{singular}&quot; : singular
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionview/lib/action_view/record_identifier.rb#L78" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-dom_id">
+            
+              dom_id(record_or_class, prefix = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>The DOM id convention is to use the singular form of an object or class with the id following an underscore. If no id is found, prefix with “new_” instead.</p>
+
+<pre><code>dom_id(Post.find(45)) # =&gt; &quot;post_45&quot;
+dom_id(Post)          # =&gt; &quot;new_post&quot;
+</code></pre>
+
+<p>If you need to address multiple instances of the same class in the same view, you can prefix the <a href="RecordIdentifier.html#method-i-dom_id"><code>dom_id</code></a>:</p>
+
+<pre><code>dom_id(Post.find(45), :edit) # =&gt; &quot;edit_post_45&quot;
+dom_id(Post, :custom)        # =&gt; &quot;custom_post&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/record_identifier.rb, line 93
+    def dom_id(record_or_class, prefix = nil)
+      raise ArgumentError, &quot;dom_id must be passed a record_or_class as the first argument, you passed #{record_or_class.inspect}&quot; unless record_or_class
+
+      record_id = record_key_for_dom_id(record_or_class) unless record_or_class.is_a?(Class)
+      if record_id
+        &quot;#{dom_class(record_or_class, prefix)}#{JOIN}#{record_id}&quot;
+      else
+        dom_class(record_or_class, prefix || NEW)
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionview/lib/action_view/record_identifier.rb#L93" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+      <h2 id="instance-private-methods">Instance Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-record_key_for_dom_id">
+            
+              record_key_for_dom_id(record)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a string representation of the key attribute(s) that is suitable for use in an HTML DOM id. This can be overwritten to customize the default generated string representation if desired. If you need to read back a key from a <a href="RecordIdentifier.html#method-i-dom_id"><code>dom_id</code></a> in order to query for the underlying database record, you should write a helper like ‘person_record_from_dom_id’ that will extract the key either based on the default implementation (which just joins all key attributes with ‘_’) or on your own overwritten version of the method. By default, this implementation passes the key string through a method that replaces all characters that are invalid inside DOM ids, with valid ones. You need to make sure yourself that your dom ids are valid, in case you override this method.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/record_identifier.rb, line 113
+    def record_key_for_dom_id(record) # :doc:
+      key = convert_to_model(record).to_key
+      key &amp;&amp; key.all? ? key.join(JOIN) : nil
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionview/lib/action_view/record_identifier.rb#L113" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,341 @@
+---
+title: ActionController::Instrumentation
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionController::Instrumentation
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_controller/metal/instrumentation_rb.html">actionpack/lib/action_controller/metal/instrumentation.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionController::Instrumentation-label-Action+Controller+Instrumentation">Action Controller Instrumentation</h1>
+
+<p>Adds instrumentation to several ends in <a href="Base.html"><code>ActionController::Base</code></a>. It also provides some hooks related with process_action. This allows an ORM like Active Record and/or DataMapper to plug in <a href="../ActionController.html"><code>ActionController</code></a> and show related information.</p>
+
+<p>Check ActiveRecord::Railties::ControllerRuntime for an example.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Instrumentation/ClassMethods.html">ActionController::Instrumentation::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-append_info_to_payload">append_info_to_payload</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-cleanup_view_runtime">cleanup_view_runtime</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-redirect_to">redirect_to</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-render">render</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-send_data">send_data</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-send_file">send_file</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-redirect_to">
+            
+              redirect_to(*)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 47
+    def redirect_to(*)
+      ActiveSupport::Notifications.instrument(&quot;redirect_to.action_controller&quot;, request: request) do |payload|
+        result = super
+        payload[:status]   = response.status
+        payload[:location] = response.filtered_location
+        result
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/instrumentation.rb#L47" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-render">
+            
+              render(*)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 26
+    def render(*)
+      render_output = nil
+      self.view_runtime = cleanup_view_runtime do
+        Benchmark.ms { render_output = super }
+      end
+      render_output
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/instrumentation.rb#L26" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-send_data">
+            
+              send_data(data, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 41
+    def send_data(data, options = {})
+      ActiveSupport::Notifications.instrument(&quot;send_data.action_controller&quot;, options) do
+        super
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/instrumentation.rb#L41" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-send_file">
+            
+              send_file(path, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 34
+    def send_file(path, options = {})
+      ActiveSupport::Notifications.instrument(&quot;send_file.action_controller&quot;,
+        options.merge(path: path)) do
+        super
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/instrumentation.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+      <h2 id="instance-private-methods">Instance Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-append_info_to_payload">
+            
+              append_info_to_payload(payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Every time after an action is processed, this method is invoked with the payload, so you can add more information.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 103
+      def append_info_to_payload(payload) # :doc:
+        payload[:view_runtime] = view_runtime
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/instrumentation.rb#L103" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-cleanup_view_runtime">
+            
+              cleanup_view_runtime()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>A hook which allows you to clean up any time, wrongly taken into account in views, like database querying time.</p>
+
+<pre><code>def cleanup_view_runtime
+  super - time_taken_in_something_expensive
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/instrumentation.rb, line 97
+      def cleanup_view_runtime # :doc:
+        yield
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/instrumentation.rb#L97" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

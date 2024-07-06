@@ -1,0 +1,270 @@
+---
+title: ActiveRecord::Enum
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Enum
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/enum_rb.html">activerecord/lib/active_record/enum.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/relation/calculations_rb.html">activerecord/lib/active_record/relation/calculations.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Declare an enum attribute where the values map to integers in the database, but can be queried by name. Example:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ]
+end
+
+# conversation.update! status: 0
+conversation.active!
+conversation.active? # =&gt; true
+conversation.status  # =&gt; &quot;active&quot;
+
+# conversation.update! status: 1
+conversation.archived!
+conversation.archived? # =&gt; true
+conversation.status    # =&gt; &quot;archived&quot;
+
+# conversation.status = 1
+conversation.status = &quot;archived&quot;
+
+conversation.status = nil
+conversation.status.nil? # =&gt; true
+conversation.status      # =&gt; nil
+</code></pre>
+
+<p>Scopes based on the allowed values of the enum field will be provided as well. With the above example:</p>
+
+<pre><code>Conversation.active
+Conversation.not_active
+Conversation.archived
+Conversation.not_archived
+</code></pre>
+
+<p>Of course, you can also query them directly if the scopes don’t fit your needs:</p>
+
+<pre><code>Conversation.where(status: [:active, :archived])
+Conversation.where.not(status: :active)
+</code></pre>
+
+<p>Defining scopes can be disabled by setting <code>:scopes</code> to <code>false</code>.</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], scopes: false
+end
+</code></pre>
+
+<p>You can set the default enum value by setting <code>:default</code>, like:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], default: :active
+end
+
+conversation = Conversation.new
+conversation.status # =&gt; &quot;active&quot;
+</code></pre>
+
+<p>It’s possible to explicitly map the relation between attribute and database integer with a hash:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, active: 0, archived: 1
+end
+</code></pre>
+
+<p>Finally it’s also possible to use a string column to persist the enumerated value. Note that this will likely lead to slower database queries:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, active: &quot;active&quot;, archived: &quot;archived&quot;
+end
+</code></pre>
+
+<p>Note that when an array is used, the implicit mapping from the values to database integers is derived from the order the values appear in the array. In the example, <code>:active</code> is mapped to <code>0</code> as it’s the first element, and <code>:archived</code> is mapped to <code>1</code>. In general, the <code>i</code>-th element is mapped to <code>i-1</code> in the database.</p>
+
+<p>Therefore, once a value is added to the enum array, its position in the array must be maintained, and new values should only be added to the end of the array. To remove unused values, the explicit hash syntax should be used.</p>
+
+<p>In rare circumstances you might need to access the mapping directly. The mappings are exposed through a class method with the pluralized attribute name, which return the mapping in a <a href="../ActiveSupport/HashWithIndifferentAccess.html"><code>ActiveSupport::HashWithIndifferentAccess</code></a> :</p>
+
+<pre><code>Conversation.statuses[:active]    # =&gt; 0
+Conversation.statuses[&quot;archived&quot;] # =&gt; 1
+</code></pre>
+
+<p>Use that class method when you need to know the ordinal value of an enum. For example, you can use that when manually building SQL strings:</p>
+
+<pre><code>Conversation.where(&quot;status &lt;&gt; ?&quot;, Conversation.statuses[:archived])
+</code></pre>
+
+<p>You can use the <code>:prefix</code> or <code>:suffix</code> options when you need to define multiple enums with same values. If the passed value is <code>true</code>, the methods are prefixed/suffixed with the name of the enum. It is also possible to supply a custom value:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], suffix: true
+  enum :comments_status, [ :active, :inactive ], prefix: :comments
+end
+</code></pre>
+
+<p>With the above example, the bang and predicate methods along with the associated scopes are now prefixed and/or suffixed accordingly:</p>
+
+<pre><code>conversation.active_status!
+conversation.archived_status? # =&gt; false
+
+conversation.comments_inactive!
+conversation.comments_active? # =&gt; false
+</code></pre>
+
+<p>If you want to disable the auto-generated methods on the model, you can do so by setting the <code>:instance_methods</code> option to false:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], instance_methods: false
+end
+</code></pre>
+
+<p>If you want the enum value to be validated before saving, use the option <code>:validate</code>:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], validate: true
+end
+
+conversation = Conversation.new
+
+conversation.status = :unknown
+conversation.valid? # =&gt; false
+
+conversation.status = nil
+conversation.valid? # =&gt; false
+
+conversation.status = :active
+conversation.valid? # =&gt; true
+</code></pre>
+
+<p>It is also possible to pass additional validation options:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ], validate: { allow_nil: true }
+end
+
+conversation = Conversation.new
+
+conversation.status = :unknown
+conversation.valid? # =&gt; false
+
+conversation.status = nil
+conversation.valid? # =&gt; true
+
+conversation.status = :active
+conversation.valid? # =&gt; true
+</code></pre>
+
+<p>Otherwise <code>ArgumentError</code> will raise:</p>
+
+<pre><code>class Conversation &lt; ActiveRecord::Base
+  enum :status, [ :active, :archived ]
+end
+
+conversation = Conversation.new
+
+conversation.status = :unknown # &#39;unknown&#39; is not a valid status (ArgumentError)
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-enum">enum</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-enum">
+            
+              enum(name = nil, values = nil, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/enum.rb, line 216
+    def enum(name = nil, values = nil, **options)
+      if name
+        values, options = options, {} unless values
+        return _enum(name, values, **options)
+      end
+
+      definitions = options.slice!(:_prefix, :_suffix, :_scopes, :_default, :_instance_methods)
+      options.transform_keys! { |key| :&quot;#{key[1..-1]}&quot; }
+
+      definitions.each { |name, values| _enum(name, values, **options) }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/enum.rb#L216" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

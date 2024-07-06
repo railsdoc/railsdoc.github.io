@@ -1,0 +1,368 @@
+---
+title: ActionCable::SubscriptionAdapter::SubscriberMap
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionCable::SubscriptionAdapter::SubscriberMap
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actioncable/lib/action_cable/subscription_adapter/subscriber_map_rb.html">actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-add_channel">add_channel</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-add_subscriber">add_subscriber</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-broadcast">broadcast</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-invoke_callback">invoke_callback</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-remove_channel">remove_channel</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-remove_subscriber">remove_subscriber</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 6
+      def initialize
+        @subscribers = Hash.new { |h, k| h[k] = [] }
+        @sync = Mutex.new
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb#L6" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-add_channel">
+            
+              add_channel(channel, on_success)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 47
+      def add_channel(channel, on_success)
+        on_success.call if on_success
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb#L47" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-add_subscriber">
+            
+              add_subscriber(channel, subscriber, on_success)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 11
+      def add_subscriber(channel, subscriber, on_success)
+        @sync.synchronize do
+          new_channel = !@subscribers.key?(channel)
+
+          @subscribers[channel] &lt;&lt; subscriber
+
+          if new_channel
+            add_channel channel, on_success
+          elsif on_success
+            on_success.call
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb#L11" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-broadcast">
+            
+              broadcast(channel, message)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 36
+      def broadcast(channel, message)
+        list = @sync.synchronize do
+          return if !@subscribers.key?(channel)
+          @subscribers[channel].dup
+        end
+
+        list.each do |subscriber|
+          invoke_callback(subscriber, message)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb#L36" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-invoke_callback">
+            
+              invoke_callback(callback, message)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 54
+      def invoke_callback(callback, message)
+        callback.call message
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb#L54" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-remove_channel">
+            
+              remove_channel(channel)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 51
+      def remove_channel(channel)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb#L51" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-remove_subscriber">
+            
+              remove_subscriber(channel, subscriber)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb, line 25
+      def remove_subscriber(channel, subscriber)
+        @sync.synchronize do
+          @subscribers[channel].delete(subscriber)
+
+          if @subscribers[channel].empty?
+            @subscribers.delete channel
+            remove_channel channel
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/subscription_adapter/subscriber_map.rb#L25" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

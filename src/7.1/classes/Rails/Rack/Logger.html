@@ -1,0 +1,315 @@
+---
+title: Rails::Rack::Logger
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            Rails::Rack::Logger
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../ActiveSupport/LogSubscriber.html">ActiveSupport::LogSubscriber</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/railties/lib/rails/rack/logger_rb.html">railties/lib/rails/rack/logger.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Sets log tags, logs the request, calls the app, and flushes the logs.</p>
+
+<p>Log tags (<code>taggers</code>) can be an <a href="../../Array.html"><code>Array</code></a> containing: methods that the <code>request</code> object responds to, objects that respond to <code>to_s</code> or Proc objects that accept an instance of the <code>request</code> object.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-call">call</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-call_app">call_app</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-compute_tags">compute_tags</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-started_request_message">started_request_message</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(app, taggers = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/rails/rack/logger.rb, line 15
+      def initialize(app, taggers = nil)
+        @app          = app
+        @taggers      = taggers || []
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/railties/lib/rails/rack/logger.rb#L15" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-call">
+            
+              call(env)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/rails/rack/logger.rb, line 20
+      def call(env)
+        request = ActionDispatch::Request.new(env)
+
+        if logger.respond_to?(:tagged)
+          logger.tagged(*compute_tags(request)) { call_app(request, env) }
+        else
+          call_app(request, env)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/railties/lib/rails/rack/logger.rb#L20" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+      <h2 id="instance-private-methods">Instance Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-call_app">
+            
+              call_app(request, env)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/rails/rack/logger.rb, line 31
+        def call_app(request, env) # :doc:
+          instrumenter = ActiveSupport::Notifications.instrumenter
+          handle = instrumenter.build_handle(&quot;request.action_dispatch&quot;, { request: request })
+          handle.start
+
+          logger.info { started_request_message(request) }
+          status, headers, body = response = @app.call(env)
+          body = ::Rack::BodyProxy.new(body, &amp;handle.method(:finish))
+
+          if response.frozen?
+            [status, headers, body]
+          else
+            response[2] = body
+            response
+          end
+        rescue Exception
+          handle.finish
+          raise
+        ensure
+          ActiveSupport::LogSubscriber.flush_all!
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/railties/lib/rails/rack/logger.rb#L31" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-compute_tags">
+            
+              compute_tags(request)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/rails/rack/logger.rb, line 62
+        def compute_tags(request) # :doc:
+          @taggers.collect do |tag|
+            case tag
+            when Proc
+              tag.call(request)
+            when Symbol
+              request.send(tag)
+            else
+              tag
+            end
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/railties/lib/rails/rack/logger.rb#L62" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-started_request_message">
+            
+              started_request_message(request)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Started GET “/session/new” for 127.0.0.1 at 2012-09-26 14:51:42 -0700</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/rails/rack/logger.rb, line 54
+        def started_request_message(request) # :doc:
+          sprintf(&#39;Started %s &quot;%s&quot; for %s at %s&#39;,
+            request.raw_request_method,
+            request.filtered_path,
+            request.remote_ip,
+            Time.now)
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/railties/lib/rails/rack/logger.rb#L54" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,295 @@
+---
+title: ActiveSupport::FileUpdateChecker
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::FileUpdateChecker
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/file_update_checker_rb.html">activesupport/lib/active_support/file_update_checker.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveSupport::FileUpdateChecker-label-File+Update+Checker">File Update Checker</h1>
+
+<p><a href="FileUpdateChecker.html"><code>FileUpdateChecker</code></a> specifies the API used by Rails to watch files and control reloading. The API depends on four methods:</p>
+<ul><li>
+<p><code>initialize</code> which expects two parameters and one block as described below.</p>
+</li><li>
+<p><code>updated?</code> which returns a boolean if there were updates in the filesystem or not.</p>
+</li><li>
+<p><code>execute</code> which executes the given block on initialization and updates the latest watched files and timestamp.</p>
+</li><li>
+<p><code>execute_if_updated</code> which just executes the block if it was updated.</p>
+</li></ul>
+
+<p>After initialization, a call to <code>execute_if_updated</code> must execute the block only if there was really a change in the filesystem.</p>
+
+<p>This class is used by Rails to reload the I18n framework whenever they are changed upon a new request.</p>
+
+<pre><code>i18n_reloader = ActiveSupport::FileUpdateChecker.new(paths) do
+  I18n.reload!
+end
+
+ActiveSupport::Reloader.to_prepare do
+  i18n_reloader.execute_if_updated
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-execute">execute</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-execute_if_updated">execute_if_updated</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-updated-3F">updated?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(files, dirs = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>It accepts two parameters on initialization. The first is an array of files and the second is an optional hash of directories. The hash must have directories as keys and the value is an array of extensions to be watched under that directory.</p>
+
+<p>This method must also receive a block that will be called once a path changes. The array of files and list of directories cannot be changed after <a href="FileUpdateChecker.html"><code>FileUpdateChecker</code></a> has been initialized.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/file_update_checker.rb, line 44
+    def initialize(files, dirs = {}, &amp;block)
+      unless block
+        raise ArgumentError, &quot;A block is required to initialize a FileUpdateChecker&quot;
+      end
+
+      @files = files.freeze
+      @glob  = compile_glob(dirs)
+      @block = block
+
+      @watched    = nil
+      @updated_at = nil
+
+      @last_watched   = watched
+      @last_update_at = updated_at(@last_watched)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/file_update_checker.rb#L44" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-execute">
+            
+              execute()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Executes the given block and updates the latest watched files and timestamp.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/file_update_checker.rb, line 82
+    def execute
+      @last_watched   = watched
+      @last_update_at = updated_at(@last_watched)
+      @block.call
+    ensure
+      @watched = nil
+      @updated_at = nil
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/file_update_checker.rb#L82" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-execute_if_updated">
+            
+              execute_if_updated()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Execute the block given if updated.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/file_update_checker.rb, line 92
+    def execute_if_updated
+      if updated?
+        yield if block_given?
+        execute
+        true
+      else
+        false
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/file_update_checker.rb#L92" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-updated-3F">
+            
+              updated?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Check if any of the entries were updated. If so, the watched and/or updated_at values are cached until the block is executed via <code>execute</code> or <code>execute_if_updated</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/file_update_checker.rb, line 63
+    def updated?
+      current_watched = watched
+      if @last_watched.size != current_watched.size
+        @watched = current_watched
+        true
+      else
+        current_updated_at = updated_at(current_watched)
+        if @last_update_at &lt; current_updated_at
+          @watched    = current_watched
+          @updated_at = current_updated_at
+          true
+        else
+          false
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/file_update_checker.rb#L63" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,513 @@
+---
+title: ActiveSupport::Cache::MemoryStore
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::Cache::MemoryStore
+            
+                <span class="parent">&lt;
+                    
+                    <a href="Store.html">ActiveSupport::Cache::Store</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/cache/memory_store_rb.html">activesupport/lib/active_support/cache/memory_store.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveSupport::Cache::MemoryStore-label-Memory+Cache+Store">Memory Cache Store</h1>
+
+<p>A cache store implementation which stores everything into memory in the same process. If you’re running multiple Ruby on Rails server processes (which is the case if you’re using Phusion Passenger or puma clustered mode), then this means that Rails server process instances won’t be able to share cache data with each other and this may not be the most appropriate cache in that scenario.</p>
+
+<p>This cache has a bounded size specified by the <code>:size</code> options to the initializer (default is 32Mb). When the cache exceeds the allotted size, a cleanup will occur which tries to prune the cache down to three quarters of the maximum size by removing the least recently used entries.</p>
+
+<p>Unlike other <a href="../Cache.html"><code>Cache</code></a> store implementations, <code>MemoryStore</code> does not compress values by default. <code>MemoryStore</code> does not benefit from compression as much as other <a href="Store.html"><code>Store</code></a> implementations, as it does not send data over a network. However, when compression is enabled, it still pays the full cost of compression in terms of cpu use.</p>
+
+<p><code>MemoryStore</code> is thread-safe.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-cleanup">cleanup</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clear">clear</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-decrement">decrement</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete_matched">delete_matched</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-increment">increment</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-prune">prune</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-pruning-3F">pruning?</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-supports_cache_versioning-3F">supports_cache_versioning?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">PER_ENTRY_OVERHEAD</td>
+            <td>=</td>
+            <td class="attr-value">240</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/memory_store.rb, line 73
+      def initialize(options = nil)
+        options ||= {}
+        options[:coder] = DupCoder unless options.key?(:coder) || options.key?(:serializer)
+        # Disable compression by default.
+        options[:compress] ||= false
+        super(options)
+        @data = {}
+        @max_size = options[:size] || 32.megabytes
+        @max_prune_time = options[:max_prune_time] || 2
+        @cache_size = 0
+        @monitor = Monitor.new
+        @pruning = false
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/memory_store.rb#L73" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-supports_cache_versioning-3F">
+            
+              supports_cache_versioning?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Advertise cache versioning support.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/memory_store.rb, line 88
+      def self.supports_cache_versioning?
+        true
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/memory_store.rb#L88" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-cleanup">
+            
+              cleanup(options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Preemptively iterates through all stored keys and removes the ones which have expired.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/memory_store.rb, line 101
+      def cleanup(options = nil)
+        options = merged_options(options)
+        _instrument(:cleanup, size: @data.size) do
+          keys = synchronize { @data.keys }
+          keys.each do |key|
+            entry = @data[key]
+            delete_entry(key, **options) if entry &amp;&amp; entry.expired?
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/memory_store.rb#L101" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-clear">
+            
+              clear(options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Delete all data stored in a given cache store.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/memory_store.rb, line 93
+      def clear(options = nil)
+        synchronize do
+          @data.clear
+          @cache_size = 0
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/memory_store.rb#L93" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-decrement">
+            
+              decrement(name, amount = 1, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Decrement a cached integer value. Returns the updated value.</p>
+
+<p>If the key is unset or has expired, it will be set to <code>-amount</code>.</p>
+
+<pre><code>cache.decrement(&quot;foo&quot;) # =&gt; -1
+</code></pre>
+
+<p>To set a specific value, call <a href="Store.html#method-i-write"><code>write</code></a>:</p>
+
+<pre><code>cache.write(&quot;baz&quot;, 5)
+cache.decrement(&quot;baz&quot;) # =&gt; 4
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/memory_store.rb, line 164
+      def decrement(name, amount = 1, options = nil)
+        modify_value(name, -amount, options)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/memory_store.rb#L164" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete_matched">
+            
+              delete_matched(matcher, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Deletes cache entries if the cache key matches a given pattern.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/memory_store.rb, line 169
+      def delete_matched(matcher, options = nil)
+        options = merged_options(options)
+        instrument(:delete_matched, matcher.inspect) do
+          matcher = key_matcher(matcher, options)
+          keys = synchronize { @data.keys }
+          keys.each do |key|
+            delete_entry(key, **options) if key.match(matcher)
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/memory_store.rb#L169" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-increment">
+            
+              increment(name, amount = 1, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Increment a cached integer value. Returns the updated value.</p>
+
+<p>If the key is unset, it will be set to <code>amount</code>:</p>
+
+<pre><code>cache.increment(&quot;foo&quot;) # =&gt; 1
+cache.increment(&quot;bar&quot;, 100) # =&gt; 100
+</code></pre>
+
+<p>To set a specific value, call <a href="Store.html#method-i-write"><code>write</code></a>:</p>
+
+<pre><code>cache.write(&quot;baz&quot;, 5)
+cache.increment(&quot;baz&quot;) # =&gt; 6
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/memory_store.rb, line 149
+      def increment(name, amount = 1, options = nil)
+        modify_value(name, amount, options)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/memory_store.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-prune">
+            
+              prune(target_size, max_time = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>To ensure entries fit within the specified memory prune the cache by removing the least recently accessed entries.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/memory_store.rb, line 114
+      def prune(target_size, max_time = nil)
+        return if pruning?
+        @pruning = true
+        begin
+          start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          cleanup
+          instrument(:prune, target_size, from: @cache_size) do
+            keys = synchronize { @data.keys }
+            keys.each do |key|
+              delete_entry(key, **options)
+              return if @cache_size &lt;= target_size || (max_time &amp;&amp; Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time &gt; max_time)
+            end
+          end
+        ensure
+          @pruning = false
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/memory_store.rb#L114" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-pruning-3F">
+            
+              pruning?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if the cache is currently being pruned.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/memory_store.rb, line 133
+      def pruning?
+        @pruning
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/cache/memory_store.rb#L133" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

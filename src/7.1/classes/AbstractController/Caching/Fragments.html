@@ -1,0 +1,327 @@
+---
+title: AbstractController::Caching::Fragments
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            AbstractController::Caching::Fragments
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionpack/lib/abstract_controller/caching/fragments_rb.html">actionpack/lib/abstract_controller/caching/fragments.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-AbstractController::Caching::Fragments-label-Abstract+Controller+Caching+Fragments">Abstract Controller <a href="../Caching.html"><code>Caching</code></a> Fragments</h1>
+
+<p>Fragment caching is used for caching various blocks within views without caching the entire action as a whole. This is useful when certain elements of an action change frequently or depend on complicated state while other parts rarely change or can be shared amongst multiple parties. The caching is done using the <code>cache</code> helper available in the Action View. See <a href="../../ActionView/Helpers/CacheHelper.html"><code>ActionView::Helpers::CacheHelper</code></a> for more information.</p>
+
+<p>While it’s strongly recommended that you use key-based cache expiration (see links in CacheHelper for more information), it is also possible to manually expire caches. For example:</p>
+
+<pre><code>expire_fragment(&#39;name_of_cache&#39;)
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Fragments/ClassMethods.html">AbstractController::Caching::Fragments::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-combined_fragment_cache_key">combined_fragment_cache_key</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-expire_fragment">expire_fragment</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-fragment_exist-3F">fragment_exist?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-read_fragment">read_fragment</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-write_fragment">write_fragment</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-combined_fragment_cache_key">
+            
+              combined_fragment_cache_key(key)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Given a key (as described in <code>expire_fragment</code>), returns a key array suitable for use in reading, writing, or expiring a cached fragment. All keys begin with <code>:views</code>, followed by <code>ENV[&quot;RAILS_CACHE_ID&quot;]</code> or <code>ENV[&quot;RAILS_APP_VERSION&quot;]</code> if set, followed by any controller-wide key prefix values, ending with the specified <code>key</code> value.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 70
+      def combined_fragment_cache_key(key)
+        head = self.class.fragment_cache_keys.map { |k| instance_exec(&amp;k) }
+        tail = key.is_a?(Hash) ? url_for(key).split(&quot;://&quot;).last : key
+
+        cache_key = [:views, ENV[&quot;RAILS_CACHE_ID&quot;] || ENV[&quot;RAILS_APP_VERSION&quot;], head, tail]
+        cache_key.flatten!(1)
+        cache_key.compact!
+        cache_key
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/abstract_controller/caching/fragments.rb#L70" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-expire_fragment">
+            
+              expire_fragment(key, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Removes fragments from the cache.</p>
+
+<p><code>key</code> can take one of three forms:</p>
+<ul><li>
+<p><a href="../../String.html"><code>String</code></a> - This would normally take the form of a path, like <code>pages/45/notes</code>.</p>
+</li><li>
+<p><a href="../../Hash.html"><code>Hash</code></a> - Treated as an implicit call to <code>url_for</code>, like <code>{ controller: &#39;pages&#39;, action: &#39;notes&#39;, id: 45}</code></p>
+</li><li>
+<p><a href="../../Regexp.html"><code>Regexp</code></a> - Will remove any fragment that matches, so <code>%r{pages/\d*/notes}</code> might remove all notes. Make sure you don’t use anchors in the regex (<code>^</code> or <code>$</code>) because the actual filename matched looks like <code>./cache/filename/path.cache</code>. Note: <a href="../../Regexp.html"><code>Regexp</code></a> expiration is only supported on caches that can iterate over all keys (unlike memcached).</p>
+</li></ul>
+
+<p><code>options</code> is passed through to the cache store’s <code>delete</code> method (or <code>delete_matched</code>, for <a href="../../Regexp.html"><code>Regexp</code></a> keys).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 134
+      def expire_fragment(key, options = nil)
+        return unless cache_configured?
+        key = combined_fragment_cache_key(key) unless key.is_a?(Regexp)
+
+        instrument_fragment_cache :expire_fragment, key do
+          if key.is_a?(Regexp)
+            cache_store.delete_matched(key, options)
+          else
+            cache_store.delete(key, options)
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/abstract_controller/caching/fragments.rb#L134" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-fragment_exist-3F">
+            
+              fragment_exist?(key, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Check if a cached fragment from the location signified by <code>key</code> exists (see <code>expire_fragment</code> for acceptable formats).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 107
+      def fragment_exist?(key, options = nil)
+        return unless cache_configured?
+        key = combined_fragment_cache_key(key)
+
+        instrument_fragment_cache :exist_fragment?, key do
+          cache_store.exist?(key, options)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/abstract_controller/caching/fragments.rb#L107" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-read_fragment">
+            
+              read_fragment(key, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Reads a cached fragment from the location signified by <code>key</code> (see <code>expire_fragment</code> for acceptable formats).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 95
+      def read_fragment(key, options = nil)
+        return unless cache_configured?
+
+        key = combined_fragment_cache_key(key)
+        instrument_fragment_cache :read_fragment, key do
+          result = cache_store.read(key, options)
+          result.respond_to?(:html_safe) ? result.html_safe : result
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/abstract_controller/caching/fragments.rb#L95" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-write_fragment">
+            
+              write_fragment(key, content, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Writes <code>content</code> to the location signified by <code>key</code> (see <code>expire_fragment</code> for acceptable formats).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/abstract_controller/caching/fragments.rb, line 82
+      def write_fragment(key, content, options = nil)
+        return content unless cache_configured?
+
+        key = combined_fragment_cache_key(key)
+        instrument_fragment_cache :write_fragment, key do
+          content = content.to_str
+          cache_store.write(key, content, options)
+        end
+        content
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/abstract_controller/caching/fragments.rb#L82" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

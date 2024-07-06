@@ -83,16 +83,19 @@ def generate_src(target_version:)
   cp_r copy_sources, target_dir
 
   cd target_dir do
+    # Generate index.html
     if Gem::Version.new(target_version) >= Gem::Version.new('7.1')
       cp NEW_INDEX_HTML, 'index.html'
-      return
+    else
+      cp INDEX_HTML, 'index.html'
     end
 
-    cp INDEX_HTML, 'index.html'
     # Prepend version number to the absolute path in navigation.html
-    content = File.read('navigation.html')
-    content.gsub!('<a href="/', "<a href=\"/#{target_version}/")
-    File.write('navigation.html', content)
+    unless target_version == default_rails_version
+      content = File.read('navigation.html')
+      content.gsub!('<a href="/', "<a href=\"/#{target_version}/")
+      File.write('navigation.html', content)
+    end
   end
 end
 

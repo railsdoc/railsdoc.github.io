@@ -1,0 +1,240 @@
+---
+title: ActiveModel::Translation
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveModel::Translation
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activemodel/lib/active_model/translation_rb.html">activemodel/lib/active_model/translation.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveModel::Translation-label-Active+Model+Translation">Active Model Translation</h1>
+
+<p>Provides integration between your object and the Rails internationalization (i18n) framework.</p>
+
+<p>A minimal implementation could be:</p>
+
+<pre><code>class TranslatedPerson
+  extend ActiveModel::Translation
+end
+
+TranslatedPerson.human_attribute_name(&#39;my_attribute&#39;)
+# =&gt; &quot;My attribute&quot;
+</code></pre>
+
+<p>This also provides the required class methods for hooking into the Rails internationalization <a href="API.html"><code>API</code></a>, including being able to define a class-based <code>i18n_scope</code> and <code>lookup_ancestors</code> to find translations in parent classes.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-human_attribute_name">human_attribute_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-i18n_scope">i18n_scope</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-lookup_ancestors">lookup_ancestors</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="Naming.html">
+              ActiveModel::Naming
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-human_attribute_name">
+            
+              human_attribute_name(attribute, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Transforms attribute names into a more human format, such as “First name” instead of “first_name”.</p>
+
+<pre><code>Person.human_attribute_name(&quot;first_name&quot;) # =&gt; &quot;First name&quot;
+</code></pre>
+
+<p>Specify <code>options</code> with additional translating options.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/translation.rb, line 46
+    def human_attribute_name(attribute, options = {})
+      attribute = attribute.to_s
+
+      if attribute.include?(&quot;.&quot;)
+        namespace, _, attribute = attribute.rpartition(&quot;.&quot;)
+        namespace.tr!(&quot;.&quot;, &quot;/&quot;)
+
+        defaults = lookup_ancestors.map do |klass|
+          :&quot;#{i18n_scope}.attributes.#{klass.model_name.i18n_key}/#{namespace}.#{attribute}&quot;
+        end
+        defaults &lt;&lt; :&quot;#{i18n_scope}.attributes.#{namespace}.#{attribute}&quot;
+      else
+        defaults = lookup_ancestors.map do |klass|
+          :&quot;#{i18n_scope}.attributes.#{klass.model_name.i18n_key}.#{attribute}&quot;
+        end
+      end
+
+      defaults &lt;&lt; :&quot;attributes.#{attribute}&quot;
+      defaults &lt;&lt; options[:default] if options[:default]
+      defaults &lt;&lt; MISSING_TRANSLATION
+
+      translation = I18n.translate(defaults.shift, count: 1, **options, default: defaults)
+      translation = attribute.humanize if translation == MISSING_TRANSLATION
+      translation
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activemodel/lib/active_model/translation.rb#L46" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-i18n_scope">
+            
+              i18n_scope()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the <code>i18n_scope</code> for the class. Override if you want custom lookup.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/translation.rb, line 26
+    def i18n_scope
+      :activemodel
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activemodel/lib/active_model/translation.rb#L26" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-lookup_ancestors">
+            
+              lookup_ancestors()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>When localizing a string, it goes through the lookup returned by this method, which is used in <a href="Name.html#method-i-human"><code>ActiveModel::Name#human</code></a>, <a href="Errors.html#method-i-full_messages"><code>ActiveModel::Errors#full_messages</code></a> and <a href="Translation.html#method-i-human_attribute_name"><code>ActiveModel::Translation#human_attribute_name</code></a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/translation.rb, line 34
+    def lookup_ancestors
+      ancestors.select { |x| x.respond_to?(:model_name) }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activemodel/lib/active_model/translation.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

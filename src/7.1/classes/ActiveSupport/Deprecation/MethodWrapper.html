@@ -1,0 +1,155 @@
+---
+title: ActiveSupport::Deprecation::MethodWrapper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Deprecation::MethodWrapper
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/deprecation/method_wrappers_rb.html">activesupport/lib/active_support/deprecation/method_wrappers.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-deprecate_methods">deprecate_methods</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-deprecate_methods">
+            
+              deprecate_methods(target_module, *method_names)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Declare that a method has been deprecated.</p>
+
+<pre><code>class Fred
+  def aaa; end
+  def bbb; end
+  def ccc; end
+  def ddd; end
+  def eee; end
+end
+
+deprecator = ActiveSupport::Deprecation.new(&#39;next-release&#39;, &#39;MyGem&#39;)
+
+deprecator.deprecate_methods(Fred, :aaa, bbb: :zzz, ccc: &#39;use Bar#ccc instead&#39;)
+# =&gt; Fred
+
+Fred.new.aaa
+# DEPRECATION WARNING: aaa is deprecated and will be removed from MyGem next-release. (called from irb_binding at (irb):10)
+# =&gt; nil
+
+Fred.new.bbb
+# DEPRECATION WARNING: bbb is deprecated and will be removed from MyGem next-release (use zzz instead). (called from irb_binding at (irb):11)
+# =&gt; nil
+
+Fred.new.ccc
+# DEPRECATION WARNING: ccc is deprecated and will be removed from MyGem next-release (use Bar#ccc instead). (called from irb_binding at (irb):12)
+# =&gt; nil
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/deprecation/method_wrappers.rb, line 35
+      def deprecate_methods(target_module, *method_names)
+        options = method_names.extract_options!
+        deprecator = options.delete(:deprecator) || self
+        method_names += options.keys
+        mod = nil
+
+        method_names.each do |method_name|
+          message = options[method_name]
+          if target_module.method_defined?(method_name) || target_module.private_method_defined?(method_name)
+            method = target_module.instance_method(method_name)
+            target_module.module_eval do
+              redefine_method(method_name) do |*args, &amp;block|
+                deprecator.deprecation_warning(method_name, message)
+                method.bind_call(self, *args, &amp;block)
+              end
+              ruby2_keywords(method_name)
+            end
+          else
+            mod ||= Module.new
+            mod.module_eval do
+              define_method(method_name) do |*args, &amp;block|
+                deprecator.deprecation_warning(method_name, message)
+                super(*args, &amp;block)
+              end
+              ruby2_keywords(method_name)
+            end
+          end
+        end
+
+        target_module.prepend(mod) if mod
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/deprecation/method_wrappers.rb#L35" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

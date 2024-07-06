@@ -1,0 +1,538 @@
+---
+title: ActiveStorage::Service::DiskService
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveStorage::Service::DiskService
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Service.html">ActiveStorage::Service</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activestorage/lib/active_storage/service/disk_service_rb.html">activestorage/lib/active_storage/service/disk_service.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveStorage::Service::DiskService-label-Active+Storage+Disk+Service">Active Storage Disk Service</h1>
+
+<p>Wraps a local disk path as an Active Storage service. See <a href="../Service.html"><code>ActiveStorage::Service</code></a> for the generic API documentation that applies to all services.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-compose">compose</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete">delete</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete_prefixed">delete_prefixed</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-download">download</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-download_chunk">download_chunk</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-exist-3F">exist?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-headers_for_direct_upload">headers_for_direct_upload</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-upload">upload</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-url_for_direct_upload">url_for_direct_upload</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>root</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(root:, public: false, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/disk_service.rb, line 16
+    def initialize(root:, public: false, **options)
+      @root = root
+      @public = public
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/disk_service.rb#L16" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-compose">
+            
+              compose(source_keys, destination_key, **)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/disk_service.rb, line 105
+    def compose(source_keys, destination_key, **)
+      File.open(make_path_for(destination_key), &quot;w&quot;) do |destination_file|
+        source_keys.each do |source_key|
+          File.open(path_for(source_key), &quot;rb&quot;) do |source_file|
+            IO.copy_stream(source_file, destination_file)
+          end
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/disk_service.rb#L105" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete">
+            
+              delete(key)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/disk_service.rb, line 53
+    def delete(key)
+      instrument :delete, key: key do
+        File.delete path_for(key)
+      rescue Errno::ENOENT
+        # Ignore files already deleted
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/disk_service.rb#L53" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete_prefixed">
+            
+              delete_prefixed(prefix)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/disk_service.rb, line 61
+    def delete_prefixed(prefix)
+      instrument :delete_prefixed, prefix: prefix do
+        Dir.glob(path_for(&quot;#{prefix}*&quot;)).each do |path|
+          FileUtils.rm_rf(path)
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/disk_service.rb#L61" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-download">
+            
+              download(key, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/disk_service.rb, line 28
+    def download(key, &amp;block)
+      if block_given?
+        instrument :streaming_download, key: key do
+          stream key, &amp;block
+        end
+      else
+        instrument :download, key: key do
+          File.binread path_for(key)
+        rescue Errno::ENOENT
+          raise ActiveStorage::FileNotFoundError
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/disk_service.rb#L28" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-download_chunk">
+            
+              download_chunk(key, range)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/disk_service.rb, line 42
+    def download_chunk(key, range)
+      instrument :download_chunk, key: key, range: range do
+        File.open(path_for(key), &quot;rb&quot;) do |file|
+          file.seek range.begin
+          file.read range.size
+        end
+      rescue Errno::ENOENT
+        raise ActiveStorage::FileNotFoundError
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/disk_service.rb#L42" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-exist-3F">
+            
+              exist?(key)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/disk_service.rb, line 69
+    def exist?(key)
+      instrument :exist, key: key do |payload|
+        answer = File.exist? path_for(key)
+        payload[:exist] = answer
+        answer
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/disk_service.rb#L69" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-headers_for_direct_upload">
+            
+              headers_for_direct_upload(key, content_type:, **)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/disk_service.rb, line 97
+    def headers_for_direct_upload(key, content_type:, **)
+      { &quot;Content-Type&quot; =&gt; content_type }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/disk_service.rb#L97" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-upload">
+            
+              upload(key, io, checksum: nil, **)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/disk_service.rb, line 21
+    def upload(key, io, checksum: nil, **)
+      instrument :upload, key: key, checksum: checksum do
+        IO.copy_stream(io, make_path_for(key))
+        ensure_integrity_of(key, checksum) if checksum
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/disk_service.rb#L21" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-url_for_direct_upload">
+            
+              url_for_direct_upload(key, expires_in:, content_type:, content_length:, checksum:, custom_metadata: {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/disk_service.rb, line 77
+    def url_for_direct_upload(key, expires_in:, content_type:, content_length:, checksum:, custom_metadata: {})
+      instrument :url, key: key do |payload|
+        verified_token_with_expiration = ActiveStorage.verifier.generate(
+          {
+            key: key,
+            content_type: content_type,
+            content_length: content_length,
+            checksum: checksum,
+            service_name: name
+          },
+          expires_in: expires_in,
+          purpose: :blob_token
+        )
+
+        url_helpers.update_rails_disk_service_url(verified_token_with_expiration, url_options).tap do |generated_url|
+          payload[:url] = generated_url
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/disk_service.rb#L77" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

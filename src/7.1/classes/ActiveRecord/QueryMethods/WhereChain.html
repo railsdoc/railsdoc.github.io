@@ -1,0 +1,278 @@
+---
+title: ActiveRecord::QueryMethods::WhereChain
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::QueryMethods::WhereChain
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/relation/query_methods_rb.html">activerecord/lib/active_record/relation/query_methods.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p><code>WhereChain</code> objects act as placeholder for queries in which <code>where</code> does not have any parameter. In this case, <code>where</code> can be chained to return a new relation.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-associated">associated</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-missing">missing</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-not">not</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-associated">
+            
+              associated(*associations)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a new relation with joins and where clause to identify associated relations.</p>
+
+<p>For example, posts that are associated to a related author:</p>
+
+<pre><code>Post.where.associated(:author)
+# SELECT &quot;posts&quot;.* FROM &quot;posts&quot;
+# INNER JOIN &quot;authors&quot; ON &quot;authors&quot;.&quot;id&quot; = &quot;posts&quot;.&quot;author_id&quot;
+# WHERE &quot;authors&quot;.&quot;id&quot; IS NOT NULL
+</code></pre>
+
+<p>Additionally, multiple relations can be combined. This will return posts associated to both an author and any comments:</p>
+
+<pre><code>Post.where.associated(:author, :comments)
+# SELECT &quot;posts&quot;.* FROM &quot;posts&quot;
+# INNER JOIN &quot;authors&quot; ON &quot;authors&quot;.&quot;id&quot; = &quot;posts&quot;.&quot;author_id&quot;
+# INNER JOIN &quot;comments&quot; ON &quot;comments&quot;.&quot;post_id&quot; = &quot;posts&quot;.&quot;id&quot;
+# WHERE &quot;authors&quot;.&quot;id&quot; IS NOT NULL AND &quot;comments&quot;.&quot;id&quot; IS NOT NULL
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/relation/query_methods.rb, line 75
+      def associated(*associations)
+        associations.each do |association|
+          reflection = scope_association_reflection(association)
+          @scope.joins!(association)
+          if reflection.options[:class_name]
+            self.not(association =&gt; { reflection.association_primary_key =&gt; nil })
+          else
+            self.not(reflection.table_name =&gt; { reflection.association_primary_key =&gt; nil })
+          end
+        end
+
+        @scope
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/relation/query_methods.rb#L75" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-missing">
+            
+              missing(*associations)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a new relation with left outer joins and where clause to identify missing relations.</p>
+
+<p>For example, posts that are missing a related author:</p>
+
+<pre><code>Post.where.missing(:author)
+# SELECT &quot;posts&quot;.* FROM &quot;posts&quot;
+# LEFT OUTER JOIN &quot;authors&quot; ON &quot;authors&quot;.&quot;id&quot; = &quot;posts&quot;.&quot;author_id&quot;
+# WHERE &quot;authors&quot;.&quot;id&quot; IS NULL
+</code></pre>
+
+<p>Additionally, multiple relations can be combined. This will return posts that are missing both an author and any comments:</p>
+
+<pre><code>Post.where.missing(:author, :comments)
+# SELECT &quot;posts&quot;.* FROM &quot;posts&quot;
+# LEFT OUTER JOIN &quot;authors&quot; ON &quot;authors&quot;.&quot;id&quot; = &quot;posts&quot;.&quot;author_id&quot;
+# LEFT OUTER JOIN &quot;comments&quot; ON &quot;comments&quot;.&quot;post_id&quot; = &quot;posts&quot;.&quot;id&quot;
+# WHERE &quot;authors&quot;.&quot;id&quot; IS NULL AND &quot;comments&quot;.&quot;id&quot; IS NULL
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/relation/query_methods.rb, line 107
+      def missing(*associations)
+        associations.each do |association|
+          reflection = scope_association_reflection(association)
+          @scope.left_outer_joins!(association)
+          if reflection.options[:class_name]
+            @scope.where!(association =&gt; { reflection.association_primary_key =&gt; nil })
+          else
+            @scope.where!(reflection.table_name =&gt; { reflection.association_primary_key =&gt; nil })
+          end
+        end
+
+        @scope
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/relation/query_methods.rb#L107" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-not">
+            
+              not(opts, *rest)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a new relation expressing WHERE + NOT condition according to the conditions in the arguments.</p>
+
+<p><a href="WhereChain.html#method-i-not"><code>not</code></a> accepts conditions as a string, array, or hash. See <a href="../QueryMethods.html#method-i-where"><code>QueryMethods#where</code></a> for more details on each format.</p>
+
+<pre><code>User.where.not(&quot;name = &#39;Jon&#39;&quot;)
+# SELECT * FROM users WHERE NOT (name = &#39;Jon&#39;)
+
+User.where.not([&quot;name = ?&quot;, &quot;Jon&quot;])
+# SELECT * FROM users WHERE NOT (name = &#39;Jon&#39;)
+
+User.where.not(name: &quot;Jon&quot;)
+# SELECT * FROM users WHERE name != &#39;Jon&#39;
+
+User.where.not(name: nil)
+# SELECT * FROM users WHERE name IS NOT NULL
+
+User.where.not(name: %w(Ko1 Nobu))
+# SELECT * FROM users WHERE name NOT IN (&#39;Ko1&#39;, &#39;Nobu&#39;)
+
+User.where.not(name: &quot;Jon&quot;, role: &quot;admin&quot;)
+# SELECT * FROM users WHERE NOT (name = &#39;Jon&#39; AND role = &#39;admin&#39;)
+</code></pre>
+
+<p>If there is a non-nil condition on a nullable column in the hash condition, the records that have nil values on the nullable column won’t be returned.</p>
+
+<pre><code>User.create!(nullable_country: nil)
+User.where.not(nullable_country: &quot;UK&quot;)
+# SELECT * FROM users WHERE NOT (nullable_country = &#39;UK&#39;)
+# =&gt; []
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/relation/query_methods.rb, line 49
+      def not(opts, *rest)
+        where_clause = @scope.send(:build_where_clause, opts, rest)
+
+        @scope.where_clause += where_clause.invert
+
+        @scope
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/relation/query_methods.rb#L49" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

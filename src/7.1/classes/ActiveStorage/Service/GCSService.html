@@ -1,0 +1,610 @@
+---
+title: ActiveStorage::Service::GCSService
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveStorage::Service::GCSService
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Service.html">ActiveStorage::Service</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activestorage/lib/active_storage/service/gcs_service_rb.html">activestorage/lib/active_storage/service/gcs_service.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveStorage::Service::GCSService-label-Active+Storage+GCS+Service">Active Storage GCS Service</h1>
+
+<p>Wraps the Google Cloud Storage as an Active Storage service. See <a href="../Service.html"><code>ActiveStorage::Service</code></a> for the generic API documentation that applies to all services.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="GCSService/MetadataServerError.html">ActiveStorage::Service::GCSService::MetadataServerError</a></li>
+      
+        <li><a href="GCSService/MetadataServerNotFoundError.html">ActiveStorage::Service::GCSService::MetadataServerNotFoundError</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-compose">compose</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete">delete</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete_prefixed">delete_prefixed</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-download">download</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-download_chunk">download_chunk</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-exist-3F">exist?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-headers_for_direct_upload">headers_for_direct_upload</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-update_metadata">update_metadata</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-upload">upload</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-url_for_direct_upload">url_for_direct_upload</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(public: false, **config)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/gcs_service.rb, line 16
+    def initialize(public: false, **config)
+      @config = config
+      @public = public
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/gcs_service.rb#L16" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-compose">
+            
+              compose(source_keys, destination_key, filename: nil, content_type: nil, disposition: nil, custom_metadata: {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/gcs_service.rb, line 139
+    def compose(source_keys, destination_key, filename: nil, content_type: nil, disposition: nil, custom_metadata: {})
+      bucket.compose(source_keys, destination_key).update do |file|
+        file.content_type = content_type
+        file.content_disposition = content_disposition_with(type: disposition, filename: filename) if disposition &amp;&amp; filename
+        file.metadata = custom_metadata
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/gcs_service.rb#L139" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete">
+            
+              delete(key)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/gcs_service.rb, line 66
+    def delete(key)
+      instrument :delete, key: key do
+        file_for(key).delete
+      rescue Google::Cloud::NotFoundError
+        # Ignore files already deleted
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/gcs_service.rb#L66" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete_prefixed">
+            
+              delete_prefixed(prefix)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/gcs_service.rb, line 74
+    def delete_prefixed(prefix)
+      instrument :delete_prefixed, prefix: prefix do
+        bucket.files(prefix: prefix).all do |file|
+          file.delete
+        rescue Google::Cloud::NotFoundError
+          # Ignore concurrently-deleted files
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/gcs_service.rb#L74" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-download">
+            
+              download(key, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/gcs_service.rb, line 34
+    def download(key, &amp;block)
+      if block_given?
+        instrument :streaming_download, key: key do
+          stream(key, &amp;block)
+        end
+      else
+        instrument :download, key: key do
+          file_for(key).download.string
+        rescue Google::Cloud::NotFoundError
+          raise ActiveStorage::FileNotFoundError
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/gcs_service.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-download_chunk">
+            
+              download_chunk(key, range)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/gcs_service.rb, line 58
+    def download_chunk(key, range)
+      instrument :download_chunk, key: key, range: range do
+        file_for(key).download(range: range).string
+      rescue Google::Cloud::NotFoundError
+        raise ActiveStorage::FileNotFoundError
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/gcs_service.rb#L58" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-exist-3F">
+            
+              exist?(key)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/gcs_service.rb, line 84
+    def exist?(key)
+      instrument :exist, key: key do |payload|
+        answer = file_for(key).exists?
+        payload[:exist] = answer
+        answer
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/gcs_service.rb#L84" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-headers_for_direct_upload">
+            
+              headers_for_direct_upload(key, checksum:, filename: nil, disposition: nil, custom_metadata: {}, **)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/gcs_service.rb, line 128
+    def headers_for_direct_upload(key, checksum:, filename: nil, disposition: nil, custom_metadata: {}, **)
+      content_disposition = content_disposition_with(type: disposition, filename: filename) if filename
+
+      headers = { &quot;Content-MD5&quot; =&gt; checksum, &quot;Content-Disposition&quot; =&gt; content_disposition, **custom_metadata_headers(custom_metadata) }
+      if @config[:cache_control].present?
+        headers[&quot;Cache-Control&quot;] = @config[:cache_control]
+      end
+
+      headers
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/gcs_service.rb#L128" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-update_metadata">
+            
+              update_metadata(key, content_type:, disposition: nil, filename: nil, custom_metadata: {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/gcs_service.rb, line 48
+    def update_metadata(key, content_type:, disposition: nil, filename: nil, custom_metadata: {})
+      instrument :update_metadata, key: key, content_type: content_type, disposition: disposition do
+        file_for(key).update do |file|
+          file.content_type = content_type
+          file.content_disposition = content_disposition_with(type: disposition, filename: filename) if disposition &amp;&amp; filename
+          file.metadata = custom_metadata
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/gcs_service.rb#L48" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-upload">
+            
+              upload(key, io, checksum: nil, content_type: nil, disposition: nil, filename: nil, custom_metadata: {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/gcs_service.rb, line 21
+    def upload(key, io, checksum: nil, content_type: nil, disposition: nil, filename: nil, custom_metadata: {})
+      instrument :upload, key: key, checksum: checksum do
+        # GCS&#39;s signed URLs don&#39;t include params such as response-content-type response-content_disposition
+        # in the signature, which means an attacker can modify them and bypass our effort to force these to
+        # binary and attachment when the file&#39;s content type requires it. The only way to force them is to
+        # store them as object&#39;s metadata.
+        content_disposition = content_disposition_with(type: disposition, filename: filename) if disposition &amp;&amp; filename
+        bucket.create_file(io, key, md5: checksum, cache_control: @config[:cache_control], content_type: content_type, content_disposition: content_disposition, metadata: custom_metadata)
+      rescue Google::Cloud::InvalidArgumentError
+        raise ActiveStorage::IntegrityError
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/gcs_service.rb#L21" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-url_for_direct_upload">
+            
+              url_for_direct_upload(key, expires_in:, checksum:, custom_metadata: {}, **)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/gcs_service.rb, line 92
+    def url_for_direct_upload(key, expires_in:, checksum:, custom_metadata: {}, **)
+      instrument :url, key: key do |payload|
+        headers = {}
+        version = :v2
+
+        if @config[:cache_control].present?
+          headers[&quot;Cache-Control&quot;] = @config[:cache_control]
+          # v2 signing doesn&#39;t support non `x-goog-` headers. Only switch to v4 signing
+          # if necessary for back-compat; v4 limits the expiration of the URL to 7 days
+          # whereas v2 has no limit
+          version = :v4
+        end
+
+        headers.merge!(custom_metadata_headers(custom_metadata))
+
+        args = {
+          content_md5: checksum,
+          expires: expires_in,
+          headers: headers,
+          method: &quot;PUT&quot;,
+          version: version,
+        }
+
+        if @config[:iam]
+          args[:issuer] = issuer
+          args[:signer] = signer
+        end
+
+        generated_url = bucket.signed_url(key, **args)
+
+        payload[:url] = generated_url
+
+        generated_url
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activestorage/lib/active_storage/service/gcs_service.rb#L92" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
