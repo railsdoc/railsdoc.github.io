@@ -118,39 +118,39 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-digest_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/digestor.rb, line 16</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">digest</span>(<span class="ruby-value">name:</span>, <span class="ruby-value">format:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">finder:</span>, <span class="ruby-value">dependencies:</span> <span class="ruby-keyword">nil</span>)
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">dependencies</span>.<span class="ruby-identifier">nil?</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">dependencies</span>.<span class="ruby-identifier">empty?</span>
-    <span class="ruby-identifier">cache_key</span> = <span class="ruby-node">&quot;#{name}.#{format}&quot;</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">cache_key</span> = [ <span class="ruby-identifier">name</span>, <span class="ruby-identifier">format</span>, <span class="ruby-identifier">dependencies</span> ].<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">compact</span>.<span class="ruby-identifier">join</span>(<span class="ruby-string">&quot;.&quot;</span>)
-  <span class="ruby-keyword">end</span>
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
 
-  <span class="ruby-comment"># this is a correctly done double-checked locking idiom</span>
-  <span class="ruby-comment"># (Concurrent::Map&#39;s lookups have volatile semantics)</span>
-  <span class="ruby-identifier">finder</span>.<span class="ruby-identifier">digest_cache</span>[<span class="ruby-identifier">cache_key</span>] <span class="ruby-operator">||</span> <span class="ruby-identifier">@@digest_mutex</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-identifier">finder</span>.<span class="ruby-identifier">digest_cache</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-identifier">cache_key</span>) <span class="ruby-keyword">do</span> <span class="ruby-comment"># re-check under lock</span>
-      <span class="ruby-identifier">partial</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-string">&quot;/_&quot;</span>)
-      <span class="ruby-identifier">root</span> = <span class="ruby-identifier">tree</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">finder</span>, <span class="ruby-identifier">partial</span>)
-      <span class="ruby-identifier">dependencies</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">injected_dep</span><span class="ruby-operator">|</span>
-        <span class="ruby-identifier">root</span>.<span class="ruby-identifier">children</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-constant">Injected</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">injected_dep</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-keyword">nil</span>)
-      <span class="ruby-keyword">end</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">dependencies</span>
-      <span class="ruby-identifier">finder</span>.<span class="ruby-identifier">digest_cache</span>[<span class="ruby-identifier">cache_key</span>] = <span class="ruby-identifier">root</span>.<span class="ruby-identifier">digest</span>(<span class="ruby-identifier">finder</span>)
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+              <pre><code class="ruby"># File actionview/lib/action_view/digestor.rb, line 16
+      def digest(name:, format: nil, finder:, dependencies: nil)
+        if dependencies.nil? || dependencies.empty?
+          cache_key = &quot;#{name}.#{format}&quot;
+        else
+          cache_key = [ name, format, dependencies ].flatten.compact.join(&quot;.&quot;)
+        end
+
+        # this is a correctly done double-checked locking idiom
+        # (Concurrent::Map&#39;s lookups have volatile semantics)
+        finder.digest_cache[cache_key] || @@digest_mutex.synchronize do
+          finder.digest_cache.fetch(cache_key) do # re-check under lock
+            partial = name.include?(&quot;/_&quot;)
+            root = tree(name, finder, partial)
+            dependencies.each do |injected_dep|
+              root.children &lt;&lt; Injected.new(injected_dep, nil, nil)
+            end if dependencies
+            finder.digest_cache[cache_key] = root.digest(finder)
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/actionview/lib/action_view/digestor.rb#L16" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-c-logger">
@@ -170,22 +170,22 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/digestor.rb, line 37
+      def logger
+        ActionView::Base.logger || NullLogger
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-logger_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/digestor.rb, line 37</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">logger</span>
-  <span class="ruby-constant">ActionView</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">logger</span> <span class="ruby-operator">||</span> <span class="ruby-constant">NullLogger</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/actionview/lib/action_view/digestor.rb#L37" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-c-tree">
@@ -205,43 +205,43 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/digestor.rb, line 42
+      def tree(name, finder, partial = false, seen = {})
+        logical_name = name.gsub(%r|/_|, &quot;/&quot;)
+        interpolated = name.include?(&quot;#&quot;)
+
+        if !interpolated &amp;&amp; (template = find_template(finder, logical_name, [], partial, []))
+          if node = seen[template.identifier] # handle cycles in the tree
+            node
+          else
+            node = seen[template.identifier] = Node.create(name, logical_name, template, partial)
+
+            deps = DependencyTracker.find_dependencies(name, template, finder.view_paths)
+            deps.uniq { |n| n.gsub(%r|/_|, &quot;/&quot;) }.each do |dep_file|
+              node.children &lt;&lt; tree(dep_file, finder, true, seen)
+            end
+            node
+          end
+        else
+          unless interpolated # Dynamic template partial names can never be tracked
+            logger.error &quot;  Couldn&#39;t find template for digesting: #{name}&quot;
+          end
+
+          seen[name] ||= Missing.new(name, logical_name, nil)
+        end
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-tree_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionview/lib/action_view/digestor.rb, line 42</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">tree</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">finder</span>, <span class="ruby-identifier">partial</span> = <span class="ruby-keyword">false</span>, <span class="ruby-identifier">seen</span> = {})
-  <span class="ruby-identifier">logical_name</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">gsub</span>(<span class="ruby-regexp">%r|/_|</span>, <span class="ruby-string">&quot;/&quot;</span>)
-  <span class="ruby-identifier">interpolated</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-string">&quot;#&quot;</span>)
-
-  <span class="ruby-keyword">if</span> <span class="ruby-operator">!</span><span class="ruby-identifier">interpolated</span> <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-identifier">template</span> = <span class="ruby-identifier">find_template</span>(<span class="ruby-identifier">finder</span>, <span class="ruby-identifier">logical_name</span>, [], <span class="ruby-identifier">partial</span>, []))
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">node</span> = <span class="ruby-identifier">seen</span>[<span class="ruby-identifier">template</span>.<span class="ruby-identifier">identifier</span>] <span class="ruby-comment"># handle cycles in the tree</span>
-      <span class="ruby-identifier">node</span>
-    <span class="ruby-keyword">else</span>
-      <span class="ruby-identifier">node</span> = <span class="ruby-identifier">seen</span>[<span class="ruby-identifier">template</span>.<span class="ruby-identifier">identifier</span>] = <span class="ruby-constant">Node</span>.<span class="ruby-identifier">create</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">logical_name</span>, <span class="ruby-identifier">template</span>, <span class="ruby-identifier">partial</span>)
-
-      <span class="ruby-identifier">deps</span> = <span class="ruby-constant">DependencyTracker</span>.<span class="ruby-identifier">find_dependencies</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">template</span>, <span class="ruby-identifier">finder</span>.<span class="ruby-identifier">view_paths</span>)
-      <span class="ruby-identifier">deps</span>.<span class="ruby-identifier">uniq</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">n</span><span class="ruby-operator">|</span> <span class="ruby-identifier">n</span>.<span class="ruby-identifier">gsub</span>(<span class="ruby-regexp">%r|/_|</span>, <span class="ruby-string">&quot;/&quot;</span>) }.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">dep_file</span><span class="ruby-operator">|</span>
-        <span class="ruby-identifier">node</span>.<span class="ruby-identifier">children</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">tree</span>(<span class="ruby-identifier">dep_file</span>, <span class="ruby-identifier">finder</span>, <span class="ruby-keyword">true</span>, <span class="ruby-identifier">seen</span>)
-      <span class="ruby-keyword">end</span>
-      <span class="ruby-identifier">node</span>
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-keyword">unless</span> <span class="ruby-identifier">interpolated</span> <span class="ruby-comment"># Dynamic template partial names can never be tracked</span>
-      <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">error</span> <span class="ruby-node">&quot;  Couldn&#39;t find template for digesting: #{name}&quot;</span>
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-identifier">seen</span>[<span class="ruby-identifier">name</span>] <span class="ruby-operator">||=</span> <span class="ruby-constant">Missing</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">logical_name</span>, <span class="ruby-keyword">nil</span>)
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/actionview/lib/action_view/digestor.rb#L42" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     
