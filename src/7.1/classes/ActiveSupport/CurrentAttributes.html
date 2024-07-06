@@ -1,0 +1,541 @@
+---
+title: ActiveSupport::CurrentAttributes
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::CurrentAttributes
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/current_attributes_rb.html">activesupport/lib/active_support/current_attributes.rb</a></li>
+            
+            <li><a href="../../files/activesupport/lib/active_support/current_attributes/test_helper_rb.html">activesupport/lib/active_support/current_attributes/test_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveSupport::CurrentAttributes-label-Current+Attributes">Current Attributes</h1>
+
+<p>Abstract super class that provides a thread-isolated attributes singleton, which resets automatically before and after each request. This allows you to keep all the per-request attributes easily available to the whole system.</p>
+
+<p>The following full app-like example demonstrates how to use a Current class to facilitate easy access to the global, per-request attributes without passing them deeply around everywhere:</p>
+
+<pre><code># app/models/current.rb
+class Current &lt; ActiveSupport::CurrentAttributes
+  attribute :account, :user
+  attribute :request_id, :user_agent, :ip_address
+
+  resets { Time.zone = nil }
+
+  def user=(user)
+    super
+    self.account = user.account
+    Time.zone    = user.time_zone
+  end
+end
+
+# app/controllers/concerns/authentication.rb
+module Authentication
+  extend ActiveSupport::Concern
+
+  included do
+    before_action :authenticate
+  end
+
+  private
+    def authenticate
+      if authenticated_user = User.find_by(id: cookies.encrypted[:user_id])
+        Current.user = authenticated_user
+      else
+        redirect_to new_session_url
+      end
+    end
+end
+
+# app/controllers/concerns/set_current_request_details.rb
+module SetCurrentRequestDetails
+  extend ActiveSupport::Concern
+
+  included do
+    before_action do
+      Current.request_id = request.uuid
+      Current.user_agent = request.user_agent
+      Current.ip_address = request.ip
+    end
+  end
+end
+
+class ApplicationController &lt; ActionController::Base
+  include Authentication
+  include SetCurrentRequestDetails
+end
+
+class MessagesController &lt; ApplicationController
+  def create
+    Current.account.messages.create(message_params)
+  end
+end
+
+class Message &lt; ApplicationRecord
+  belongs_to :creator, default: -&gt; { Current.user }
+  after_create { |message| Event.create(record: message) }
+end
+
+class Event &lt; ApplicationRecord
+  before_create do
+    self.request_id = Current.request_id
+    self.user_agent = Current.user_agent
+    self.ip_address = Current.ip_address
+  end
+end
+</code></pre>
+
+<p>A word of caution: It’s easy to overdo a global singleton like Current and tangle your model as a result. Current should only be used for a few, top-level globals, like account, user, and request details. The attributes stuck in Current should be used by more or less all actions on all requests. If you start sticking controller-specific attributes in there, you’re going to create a mess.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-after_reset">after_reset</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-attribute">attribute</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-before_reset">before_reset</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-instance">instance</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-reset">reset</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-resets">resets</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-set">set</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="Callbacks.html">
+              ActiveSupport::Callbacks
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>attributes</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-after_reset">
+            
+              after_reset(*methods, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+            <div class="aka">
+              Alias for: <a href="CurrentAttributes.html#method-c-resets">resets</a>
+            </div>
+          
+
+          
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-attribute">
+            
+              attribute(*names)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Declares one or more attributes that will be given both class and instance accessor methods.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 104
+      def attribute(*names)
+        invalid_attribute_names = names.map(&amp;:to_sym) &amp; INVALID_ATTRIBUTE_NAMES
+        if invalid_attribute_names.any?
+          raise ArgumentError, &quot;Restricted attribute names: #{invalid_attribute_names.join(&quot;, &quot;)}&quot;
+        end
+
+        ActiveSupport::CodeGenerator.batch(generated_attribute_methods, __FILE__, __LINE__) do |owner|
+          names.each do |name|
+            owner.define_cached_method(name, namespace: :current_attributes) do |batch|
+              batch &lt;&lt;
+                &quot;def #{name}&quot; &lt;&lt;
+                &quot;attributes[:#{name}]&quot; &lt;&lt;
+                &quot;end&quot;
+            end
+            owner.define_cached_method(&quot;#{name}=&quot;, namespace: :current_attributes) do |batch|
+              batch &lt;&lt;
+                &quot;def #{name}=(value)&quot; &lt;&lt;
+                &quot;attributes[:#{name}] = value&quot; &lt;&lt;
+                &quot;end&quot;
+            end
+          end
+        end
+
+        ActiveSupport::CodeGenerator.batch(singleton_class, __FILE__, __LINE__) do |owner|
+          names.each do |name|
+            owner.define_cached_method(name, namespace: :current_attributes_delegation) do |batch|
+              batch &lt;&lt;
+                &quot;def #{name}&quot; &lt;&lt;
+                &quot;instance.#{name}&quot; &lt;&lt;
+                &quot;end&quot;
+            end
+            owner.define_cached_method(&quot;#{name}=&quot;, namespace: :current_attributes_delegation) do |batch|
+              batch &lt;&lt;
+                &quot;def #{name}=(value)&quot; &lt;&lt;
+                &quot;instance.#{name} = value&quot; &lt;&lt;
+                &quot;end&quot;
+            end
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L104" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-before_reset">
+            
+              before_reset(*methods, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Calls this callback before <a href="CurrentAttributes.html#method-i-reset"><code>reset</code></a> is called on the instance. Used for resetting external collaborators that depend on current values.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 146
+      def before_reset(*methods, &amp;block)
+        set_callback :reset, :before, *methods, &amp;block
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L146" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-instance">
+            
+              instance()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns singleton instance for this class in this thread. If none exists, one is created.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 99
+      def instance
+        current_instances[current_instances_key] ||= new
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L99" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 197
+    def initialize
+      @attributes = {}
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L197" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-resets">
+            
+              resets(*methods, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Calls this callback after <a href="CurrentAttributes.html#method-i-reset"><code>reset</code></a> is called on the instance. Used for resetting external collaborators, like <a href="../Time.html#method-c-zone"><code>Time.zone</code></a>.</p>
+            </div>
+          
+
+          
+            <div class="aka">
+              Also aliased as: <a href="CurrentAttributes.html#method-c-after_reset">after_reset</a>
+            </div>
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 151
+      def resets(*methods, &amp;block)
+        set_callback :reset, :after, *methods, &amp;block
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L151" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-reset">
+            
+              reset()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Reset all attributes. Should be called before and after actions, when used as a per-request singleton.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 220
+    def reset
+      run_callbacks :reset do
+        self.attributes = {}
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L220" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-set">
+            
+              set(set_attributes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Expose one or more attributes within a block. Old values are returned after the block concludes. Example demonstrating the common use of needing to set Current attributes outside the request-cycle:</p>
+
+<pre><code>class Chat::PublicationJob &lt; ApplicationJob
+  def perform(attributes, room_number, creator)
+    Current.set(person: creator) do
+      Chat::Publisher.publish(attributes: attributes, room_number: room_number)
+    end
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/current_attributes.rb, line 211
+    def set(set_attributes)
+      old_attributes = compute_attributes(set_attributes.keys)
+      assign_attributes(set_attributes)
+      yield
+    ensure
+      assign_attributes(old_attributes)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/current_attributes.rb#L211" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

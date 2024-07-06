@@ -1,0 +1,333 @@
+---
+title: ActionView::Layouts
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionView::Layouts
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionview/lib/action_view/layouts_rb.html">actionview/lib/action_view/layouts.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionView::Layouts-label-Action+View+Layouts">Action View Layouts</h1>
+
+<p><a href="Layouts.html"><code>Layouts</code></a> reverse the common pattern of including shared headers and footers in many templates to isolate changes in repeated setups. The inclusion pattern has pages that look like this:</p>
+
+<pre><code>&lt;%= render &quot;application/header&quot; %&gt;
+Hello World
+&lt;%= render &quot;application/footer&quot; %&gt;
+</code></pre>
+
+<p>This approach is a decent way of keeping common structures isolated from the changing content, but it’s verbose and if you ever want to change the structure of these two includes, you’ll have to change all the templates.</p>
+
+<p>With layouts, you can flip it around and have the common structure know where to insert changing content. This means that the header and footer are only mentioned in one place, like this:</p>
+
+<pre><code>// The header part of this layout
+&lt;%= yield %&gt;
+// The footer part of this layout
+</code></pre>
+
+<p>And then you have content pages that look like this:</p>
+
+<pre><code>hello world
+</code></pre>
+
+<p>At rendering time, the content page is computed and then inserted in the layout, like this:</p>
+
+<pre><code>// The header part of this layout
+hello world
+// The footer part of this layout
+</code></pre>
+
+<h2 id="module-ActionView::Layouts-label-Accessing+shared+variables">Accessing shared variables</h2>
+
+<p><a href="Layouts.html"><code>Layouts</code></a> have access to variables specified in the content pages and vice versa. This allows you to have layouts with references that won’t materialize before rendering time:</p>
+
+<pre><code>&lt;h1&gt;&lt;%= @page_title %&gt;&lt;/h1&gt;
+&lt;%= yield %&gt;
+</code></pre>
+
+<p>…and content pages that fulfill these references <em>at</em> rendering time:</p>
+
+<pre><code>&lt;% @page_title = &quot;Welcome&quot; %&gt;
+Off-world colonies offers you a chance to start a new life
+</code></pre>
+
+<p>The result after rendering is:</p>
+
+<pre><code>&lt;h1&gt;Welcome&lt;/h1&gt;
+Off-world colonies offers you a chance to start a new life
+</code></pre>
+
+<h2 id="module-ActionView::Layouts-label-Layout+assignment">Layout assignment</h2>
+
+<p>You can either specify a layout declaratively (using the layout class method) or give it the same name as your controller, and place it in <code>app/views/layouts</code>. If a subclass does not have a layout specified, it inherits its layout using normal Ruby inheritance.</p>
+
+<p>For instance, if you have PostsController and a template named <code>app/views/layouts/posts.html.erb</code>, that template will be used for all actions in PostsController and controllers inheriting from PostsController.</p>
+
+<p>If you use a module, for instance Weblog::PostsController, you will need a template named <code>app/views/layouts/weblog/posts.html.erb</code>.</p>
+
+<p>Since all your controllers inherit from ApplicationController, they will use <code>app/views/layouts/application.html.erb</code> if no other layout is specified or provided.</p>
+
+<h2 id="module-ActionView::Layouts-label-Inheritance+Examples">Inheritance Examples</h2>
+
+<pre><code>class BankController &lt; ActionController::Base
+  # bank.html.erb exists
+
+class ExchangeController &lt; BankController
+  # exchange.html.erb exists
+
+class CurrencyController &lt; BankController
+
+class InformationController &lt; BankController
+  layout &quot;information&quot;
+
+class TellerController &lt; InformationController
+  # teller.html.erb exists
+
+class EmployeeController &lt; InformationController
+  # employee.html.erb exists
+  layout nil
+
+class VaultController &lt; BankController
+  layout :access_level_layout
+
+class TillController &lt; BankController
+  layout false
+</code></pre>
+
+<p>In these examples, we have three implicit lookup scenarios:</p>
+<ul><li>
+<p>The <code>BankController</code> uses the “bank” layout.</p>
+</li><li>
+<p>The <code>ExchangeController</code> uses the “exchange” layout.</p>
+</li><li>
+<p>The <code>CurrencyController</code> inherits the layout from BankController.</p>
+</li></ul>
+
+<p>However, when a layout is explicitly set, the explicitly set layout wins:</p>
+<ul><li>
+<p>The <code>InformationController</code> uses the “information” layout, explicitly set.</p>
+</li><li>
+<p>The <code>TellerController</code> also uses the “information” layout, because the parent explicitly set it.</p>
+</li><li>
+<p>The <code>EmployeeController</code> uses the “employee” layout, because it set the layout to <code>nil</code>, resetting the parent configuration.</p>
+</li><li>
+<p>The <code>VaultController</code> chooses a layout dynamically by calling the <code>access_level_layout</code> method.</p>
+</li><li>
+<p>The <code>TillController</code> does not use a layout at all.</p>
+</li></ul>
+
+<h2 id="module-ActionView::Layouts-label-Types+of+layouts">Types of layouts</h2>
+
+<p><a href="Layouts.html"><code>Layouts</code></a> are basically just regular templates, but the name of this template needs not be specified statically. Sometimes you want to alternate layouts depending on runtime information, such as whether someone is logged in or not. This can be done either by specifying a method reference as a symbol or using an inline method (as a proc).</p>
+
+<p>The method reference is the preferred approach to variable layouts and is used like this:</p>
+
+<pre><code>class WeblogController &lt; ActionController::Base
+  layout :writers_and_readers
+
+  def index
+    # fetching posts
+  end
+
+  private
+    def writers_and_readers
+      logged_in? ? &quot;writer_layout&quot; : &quot;reader_layout&quot;
+    end
+end
+</code></pre>
+
+<p>Now when a new request for the index action is processed, the layout will vary depending on whether the person accessing is logged in or not.</p>
+
+<p>If you want to use an inline method, such as a proc, do something like this:</p>
+
+<pre><code>class WeblogController &lt; ActionController::Base
+  layout proc { |controller| controller.logged_in? ? &quot;writer_layout&quot; : &quot;reader_layout&quot; }
+end
+</code></pre>
+
+<p>If an argument isn’t given to the proc, it’s evaluated in the context of the current controller anyway.</p>
+
+<pre><code>class WeblogController &lt; ActionController::Base
+  layout proc { logged_in? ? &quot;writer_layout&quot; : &quot;reader_layout&quot; }
+end
+</code></pre>
+
+<p>Of course, the most common way of specifying a layout is still just as a plain template name:</p>
+
+<pre><code>class WeblogController &lt; ActionController::Base
+  layout &quot;weblog_standard&quot;
+end
+</code></pre>
+
+<p>The template will be looked always in <code>app/views/layouts/</code> folder. But you can point <code>layouts</code> folder direct also. <code>layout &quot;layouts/demo&quot;</code> is the same as <code>layout &quot;demo&quot;</code>.</p>
+
+<p>Setting the layout to <code>nil</code> forces it to be looked up in the filesystem and falls back to the parent behavior if none exists. Setting it to <code>nil</code> is useful to re-enable template lookup overriding a previous configuration set in the parent:</p>
+
+<pre><code>class ApplicationController &lt; ActionController::Base
+  layout &quot;application&quot;
+end
+
+class PostsController &lt; ApplicationController
+  # Will use &quot;application&quot; layout
+end
+
+class CommentsController &lt; ApplicationController
+  # Will search for &quot;comments&quot; layout and fall back to &quot;application&quot; layout
+  layout nil
+end
+</code></pre>
+
+<h2 id="module-ActionView::Layouts-label-Conditional+layouts">Conditional layouts</h2>
+
+<p>If you have a layout that by default is applied to all the actions of a controller, you still have the option of rendering a given action or set of actions without a layout, or restricting a layout to only a single action or a set of actions. The <code>:only</code> and <code>:except</code> options can be passed to the layout call. For example:</p>
+
+<pre><code>class WeblogController &lt; ActionController::Base
+  layout &quot;weblog_standard&quot;, except: :rss
+
+  # ...
+
+end
+</code></pre>
+
+<p>This will assign “weblog_standard” as the WeblogController’s layout for all actions except for the <code>rss</code> action, which will be rendered directly, without wrapping a layout around the rendered view.</p>
+
+<p>Both the <code>:only</code> and <code>:except</code> condition can accept an arbitrary number of method references, so <code>except: [ :rss, :text_only ]</code> is valid, as is <code>except: :rss</code>.</p>
+
+<h2 id="module-ActionView::Layouts-label-Using+a+different+layout+in+the+action+render+call">Using a different layout in the action render call</h2>
+
+<p>If most of your actions use the same layout, it makes perfect sense to define a controller-wide layout as described above. Sometimes you’ll have exceptions where one action wants to use a different layout than the rest of the controller. You can do this by passing a <code>:layout</code> option to the <code>render</code> call. For example:</p>
+
+<pre><code>class WeblogController &lt; ActionController::Base
+  layout &quot;weblog_standard&quot;
+
+  def help
+    render action: &quot;help&quot;, layout: &quot;help&quot;
+  end
+end
+</code></pre>
+
+<p>This will override the controller-wide “weblog_standard” layout, and will render the help action with the “help” layout instead.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Layouts/ClassMethods.html">ActionView::Layouts::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-action_has_layout-3F">action_has_layout?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="Rendering.html">
+              ActionView::Rendering
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-action_has_layout-3F">
+            
+              action_has_layout?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Controls whether an action should be rendered using a layout. If you want to disable any <code>layout</code> settings for the current action so that it is rendered without a layout then either override this method in your controller to return false for that action or set the <code>action_has_layout</code> attribute to false before rendering.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/layouts.rb, line 374
+    def action_has_layout?
+      @_action_has_layout
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionview/lib/action_view/layouts.rb#L374" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

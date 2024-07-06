@@ -1,0 +1,234 @@
+---
+title: ActiveModel::SecurePassword::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveModel::SecurePassword::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activemodel/lib/active_model/secure_password_rb.html">activemodel/lib/active_model/secure_password.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-has_secure_password">has_secure_password</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="../Validations.html">
+              ActiveModel::Validations
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-has_secure_password">
+            
+              has_secure_password(attribute = :password, validations: true)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Adds methods to set and authenticate against a BCrypt password. This mechanism requires you to have a <code>XXX_digest</code> attribute, where <code>XXX</code> is the attribute name of your desired password.</p>
+
+<p>The following validations are added automatically:</p>
+<ul><li>
+<p>Password must be present on creation</p>
+</li><li>
+<p>Password length should be less than or equal to 72 bytes</p>
+</li><li>
+<p>Confirmation of password (using a <code>XXX_confirmation</code> attribute)</p>
+</li></ul>
+
+<p>If confirmation validation is not needed, simply leave out the value for <code>XXX_confirmation</code> (i.e. don’t provide a form field for it). When this attribute has a <code>nil</code> value, the validation will not be triggered.</p>
+
+<p>Additionally, a <code>XXX_challenge</code> attribute is created. When set to a value other than <code>nil</code>, it will validate against the currently persisted password. This validation relies on dirty tracking, as provided by <a href="../Dirty.html"><code>ActiveModel::Dirty</code></a>; if dirty tracking methods are not defined, this validation will fail.</p>
+
+<p>All of the above validations can be omitted by passing <code>validations: false</code> as an argument. This allows complete customizability of validation behavior.</p>
+
+<p>To use <code>has_secure_password</code>, add bcrypt (~&gt; 3.1.7) to your Gemfile:</p>
+
+<pre><code>gem &#39;bcrypt&#39;, &#39;~&gt; 3.1.7&#39;
+</code></pre>
+
+<h4 id="method-i-has_secure_password-label-Examples">Examples</h4>
+
+<h5 id="method-i-has_secure_password-label-Using+Active+Record+-28which+automatically+includes+ActiveModel-3A-3ASecurePassword-29">Using Active Record (which automatically includes <a href="../SecurePassword.html"><code>ActiveModel::SecurePassword</code></a>)</h5>
+
+<pre><code># Schema: User(name:string, password_digest:string, recovery_password_digest:string)
+class User &lt; ActiveRecord::Base
+  has_secure_password
+  has_secure_password :recovery_password, validations: false
+end
+
+user = User.new(name: &quot;david&quot;, password: &quot;&quot;, password_confirmation: &quot;nomatch&quot;)
+
+user.save                                                      # =&gt; false, password required
+user.password = &quot;vr00m&quot;
+user.save                                                      # =&gt; false, confirmation doesn&#39;t match
+user.password_confirmation = &quot;vr00m&quot;
+user.save                                                      # =&gt; true
+
+user.authenticate(&quot;notright&quot;)                                  # =&gt; false
+user.authenticate(&quot;vr00m&quot;)                                     # =&gt; user
+User.find_by(name: &quot;david&quot;)&amp;.authenticate(&quot;notright&quot;)          # =&gt; false
+User.find_by(name: &quot;david&quot;)&amp;.authenticate(&quot;vr00m&quot;)             # =&gt; user
+
+user.recovery_password = &quot;42password&quot;
+user.recovery_password_digest                                  # =&gt; &quot;$2a$04$iOfhwahFymCs5weB3BNH/uXkTG65HR.qpW.bNhEjFP3ftli3o5DQC&quot;
+user.save                                                      # =&gt; true
+
+user.authenticate_recovery_password(&quot;42password&quot;)              # =&gt; user
+
+user.update(password: &quot;pwn3d&quot;, password_challenge: &quot;&quot;)         # =&gt; false, challenge doesn&#39;t authenticate
+user.update(password: &quot;nohack4u&quot;, password_challenge: &quot;vr00m&quot;) # =&gt; true
+
+user.authenticate(&quot;vr00m&quot;)                                     # =&gt; false, old password
+user.authenticate(&quot;nohack4u&quot;)                                  # =&gt; user
+</code></pre>
+
+<h5 id="method-i-has_secure_password-label-Conditionally+requiring+a+password">Conditionally requiring a password</h5>
+
+<pre><code>class Account
+  include ActiveModel::SecurePassword
+
+  attr_accessor :is_guest, :password_digest
+
+  has_secure_password
+
+  def errors
+    super.tap { |errors| errors.delete(:password, :blank) if is_guest }
+  end
+end
+
+account = Account.new
+account.valid? # =&gt; false, password required
+
+account.is_guest = true
+account.valid? # =&gt; true
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/secure_password.rb, line 101
+      def has_secure_password(attribute = :password, validations: true)
+        # Load bcrypt gem only when has_secure_password is used.
+        # This is to avoid ActiveModel (and by extension the entire framework)
+        # being dependent on a binary library.
+        begin
+          require &quot;bcrypt&quot;
+        rescue LoadError
+          warn &quot;You don&#39;t have bcrypt installed in your application. Please add it to your Gemfile and run bundle install.&quot;
+          raise
+        end
+
+        include InstanceMethodsOnActivation.new(attribute)
+
+        if validations
+          include ActiveModel::Validations
+
+          # This ensures the model has a password by checking whether the password_digest
+          # is present, so that this works with both new and existing records. However,
+          # when there is an error, the message is added to the password attribute instead
+          # so that the error message will make sense to the end-user.
+          validate do |record|
+            record.errors.add(attribute, :blank) unless record.public_send(&quot;#{attribute}_digest&quot;).present?
+          end
+
+          validate do |record|
+            if challenge = record.public_send(:&quot;#{attribute}_challenge&quot;)
+              digest_was = record.public_send(:&quot;#{attribute}_digest_was&quot;) if record.respond_to?(:&quot;#{attribute}_digest_was&quot;)
+
+              unless digest_was.present? &amp;&amp; BCrypt::Password.new(digest_was).is_password?(challenge)
+                record.errors.add(:&quot;#{attribute}_challenge&quot;)
+              end
+            end
+          end
+
+          # Validates that the password does not exceed the maximum allowed bytes for BCrypt (72 bytes).
+          validate do |record|
+            password_value = record.public_send(attribute)
+            if password_value.present? &amp;&amp; password_value.bytesize &gt; ActiveModel::SecurePassword::MAX_PASSWORD_LENGTH_ALLOWED
+              record.errors.add(attribute, :password_too_long)
+            end
+          end
+
+          validates_confirmation_of attribute, allow_blank: true
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activemodel/lib/active_model/secure_password.rb#L101" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

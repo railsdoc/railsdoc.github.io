@@ -1,0 +1,333 @@
+---
+title: ActionController::Renderers
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionController::Renderers
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_controller/metal/renderers_rb.html">actionpack/lib/action_controller/metal/renderers.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Renderers/All.html">ActionController::Renderers::All</a></li>
+      
+        <li><a href="Renderers/ClassMethods.html">ActionController::Renderers::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-_render_to_body_with_renderer">_render_to_body_with_renderer</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-_render_with_renderer_method_name">_render_with_renderer_method_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-add">add</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-remove">remove</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-render_to_body">render_to_body</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">RENDERERS</td>
+            <td>=</td>
+            <td class="attr-value">Set.new</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>A Set containing renderer names that correspond to available renderer procs. Default values are <code>:json</code>, <code>:js</code>, <code>:xml</code>.</p></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-_render_with_renderer_method_name">
+            
+              _render_with_renderer_method_name(key)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/renderers.rb, line 90
+    def self._render_with_renderer_method_name(key)
+      &quot;_render_with_renderer_#{key}&quot;
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/renderers.rb#L90" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-add">
+            
+              add(key, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Adds a new renderer to call within controller actions. A renderer is invoked by passing its name as an option to <a href="../AbstractController/Rendering.html#method-i-render"><code>AbstractController::Rendering#render</code></a>. To create a renderer pass it a name and a block. The block takes two arguments, the first is the value paired with its key and the second is the remaining hash of options passed to <code>render</code>.</p>
+
+<p>Create a csv renderer:</p>
+
+<pre><code>ActionController::Renderers.add :csv do |obj, options|
+  filename = options[:filename] || &#39;data&#39;
+  str = obj.respond_to?(:to_csv) ? obj.to_csv : obj.to_s
+  send_data str, type: Mime[:csv],
+    disposition: &quot;attachment; filename=#{filename}.csv&quot;
+end
+</code></pre>
+
+<p>Note that we used <a href=":csv">Mime</a> for the csv mime type as it comes with Rails. For a custom renderer, you’ll need to register a mime type with <code>Mime::Type.register</code>.</p>
+
+<p>To use the csv renderer in a controller action:</p>
+
+<pre><code>def show
+  @csvable = Csvable.find(params[:id])
+  respond_to do |format|
+    format.html
+    format.csv { render csv: @csvable, filename: @csvable.name }
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/renderers.rb, line 74
+    def self.add(key, &amp;block)
+      define_method(_render_with_renderer_method_name(key), &amp;block)
+      RENDERERS &lt;&lt; key.to_sym
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/renderers.rb#L74" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-remove">
+            
+              remove(key)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>This method is the opposite of add method.</p>
+
+<p>To remove a csv renderer:</p>
+
+<pre><code>ActionController::Renderers.remove(:csv)
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/renderers.rb, line 84
+    def self.remove(key)
+      RENDERERS.delete(key.to_sym)
+      method_name = _render_with_renderer_method_name(key)
+      remove_possible_method(method_name)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/renderers.rb#L84" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-_render_to_body_with_renderer">
+            
+              _render_to_body_with_renderer(options)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/renderers.rb, line 144
+    def _render_to_body_with_renderer(options)
+      _renderers.each do |name|
+        if options.key?(name)
+          _process_options(options)
+          method_name = Renderers._render_with_renderer_method_name(name)
+          return send(method_name, options.delete(name), options)
+        end
+      end
+      nil
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/renderers.rb#L144" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-render_to_body">
+            
+              render_to_body(options)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Called by <code>render</code> in <a href="../AbstractController/Rendering.html"><code>AbstractController::Rendering</code></a> which sets the return value as the <code>response_body</code>.</p>
+
+<p>If no renderer is found, <code>super</code> returns control to <code>ActionView::Rendering.render_to_body</code>, if present.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/renderers.rb, line 140
+    def render_to_body(options)
+      _render_to_body_with_renderer(options) || super
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_controller/metal/renderers.rb#L140" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

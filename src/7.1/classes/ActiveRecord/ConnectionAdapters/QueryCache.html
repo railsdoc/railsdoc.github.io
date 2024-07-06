@@ -1,0 +1,395 @@
+---
+title: ActiveRecord::ConnectionAdapters::QueryCache
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::ConnectionAdapters::QueryCache
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/connection_adapters/abstract/query_cache_rb.html">activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="QueryCache/ConnectionPoolConfiguration.html">ActiveRecord::ConnectionAdapters::QueryCache::ConnectionPoolConfiguration</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-cache">cache</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clear_query_cache">clear_query_cache</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-dirties_query_cache">dirties_query_cache</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-disable_query_cache-21">disable_query_cache!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-enable_query_cache-21">enable_query_cache!</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-uncached">uncached</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>query_cache</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>query_cache_enabled</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-dirties_query_cache">
+            
+              dirties_query_cache(base, *method_names)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb, line 20
+        def dirties_query_cache(base, *method_names)
+          method_names.each do |method_name|
+            base.class_eval &lt;&lt;-end_code, __FILE__, __LINE__ + 1
+              def #{method_name}(...)
+                ActiveRecord::Base.clear_query_caches_for_current_thread
+                super
+              end
+            end_code
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb#L20" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(*)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb, line 55
+      def initialize(*)
+        super
+        @query_cache         = {}
+        @query_cache_enabled = false
+        @query_cache_max_size = nil
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb#L55" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-cache">
+            
+              cache()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Enable the query cache within the block.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb, line 63
+      def cache
+        old, @query_cache_enabled = @query_cache_enabled, true
+        yield
+      ensure
+        @query_cache_enabled = old
+        clear_query_cache unless @query_cache_enabled
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb#L63" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-clear_query_cache">
+            
+              clear_query_cache()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Clears the query cache.</p>
+
+<p>One reason you may wish to call this method explicitly is between queries that ask the database to randomize results. Otherwise the cache would see the same SQL query and repeatedly return the same result each time, silently undermining the randomness you were expecting.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb, line 94
+      def clear_query_cache
+        @lock.synchronize do
+          @query_cache.clear
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb#L94" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-disable_query_cache-21">
+            
+              disable_query_cache!()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb, line 75
+      def disable_query_cache!
+        @query_cache_enabled = false
+        clear_query_cache
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb#L75" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-enable_query_cache-21">
+            
+              enable_query_cache!()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb, line 71
+      def enable_query_cache!
+        @query_cache_enabled = true
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb#L71" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-uncached">
+            
+              uncached()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Disable the query cache within the block.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb, line 81
+      def uncached
+        old, @query_cache_enabled = @query_cache_enabled, false
+        yield
+      ensure
+        @query_cache_enabled = old
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb#L81" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

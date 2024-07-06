@@ -1,0 +1,1328 @@
+---
+title: ActiveSupport::BroadcastLogger
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::BroadcastLogger
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/broadcast_logger_rb.html">activesupport/lib/active_support/broadcast_logger.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveSupport::BroadcastLogger-label-Active+Support+Broadcast+Logger">Active Support Broadcast <a href="Logger.html"><code>Logger</code></a></h1>
+
+<p>The Broadcast logger is a logger used to write messages to multiple <a href="../IO.html"><code>IO</code></a>. It is commonly used in development to display messages on STDOUT and also write them to a file (development.log). With the Broadcast logger, you can broadcast your logs to a unlimited number of sinks.</p>
+
+<p>The <a href="BroadcastLogger.html"><code>BroadcastLogger</code></a> acts as a standard logger and all methods you are used to are available. However, all the methods on this logger will propagate and be delegated to the other loggers that are part of the broadcast.</p>
+
+<p>Broadcasting your logs.</p>
+
+<pre><code>stdout_logger = Logger.new(STDOUT)
+file_logger   = Logger.new(&quot;development.log&quot;)
+broadcast = BroadcastLogger.new(stdout_logger, file_logger)
+
+broadcast.info(&quot;Hello world!&quot;) # Writes the log to STDOUT and the development.log file.
+</code></pre>
+
+<p>Add a logger to the broadcast.</p>
+
+<pre><code>stdout_logger = Logger.new(STDOUT)
+broadcast = BroadcastLogger.new(stdout_logger)
+file_logger   = Logger.new(&quot;development.log&quot;)
+broadcast.broadcast_to(file_logger)
+
+broadcast.info(&quot;Hello world!&quot;) # Writes the log to STDOUT and the development.log file.
+</code></pre>
+
+<p>Modifying the log level for all broadcasted loggers.</p>
+
+<pre><code>stdout_logger = Logger.new(STDOUT)
+file_logger   = Logger.new(&quot;development.log&quot;)
+broadcast = BroadcastLogger.new(stdout_logger, file_logger)
+
+broadcast.level = Logger::FATAL # Modify the log level for the whole broadcast.
+</code></pre>
+
+<p>Stop broadcasting log to a sink.</p>
+
+<pre><code>stdout_logger = Logger.new(STDOUT)
+file_logger   = Logger.new(&quot;development.log&quot;)
+broadcast = BroadcastLogger.new(stdout_logger, file_logger)
+broadcast.info(&quot;Hello world!&quot;) # Writes the log to STDOUT and the development.log file.
+
+broadcast.stop_broadcasting_to(file_logger)
+broadcast.info(&quot;Hello world!&quot;) # Writes the log *only* to STDOUT.
+</code></pre>
+
+<p>At least one sink has to be part of the broadcast. Otherwise, your logs will not be written anywhere. For instance:</p>
+
+<pre><code>broadcast = BroadcastLogger.new
+broadcast.info(&quot;Hello world&quot;) # The log message will appear nowhere.
+</code></pre>
+
+<p>If you are adding a custom logger with custom methods to the broadcast, the ‘BroadcastLogger` will proxy them and return the raw value, or an array of raw values, depending on how many loggers in the broadcasts responded to the method:</p>
+
+<pre><code>class MyLogger &lt; ::Logger
+  def loggable?
+    true
+  end
+end
+
+logger = BroadcastLogger.new
+logger.loggable? # =&gt; A NoMethodError exception is raised because no loggers in the broadcasts could respond.
+
+logger.broadcast_to(MyLogger.new(STDOUT))
+logger.loggable? # =&gt; true
+logger.broadcast_to(MyLogger.new(STDOUT))
+puts logger.broadcasts # =&gt; [MyLogger, MyLogger]
+logger.loggable? # [true, true]
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-3C-3C">&lt;&lt;</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-add">add</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-broadcast_to">broadcast_to</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-close">close</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-debug">debug</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-debug-21">debug!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-debug-3F">debug?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-error">error</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-error-21">error!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-error-3F">error?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-fatal">fatal</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-fatal-21">fatal!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-fatal-3F">fatal?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-formatter-3D">formatter=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-info">info</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-info-21">info!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-info-3F">info?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-initialize_copy">initialize_copy</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-level">level</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-level-3D">level=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-local_level-3D">local_level=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-log">log</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-sev_threshold-3D">sev_threshold=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-stop_broadcasting_to">stop_broadcasting_to</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-unknown">unknown</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-warn">warn</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-warn-21">warn!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-warn-3F">warn?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="LoggerSilence.html">
+              ActiveSupport::LoggerSilence
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>broadcasts</td>
+            <td class='attr-desc'><p>Returns all the logger that are part of this broadcast.</p></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>formatter</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>progname</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(*loggers)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 82
+    def initialize(*loggers)
+      @broadcasts = []
+      @progname = &quot;Broadcast&quot;
+
+      broadcast_to(*loggers)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L82" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-3C-3C">
+            
+              &lt;&lt;(message)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 112
+    def &lt;&lt;(message)
+      dispatch { |logger| logger.&lt;&lt;(message) }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L112" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-add">
+            
+              add(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+            <div class="aka">
+              Also aliased as: <a href="BroadcastLogger.html#method-i-log">log</a>
+            </div>
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 116
+    def add(*args, &amp;block)
+      dispatch { |logger| logger.add(*args, &amp;block) }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L116" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-broadcast_to">
+            
+              broadcast_to(*loggers)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Add logger(s) to the broadcast.</p>
+
+<pre><code>broadcast_logger = ActiveSupport::BroadcastLogger.new
+broadcast_logger.broadcast_to(Logger.new(STDOUT), Logger.new(STDERR))
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 93
+    def broadcast_to(*loggers)
+      @broadcasts.concat(loggers)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L93" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-close">
+            
+              close()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 162
+    def close
+      dispatch { |logger| logger.close }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L162" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-debug">
+            
+              debug(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 121
+    def debug(*args, &amp;block)
+      dispatch { |logger| logger.debug(*args, &amp;block) }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L121" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-debug-21">
+            
+              debug!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets the log level to Logger::DEBUG for the whole broadcast.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 173
+    def debug!
+      dispatch { |logger| logger.debug! }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L173" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-debug-3F">
+            
+              debug?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><code>True</code> if the log level allows entries with severity Logger::DEBUG to be written to at least one broadcast. <code>False</code> otherwise.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 168
+    def debug?
+      @broadcasts.any? { |logger| logger.debug? }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L168" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-error">
+            
+              error(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 133
+    def error(*args, &amp;block)
+      dispatch { |logger| logger.error(*args, &amp;block) }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L133" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-error-21">
+            
+              error!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets the log level to Logger::ERROR for the whole broadcast.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 206
+    def error!
+      dispatch { |logger| logger.error! }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L206" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-error-3F">
+            
+              error?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><code>True</code> if the log level allows entries with severity Logger::ERROR to be written to at least one broadcast. <code>False</code> otherwise.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 201
+    def error?
+      @broadcasts.any? { |logger| logger.error? }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L201" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-fatal">
+            
+              fatal(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 137
+    def fatal(*args, &amp;block)
+      dispatch { |logger| logger.fatal(*args, &amp;block) }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L137" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-fatal-21">
+            
+              fatal!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets the log level to Logger::FATAL for the whole broadcast.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 217
+    def fatal!
+      dispatch { |logger| logger.fatal! }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L217" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-fatal-3F">
+            
+              fatal?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><code>True</code> if the log level allows entries with severity Logger::FATAL to be written to at least one broadcast. <code>False</code> otherwise.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 212
+    def fatal?
+      @broadcasts.any? { |logger| logger.fatal? }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L212" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-formatter-3D">
+            
+              formatter=(formatter)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 145
+    def formatter=(formatter)
+      dispatch { |logger| logger.formatter = formatter }
+
+      @formatter = formatter
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L145" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-info">
+            
+              info(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 125
+    def info(*args, &amp;block)
+      dispatch { |logger| logger.info(*args, &amp;block) }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L125" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-info-21">
+            
+              info!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets the log level to Logger::INFO for the whole broadcast.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 184
+    def info!
+      dispatch { |logger| logger.info! }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L184" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-info-3F">
+            
+              info?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><code>True</code> if the log level allows entries with severity Logger::INFO to be written to at least one broadcast. <code>False</code> otherwise.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 179
+    def info?
+      @broadcasts.any? { |logger| logger.info? }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L179" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-initialize_copy">
+            
+              initialize_copy(other)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 221
+    def initialize_copy(other)
+      @broadcasts = []
+      @progname = other.progname.dup
+      @formatter = other.formatter.dup
+
+      broadcast_to(*other.broadcasts.map(&amp;:dup))
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L221" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-level">
+            
+              level()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 108
+    def level
+      @broadcasts.map(&amp;:level).min
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L108" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-level-3D">
+            
+              level=(level)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+            <div class="aka">
+              Also aliased as: <a href="BroadcastLogger.html#method-i-sev_threshold-3D">sev_threshold=</a>
+            </div>
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 151
+    def level=(level)
+      dispatch { |logger| logger.level = level }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L151" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-local_level-3D">
+            
+              local_level=(level)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 156
+    def local_level=(level)
+      dispatch do |logger|
+        logger.local_level = level if logger.respond_to?(:local_level=)
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L156" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-log">
+            
+              log(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+            <div class="aka">
+              Alias for: <a href="BroadcastLogger.html#method-i-add">add</a>
+            </div>
+          
+
+          
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-sev_threshold-3D">
+            
+              sev_threshold=(level)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+            <div class="aka">
+              Alias for: <a href="BroadcastLogger.html#method-i-level-3D">level=</a>
+            </div>
+          
+
+          
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-stop_broadcasting_to">
+            
+              stop_broadcasting_to(logger)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Remove a logger from the broadcast. When a logger is removed, messages sent to the broadcast will no longer be written to its sink.</p>
+
+<pre><code>sink = Logger.new(STDOUT)
+broadcast_logger = ActiveSupport::BroadcastLogger.new
+
+broadcast_logger.stop_broadcasting_to(sink)
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 104
+    def stop_broadcasting_to(logger)
+      @broadcasts.delete(logger)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L104" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-unknown">
+            
+              unknown(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 141
+    def unknown(*args, &amp;block)
+      dispatch { |logger| logger.unknown(*args, &amp;block) }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L141" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-warn">
+            
+              warn(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 129
+    def warn(*args, &amp;block)
+      dispatch { |logger| logger.warn(*args, &amp;block) }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L129" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-warn-21">
+            
+              warn!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets the log level to Logger::WARN for the whole broadcast.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 195
+    def warn!
+      dispatch { |logger| logger.warn! }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L195" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-warn-3F">
+            
+              warn?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><code>True</code> if the log level allows entries with severity Logger::WARN to be written to at least one broadcast. <code>False</code> otherwise.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/broadcast_logger.rb, line 190
+    def warn?
+      @broadcasts.any? { |logger| logger.warn? }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/broadcast_logger.rb#L190" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

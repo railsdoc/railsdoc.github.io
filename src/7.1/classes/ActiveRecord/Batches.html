@@ -1,0 +1,465 @@
+---
+title: ActiveRecord::Batches
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Batches
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/relation/batches_rb.html">activerecord/lib/active_record/relation/batches.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/relation/batches/batch_enumerator_rb.html">activerecord/lib/active_record/relation/batches/batch_enumerator.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveRecord::Batches-label-Active+Record+Batches">Active Record Batches</h1>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Batches/BatchEnumerator.html">ActiveRecord::Batches::BatchEnumerator</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-find_each">find_each</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-find_in_batches">find_in_batches</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-in_batches">in_batches</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">DEFAULT_ORDER</td>
+            <td>=</td>
+            <td class="attr-value">:asc</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">ORDER_IGNORE_MESSAGE</td>
+            <td>=</td>
+            <td class="attr-value">&quot;Scoped order is ignored, it&#39;s forced to be batch order.&quot;</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-find_each">
+            
+              find_each(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: DEFAULT_ORDER, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Looping through a collection of records from the database (using the <a href="Scoping/Named/ClassMethods.html#method-i-all"><code>Scoping::Named::ClassMethods.all</code></a> method, for example) is very inefficient since it will try to instantiate all the objects at once.</p>
+
+<p>In that case, batch processing methods allow you to work with the records in batches, thereby greatly reducing memory consumption.</p>
+
+<p>The <a href="Batches.html#method-i-find_each"><code>find_each</code></a> method uses <a href="Batches.html#method-i-find_in_batches"><code>find_in_batches</code></a> with a batch size of 1000 (or as specified by the <code>:batch_size</code> option).</p>
+
+<pre><code>Person.find_each do |person|
+  person.do_awesome_stuff
+end
+
+Person.where(&quot;age &gt; 21&quot;).find_each do |person|
+  person.party_all_night!
+end
+</code></pre>
+
+<p>If you do not provide a block to <a href="Batches.html#method-i-find_each"><code>find_each</code></a>, it will return an Enumerator for chaining with other methods:</p>
+
+<pre><code>Person.find_each.with_index do |person, index|
+  person.award_trophy(index + 1)
+end
+</code></pre>
+
+<h4 id="method-i-find_each-label-Options">Options</h4>
+<ul><li>
+<p><code>:batch_size</code> - Specifies the size of the batch. Defaults to 1000.</p>
+</li><li>
+<p><code>:start</code> - Specifies the primary key value to start from, inclusive of the value.</p>
+</li><li>
+<p><code>:finish</code> - Specifies the primary key value to end at, inclusive of the value.</p>
+</li><li>
+<p><code>:error_on_ignore</code> - Overrides the application config to specify if an error should be raised when an order is present in the relation.</p>
+</li><li>
+<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
+
+<pre><code>class Order &lt; ActiveRecord::Base
+  self.primary_key = [:id_1, :id_2]
+end
+
+Order.find_each(order: [:asc, :desc])
+</code></pre>
+
+<p>In the above code, <code>id_1</code> is sorted in ascending order and <code>id_2</code> in descending order.</p>
+</li></ul>
+
+<p>Limits are honored, and if present there is no requirement for the batch size: it can be less than, equal to, or greater than the limit.</p>
+
+<p>The options <code>start</code> and <code>finish</code> are especially useful if you want multiple workers dealing with the same processing queue. You can make worker 1 handle all the records between id 1 and 9999 and worker 2 handle from 10000 and beyond by setting the <code>:start</code> and <code>:finish</code> option on each worker.</p>
+
+<pre><code># In worker 1, let&#39;s process until 9999 records.
+Person.find_each(finish: 9_999) do |person|
+  person.party_all_night!
+end
+
+# In worker 2, let&#39;s process from record 10_000 and onwards.
+Person.find_each(start: 10_000) do |person|
+  person.party_all_night!
+end
+</code></pre>
+
+<p>NOTE: Order can be ascending (:asc) or descending (:desc). It is automatically set to ascending on the primary key (“id ASC”). This also means that this method only works when the primary key is orderable (e.g. an integer or string).</p>
+
+<p>NOTE: By its nature, batch processing is subject to race conditions if other processes are modifying the database.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 79
+    def find_each(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: DEFAULT_ORDER, &amp;block)
+      if block_given?
+        find_in_batches(start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, order: order) do |records|
+          records.each(&amp;block)
+        end
+      else
+        enum_for(:find_each, start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, order: order) do
+          relation = self
+          apply_limits(relation, start, finish, build_batch_orders(order)).size
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/relation/batches.rb#L79" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-find_in_batches">
+            
+              find_in_batches(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: DEFAULT_ORDER)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Yields each batch of records that was found by the find options as an array.</p>
+
+<pre><code>Person.where(&quot;age &gt; 21&quot;).find_in_batches do |group|
+  sleep(50) # Make sure it doesn&#39;t get too crowded in there!
+  group.each { |person| person.party_all_night! }
+end
+</code></pre>
+
+<p>If you do not provide a block to <a href="Batches.html#method-i-find_in_batches"><code>find_in_batches</code></a>, it will return an Enumerator for chaining with other methods:</p>
+
+<pre><code>Person.find_in_batches.with_index do |group, batch|
+  puts &quot;Processing group ##{batch}&quot;
+  group.each(&amp;:recover_from_last_night!)
+end
+</code></pre>
+
+<p>To be yielded each record one by one, use <a href="Batches.html#method-i-find_each"><code>find_each</code></a> instead.</p>
+
+<h4 id="method-i-find_in_batches-label-Options">Options</h4>
+<ul><li>
+<p><code>:batch_size</code> - Specifies the size of the batch. Defaults to 1000.</p>
+</li><li>
+<p><code>:start</code> - Specifies the primary key value to start from, inclusive of the value.</p>
+</li><li>
+<p><code>:finish</code> - Specifies the primary key value to end at, inclusive of the value.</p>
+</li><li>
+<p><code>:error_on_ignore</code> - Overrides the application config to specify if an error should be raised when an order is present in the relation.</p>
+</li><li>
+<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
+
+<pre><code>class Order &lt; ActiveRecord::Base
+  self.primary_key = [:id_1, :id_2]
+end
+
+Order.find_in_batches(order: [:asc, :desc])
+</code></pre>
+
+<p>In the above code, <code>id_1</code> is sorted in ascending order and <code>id_2</code> in descending order.</p>
+</li></ul>
+
+<p>Limits are honored, and if present there is no requirement for the batch size: it can be less than, equal to, or greater than the limit.</p>
+
+<p>The options <code>start</code> and <code>finish</code> are especially useful if you want multiple workers dealing with the same processing queue. You can make worker 1 handle all the records between id 1 and 9999 and worker 2 handle from 10000 and beyond by setting the <code>:start</code> and <code>:finish</code> option on each worker.</p>
+
+<pre><code># Let&#39;s process from record 10_000 on.
+Person.find_in_batches(start: 10_000) do |group|
+  group.each { |person| person.party_all_night! }
+end
+</code></pre>
+
+<p>NOTE: Order can be ascending (:asc) or descending (:desc). It is automatically set to ascending on the primary key (“id ASC”). This also means that this method only works when the primary key is orderable (e.g. an integer or string).</p>
+
+<p>NOTE: By its nature, batch processing is subject to race conditions if other processes are modifying the database.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 148
+    def find_in_batches(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: DEFAULT_ORDER)
+      relation = self
+      unless block_given?
+        return to_enum(:find_in_batches, start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, order: order) do
+          total = apply_limits(relation, start, finish, build_batch_orders(order)).size
+          (total - 1).div(batch_size) + 1
+        end
+      end
+
+      in_batches(of: batch_size, start: start, finish: finish, load: true, error_on_ignore: error_on_ignore, order: order) do |batch|
+        yield batch.to_a
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/relation/batches.rb#L148" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-in_batches">
+            
+              in_batches(of: 1000, start: nil, finish: nil, load: false, error_on_ignore: nil, order: DEFAULT_ORDER, use_ranges: nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Yields <a href="Relation.html"><code>ActiveRecord::Relation</code></a> objects to work with a batch of records.</p>
+
+<pre><code>Person.where(&quot;age &gt; 21&quot;).in_batches do |relation|
+  relation.delete_all
+  sleep(10) # Throttle the delete queries
+end
+</code></pre>
+
+<p>If you do not provide a block to <a href="Batches.html#method-i-in_batches"><code>in_batches</code></a>, it will return a <a href="Batches/BatchEnumerator.html"><code>BatchEnumerator</code></a> which is enumerable.</p>
+
+<pre><code>Person.in_batches.each_with_index do |relation, batch_index|
+  puts &quot;Processing relation ##{batch_index}&quot;
+  relation.delete_all
+end
+</code></pre>
+
+<p>Examples of calling methods on the returned <a href="Batches/BatchEnumerator.html"><code>BatchEnumerator</code></a> object:</p>
+
+<pre><code>Person.in_batches.delete_all
+Person.in_batches.update_all(awesome: true)
+Person.in_batches.each_record(&amp;:party_all_night!)
+</code></pre>
+
+<h4 id="method-i-in_batches-label-Options">Options</h4>
+<ul><li>
+<p><code>:of</code> - Specifies the size of the batch. Defaults to 1000.</p>
+</li><li>
+<p><code>:load</code> - Specifies if the relation should be loaded. Defaults to false.</p>
+</li><li>
+<p><code>:start</code> - Specifies the primary key value to start from, inclusive of the value.</p>
+</li><li>
+<p><code>:finish</code> - Specifies the primary key value to end at, inclusive of the value.</p>
+</li><li>
+<p><code>:error_on_ignore</code> - Overrides the application config to specify if an error should be raised when an order is present in the relation.</p>
+</li><li>
+<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
+
+<pre><code>class Order &lt; ActiveRecord::Base
+  self.primary_key = [:id_1, :id_2]
+end
+
+Order.in_batches(order: [:asc, :desc])
+</code></pre>
+
+<p>In the above code, <code>id_1</code> is sorted in ascending order and <code>id_2</code> in descending order.</p>
+</li><li>
+<p><code>:use_ranges</code> - Specifies whether to use range iteration (id &gt;= x AND id &lt;= y). It can make iterating over the whole or almost whole tables several times faster. Only whole table iterations use this style of iteration by default. You can disable this behavior by passing <code>false</code>. If you iterate over the table and the only condition is, e.g., <code>archived_at: nil</code> (and only a tiny fraction of the records are archived), it makes sense to opt in to this approach.</p>
+</li></ul>
+
+<p>Limits are honored, and if present there is no requirement for the batch size, it can be less than, equal, or greater than the limit.</p>
+
+<p>The options <code>start</code> and <code>finish</code> are especially useful if you want multiple workers dealing with the same processing queue. You can make worker 1 handle all the records between id 1 and 9999 and worker 2 handle from 10000 and beyond by setting the <code>:start</code> and <code>:finish</code> option on each worker.</p>
+
+<pre><code># Let&#39;s process from record 10_000 on.
+Person.in_batches(start: 10_000).update_all(awesome: true)
+</code></pre>
+
+<p>An example of calling where query method on the relation:</p>
+
+<pre><code>Person.in_batches.each do |relation|
+  relation.update_all(&#39;age = age + 1&#39;)
+  relation.where(&#39;age &gt; 21&#39;).update_all(should_party: true)
+  relation.where(&#39;age &lt;= 21&#39;).delete_all
+end
+</code></pre>
+
+<p>NOTE: If you are going to iterate through each record, you should call each_record on the yielded BatchEnumerator:</p>
+
+<pre><code>Person.in_batches.each_record(&amp;:party_all_night!)
+</code></pre>
+
+<p>NOTE: Order can be ascending (:asc) or descending (:desc). It is automatically set to ascending on the primary key (“id ASC”). This also means that this method only works when the primary key is orderable (e.g. an integer or string).</p>
+
+<p>NOTE: By its nature, batch processing is subject to race conditions if other processes are modifying the database.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 239
+    def in_batches(of: 1000, start: nil, finish: nil, load: false, error_on_ignore: nil, order: DEFAULT_ORDER, use_ranges: nil, &amp;block)
+      unless Array(order).all? { |ord| [:asc, :desc].include?(ord) }
+        raise ArgumentError, &quot;:order must be :asc or :desc or an array consisting of :asc or :desc, got #{order.inspect}&quot;
+      end
+
+      unless block
+        return BatchEnumerator.new(of: of, start: start, finish: finish, relation: self, order: order, use_ranges: use_ranges)
+      end
+
+      if arel.orders.present?
+        act_on_ignored_order(error_on_ignore)
+      end
+
+      batch_limit = of
+
+      if limit_value
+        remaining   = limit_value
+        batch_limit = remaining if remaining &lt; batch_limit
+      end
+
+      if self.loaded?
+        batch_on_loaded_relation(
+          relation: self,
+          start: start,
+          finish: finish,
+          order: order,
+          batch_limit: batch_limit,
+          &amp;block
+        )
+      else
+        batch_on_unloaded_relation(
+          relation: self,
+          start: start,
+          finish: finish,
+          load: load,
+          order: order,
+          use_ranges: use_ranges,
+          remaining: remaining,
+          batch_limit: batch_limit,
+          &amp;block
+        )
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/relation/batches.rb#L239" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

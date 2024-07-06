@@ -1,0 +1,418 @@
+---
+title: ActiveRecord::NestedAttributes::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::NestedAttributes::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/nested_attributes_rb.html">activerecord/lib/active_record/nested_attributes.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveRecord::NestedAttributes::ClassMethods-label-Active+Record+Nested+Attributes">Active Record Nested Attributes</h1>
+
+<p>Nested attributes allow you to save attributes on associated records through the parent. By default nested attribute updating is turned off and you can enable it using the <a href="ClassMethods.html#method-i-accepts_nested_attributes_for"><code>accepts_nested_attributes_for</code></a> class method. When you enable nested attributes an attribute writer is defined on the model.</p>
+
+<p>The attribute writer is named after the association, which means that in the following example, two new methods are added to your model:</p>
+
+<p><code>author_attributes=(attributes)</code> and <code>pages_attributes=(attributes)</code>.</p>
+
+<pre><code>class Book &lt; ActiveRecord::Base
+  has_one :author
+  has_many :pages
+
+  accepts_nested_attributes_for :author, :pages
+end
+</code></pre>
+
+<p>Note that the <code>:autosave</code> option is automatically enabled on every association that <a href="ClassMethods.html#method-i-accepts_nested_attributes_for"><code>accepts_nested_attributes_for</code></a> is used for.</p>
+
+<h3 id="module-ActiveRecord::NestedAttributes::ClassMethods-label-One-to-one">One-to-one</h3>
+
+<p>Consider a Member model that has one Avatar:</p>
+
+<pre><code>class Member &lt; ActiveRecord::Base
+  has_one :avatar
+  accepts_nested_attributes_for :avatar
+end
+</code></pre>
+
+<p>Enabling nested attributes on a one-to-one association allows you to create the member and avatar in one go:</p>
+
+<pre><code>params = { member: { name: &#39;Jack&#39;, avatar_attributes: { icon: &#39;smiling&#39; } } }
+member = Member.create(params[:member])
+member.avatar.id # =&gt; 2
+member.avatar.icon # =&gt; &#39;smiling&#39;
+</code></pre>
+
+<p>It also allows you to update the avatar through the member:</p>
+
+<pre><code>params = { member: { avatar_attributes: { id: &#39;2&#39;, icon: &#39;sad&#39; } } }
+member.update params[:member]
+member.avatar.icon # =&gt; &#39;sad&#39;
+</code></pre>
+
+<p>If you want to update the current avatar without providing the id, you must add <code>:update_only</code> option.</p>
+
+<pre><code>class Member &lt; ActiveRecord::Base
+  has_one :avatar
+  accepts_nested_attributes_for :avatar, update_only: true
+end
+
+params = { member: { avatar_attributes: { icon: &#39;sad&#39; } } }
+member.update params[:member]
+member.avatar.id # =&gt; 2
+member.avatar.icon # =&gt; &#39;sad&#39;
+</code></pre>
+
+<p>By default you will only be able to set and update attributes on the associated model. If you want to destroy the associated model through the attributes hash, you have to enable it first using the <code>:allow_destroy</code> option.</p>
+
+<pre><code>class Member &lt; ActiveRecord::Base
+  has_one :avatar
+  accepts_nested_attributes_for :avatar, allow_destroy: true
+end
+</code></pre>
+
+<p>Now, when you add the <code>_destroy</code> key to the attributes hash, with a value that evaluates to <code>true</code>, you will destroy the associated model:</p>
+
+<pre><code>member.avatar_attributes = { id: &#39;2&#39;, _destroy: &#39;1&#39; }
+member.avatar.marked_for_destruction? # =&gt; true
+member.save
+member.reload.avatar # =&gt; nil
+</code></pre>
+
+<p>Note that the model will <em>not</em> be destroyed until the parent is saved.</p>
+
+<p>Also note that the model will not be destroyed unless you also specify its id in the updated hash.</p>
+
+<h3 id="module-ActiveRecord::NestedAttributes::ClassMethods-label-One-to-many">One-to-many</h3>
+
+<p>Consider a member that has a number of posts:</p>
+
+<pre><code>class Member &lt; ActiveRecord::Base
+  has_many :posts
+  accepts_nested_attributes_for :posts
+end
+</code></pre>
+
+<p>You can now set or update attributes on the associated posts through an attribute hash for a member: include the key <code>:posts_attributes</code> with an array of hashes of post attributes as a value.</p>
+
+<p>For each hash that does <em>not</em> have an <code>id</code> key a new record will be instantiated, unless the hash also contains a <code>_destroy</code> key that evaluates to <code>true</code>.</p>
+
+<pre><code>params = { member: {
+  name: &#39;joe&#39;, posts_attributes: [
+    { title: &#39;Kari, the awesome Ruby documentation browser!&#39; },
+    { title: &#39;The egalitarian assumption of the modern citizen&#39; },
+    { title: &#39;&#39;, _destroy: &#39;1&#39; } # this will be ignored
+  ]
+}}
+
+member = Member.create(params[:member])
+member.posts.length # =&gt; 2
+member.posts.first.title # =&gt; &#39;Kari, the awesome Ruby documentation browser!&#39;
+member.posts.second.title # =&gt; &#39;The egalitarian assumption of the modern citizen&#39;
+</code></pre>
+
+<p>You may also set a <code>:reject_if</code> proc to silently ignore any new record hashes if they fail to pass your criteria. For example, the previous example could be rewritten as:</p>
+
+<pre><code>class Member &lt; ActiveRecord::Base
+  has_many :posts
+  accepts_nested_attributes_for :posts, reject_if: proc { |attributes| attributes[&#39;title&#39;].blank? }
+end
+
+params = { member: {
+  name: &#39;joe&#39;, posts_attributes: [
+    { title: &#39;Kari, the awesome Ruby documentation browser!&#39; },
+    { title: &#39;The egalitarian assumption of the modern citizen&#39; },
+    { title: &#39;&#39; } # this will be ignored because of the :reject_if proc
+  ]
+}}
+
+member = Member.create(params[:member])
+member.posts.length # =&gt; 2
+member.posts.first.title # =&gt; &#39;Kari, the awesome Ruby documentation browser!&#39;
+member.posts.second.title # =&gt; &#39;The egalitarian assumption of the modern citizen&#39;
+</code></pre>
+
+<p>Alternatively, <code>:reject_if</code> also accepts a symbol for using methods:</p>
+
+<pre><code>class Member &lt; ActiveRecord::Base
+  has_many :posts
+  accepts_nested_attributes_for :posts, reject_if: :new_record?
+end
+
+class Member &lt; ActiveRecord::Base
+  has_many :posts
+  accepts_nested_attributes_for :posts, reject_if: :reject_posts
+
+  def reject_posts(attributes)
+    attributes[&#39;title&#39;].blank?
+  end
+end
+</code></pre>
+
+<p>If the hash contains an <code>id</code> key that matches an already associated record, the matching record will be modified:</p>
+
+<pre><code>member.attributes = {
+  name: &#39;Joe&#39;,
+  posts_attributes: [
+    { id: 1, title: &#39;[UPDATED] An, as of yet, undisclosed awesome Ruby documentation browser!&#39; },
+    { id: 2, title: &#39;[UPDATED] other post&#39; }
+  ]
+}
+
+member.posts.first.title # =&gt; &#39;[UPDATED] An, as of yet, undisclosed awesome Ruby documentation browser!&#39;
+member.posts.second.title # =&gt; &#39;[UPDATED] other post&#39;
+</code></pre>
+
+<p>However, the above applies if the parent model is being updated as well. For example, if you wanted to create a <code>member</code> named <em>joe</em> and wanted to update the <code>posts</code> at the same time, that would give an <a href="../RecordNotFound.html"><code>ActiveRecord::RecordNotFound</code></a> error.</p>
+
+<p>By default the associated records are protected from being destroyed. If you want to destroy any of the associated records through the attributes hash, you have to enable it first using the <code>:allow_destroy</code> option. This will allow you to also use the <code>_destroy</code> key to destroy existing records:</p>
+
+<pre><code>class Member &lt; ActiveRecord::Base
+  has_many :posts
+  accepts_nested_attributes_for :posts, allow_destroy: true
+end
+
+params = { member: {
+  posts_attributes: [{ id: &#39;2&#39;, _destroy: &#39;1&#39; }]
+}}
+
+member.attributes = params[:member]
+member.posts.detect { |p| p.id == 2 }.marked_for_destruction? # =&gt; true
+member.posts.length # =&gt; 2
+member.save
+member.reload.posts.length # =&gt; 1
+</code></pre>
+
+<p>Nested attributes for an associated collection can also be passed in the form of a hash of hashes instead of an array of hashes:</p>
+
+<pre><code>Member.create(
+  name: &#39;joe&#39;,
+  posts_attributes: {
+    first:  { title: &#39;Foo&#39; },
+    second: { title: &#39;Bar&#39; }
+  }
+)
+</code></pre>
+
+<p>has the same effect as</p>
+
+<pre><code>Member.create(
+  name: &#39;joe&#39;,
+  posts_attributes: [
+    { title: &#39;Foo&#39; },
+    { title: &#39;Bar&#39; }
+  ]
+)
+</code></pre>
+
+<p>The keys of the hash which is the value for <code>:posts_attributes</code> are ignored in this case. However, it is not allowed to use <code>&#39;id&#39;</code> or <code>:id</code> for one of such keys, otherwise the hash will be wrapped in an array and interpreted as an attribute hash for a single post.</p>
+
+<p>Passing attributes for an associated collection in the form of a hash of hashes can be used with hashes generated from HTTP/HTML parameters, where there may be no natural way to submit an array of hashes.</p>
+
+<h3 id="module-ActiveRecord::NestedAttributes::ClassMethods-label-Saving">Saving</h3>
+
+<p>All changes to models, including the destruction of those marked for destruction, are saved and destroyed automatically and atomically when the parent model is saved. This happens inside the transaction initiated by the parent’s save method. See <a href="../AutosaveAssociation.html"><code>ActiveRecord::AutosaveAssociation</code></a>.</p>
+
+<h3 id="module-ActiveRecord::NestedAttributes::ClassMethods-label-Validating+the+presence+of+a+parent+model">Validating the presence of a parent model</h3>
+
+<p>The <code>belongs_to</code> association validates the presence of the parent model by default. You can disable this behavior by specifying <code>optional: true</code>. This can be used, for example, when conditionally validating the presence of the parent model:</p>
+
+<pre><code>class Veterinarian &lt; ActiveRecord::Base
+  has_many :patients, inverse_of: :veterinarian
+  accepts_nested_attributes_for :patients
+end
+
+class Patient &lt; ActiveRecord::Base
+  belongs_to :veterinarian, inverse_of: :patients, optional: true
+  validates :veterinarian, presence: true, unless: -&gt; { awaiting_intake }
+end
+</code></pre>
+
+<p>Note that if you do not specify the <code>:inverse_of</code> option, then Active Record will try to automatically guess the inverse association based on heuristics.</p>
+
+<p>For one-to-one nested associations, if you build the new (in-memory) child object yourself before assignment, then this module will not overwrite it, e.g.:</p>
+
+<pre><code>class Member &lt; ActiveRecord::Base
+  has_one :avatar
+  accepts_nested_attributes_for :avatar
+
+  def avatar
+    super || build_avatar(width: 200)
+  end
+end
+
+member = Member.new
+member.avatar_attributes = {icon: &#39;sad&#39;}
+member.avatar.width # =&gt; 200
+</code></pre>
+
+<h3 id="module-ActiveRecord::NestedAttributes::ClassMethods-label-Creating+forms+with+nested+attributes">Creating forms with nested attributes</h3>
+
+<p>Use <a href="../../ActionView/Helpers/FormHelper.html#method-i-fields_for"><code>ActionView::Helpers::FormHelper#fields_for</code></a> to create form elements for nested attributes.</p>
+
+<p><a href="../Integration.html"><code>Integration</code></a> test params should reflect the structure of the form. For example:</p>
+
+<pre><code>post members_path, params: {
+  member: {
+    name: &#39;joe&#39;,
+    posts_attributes: {
+      &#39;0&#39; =&gt; { title: &#39;Foo&#39; },
+      &#39;1&#39; =&gt; { title: &#39;Bar&#39; }
+    }
+  }
+}
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-accepts_nested_attributes_for">accepts_nested_attributes_for</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">REJECT_ALL_BLANK_PROC</td>
+            <td>=</td>
+            <td class="attr-value">proc { |attributes| attributes.all? { |key, value| key == &quot;_destroy&quot; || value.blank? } }</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-accepts_nested_attributes_for">
+            
+              accepts_nested_attributes_for(*attr_names)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Defines an attributes writer for the specified association(s).</p>
+
+<p>Supported options:</p>
+<dl class="rdoc-list label-list"><dt>:allow_destroy
+<dd>
+<p>If true, destroys any members from the attributes hash with a <code>_destroy</code> key and a value that evaluates to <code>true</code> (e.g. 1, ‘1’, true, or ‘true’). This option is false by default.</p>
+</dd><dt>:reject_if
+<dd>
+<p>Allows you to specify a Proc or a <a href="../../Symbol.html"><code>Symbol</code></a> pointing to a method that checks whether a record should be built for a certain attribute hash. The hash is passed to the supplied Proc or the method and it should return either <code>true</code> or <code>false</code>. When no <code>:reject_if</code> is specified, a record will be built for all attribute hashes that do not have a <code>_destroy</code> value that evaluates to true. Passing <code>:all_blank</code> instead of a Proc will create a proc that will reject a record where all the attributes are blank excluding any value for <code>_destroy</code>.</p>
+</dd><dt>:limit
+<dd>
+<p>Allows you to specify the maximum number of associated records that can be processed with the nested attributes. Limit also can be specified as a Proc or a <a href="../../Symbol.html"><code>Symbol</code></a> pointing to a method that should return a number. If the size of the nested attributes array exceeds the specified limit, <a href="TooManyRecords.html"><code>NestedAttributes::TooManyRecords</code></a> exception is raised. If omitted, any number of associations can be processed. Note that the <code>:limit</code> option is only applicable to one-to-many associations.</p>
+</dd><dt>:update_only
+<dd>
+<p>For a one-to-one association, this option allows you to specify how nested attributes are going to be used when an associated record already exists. In general, an existing record may either be updated with the new set of attribute values or be replaced by a wholly new record containing those values. By default the <code>:update_only</code> option is false and the nested attributes are used to update the existing record only if they include the record’s <code>:id</code> value. Otherwise a new record will be instantiated and used to replace the existing one. However if the <code>:update_only</code> option is true, the nested attributes are used to update the record’s attributes always, regardless of whether the <code>:id</code> is present. The option is ignored for collection associations.</p>
+</dd></dl>
+
+<p>Examples:</p>
+
+<pre><code># creates avatar_attributes=
+accepts_nested_attributes_for :avatar, reject_if: proc { |attributes| attributes[&#39;name&#39;].blank? }
+# creates avatar_attributes=
+accepts_nested_attributes_for :avatar, reject_if: :all_blank
+# creates avatar_attributes= and posts_attributes=
+accepts_nested_attributes_for :avatar, :posts, allow_destroy: true
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/nested_attributes.rb, line 351
+      def accepts_nested_attributes_for(*attr_names)
+        options = { allow_destroy: false, update_only: false }
+        options.update(attr_names.extract_options!)
+        options.assert_valid_keys(:allow_destroy, :reject_if, :limit, :update_only)
+        options[:reject_if] = REJECT_ALL_BLANK_PROC if options[:reject_if] == :all_blank
+
+        attr_names.each do |association_name|
+          if reflection = _reflect_on_association(association_name)
+            reflection.autosave = true
+            define_autosave_validation_callbacks(reflection)
+
+            nested_attributes_options = self.nested_attributes_options.dup
+            nested_attributes_options[association_name.to_sym] = options
+            self.nested_attributes_options = nested_attributes_options
+
+            type = (reflection.collection? ? :collection : :one_to_one)
+            generate_association_writer(association_name, type)
+          else
+            raise ArgumentError, &quot;No association found for name `#{association_name}&#39;. Has it been defined yet?&quot;
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/nested_attributes.rb#L351" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

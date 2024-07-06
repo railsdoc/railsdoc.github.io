@@ -1,0 +1,626 @@
+---
+title: ActiveSupport::LogSubscriber
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::LogSubscriber
+            
+                <span class="parent">&lt;
+                    
+                    Subscriber
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/log_subscriber_rb.html">activesupport/lib/active_support/log_subscriber.rb</a></li>
+            
+            <li><a href="../../files/activesupport/lib/active_support/log_subscriber/test_helper_rb.html">activesupport/lib/active_support/log_subscriber/test_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveSupport::LogSubscriber-label-Active+Support+Log+Subscriber">Active Support Log Subscriber</h1>
+
+<p><code>ActiveSupport::LogSubscriber</code> is an object set to consume <a href="Notifications.html"><code>ActiveSupport::Notifications</code></a> with the sole purpose of logging them. The log subscriber dispatches notifications to a registered object based on its given namespace.</p>
+
+<p>An example would be Active Record log subscriber responsible for logging queries:</p>
+
+<pre><code>module ActiveRecord
+  class LogSubscriber &lt; ActiveSupport::LogSubscriber
+    attach_to :active_record
+
+    def sql(event)
+      info &quot;#{event.payload[:name]} (#{event.duration}) #{event.payload[:sql]}&quot;
+    end
+  end
+end
+</code></pre>
+
+<p><a href="LogSubscriber.html#method-c-logger"><code>ActiveRecord::LogSubscriber.logger</code></a> must be set as well, but it is assigned automatically in a Rails environment.</p>
+
+<p>After configured, whenever a <code>&quot;sql.active_record&quot;</code> notification is published, it will properly dispatch the event (<a href="Notifications/Event.html"><code>ActiveSupport::Notifications::Event</code></a>) to the <code>sql</code> method.</p>
+
+<p>Being an <a href="Notifications.html"><code>ActiveSupport::Notifications</code></a> consumer, <code>ActiveSupport::LogSubscriber</code> exposes a simple interface to check if instrumented code raises an exception. It is common to log a different message in case of an error, and this can be achieved by extending the previous example:</p>
+
+<pre><code>module ActiveRecord
+  class LogSubscriber &lt; ActiveSupport::LogSubscriber
+    def sql(event)
+      exception = event.payload[:exception]
+
+      if exception
+        exception_object = event.payload[:exception_object]
+
+        error &quot;[ERROR] #{event.payload[:name]}: #{exception.join(&#39;, &#39;)} &quot; \
+              &quot;(#{exception_object.backtrace.first})&quot;
+      else
+        # standard logger code
+      end
+    end
+  end
+end
+</code></pre>
+
+<p><code>ActiveSupport::LogSubscriber</code> also has some helpers to deal with logging. For example, <a href="LogSubscriber.html#method-c-flush_all-21"><code>ActiveSupport::LogSubscriber.flush_all!</code></a> will ensure that all logs are flushed, and it is called in <a href="../Rails/Rack/Logger.html"><code>Rails::Rack::Logger</code></a> after a request finishes.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="LogSubscriber/TestHelper.html">ActiveSupport::LogSubscriber::TestHelper</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-call">call</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-color">color</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-flush_all-21">flush_all!</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-log_subscribers">log_subscribers</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-logger">logger</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-logger">logger</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-publish_event">publish_event</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-silenced-3F">silenced?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">BLACK</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[30m&quot;</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>ANSI sequence colors</p></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">BLUE</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[34m&quot;</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">BOLD</td>
+            <td>=</td>
+            <td class="attr-value">ActiveSupport::Deprecation::DeprecatedObjectProxy.new(&quot;\e[1m&quot;, &quot;BOLD is deprecated! Use MODES[:bold] instead.&quot;, ActiveSupport.deprecator)</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">CLEAR</td>
+            <td>=</td>
+            <td class="attr-value">ActiveSupport::Deprecation::DeprecatedObjectProxy.new(&quot;\e[0m&quot;, &quot;CLEAR is deprecated! Use MODES[:clear] instead.&quot;, ActiveSupport.deprecator)</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>Embed in a <a href="../String.html"><code>String</code></a> to clear all previous ANSI sequences.</p></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">CYAN</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[36m&quot;</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">GREEN</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[32m&quot;</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">LEVEL_CHECKS</td>
+            <td>=</td>
+            <td class="attr-value">{
+debug: -&gt; (logger) { !logger.debug? },
+info: -&gt; (logger) { !logger.info? },
+error: -&gt; (logger) { !logger.error? },
+}</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MAGENTA</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[35m&quot;</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MODES</td>
+            <td>=</td>
+            <td class="attr-value">{
+clear:     0,
+bold:      1,
+italic:    3,
+underline: 4,
+}</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>ANSI sequence modes</p></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">RED</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[31m&quot;</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">WHITE</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[37m&quot;</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">YELLOW</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\e[33m&quot;</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [W]
+            </td>
+            <td class='attr-name'>logger</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-flush_all-21">
+            
+              flush_all!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Flush all <a href="LogSubscriber.html#method-c-log_subscribers"><code>log_subscribers</code></a>‘ logger.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/log_subscriber.rb, line 115
+      def flush_all!
+        logger.flush if logger.respond_to?(:flush)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/log_subscriber.rb#L115" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-log_subscribers">
+            
+              log_subscribers()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/log_subscriber.rb, line 110
+      def log_subscribers
+        subscribers
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/log_subscriber.rb#L110" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-logger">
+            
+              logger()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/log_subscriber.rb, line 96
+      def logger
+        @logger ||= if defined?(Rails) &amp;&amp; Rails.respond_to?(:logger)
+          Rails.logger
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/log_subscriber.rb#L96" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/log_subscriber.rb, line 136
+    def initialize
+      super
+      @event_levels = {}
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/log_subscriber.rb#L136" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-call">
+            
+              call(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/log_subscriber.rb, line 149
+    def call(event)
+      super if logger
+    rescue =&gt; e
+      log_exception(event.name, e)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/log_subscriber.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-logger">
+            
+              logger()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/log_subscriber.rb, line 141
+    def logger
+      LogSubscriber.logger
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/log_subscriber.rb#L141" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-publish_event">
+            
+              publish_event(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/log_subscriber.rb, line 155
+    def publish_event(event)
+      super if logger
+    rescue =&gt; e
+      log_exception(event.name, e)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/log_subscriber.rb#L155" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-silenced-3F">
+            
+              silenced?(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/log_subscriber.rb, line 145
+    def silenced?(event)
+      logger.nil? || @event_levels[event]&amp;.call(logger)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/log_subscriber.rb#L145" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+      <h2 id="instance-private-methods">Instance Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-color">
+            
+              color(text, color, mode_options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Set color by using a symbol or one of the defined constants. Set modes by specifying bold, italic, or underline options. Inspired by Highline, this method will automatically clear formatting at the end of the returned <a href="../String.html"><code>String</code></a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/log_subscriber.rb, line 175
+    def color(text, color, mode_options = {}) # :doc:
+      return text unless colorize_logging
+      color = self.class.const_get(color.upcase) if color.is_a?(Symbol)
+      mode = mode_from(mode_options)
+      clear = &quot;\e[#{MODES[:clear]}m&quot;
+      &quot;#{mode}#{color}#{text}#{clear}&quot;
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/log_subscriber.rb#L175" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

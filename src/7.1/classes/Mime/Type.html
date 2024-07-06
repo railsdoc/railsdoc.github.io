@@ -1,0 +1,1083 @@
+---
+title: Mime::Type
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            Mime::Type
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/http/mime_type_rb.html">actionpack/lib/action_dispatch/http/mime_type.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Encapsulates the notion of a MIME type. Can be used at render time, for example, with:</p>
+
+<pre><code>class PostsController &lt; ActionController::Base
+  def show
+    @post = Post.find(params[:id])
+
+    respond_to do |format|
+      format.html
+      format.ics { render body: @post.to_ics, mime_type: Mime::Type.lookup(&quot;text/calendar&quot;)  }
+      format.xml { render xml: @post }
+    end
+  end
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Type/InvalidMimeType.html">Mime::Type::InvalidMimeType</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-3D-3D">==</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-3D-3D-3D">===</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-3D~">=~</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-all-3F">all?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-eql-3F">eql?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-html-3F">html?</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-lookup">lookup</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-lookup_by_extension">lookup_by_extension</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-match-3F">match?</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-parse">parse</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-parse_data_with_trailing_star">parse_data_with_trailing_star</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-parse_trailing_star">parse_trailing_star</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-ref">ref</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-register">register</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-register_alias">register_alias</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-register_callback">register_callback</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_s">to_s</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_str">to_str</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_sym">to_sym</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-unregister">unregister</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">ACCEPT_HEADER_REGEXP</td>
+            <td>=</td>
+            <td class="attr-value">/[^,\s&quot;](?:[^,&quot;]|&quot;[^&quot;]*&quot;)*/</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MIME_NAME</td>
+            <td>=</td>
+            <td class="attr-value">&quot;[a-zA-Z0-9][a-zA-Z0-9#{Regexp.escape(&#39;!#$&amp;-^_.+&#39;)}]{0,126}&quot;</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MIME_PARAMETER</td>
+            <td>=</td>
+            <td class="attr-value">&quot;\s*;\s*#{MIME_NAME}(?:=#{MIME_PARAMETER_VALUE})?&quot;</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MIME_PARAMETER_VALUE</td>
+            <td>=</td>
+            <td class="attr-value">&quot;(?:#{MIME_NAME}|\&quot;[^\&quot;\r\\\\]*\&quot;)&quot;</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MIME_REGEXP</td>
+            <td>=</td>
+            <td class="attr-value">/\A(?:\*\/\*|#{MIME_NAME}\/(?:\*|#{MIME_NAME})(?&gt;#{MIME_PARAMETER})*\s*)\z/</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">PARAMETER_SEPARATOR_REGEXP</td>
+            <td>=</td>
+            <td class="attr-value">/\s*;\s*q=&quot;?/</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>all media-type parameters need to be before the q-parameter <a href="https://www.rfc-editor.org/rfc/rfc7231#section-5.3.2">www.rfc-editor.org/rfc/rfc7231#section-5.3.2</a></p></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">TRAILING_STAR_REGEXP</td>
+            <td>=</td>
+            <td class="attr-value">/^(text|application)\/\*/</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>hash</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>string</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>symbol</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>synonyms</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-lookup">
+            
+              lookup(string)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 164
+      def lookup(string)
+        # fallback to the media-type without parameters if it was not found
+        LOOKUP[string] || LOOKUP[string.split(&quot;;&quot;, 2)[0]&amp;.rstrip] || Type.new(string)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L164" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-lookup_by_extension">
+            
+              lookup_by_extension(extension)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 169
+      def lookup_by_extension(extension)
+        EXTENSION_LOOKUP[extension.to_s]
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L169" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(string, symbol = nil, synonyms = [])
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 257
+    def initialize(string, symbol = nil, synonyms = [])
+      unless MIME_REGEXP.match?(string)
+        raise InvalidMimeType, &quot;#{string.inspect} is not a valid MIME type&quot;
+      end
+      @symbol, @synonyms = symbol, synonyms
+      @string = string
+      @hash = [@string, @synonyms, @symbol].hash
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L257" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-parse">
+            
+              parse(accept_header)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 193
+      def parse(accept_header)
+        if !accept_header.include?(&quot;,&quot;)
+          if (index = accept_header.index(PARAMETER_SEPARATOR_REGEXP))
+            accept_header = accept_header[0, index]
+          end
+          return [] if accept_header.blank?
+          parse_trailing_star(accept_header) || Array(Mime::Type.lookup(accept_header))
+        else
+          list, index = [], 0
+          accept_header.scan(ACCEPT_HEADER_REGEXP).each do |header|
+            params, q = header.split(PARAMETER_SEPARATOR_REGEXP)
+
+            next unless params
+            params.strip!
+            next if params.empty?
+
+            params = parse_trailing_star(params) || [params]
+
+            params.each do |m|
+              list &lt;&lt; AcceptItem.new(index, m.to_s, q)
+              index += 1
+            end
+          end
+          AcceptList.sort! list
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L193" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-parse_data_with_trailing_star">
+            
+              parse_data_with_trailing_star(type)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>For an input of <code>&#39;text&#39;</code>, returns <code>[Mime[:json], Mime[:xml], Mime[:ics], Mime[:html], Mime[:css], Mime[:csv], Mime[:js], Mime[:yaml], Mime[:text]]</code>.</p>
+
+<p>For an input of <code>&#39;application&#39;</code>, returns <code>[Mime[:html], Mime[:js], Mime[:xml], Mime[:yaml], Mime[:atom], Mime[:json], Mime[:rss], Mime[:url_encoded_form]]</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 229
+      def parse_data_with_trailing_star(type)
+        Mime::SET.select { |m| m.match?(type) }
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L229" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-parse_trailing_star">
+            
+              parse_trailing_star(accept_header)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 220
+      def parse_trailing_star(accept_header)
+        parse_data_with_trailing_star($1) if accept_header =~ TRAILING_STAR_REGEXP
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L220" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-register">
+            
+              register(string, symbol, mime_type_synonyms = [], extension_synonyms = [], skip_lookup = false)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 179
+      def register(string, symbol, mime_type_synonyms = [], extension_synonyms = [], skip_lookup = false)
+        new_mime = Type.new(string, symbol, mime_type_synonyms)
+
+        SET &lt;&lt; new_mime
+
+        ([string] + mime_type_synonyms).each { |str| LOOKUP[str] = new_mime } unless skip_lookup
+        ([symbol] + extension_synonyms).each { |ext| EXTENSION_LOOKUP[ext.to_s] = new_mime }
+
+        @register_callbacks.each do |callback|
+          callback.call(new_mime)
+        end
+        new_mime
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L179" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-register_alias">
+            
+              register_alias(string, symbol, extension_synonyms = [])
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Registers an alias that’s not used on MIME type lookup, but can be referenced directly. Especially useful for rendering different HTML versions depending on the user agent, like an iPhone.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 175
+      def register_alias(string, symbol, extension_synonyms = [])
+        register(string, symbol, [], extension_synonyms, true)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L175" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-register_callback">
+            
+              register_callback(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 160
+      def register_callback(&amp;block)
+        @register_callbacks &lt;&lt; block
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L160" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-unregister">
+            
+              unregister(symbol)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>This method is opposite of register method.</p>
+
+<p>To unregister a MIME type:</p>
+
+<pre><code>Mime::Type.unregister(:mobile)
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 238
+      def unregister(symbol)
+        symbol = symbol.downcase
+        if mime = Mime[symbol]
+          SET.delete_if { |v| v.eql?(mime) }
+          LOOKUP.delete_if { |_, v| v.eql?(mime) }
+          EXTENSION_LOOKUP.delete_if { |_, v| v.eql?(mime) }
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L238" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-3D-3D">
+            
+              ==(mime_type)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 290
+    def ==(mime_type)
+      return false unless mime_type
+      (@synonyms + [ self ]).any? do |synonym|
+        synonym.to_s == mime_type.to_s || synonym.to_sym == mime_type.to_sym
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L290" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-3D-3D-3D">
+            
+              ===(list)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 282
+    def ===(list)
+      if list.is_a?(Array)
+        (@synonyms + [ self ]).any? { |synonym| list.include?(synonym) }
+      else
+        super
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L282" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-3D~">
+            
+              =~(mime_type)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 304
+    def =~(mime_type)
+      return false unless mime_type
+      regexp = Regexp.new(Regexp.quote(mime_type.to_s))
+      @synonyms.any? { |synonym| synonym.to_s =~ regexp } || @string =~ regexp
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L304" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-all-3F">
+            
+              all?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 320
+    def all?; false; end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L320" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-eql-3F">
+            
+              eql?(other)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 297
+    def eql?(other)
+      super || (self.class == other.class &amp;&amp;
+                @string    == other.string &amp;&amp;
+                @synonyms  == other.synonyms &amp;&amp;
+                @symbol    == other.symbol)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L297" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-html-3F">
+            
+              html?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 316
+    def html?
+      (symbol == :html) || @string.include?(&quot;html&quot;)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L316" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-match-3F">
+            
+              match?(mime_type)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 310
+    def match?(mime_type)
+      return false unless mime_type
+      regexp = Regexp.new(Regexp.quote(mime_type.to_s))
+      @synonyms.any? { |synonym| synonym.to_s.match?(regexp) } || @string.match?(regexp)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L310" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-ref">
+            
+              ref()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 278
+    def ref
+      symbol || to_s
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L278" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_s">
+            
+              to_s()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 266
+    def to_s
+      @string
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L266" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_str">
+            
+              to_str()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 270
+    def to_str
+      to_s
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L270" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_sym">
+            
+              to_sym()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/mime_type.rb, line 274
+    def to_sym
+      @symbol
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionpack/lib/action_dispatch/http/mime_type.rb#L274" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

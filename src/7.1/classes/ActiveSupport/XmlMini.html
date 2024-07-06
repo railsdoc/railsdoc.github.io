@@ -1,0 +1,397 @@
+---
+title: ActiveSupport::XmlMini
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::XmlMini
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/xml_mini_rb.html">activesupport/lib/active_support/xml_mini.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveSupport::XmlMini-label-XmlMini">XmlMini</h1>
+
+<p>To use the much faster libxml parser:</p>
+
+<pre><code>gem &#39;libxml-ruby&#39;
+XmlMini.backend = &#39;LibXML&#39;
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-backend">backend</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-backend-3D">backend=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-rename_key">rename_key</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_tag">to_tag</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-with_backend">with_backend</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">DEFAULT_ENCODINGS</td>
+            <td>=</td>
+            <td class="attr-value">{
+&quot;binary&quot; =&gt; &quot;base64&quot;
+} unless defined?(DEFAULT_ENCODINGS)</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">FORMATTING</td>
+            <td>=</td>
+            <td class="attr-value">{
+&quot;symbol&quot;   =&gt; Proc.new { |symbol| symbol.to_s },
+&quot;date&quot;     =&gt; Proc.new { |date| date.to_fs(:db) },
+&quot;dateTime&quot; =&gt; Proc.new { |time| time.xmlschema },
+&quot;binary&quot;   =&gt; Proc.new { |binary| ::Base64.encode64(binary) },
+&quot;yaml&quot;     =&gt; Proc.new { |yaml| yaml.to_yaml }
+} unless defined?(FORMATTING)</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">PARSING</td>
+            <td>=</td>
+            <td class="attr-value">{
+&quot;symbol&quot;       =&gt; Proc.new { |symbol|  symbol.to_s.to_sym },
+&quot;date&quot;         =&gt; Proc.new { |date|    ::Date.parse(date) },
+&quot;datetime&quot;     =&gt; Proc.new { |time|    Time.xmlschema(time).utc rescue ::DateTime.parse(time).utc },
+&quot;integer&quot;      =&gt; Proc.new { |integer| integer.to_i },
+&quot;float&quot;        =&gt; Proc.new { |float|   float.to_f },
+&quot;decimal&quot;      =&gt; Proc.new do |number|
+if String === number
+number.to_d
+else
+BigDecimal(number)
+end
+end,
+&quot;boolean&quot;      =&gt; Proc.new { |boolean| %w(1 true).include?(boolean.to_s.strip) },
+&quot;string&quot;       =&gt; Proc.new { |string|  string.to_s },
+&quot;yaml&quot;         =&gt; Proc.new { |yaml|    YAML.load(yaml) rescue yaml },
+&quot;base64Binary&quot; =&gt; Proc.new { |bin|     ::Base64.decode64(bin) },
+&quot;binary&quot;       =&gt; Proc.new { |bin, entity| _parse_binary(bin, entity) },
+&quot;file&quot;         =&gt; Proc.new { |file, entity| _parse_file(file, entity) }
+}</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">TYPE_NAMES</td>
+            <td>=</td>
+            <td class="attr-value">{
+&quot;Symbol&quot;     =&gt; &quot;symbol&quot;,
+&quot;Integer&quot;    =&gt; &quot;integer&quot;,
+&quot;BigDecimal&quot; =&gt; &quot;decimal&quot;,
+&quot;Float&quot;      =&gt; &quot;float&quot;,
+&quot;TrueClass&quot;  =&gt; &quot;boolean&quot;,
+&quot;FalseClass&quot; =&gt; &quot;boolean&quot;,
+&quot;Date&quot;       =&gt; &quot;date&quot;,
+&quot;DateTime&quot;   =&gt; &quot;dateTime&quot;,
+&quot;Time&quot;       =&gt; &quot;dateTime&quot;,
+&quot;Array&quot;      =&gt; &quot;array&quot;,
+&quot;Hash&quot;       =&gt; &quot;hash&quot;
+}</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>depth</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-backend">
+            
+              backend()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 97
+    def backend
+      current_thread_backend || @backend
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/xml_mini.rb#L97" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-backend-3D">
+            
+              backend=(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 101
+    def backend=(name)
+      backend = name &amp;&amp; cast_backend_name_to_module(name)
+      self.current_thread_backend = backend if current_thread_backend
+      @backend = backend
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/xml_mini.rb#L101" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-rename_key">
+            
+              rename_key(key, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 148
+    def rename_key(key, options = {})
+      camelize  = options[:camelize]
+      dasherize = !options.has_key?(:dasherize) || options[:dasherize]
+      if camelize
+        key = true == camelize ? key.camelize : key.camelize(camelize)
+      end
+      key = _dasherize(key) if dasherize
+      key
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/xml_mini.rb#L148" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_tag">
+            
+              to_tag(key, value, options)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 115
+    def to_tag(key, value, options)
+      type_name = options.delete(:type)
+      merged_options = options.merge(root: key, skip_instruct: true)
+
+      if value.is_a?(::Method) || value.is_a?(::Proc)
+        if value.arity == 1
+          value.call(merged_options)
+        else
+          value.call(merged_options, key.to_s.singularize)
+        end
+      elsif value.respond_to?(:to_xml)
+        value.to_xml(merged_options)
+      else
+        type_name ||= TYPE_NAMES[value.class.name]
+        type_name ||= value.class.name if value &amp;&amp; !value.respond_to?(:to_str)
+        type_name   = type_name.to_s   if type_name
+        type_name   = &quot;dateTime&quot; if type_name == &quot;datetime&quot;
+
+        key = rename_key(key.to_s, options)
+
+        attributes = options[:skip_types] || type_name.nil? ? {} : { type: type_name }
+        attributes[:nil] = true if value.nil?
+
+        encoding = options[:encoding] || DEFAULT_ENCODINGS[type_name]
+        attributes[:encoding] = encoding if encoding
+
+        formatted_value = FORMATTING[type_name] &amp;&amp; !value.nil? ?
+          FORMATTING[type_name].call(value) : value
+
+        options[:builder].tag!(key, formatted_value, attributes)
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/xml_mini.rb#L115" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-with_backend">
+            
+              with_backend(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/xml_mini.rb, line 107
+    def with_backend(name)
+      old_backend = current_thread_backend
+      self.current_thread_backend = name &amp;&amp; cast_backend_name_to_module(name)
+      yield
+    ensure
+      self.current_thread_backend = old_backend
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activesupport/lib/active_support/xml_mini.rb#L107" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

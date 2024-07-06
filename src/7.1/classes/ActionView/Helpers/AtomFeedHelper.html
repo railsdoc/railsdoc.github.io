@@ -1,0 +1,223 @@
+---
+title: ActionView::Helpers::AtomFeedHelper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionView::Helpers::AtomFeedHelper
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionview/lib/action_view/helpers/atom_feed_helper_rb.html">actionview/lib/action_view/helpers/atom_feed_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionView::Helpers::AtomFeedHelper-label-Action+View+Atom+Feed+Helpers">Action View Atom Feed Helpers</h1>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-atom_feed">atom_feed</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-atom_feed">
+            
+              atom_feed(options = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Adds easy defaults to writing Atom feeds with the Builder template engine (this does not work on <a href="../../ERB.html"><code>ERB</code></a> or any other template languages).</p>
+
+<p>Full usage example:</p>
+
+<pre><code>config/routes.rb:
+  Rails.application.routes.draw do
+    resources :posts
+    root to: &quot;posts#index&quot;
+  end
+
+app/controllers/posts_controller.rb:
+  class PostsController &lt; ApplicationController
+    # GET /posts.html
+    # GET /posts.atom
+    def index
+      @posts = Post.all
+
+      respond_to do |format|
+        format.html
+        format.atom
+      end
+    end
+  end
+
+app/views/posts/index.atom.builder:
+  atom_feed do |feed|
+    feed.title(&quot;My great blog!&quot;)
+    feed.updated(@posts[0].created_at) if @posts.length &gt; 0
+
+    @posts.each do |post|
+      feed.entry(post) do |entry|
+        entry.title(post.title)
+        entry.content(post.body, type: &#39;html&#39;)
+
+        entry.author do |author|
+          author.name(&quot;DHH&quot;)
+        end
+      end
+    end
+  end
+</code></pre>
+
+<p>The options for <a href="AtomFeedHelper.html#method-i-atom_feed"><code>atom_feed</code></a> are:</p>
+<ul><li>
+<p><code>:language</code>: Defaults to “en-US”.</p>
+</li><li>
+<p><code>:root_url</code>: The HTML alternative that this feed is doubling for. Defaults to / on the current host.</p>
+</li><li>
+<p><code>:url</code>: The URL for this feed. Defaults to the current URL.</p>
+</li><li>
+<p><code>:id</code>: The id for this feed. Defaults to “tag:localhost,2005:/posts”, in this case.</p>
+</li><li>
+<p><code>:schema_date</code>: The date at which the tag scheme for the feed was first used. A good default is the year you created the feed. See <a href="http://feedvalidator.org/docs/error/InvalidTAG.html">feedvalidator.org/docs/error/InvalidTAG.html</a> for more information. If not specified, 2005 is used (as an “I don’t care” value).</p>
+</li><li>
+<p><code>:instruct</code>: <a href="../../Hash.html"><code>Hash</code></a> of XML processing instructions in the form {target =&gt; {attribute =&gt; value, }} or {target =&gt; [{attribute =&gt; value, }, ]}</p>
+</li></ul>
+
+<p>Other namespaces can be added to the root element:</p>
+
+<pre><code>app/views/posts/index.atom.builder:
+  atom_feed({&#39;xmlns:app&#39; =&gt; &#39;http://www.w3.org/2007/app&#39;,
+      &#39;xmlns:openSearch&#39; =&gt; &#39;http://a9.com/-/spec/opensearch/1.1/&#39;}) do |feed|
+    feed.title(&quot;My great blog!&quot;)
+    feed.updated((@posts.first.created_at))
+    feed.tag!(&#39;openSearch:totalResults&#39;, 10)
+
+    @posts.each do |post|
+      feed.entry(post) do |entry|
+        entry.title(post.title)
+        entry.content(post.body, type: &#39;html&#39;)
+        entry.tag!(&#39;app:edited&#39;, Time.now)
+
+        entry.author do |author|
+          author.name(&quot;DHH&quot;)
+        end
+      end
+    end
+  end
+</code></pre>
+
+<p>The Atom spec defines five elements (content rights title subtitle summary) which may directly contain XHTML content if type: ‘xhtml’ is specified as an attribute. If so, this helper will take care of the enclosing div and XHTML namespace declaration. Example usage:</p>
+
+<pre><code>entry.summary type: &#39;xhtml&#39; do |xhtml|
+  xhtml.p pluralize(order.line_items.count, &quot;line item&quot;)
+  xhtml.p &quot;Shipped to #{order.address}&quot;
+  xhtml.p &quot;Paid by #{order.pay_type}&quot;
+end
+</code></pre>
+
+<p><code>atom_feed</code> yields an <code>AtomFeedBuilder</code> instance. Nested elements yield an <code>AtomBuilder</code> instance.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/atom_feed_helper.rb, line 98
+      def atom_feed(options = {}, &amp;block)
+        if options[:schema_date]
+          options[:schema_date] = options[:schema_date].strftime(&quot;%Y-%m-%d&quot;) if options[:schema_date].respond_to?(:strftime)
+        else
+          options[:schema_date] = &quot;2005&quot; # The Atom spec copyright date
+        end
+
+        xml = options.delete(:xml) || block.binding.local_variable_get(:xml)
+        xml.instruct!
+        if options[:instruct]
+          options[:instruct].each do |target, attrs|
+            if attrs.respond_to?(:keys)
+              xml.instruct!(target, attrs)
+            elsif attrs.respond_to?(:each)
+              attrs.each { |attr_group| xml.instruct!(target, attr_group) }
+            end
+          end
+        end
+
+        feed_opts = { &quot;xml:lang&quot; =&gt; options[:language] || &quot;en-US&quot;, &quot;xmlns&quot; =&gt; &quot;http://www.w3.org/2005/Atom&quot; }
+        feed_opts.merge!(options).select! { |k, _| k.start_with?(&quot;xml&quot;) }
+
+        xml.feed(feed_opts) do
+          xml.id(options[:id] || &quot;tag:#{request.host},#{options[:schema_date]}:#{request.fullpath.split(&quot;.&quot;)[0]}&quot;)
+          xml.link(rel: &quot;alternate&quot;, type: &quot;text/html&quot;, href: options[:root_url] || (request.protocol + request.host_with_port))
+          xml.link(rel: &quot;self&quot;, type: &quot;application/atom+xml&quot;, href: options[:url] || request.url)
+
+          yield AtomFeedBuilder.new(xml, self, options)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actionview/lib/action_view/helpers/atom_feed_helper.rb#L98" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

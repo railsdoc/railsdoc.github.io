@@ -1,0 +1,389 @@
+---
+title: ActionCable::Channel::Streams
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.1.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionCable::Channel::Streams
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actioncable/lib/action_cable/channel/streams_rb.html">actioncable/lib/action_cable/channel/streams.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionCable::Channel::Streams-label-Action+Cable+Channel+Streams">Action Cable Channel Streams</h1>
+
+<p><a href="Streams.html"><code>Streams</code></a> allow channels to route broadcastings to the subscriber. A broadcasting is, as discussed elsewhere, a pubsub queue where any data placed into it is automatically sent to the clients that are connected at that time. It’s purely an online queue, though. If you’re not streaming a broadcasting at the very moment it sends out an update, you will not get that update, even if you connect after it has been sent.</p>
+
+<p>Most commonly, the streamed broadcast is sent straight to the subscriber on the client-side. The channel just acts as a connector between the two parties (the broadcaster and the channel subscriber). Here’s an example of a channel that allows subscribers to get all new comments on a given page:</p>
+
+<pre><code>class CommentsChannel &lt; ApplicationCable::Channel
+  def follow(data)
+    stream_from &quot;comments_for_#{data[&#39;recording_id&#39;]}&quot;
+  end
+
+  def unfollow
+    stop_all_streams
+  end
+end
+</code></pre>
+
+<p>Based on the above example, the subscribers of this channel will get whatever data is put into the, let’s say, <code>comments_for_45</code> broadcasting as soon as it’s put there.</p>
+
+<p>An example broadcasting for this channel looks like so:</p>
+
+<pre><code>ActionCable.server.broadcast &quot;comments_for_45&quot;, { author: &#39;DHH&#39;, content: &#39;Rails is just swell&#39; }
+</code></pre>
+
+<p>If you have a stream that is related to a model, then the broadcasting used can be generated from the model and channel. The following example would subscribe to a broadcasting like <code>comments:Z2lkOi8vVGVzdEFwcC9Qb3N0LzE</code>.</p>
+
+<pre><code>class CommentsChannel &lt; ApplicationCable::Channel
+  def subscribed
+    post = Post.find(params[:id])
+    stream_for post
+  end
+end
+</code></pre>
+
+<p>You can then broadcast to this channel using:</p>
+
+<pre><code>CommentsChannel.broadcast_to(@post, @comment)
+</code></pre>
+
+<p>If you don’t just want to parlay the broadcast unfiltered to the subscriber, you can also supply a callback that lets you alter what is sent out. The below example shows how you can use this to provide performance introspection in the process:</p>
+
+<pre><code>class ChatChannel &lt; ApplicationCable::Channel
+  def subscribed
+    @room = Chat::Room[params[:room_number]]
+
+    stream_for @room, coder: ActiveSupport::JSON do |message|
+      if message[&#39;originated_at&#39;].present?
+        elapsed_time = (Time.now.to_f - message[&#39;originated_at&#39;]).round(2)
+
+        ActiveSupport::Notifications.instrument :performance, measurement: &#39;Chat.message_delay&#39;, value: elapsed_time, action: :timing
+        logger.info &quot;Message took #{elapsed_time}s to arrive&quot;
+      end
+
+      transmit message
+    end
+  end
+end
+</code></pre>
+
+<p>You can stop streaming from all broadcasts by calling <a href="Streams.html#method-i-stop_all_streams"><code>stop_all_streams</code></a>.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-stop_all_streams">stop_all_streams</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-stop_stream_for">stop_stream_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-stop_stream_from">stop_stream_from</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-stream_for">stream_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-stream_from">stream_from</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-stream_or_reject_for">stream_or_reject_for</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-stop_all_streams">
+            
+              stop_all_streams()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Unsubscribes all streams associated with this channel from the pubsub queue.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/channel/streams.rb, line 122
+      def stop_all_streams
+        streams.each do |broadcasting, callback|
+          pubsub.unsubscribe broadcasting, callback
+          logger.info &quot;#{self.class.name} stopped streaming from #{broadcasting}&quot;
+        end.clear
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/channel/streams.rb#L122" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-stop_stream_for">
+            
+              stop_stream_for(model)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Unsubscribes streams for the <code>model</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/channel/streams.rb, line 117
+      def stop_stream_for(model)
+        stop_stream_from(broadcasting_for(model))
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/channel/streams.rb#L117" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-stop_stream_from">
+            
+              stop_stream_from(broadcasting)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Unsubscribes streams from the named <code>broadcasting</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/channel/streams.rb, line 108
+      def stop_stream_from(broadcasting)
+        callback = streams.delete(broadcasting)
+        if callback
+          pubsub.unsubscribe(broadcasting, callback)
+          logger.info &quot;#{self.class.name} stopped streaming from #{broadcasting}&quot;
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/channel/streams.rb#L108" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-stream_for">
+            
+              stream_for(model, callback = nil, coder: nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Start streaming the pubsub queue for the <code>model</code> in this channel. Optionally, you can pass a <code>callback</code> that’ll be used instead of the default of just transmitting the updates straight to the subscriber.</p>
+
+<p>Pass <code>coder: ActiveSupport::JSON</code> to decode messages as JSON before passing to the callback. Defaults to <code>coder: nil</code> which does no decoding, passes raw messages.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/channel/streams.rb, line 103
+      def stream_for(model, callback = nil, coder: nil, &amp;block)
+        stream_from(broadcasting_for(model), callback || block, coder: coder)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/channel/streams.rb#L103" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-stream_from">
+            
+              stream_from(broadcasting, callback = nil, coder: nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Start streaming from the named <code>broadcasting</code> pubsub queue. Optionally, you can pass a <code>callback</code> that’ll be used instead of the default of just transmitting the updates straight to the subscriber. Pass <code>coder: ActiveSupport::JSON</code> to decode messages as JSON before passing to the callback. Defaults to <code>coder: nil</code> which does no decoding, passes raw messages.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/channel/streams.rb, line 78
+      def stream_from(broadcasting, callback = nil, coder: nil, &amp;block)
+        broadcasting = String(broadcasting)
+
+        # Don&#39;t send the confirmation until pubsub#subscribe is successful
+        defer_subscription_confirmation!
+
+        # Build a stream handler by wrapping the user-provided callback with
+        # a decoder or defaulting to a JSON-decoding retransmitter.
+        handler = worker_pool_stream_handler(broadcasting, callback || block, coder: coder)
+        streams[broadcasting] = handler
+
+        connection.server.event_loop.post do
+          pubsub.subscribe(broadcasting, handler, lambda do
+            ensure_confirmation_sent
+            logger.info &quot;#{self.class.name} is streaming from #{broadcasting}&quot;
+          end)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/channel/streams.rb#L78" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-stream_or_reject_for">
+            
+              stream_or_reject_for(model)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Calls <a href="Streams.html#method-i-stream_for"><code>stream_for</code></a> with the given <code>model</code> if it’s present to start streaming, otherwise rejects the subscription.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/channel/streams.rb, line 131
+      def stream_or_reject_for(model)
+        if model
+          stream_for model
+        else
+          reject
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/actioncable/lib/action_cable/channel/streams.rb#L131" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
