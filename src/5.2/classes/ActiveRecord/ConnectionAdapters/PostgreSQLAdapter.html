@@ -280,11 +280,6 @@ layout: default
             <td class="attr-value">&quot;PostgreSQL&quot;.freeze</td>
           </tr>
           
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
-          
         
           <tr valign='top'>
             <td class="attr-name">CACHED_PLAN_HEURISTIC</td>
@@ -308,11 +303,6 @@ layout: default
             <td class="attr-value">&quot;40P01&quot;</td>
           </tr>
           
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
-          
         
           <tr valign='top'>
             <td class="attr-name">FOREIGN_KEY_VIOLATION</td>
@@ -320,22 +310,12 @@ layout: default
             <td class="attr-value">&quot;23503&quot;</td>
           </tr>
           
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
-          
         
           <tr valign='top'>
             <td class="attr-name">LOCK_NOT_AVAILABLE</td>
             <td>=</td>
             <td class="attr-value">&quot;55P03&quot;</td>
           </tr>
-          
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
           
         
           <tr valign='top'>
@@ -385,22 +365,12 @@ oid:         { name: &quot;oid&quot; },
 }</td>
           </tr>
           
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
-          
         
           <tr valign='top'>
             <td class="attr-name">NOT_NULL_VIOLATION</td>
             <td>=</td>
             <td class="attr-value">&quot;23502&quot;</td>
           </tr>
-          
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
           
         
           <tr valign='top'>
@@ -409,22 +379,12 @@ oid:         { name: &quot;oid&quot; },
             <td class="attr-value">&quot;22003&quot;</td>
           </tr>
           
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
-          
         
           <tr valign='top'>
             <td class="attr-name">QUERY_CANCELED</td>
             <td>=</td>
             <td class="attr-value">&quot;57014&quot;</td>
           </tr>
-          
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
           
         
           <tr valign='top'>
@@ -433,22 +393,12 @@ oid:         { name: &quot;oid&quot; },
             <td class="attr-value">&quot;40001&quot;</td>
           </tr>
           
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
-          
         
           <tr valign='top'>
             <td class="attr-name">UNIQUE_VIOLATION</td>
             <td>=</td>
             <td class="attr-value">&quot;23505&quot;</td>
           </tr>
-          
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
           
         
           <tr valign='top'>
@@ -490,44 +440,44 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 214
+      def initialize(connection, logger, connection_parameters, config)
+        super(connection, logger, config)
+
+        @connection_parameters = connection_parameters
+
+        # @local_tz is initialized as nil to avoid warnings when connect tries to use it
+        @local_tz = nil
+        @max_identifier_length = nil
+
+        connect
+        add_pg_encoders
+        @statements = StatementPool.new @connection,
+                                        self.class.type_cast_config_to_integer(config[:statement_limit])
+
+        if postgresql_version &lt; 90100
+          raise &quot;Your version of PostgreSQL (#{postgresql_version}) is too old. Active Record supports PostgreSQL &gt;= 9.1.&quot;
+        end
+
+        add_pg_decoders
+
+        @type_map = Type::HashLookupTypeMap.new
+        initialize_type_map
+        @local_tz = execute(&quot;SHOW TIME ZONE&quot;, &quot;SCHEMA&quot;).first[&quot;TimeZone&quot;]
+        @use_insert_returning = @config.key?(:insert_returning) ? self.class.type_cast_config_to_boolean(@config[:insert_returning]) : true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 214</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">connection</span>, <span class="ruby-identifier">logger</span>, <span class="ruby-identifier">connection_parameters</span>, <span class="ruby-identifier">config</span>)
-  <span class="ruby-keyword">super</span>(<span class="ruby-identifier">connection</span>, <span class="ruby-identifier">logger</span>, <span class="ruby-identifier">config</span>)
-
-  <span class="ruby-ivar">@connection_parameters</span> = <span class="ruby-identifier">connection_parameters</span>
-
-  <span class="ruby-comment"># @local_tz is initialized as nil to avoid warnings when connect tries to use it</span>
-  <span class="ruby-ivar">@local_tz</span> = <span class="ruby-keyword">nil</span>
-  <span class="ruby-ivar">@max_identifier_length</span> = <span class="ruby-keyword">nil</span>
-
-  <span class="ruby-identifier">connect</span>
-  <span class="ruby-identifier">add_pg_encoders</span>
-  <span class="ruby-ivar">@statements</span> = <span class="ruby-constant">StatementPool</span>.<span class="ruby-identifier">new</span> <span class="ruby-ivar">@connection</span>,
-                                  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">type_cast_config_to_integer</span>(<span class="ruby-identifier">config</span>[<span class="ruby-value">:statement_limit</span>])
-
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">postgresql_version</span> <span class="ruby-operator">&lt;</span> <span class="ruby-value">90100</span>
-    <span class="ruby-identifier">raise</span> <span class="ruby-node">&quot;Your version of PostgreSQL (#{postgresql_version}) is too old. Active Record supports PostgreSQL &gt;= 9.1.&quot;</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">add_pg_decoders</span>
-
-  <span class="ruby-ivar">@type_map</span> = <span class="ruby-constant">Type</span><span class="ruby-operator">::</span><span class="ruby-constant">HashLookupTypeMap</span>.<span class="ruby-identifier">new</span>
-  <span class="ruby-identifier">initialize_type_map</span>
-  <span class="ruby-ivar">@local_tz</span> = <span class="ruby-identifier">execute</span>(<span class="ruby-string">&quot;SHOW TIME ZONE&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>).<span class="ruby-identifier">first</span>[<span class="ruby-string">&quot;TimeZone&quot;</span>]
-  <span class="ruby-ivar">@use_insert_returning</span> = <span class="ruby-ivar">@config</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:insert_returning</span>) <span class="ruby-operator">?</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">type_cast_config_to_boolean</span>(<span class="ruby-ivar">@config</span>[<span class="ruby-value">:insert_returning</span>]) <span class="ruby-operator">:</span> <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L214" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     
@@ -551,27 +501,27 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 252
+      def active?
+        @lock.synchronize do
+          @connection.query &quot;SELECT 1&quot;
+        end
+        true
+      rescue PG::Error
+        false
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-active-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 252</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">active?</span>
-  <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-ivar">@connection</span>.<span class="ruby-identifier">query</span> <span class="ruby-string">&quot;SELECT 1&quot;</span>
-  <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">rescue</span> <span class="ruby-constant">PG</span><span class="ruby-operator">::</span><span class="ruby-constant">Error</span>
-  <span class="ruby-keyword">false</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L252" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-clear_cache-21">
@@ -591,24 +541,24 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 241
+      def clear_cache!
+        @lock.synchronize do
+          @statements.clear
+        end
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-clear_cache-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 241</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">clear_cache!</span>
-  <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-ivar">@statements</span>.<span class="ruby-identifier">clear</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L241" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-disable_extension">
@@ -628,24 +578,24 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 357
+      def disable_extension(name)
+        exec_query(&quot;DROP EXTENSION IF EXISTS \&quot;#{name}\&quot; CASCADE&quot;).tap {
+          reload_type_map
+        }
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-disable_extension_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 357</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">disable_extension</span>(<span class="ruby-identifier">name</span>)
-  <span class="ruby-identifier">exec_query</span>(<span class="ruby-node">&quot;DROP EXTENSION IF EXISTS \&quot;#{name}\&quot; CASCADE&quot;</span>).<span class="ruby-identifier">tap</span> {
-    <span class="ruby-identifier">reload_type_map</span>
-  }
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L357" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-disconnect-21">
@@ -665,25 +615,25 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 284
+      def disconnect!
+        @lock.synchronize do
+          super
+          @connection.close rescue nil
+        end
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-disconnect-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 284</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">disconnect!</span>
-  <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-keyword">super</span>
-    <span class="ruby-ivar">@connection</span>.<span class="ruby-identifier">close</span> <span class="ruby-keyword">rescue</span> <span class="ruby-keyword">nil</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L284" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-enable_extension">
@@ -703,24 +653,24 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 351
+      def enable_extension(name)
+        exec_query(&quot;CREATE EXTENSION IF NOT EXISTS \&quot;#{name}\&quot;&quot;).tap {
+          reload_type_map
+        }
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-enable_extension_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 351</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">enable_extension</span>(<span class="ruby-identifier">name</span>)
-  <span class="ruby-identifier">exec_query</span>(<span class="ruby-node">&quot;CREATE EXTENSION IF NOT EXISTS \&quot;#{name}\&quot;&quot;</span>).<span class="ruby-identifier">tap</span> {
-    <span class="ruby-identifier">reload_type_map</span>
-  }
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L351" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-extension_enabled-3F">
@@ -740,23 +690,23 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 363
+      def extension_enabled?(name)
+        res = exec_query(&quot;SELECT EXISTS(SELECT * FROM pg_available_extensions WHERE name = &#39;#{name}&#39; AND installed_version IS NOT NULL) as enabled&quot;, &quot;SCHEMA&quot;)
+        res.cast_values.first
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-extension_enabled-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 363</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">extension_enabled?</span>(<span class="ruby-identifier">name</span>)
-  <span class="ruby-identifier">res</span> = <span class="ruby-identifier">exec_query</span>(<span class="ruby-node">&quot;SELECT EXISTS(SELECT * FROM pg_available_extensions WHERE name = &#39;#{name}&#39; AND installed_version IS NOT NULL) as enabled&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>)
-  <span class="ruby-identifier">res</span>.<span class="ruby-identifier">cast_values</span>.<span class="ruby-identifier">first</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L363" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-extensions">
@@ -776,22 +726,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 368
+      def extensions
+        exec_query(&quot;SELECT extname FROM pg_extension&quot;, &quot;SCHEMA&quot;).cast_values
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-extensions_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 368</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">extensions</span>
-  <span class="ruby-identifier">exec_query</span>(<span class="ruby-string">&quot;SELECT extname FROM pg_extension&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>).<span class="ruby-identifier">cast_values</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L368" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-index_algorithms">
@@ -811,22 +761,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 181
+      def index_algorithms
+        { concurrently: &quot;CONCURRENTLY&quot; }
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-index_algorithms_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 181</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">index_algorithms</span>
-  { <span class="ruby-value">concurrently:</span> <span class="ruby-string">&quot;CONCURRENTLY&quot;</span> }
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L181" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-index_name_length">
@@ -850,7 +800,8 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-          </div>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-max_identifier_length">
@@ -874,22 +825,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 373
+      def max_identifier_length
+        @max_identifier_length ||= query_value(&quot;SHOW max_identifier_length&quot;, &quot;SCHEMA&quot;).to_i
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-max_identifier_length_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 373</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">max_identifier_length</span>
-  <span class="ruby-ivar">@max_identifier_length</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">query_value</span>(<span class="ruby-string">&quot;SHOW max_identifier_length&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>).<span class="ruby-identifier">to_i</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L373" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-postgresql_version">
@@ -909,22 +860,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 400
+      def postgresql_version
+        @connection.server_version
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-postgresql_version_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 400</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">postgresql_version</span>
-  <span class="ruby-ivar">@connection</span>.<span class="ruby-identifier">server_version</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L400" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-reconnect-21">
@@ -944,26 +895,26 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 262
+      def reconnect!
+        @lock.synchronize do
+          super
+          @connection.reset
+          configure_connection
+        end
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-reconnect-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 262</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reconnect!</span>
-  <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-keyword">super</span>
-    <span class="ruby-ivar">@connection</span>.<span class="ruby-identifier">reset</span>
-    <span class="ruby-identifier">configure_connection</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L262" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-reset-21">
@@ -983,30 +934,30 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 270
+      def reset!
+        @lock.synchronize do
+          clear_cache!
+          reset_transaction
+          unless @connection.transaction_status == ::PG::PQTRANS_IDLE
+            @connection.query &quot;ROLLBACK&quot;
+          end
+          @connection.query &quot;DISCARD ALL&quot;
+          configure_connection
+        end
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-reset-21_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 270</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reset!</span>
-  <span class="ruby-ivar">@lock</span>.<span class="ruby-identifier">synchronize</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-identifier">clear_cache!</span>
-    <span class="ruby-identifier">reset_transaction</span>
-    <span class="ruby-keyword">unless</span> <span class="ruby-ivar">@connection</span>.<span class="ruby-identifier">transaction_status</span> <span class="ruby-operator">==</span> <span class="ruby-operator">::</span><span class="ruby-constant">PG</span><span class="ruby-operator">::</span><span class="ruby-constant">PQTRANS_IDLE</span>
-      <span class="ruby-ivar">@connection</span>.<span class="ruby-identifier">query</span> <span class="ruby-string">&quot;ROLLBACK&quot;</span>
-    <span class="ruby-keyword">end</span>
-    <span class="ruby-ivar">@connection</span>.<span class="ruby-identifier">query</span> <span class="ruby-string">&quot;DISCARD ALL&quot;</span>
-    <span class="ruby-identifier">configure_connection</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L270" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-session_auth-3D">
@@ -1026,23 +977,23 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 380
+      def session_auth=(user)
+        clear_cache!
+        execute(&quot;SET SESSION AUTHORIZATION #{user}&quot;)
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-session_auth-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 380</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">session_auth=</span>(<span class="ruby-identifier">user</span>)
-  <span class="ruby-identifier">clear_cache!</span>
-  <span class="ruby-identifier">execute</span>(<span class="ruby-node">&quot;SET SESSION AUTHORIZATION #{user}&quot;</span>)
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L380" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-set_standard_conforming_strings">
@@ -1062,22 +1013,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 300
+      def set_standard_conforming_strings
+        execute(&quot;SET standard_conforming_strings = on&quot;, &quot;SCHEMA&quot;)
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-set_standard_conforming_strings_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 300</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">set_standard_conforming_strings</span>
-  <span class="ruby-identifier">execute</span>(<span class="ruby-string">&quot;SET standard_conforming_strings = on&quot;</span>, <span class="ruby-string">&quot;SCHEMA&quot;</span>)
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L300" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_advisory_locks-3F">
@@ -1097,22 +1048,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 308
+      def supports_advisory_locks?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_advisory_locks-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 308</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_advisory_locks?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L308" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_bulk_alter-3F">
@@ -1132,22 +1083,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 133
+      def supports_bulk_alter?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_bulk_alter-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 133</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_bulk_alter?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L133" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_comments-3F">
@@ -1167,22 +1118,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 173
+      def supports_comments?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_comments-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 173</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_comments?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L173" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_datetime_with_precision-3F">
@@ -1202,22 +1153,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 165
+      def supports_datetime_with_precision?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_datetime_with_precision-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 165</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_datetime_with_precision?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L165" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_ddl_transactions-3F">
@@ -1237,22 +1188,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 304
+      def supports_ddl_transactions?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_ddl_transactions-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 304</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_ddl_transactions?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L304" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_explain-3F">
@@ -1272,22 +1223,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 312
+      def supports_explain?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_explain-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 312</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_explain?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L312" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_expression_index-3F">
@@ -1307,22 +1258,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 145
+      def supports_expression_index?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_expression_index-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 145</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_expression_index?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L145" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_extensions-3F">
@@ -1342,22 +1293,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 316
+      def supports_extensions?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_extensions-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 316</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_extensions?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L316" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_foreign_keys-3F">
@@ -1377,22 +1328,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 153
+      def supports_foreign_keys?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_foreign_keys-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 153</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_foreign_keys?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L153" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_foreign_tables-3F">
@@ -1412,22 +1363,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 329
+      def supports_foreign_tables?
+        postgresql_version &gt;= 90300
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_foreign_tables-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 329</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_foreign_tables?</span>
-  <span class="ruby-identifier">postgresql_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">90300</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L329" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_index_sort_order-3F">
@@ -1447,22 +1398,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 137
+      def supports_index_sort_order?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_index_sort_order-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 137</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_index_sort_order?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L137" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_json-3F">
@@ -1482,22 +1433,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 169
+      def supports_json?
+        postgresql_version &gt;= 90200
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_json-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 169</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_json?</span>
-  <span class="ruby-identifier">postgresql_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">90200</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L169" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_materialized_views-3F">
@@ -1517,22 +1468,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 325
+      def supports_materialized_views?
+        postgresql_version &gt;= 90300
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_materialized_views-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 325</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_materialized_views?</span>
-  <span class="ruby-identifier">postgresql_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">90300</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L325" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_partial_index-3F">
@@ -1552,22 +1503,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 141
+      def supports_partial_index?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_partial_index-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 141</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_partial_index?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L141" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_pgcrypto_uuid-3F">
@@ -1587,22 +1538,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 333
+      def supports_pgcrypto_uuid?
+        postgresql_version &gt;= 90400
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_pgcrypto_uuid-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 333</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_pgcrypto_uuid?</span>
-  <span class="ruby-identifier">postgresql_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">90400</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L333" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_ranges-3F">
@@ -1622,23 +1573,23 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 320
+      def supports_ranges?
+        # Range datatypes weren&#39;t introduced until PostgreSQL 9.2
+        postgresql_version &gt;= 90200
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_ranges-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 320</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_ranges?</span>
-  <span class="ruby-comment"># Range datatypes weren&#39;t introduced until PostgreSQL 9.2</span>
-  <span class="ruby-identifier">postgresql_version</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">90200</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L320" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_savepoints-3F">
@@ -1658,22 +1609,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 177
+      def supports_savepoints?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_savepoints-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 177</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_savepoints?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L177" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_transaction_isolation-3F">
@@ -1693,22 +1644,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 149
+      def supports_transaction_isolation?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_transaction_isolation-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 149</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_transaction_isolation?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_validate_constraints-3F">
@@ -1728,22 +1679,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 157
+      def supports_validate_constraints?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_validate_constraints-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 157</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_validate_constraints?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L157" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-supports_views-3F">
@@ -1763,22 +1714,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 161
+      def supports_views?
+        true
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-supports_views-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 161</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">supports_views?</span>
-  <span class="ruby-keyword">true</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L161" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-table_alias_length">
@@ -1802,7 +1753,8 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-          </div>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-truncate">
@@ -1822,22 +1774,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 247
+      def truncate(table_name, name = nil)
+        exec_query &quot;TRUNCATE TABLE #{quote_table_name(table_name)}&quot;, name, []
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-truncate_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 247</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">truncate</span>(<span class="ruby-identifier">table_name</span>, <span class="ruby-identifier">name</span> = <span class="ruby-keyword">nil</span>)
-  <span class="ruby-identifier">exec_query</span> <span class="ruby-node">&quot;TRUNCATE TABLE #{quote_table_name(table_name)}&quot;</span>, <span class="ruby-identifier">name</span>, []
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L247" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-use_insert_returning-3F">
@@ -1857,22 +1809,22 @@ oid:         { name: &quot;oid&quot; },
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 385
+      def use_insert_returning?
+        @use_insert_returning
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-use_insert_returning-3F_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb, line 385</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">use_insert_returning?</span>
-  <span class="ruby-ivar">@use_insert_returning</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/26521331e5923a0c50fa50984d2f924e5f26c50b/activerecord/lib/active_record/connection_adapters/postgresql_adapter.rb#L385" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     
