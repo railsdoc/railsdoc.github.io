@@ -165,86 +165,86 @@ conversation.comments_active? # =&gt; false
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/enum.rb, line 150
+    def enum(definitions)
+      klass = self
+      enum_prefix = definitions.delete(:_prefix)
+      enum_suffix = definitions.delete(:_suffix)
+      enum_scopes = definitions.delete(:_scopes)
+      definitions.each do |name, values|
+        assert_valid_enum_definition_values(values)
+        # statuses = { }
+        enum_values = ActiveSupport::HashWithIndifferentAccess.new
+        name = name.to_s
+
+        # def self.statuses() statuses end
+        detect_enum_conflict!(name, name.pluralize, true)
+        singleton_class.define_method(name.pluralize) { enum_values }
+        defined_enums[name] = enum_values
+
+        detect_enum_conflict!(name, name)
+        detect_enum_conflict!(name, &quot;#{name}=&quot;)
+
+        attr = attribute_alias?(name) ? attribute_alias(name) : name
+        decorate_attribute_type(attr, :enum) do |subtype|
+          EnumType.new(attr, enum_values, subtype)
+        end
+
+        _enum_methods_module.module_eval do
+          pairs = values.respond_to?(:each_pair) ? values.each_pair : values.each_with_index
+          value_method_names = []
+          pairs.each do |label, value|
+            if enum_prefix == true
+              prefix = &quot;#{name}_&quot;
+            elsif enum_prefix
+              prefix = &quot;#{enum_prefix}_&quot;
+            end
+            if enum_suffix == true
+              suffix = &quot;_#{name}&quot;
+            elsif enum_suffix
+              suffix = &quot;_#{enum_suffix}&quot;
+            end
+
+            value_method_name = &quot;#{prefix}#{label}#{suffix}&quot;
+            value_method_names &lt;&lt; value_method_name
+            enum_values[label] = value
+            label = label.to_s
+
+            # def active?() status == &quot;active&quot; end
+            klass.send(:detect_enum_conflict!, name, &quot;#{value_method_name}?&quot;)
+            define_method(&quot;#{value_method_name}?&quot;) { self[attr] == label }
+
+            # def active!() update!(status: 0) end
+            klass.send(:detect_enum_conflict!, name, &quot;#{value_method_name}!&quot;)
+            define_method(&quot;#{value_method_name}!&quot;) { update!(attr =&gt; value) }
+
+            # scope :active, -&gt; { where(status: 0) }
+            # scope :not_active, -&gt; { where.not(status: 0) }
+            if enum_scopes != false
+              klass.send(:detect_enum_conflict!, name, value_method_name, true)
+              klass.scope value_method_name, -&gt; { where(attr =&gt; value) }
+
+              klass.send(:detect_enum_conflict!, name, &quot;not_#{value_method_name}&quot;, true)
+              klass.scope &quot;not_#{value_method_name}&quot;, -&gt; { where.not(attr =&gt; value) }
+            end
+          end
+          klass.send(:detect_negative_enum_conditions!, value_method_names) if enum_scopes != false
+        end
+        enum_values.freeze
+      end
+    end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-enum_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/enum.rb, line 150</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">enum</span>(<span class="ruby-identifier">definitions</span>)
-  <span class="ruby-identifier">klass</span> = <span class="ruby-keyword">self</span>
-  <span class="ruby-identifier">enum_prefix</span> = <span class="ruby-identifier">definitions</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-value">:_prefix</span>)
-  <span class="ruby-identifier">enum_suffix</span> = <span class="ruby-identifier">definitions</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-value">:_suffix</span>)
-  <span class="ruby-identifier">enum_scopes</span> = <span class="ruby-identifier">definitions</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-value">:_scopes</span>)
-  <span class="ruby-identifier">definitions</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span>, <span class="ruby-identifier">values</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">assert_valid_enum_definition_values</span>(<span class="ruby-identifier">values</span>)
-    <span class="ruby-comment"># statuses = { }</span>
-    <span class="ruby-identifier">enum_values</span> = <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">HashWithIndifferentAccess</span>.<span class="ruby-identifier">new</span>
-    <span class="ruby-identifier">name</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>
-
-    <span class="ruby-comment"># def self.statuses() statuses end</span>
-    <span class="ruby-identifier">detect_enum_conflict!</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">name</span>.<span class="ruby-identifier">pluralize</span>, <span class="ruby-keyword">true</span>)
-    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">define_method</span>(<span class="ruby-identifier">name</span>.<span class="ruby-identifier">pluralize</span>) { <span class="ruby-identifier">enum_values</span> }
-    <span class="ruby-identifier">defined_enums</span>[<span class="ruby-identifier">name</span>] = <span class="ruby-identifier">enum_values</span>
-
-    <span class="ruby-identifier">detect_enum_conflict!</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">name</span>)
-    <span class="ruby-identifier">detect_enum_conflict!</span>(<span class="ruby-identifier">name</span>, <span class="ruby-node">&quot;#{name}=&quot;</span>)
-
-    <span class="ruby-identifier">attr</span> = <span class="ruby-identifier">attribute_alias?</span>(<span class="ruby-identifier">name</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">attribute_alias</span>(<span class="ruby-identifier">name</span>) <span class="ruby-operator">:</span> <span class="ruby-identifier">name</span>
-    <span class="ruby-identifier">decorate_attribute_type</span>(<span class="ruby-identifier">attr</span>, <span class="ruby-value">:enum</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">subtype</span><span class="ruby-operator">|</span>
-      <span class="ruby-constant">EnumType</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">attr</span>, <span class="ruby-identifier">enum_values</span>, <span class="ruby-identifier">subtype</span>)
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-identifier">_enum_methods_module</span>.<span class="ruby-identifier">module_eval</span> <span class="ruby-keyword">do</span>
-      <span class="ruby-identifier">pairs</span> = <span class="ruby-identifier">values</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:each_pair</span>) <span class="ruby-operator">?</span> <span class="ruby-identifier">values</span>.<span class="ruby-identifier">each_pair</span> <span class="ruby-operator">:</span> <span class="ruby-identifier">values</span>.<span class="ruby-identifier">each_with_index</span>
-      <span class="ruby-identifier">value_method_names</span> = []
-      <span class="ruby-identifier">pairs</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">label</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span>
-        <span class="ruby-keyword">if</span> <span class="ruby-identifier">enum_prefix</span> <span class="ruby-operator">==</span> <span class="ruby-keyword">true</span>
-          <span class="ruby-identifier">prefix</span> = <span class="ruby-node">&quot;#{name}_&quot;</span>
-        <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">enum_prefix</span>
-          <span class="ruby-identifier">prefix</span> = <span class="ruby-node">&quot;#{enum_prefix}_&quot;</span>
-        <span class="ruby-keyword">end</span>
-        <span class="ruby-keyword">if</span> <span class="ruby-identifier">enum_suffix</span> <span class="ruby-operator">==</span> <span class="ruby-keyword">true</span>
-          <span class="ruby-identifier">suffix</span> = <span class="ruby-node">&quot;_#{name}&quot;</span>
-        <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">enum_suffix</span>
-          <span class="ruby-identifier">suffix</span> = <span class="ruby-node">&quot;_#{enum_suffix}&quot;</span>
-        <span class="ruby-keyword">end</span>
-
-        <span class="ruby-identifier">value_method_name</span> = <span class="ruby-node">&quot;#{prefix}#{label}#{suffix}&quot;</span>
-        <span class="ruby-identifier">value_method_names</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">value_method_name</span>
-        <span class="ruby-identifier">enum_values</span>[<span class="ruby-identifier">label</span>] = <span class="ruby-identifier">value</span>
-        <span class="ruby-identifier">label</span> = <span class="ruby-identifier">label</span>.<span class="ruby-identifier">to_s</span>
-
-        <span class="ruby-comment"># def active?() status == &quot;active&quot; end</span>
-        <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:detect_enum_conflict!</span>, <span class="ruby-identifier">name</span>, <span class="ruby-node">&quot;#{value_method_name}?&quot;</span>)
-        <span class="ruby-identifier">define_method</span>(<span class="ruby-node">&quot;#{value_method_name}?&quot;</span>) { <span class="ruby-keyword">self</span>[<span class="ruby-identifier">attr</span>] <span class="ruby-operator">==</span> <span class="ruby-identifier">label</span> }
-
-        <span class="ruby-comment"># def active!() update!(status: 0) end</span>
-        <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:detect_enum_conflict!</span>, <span class="ruby-identifier">name</span>, <span class="ruby-node">&quot;#{value_method_name}!&quot;</span>)
-        <span class="ruby-identifier">define_method</span>(<span class="ruby-node">&quot;#{value_method_name}!&quot;</span>) { <span class="ruby-identifier">update!</span>(<span class="ruby-identifier">attr</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">value</span>) }
-
-        <span class="ruby-comment"># scope :active, -&gt; { where(status: 0) }</span>
-        <span class="ruby-comment"># scope :not_active, -&gt; { where.not(status: 0) }</span>
-        <span class="ruby-keyword">if</span> <span class="ruby-identifier">enum_scopes</span> <span class="ruby-operator">!=</span> <span class="ruby-keyword">false</span>
-          <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:detect_enum_conflict!</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">value_method_name</span>, <span class="ruby-keyword">true</span>)
-          <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">scope</span> <span class="ruby-identifier">value_method_name</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">where</span>(<span class="ruby-identifier">attr</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">value</span>) }
-
-          <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:detect_enum_conflict!</span>, <span class="ruby-identifier">name</span>, <span class="ruby-node">&quot;not_#{value_method_name}&quot;</span>, <span class="ruby-keyword">true</span>)
-          <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">scope</span> <span class="ruby-node">&quot;not_#{value_method_name}&quot;</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">where</span>.<span class="ruby-identifier">not</span>(<span class="ruby-identifier">attr</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">value</span>) }
-        <span class="ruby-keyword">end</span>
-      <span class="ruby-keyword">end</span>
-      <span class="ruby-identifier">klass</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:detect_negative_enum_conditions!</span>, <span class="ruby-identifier">value_method_names</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">enum_scopes</span> <span class="ruby-operator">!=</span> <span class="ruby-keyword">false</span>
-    <span class="ruby-keyword">end</span>
-    <span class="ruby-identifier">enum_values</span>.<span class="ruby-identifier">freeze</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activerecord/lib/active_record/enum.rb#L150" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

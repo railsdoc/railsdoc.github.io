@@ -94,40 +94,40 @@ fruits = fruits.limit(10) if limited?
           
 
           
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-all_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/named.rb, line 26</span>
-        <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">all</span>
-          <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">current_scope</span>
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
 
-          <span class="ruby-keyword">if</span> <span class="ruby-identifier">scope</span>
-            <span class="ruby-keyword">if</span> <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">_deprecated_scope_source</span>
-              <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;~MSG</span>.<span class="ruby-identifier">squish</span>)
-<span class="ruby-value">                Class level methods will no longer inherit scoping from `#{scope._deprecated_scope_source}`
+              <pre><code class="ruby"># File activerecord/lib/active_record/scoping/named.rb, line 26
+        def all
+          scope = current_scope
+
+          if scope
+            if scope._deprecated_scope_source
+              ActiveSupport::Deprecation.warn(&lt;&lt;~MSG.squish)
+                Class level methods will no longer inherit scoping from `#{scope._deprecated_scope_source}`
                 in Rails 6.1. To continue using the scoped relation, pass it into the block directly.
                 To instead access the full set of models, as Rails 6.1 will, use `#{name}.default_scoped`.
-</span><span class="ruby-identifier">              MSG</span>
-            <span class="ruby-keyword">end</span>
+              MSG
+            end
 
-            <span class="ruby-keyword">if</span> <span class="ruby-keyword">self</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">klass</span>
-              <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">clone</span>
-            <span class="ruby-keyword">else</span>
-              <span class="ruby-identifier">relation</span>.<span class="ruby-identifier">merge!</span>(<span class="ruby-identifier">scope</span>)
-            <span class="ruby-keyword">end</span>
-          <span class="ruby-keyword">else</span>
-            <span class="ruby-identifier">default_scoped</span>
-          <span class="ruby-keyword">end</span>
-        <span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+            if self == scope.klass
+              scope.clone
+            else
+              relation.merge!(scope)
+            end
+          else
+            default_scoped
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activerecord/lib/active_record/scoping/named.rb#L26" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-default_scoped">
@@ -147,22 +147,22 @@ fruits = fruits.limit(10) if limited?
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/scoping/named.rb, line 57
+        def default_scoped(scope = relation)
+          build_default_scope(scope) || scope
+        end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-default_scoped_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/named.rb, line 57</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">default_scoped</span>(<span class="ruby-identifier">scope</span> = <span class="ruby-identifier">relation</span>)
-  <span class="ruby-identifier">build_default_scope</span>(<span class="ruby-identifier">scope</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">scope</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activerecord/lib/active_record/scoping/named.rb#L57" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-scope">
@@ -259,56 +259,56 @@ Article.featured.titles
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/scoping/named.rb, line 170
+        def scope(name, body, &amp;block)
+          unless body.respond_to?(:call)
+            raise ArgumentError, &quot;The scope body needs to be callable.&quot;
+          end
+
+          if dangerous_class_method?(name)
+            raise ArgumentError, &quot;You tried to define a scope named \&quot;#{name}\&quot; &quot; \
+              &quot;on the model \&quot;#{self.name}\&quot;, but Active Record already defined &quot; \
+              &quot;a class method with the same name.&quot;
+          end
+
+          if method_defined_within?(name, Relation)
+            raise ArgumentError, &quot;You tried to define a scope named \&quot;#{name}\&quot; &quot; \
+              &quot;on the model \&quot;#{self.name}\&quot;, but ActiveRecord::Relation already defined &quot; \
+              &quot;an instance method with the same name.&quot;
+          end
+
+          valid_scope_name?(name)
+          extension = Module.new(&amp;block) if block
+
+          if body.respond_to?(:to_proc)
+            singleton_class.define_method(name) do |*args|
+              scope = all._exec_scope(name, *args, &amp;body)
+              scope = scope.extending(extension) if extension
+              scope
+            end
+          else
+            singleton_class.define_method(name) do |*args|
+              scope = body.call(*args) || all
+              scope = scope.extending(extension) if extension
+              scope
+            end
+          end
+          singleton_class.send(:ruby2_keywords, name) if respond_to?(:ruby2_keywords, true)
+
+          generate_relation_method(name)
+        end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-scope_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/scoping/named.rb, line 170</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">scope</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">body</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-keyword">unless</span> <span class="ruby-identifier">body</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:call</span>)
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-string">&quot;The scope body needs to be callable.&quot;</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">dangerous_class_method?</span>(<span class="ruby-identifier">name</span>)
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;You tried to define a scope named \&quot;#{name}\&quot; &quot;</span> \
-      <span class="ruby-node">&quot;on the model \&quot;#{self.name}\&quot;, but Active Record already defined &quot;</span> \
-      <span class="ruby-string">&quot;a class method with the same name.&quot;</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">method_defined_within?</span>(<span class="ruby-identifier">name</span>, <span class="ruby-constant">Relation</span>)
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;You tried to define a scope named \&quot;#{name}\&quot; &quot;</span> \
-      <span class="ruby-node">&quot;on the model \&quot;#{self.name}\&quot;, but ActiveRecord::Relation already defined &quot;</span> \
-      <span class="ruby-string">&quot;an instance method with the same name.&quot;</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">valid_scope_name?</span>(<span class="ruby-identifier">name</span>)
-  <span class="ruby-identifier">extension</span> = <span class="ruby-constant">Module</span>.<span class="ruby-identifier">new</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">block</span>
-
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">body</span>.<span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:to_proc</span>)
-    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">define_method</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-operator">*</span><span class="ruby-identifier">args</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">all</span>.<span class="ruby-identifier">_exec_scope</span>(<span class="ruby-identifier">name</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">args</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">body</span>)
-      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">extending</span>(<span class="ruby-identifier">extension</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">extension</span>
-      <span class="ruby-identifier">scope</span>
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">define_method</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-operator">*</span><span class="ruby-identifier">args</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">body</span>.<span class="ruby-identifier">call</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">args</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">all</span>
-      <span class="ruby-identifier">scope</span> = <span class="ruby-identifier">scope</span>.<span class="ruby-identifier">extending</span>(<span class="ruby-identifier">extension</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">extension</span>
-      <span class="ruby-identifier">scope</span>
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">end</span>
-  <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">send</span>(<span class="ruby-value">:ruby2_keywords</span>, <span class="ruby-identifier">name</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">respond_to?</span>(<span class="ruby-value">:ruby2_keywords</span>, <span class="ruby-keyword">true</span>)
-
-  <span class="ruby-identifier">generate_relation_method</span>(<span class="ruby-identifier">name</span>)
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activerecord/lib/active_record/scoping/named.rb#L170" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

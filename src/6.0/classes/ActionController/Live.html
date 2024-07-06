@@ -130,63 +130,63 @@ end
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/live.rb, line 235
+    def process(name)
+      t1 = Thread.current
+      locals = t1.keys.map { |key| [key, t1[key]] }
+
+      error = nil
+      # This processes the action in a child thread. It lets us return the
+      # response code and headers back up the Rack stack, and still process
+      # the body in parallel with sending data to the client.
+      new_controller_thread {
+        ActiveSupport::Dependencies.interlock.running do
+          t2 = Thread.current
+
+          # Since we&#39;re processing the view in a different thread, copy the
+          # thread locals from the main thread to the child thread. :&#39;(
+          locals.each { |k, v| t2[k] = v }
+
+          begin
+            super(name)
+          rescue =&gt; e
+            if @_response.committed?
+              begin
+                @_response.stream.write(ActionView::Base.streaming_completion_on_exception) if request.format == :html
+                @_response.stream.call_on_error
+              rescue =&gt; exception
+                log_error(exception)
+              ensure
+                log_error(e)
+                @_response.stream.close
+              end
+            else
+              error = e
+            end
+          ensure
+            @_response.commit!
+          end
+        end
+      }
+
+      ActiveSupport::Dependencies.interlock.permit_concurrent_loads do
+        @_response.await_commit
+      end
+
+      raise error if error
+    end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-process_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/live.rb, line 235</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">process</span>(<span class="ruby-identifier">name</span>)
-  <span class="ruby-identifier">t1</span> = <span class="ruby-constant">Thread</span>.<span class="ruby-identifier">current</span>
-  <span class="ruby-identifier">locals</span> = <span class="ruby-identifier">t1</span>.<span class="ruby-identifier">keys</span>.<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">key</span><span class="ruby-operator">|</span> [<span class="ruby-identifier">key</span>, <span class="ruby-identifier">t1</span>[<span class="ruby-identifier">key</span>]] }
-
-  <span class="ruby-identifier">error</span> = <span class="ruby-keyword">nil</span>
-  <span class="ruby-comment"># This processes the action in a child thread. It lets us return the</span>
-  <span class="ruby-comment"># response code and headers back up the Rack stack, and still process</span>
-  <span class="ruby-comment"># the body in parallel with sending data to the client.</span>
-  <span class="ruby-identifier">new_controller_thread</span> {
-    <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Dependencies</span>.<span class="ruby-identifier">interlock</span>.<span class="ruby-identifier">running</span> <span class="ruby-keyword">do</span>
-      <span class="ruby-identifier">t2</span> = <span class="ruby-constant">Thread</span>.<span class="ruby-identifier">current</span>
-
-      <span class="ruby-comment"># Since we&#39;re processing the view in a different thread, copy the</span>
-      <span class="ruby-comment"># thread locals from the main thread to the child thread. :&#39;(</span>
-      <span class="ruby-identifier">locals</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">k</span>, <span class="ruby-identifier">v</span><span class="ruby-operator">|</span> <span class="ruby-identifier">t2</span>[<span class="ruby-identifier">k</span>] = <span class="ruby-identifier">v</span> }
-
-      <span class="ruby-keyword">begin</span>
-        <span class="ruby-keyword">super</span>(<span class="ruby-identifier">name</span>)
-      <span class="ruby-keyword">rescue</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">e</span>
-        <span class="ruby-keyword">if</span> <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">committed?</span>
-          <span class="ruby-keyword">begin</span>
-            <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">stream</span>.<span class="ruby-identifier">write</span>(<span class="ruby-constant">ActionView</span><span class="ruby-operator">::</span><span class="ruby-constant">Base</span>.<span class="ruby-identifier">streaming_completion_on_exception</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">request</span>.<span class="ruby-identifier">format</span> <span class="ruby-operator">==</span> <span class="ruby-value">:html</span>
-            <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">stream</span>.<span class="ruby-identifier">call_on_error</span>
-          <span class="ruby-keyword">rescue</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">exception</span>
-            <span class="ruby-identifier">log_error</span>(<span class="ruby-identifier">exception</span>)
-          <span class="ruby-keyword">ensure</span>
-            <span class="ruby-identifier">log_error</span>(<span class="ruby-identifier">e</span>)
-            <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">stream</span>.<span class="ruby-identifier">close</span>
-          <span class="ruby-keyword">end</span>
-        <span class="ruby-keyword">else</span>
-          <span class="ruby-identifier">error</span> = <span class="ruby-identifier">e</span>
-        <span class="ruby-keyword">end</span>
-      <span class="ruby-keyword">ensure</span>
-        <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">commit!</span>
-      <span class="ruby-keyword">end</span>
-    <span class="ruby-keyword">end</span>
-  }
-
-  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Dependencies</span>.<span class="ruby-identifier">interlock</span>.<span class="ruby-identifier">permit_concurrent_loads</span> <span class="ruby-keyword">do</span>
-    <span class="ruby-ivar">@_response</span>.<span class="ruby-identifier">await_commit</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">raise</span> <span class="ruby-identifier">error</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">error</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/actionpack/lib/action_controller/metal/live.rb#L235" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-response_body-3D">
@@ -206,23 +206,23 @@ end
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/live.rb, line 280
+    def response_body=(body)
+      super
+      response.close if response
+    end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-response_body-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_controller/metal/live.rb, line 280</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">response_body=</span>(<span class="ruby-identifier">body</span>)
-  <span class="ruby-keyword">super</span>
-  <span class="ruby-identifier">response</span>.<span class="ruby-identifier">close</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">response</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/actionpack/lib/action_controller/metal/live.rb#L280" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     
