@@ -121,11 +121,6 @@ saved
             <td class="attr-value">[:before, :after, :around]</td>
           </tr>
           
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
-          
         
       </table>
     
@@ -164,65 +159,65 @@ end
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 97
+    def run_callbacks(kind)
+      callbacks = __callbacks[kind.to_sym]
+
+      if callbacks.empty?
+        yield if block_given?
+      else
+        env = Filters::Environment.new(self, false, nil)
+        next_sequence = callbacks.compile
+
+        invoke_sequence = Proc.new do
+          skipped = nil
+          while true
+            current = next_sequence
+            current.invoke_before(env)
+            if current.final?
+              env.value = !env.halted &amp;&amp; (!block_given? || yield)
+            elsif current.skip?(env)
+              (skipped ||= []) &lt;&lt; current
+              next_sequence = next_sequence.nested
+              next
+            else
+              next_sequence = next_sequence.nested
+              begin
+                target, block, method, *arguments = current.expand_call_template(env, invoke_sequence)
+                target.send(method, *arguments, &amp;block)
+              ensure
+                next_sequence = current
+              end
+            end
+            current.invoke_after(env)
+            skipped.pop.invoke_after(env) while skipped &amp;&amp; skipped.first
+            break env.value
+          end
+        end
+
+        # Common case: no &#39;around&#39; callbacks defined
+        if next_sequence.final?
+          next_sequence.invoke_before(env)
+          env.value = !env.halted &amp;&amp; (!block_given? || yield)
+          next_sequence.invoke_after(env)
+          env.value
+        else
+          invoke_sequence.call
+        end
+      end
+    end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-run_callbacks_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/callbacks.rb, line 97</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">run_callbacks</span>(<span class="ruby-identifier">kind</span>)
-  <span class="ruby-identifier">callbacks</span> = <span class="ruby-identifier">__callbacks</span>[<span class="ruby-identifier">kind</span>.<span class="ruby-identifier">to_sym</span>]
-
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">callbacks</span>.<span class="ruby-identifier">empty?</span>
-    <span class="ruby-keyword">yield</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-identifier">env</span> = <span class="ruby-constant">Filters</span><span class="ruby-operator">::</span><span class="ruby-constant">Environment</span>.<span class="ruby-identifier">new</span>(<span class="ruby-keyword">self</span>, <span class="ruby-keyword">false</span>, <span class="ruby-keyword">nil</span>)
-    <span class="ruby-identifier">next_sequence</span> = <span class="ruby-identifier">callbacks</span>.<span class="ruby-identifier">compile</span>
-
-    <span class="ruby-identifier">invoke_sequence</span> = <span class="ruby-constant">Proc</span>.<span class="ruby-identifier">new</span> <span class="ruby-keyword">do</span>
-      <span class="ruby-identifier">skipped</span> = <span class="ruby-keyword">nil</span>
-      <span class="ruby-keyword">while</span> <span class="ruby-keyword">true</span>
-        <span class="ruby-identifier">current</span> = <span class="ruby-identifier">next_sequence</span>
-        <span class="ruby-identifier">current</span>.<span class="ruby-identifier">invoke_before</span>(<span class="ruby-identifier">env</span>)
-        <span class="ruby-keyword">if</span> <span class="ruby-identifier">current</span>.<span class="ruby-identifier">final?</span>
-          <span class="ruby-identifier">env</span>.<span class="ruby-identifier">value</span> = <span class="ruby-operator">!</span><span class="ruby-identifier">env</span>.<span class="ruby-identifier">halted</span> <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-operator">!</span><span class="ruby-identifier">block_given?</span> <span class="ruby-operator">||</span> <span class="ruby-keyword">yield</span>)
-        <span class="ruby-keyword">elsif</span> <span class="ruby-identifier">current</span>.<span class="ruby-identifier">skip?</span>(<span class="ruby-identifier">env</span>)
-          (<span class="ruby-identifier">skipped</span> <span class="ruby-operator">||=</span> []) <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">current</span>
-          <span class="ruby-identifier">next_sequence</span> = <span class="ruby-identifier">next_sequence</span>.<span class="ruby-identifier">nested</span>
-          <span class="ruby-keyword">next</span>
-        <span class="ruby-keyword">else</span>
-          <span class="ruby-identifier">next_sequence</span> = <span class="ruby-identifier">next_sequence</span>.<span class="ruby-identifier">nested</span>
-          <span class="ruby-keyword">begin</span>
-            <span class="ruby-identifier">target</span>, <span class="ruby-identifier">block</span>, <span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">arguments</span> = <span class="ruby-identifier">current</span>.<span class="ruby-identifier">expand_call_template</span>(<span class="ruby-identifier">env</span>, <span class="ruby-identifier">invoke_sequence</span>)
-            <span class="ruby-identifier">target</span>.<span class="ruby-identifier">send</span>(<span class="ruby-identifier">method</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">arguments</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-          <span class="ruby-keyword">ensure</span>
-            <span class="ruby-identifier">next_sequence</span> = <span class="ruby-identifier">current</span>
-          <span class="ruby-keyword">end</span>
-        <span class="ruby-keyword">end</span>
-        <span class="ruby-identifier">current</span>.<span class="ruby-identifier">invoke_after</span>(<span class="ruby-identifier">env</span>)
-        <span class="ruby-identifier">skipped</span>.<span class="ruby-identifier">pop</span>.<span class="ruby-identifier">invoke_after</span>(<span class="ruby-identifier">env</span>) <span class="ruby-keyword">while</span> <span class="ruby-identifier">skipped</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">skipped</span>.<span class="ruby-identifier">first</span>
-        <span class="ruby-keyword">break</span> <span class="ruby-identifier">env</span>.<span class="ruby-identifier">value</span>
-      <span class="ruby-keyword">end</span>
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-comment"># Common case: no &#39;around&#39; callbacks defined</span>
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">next_sequence</span>.<span class="ruby-identifier">final?</span>
-      <span class="ruby-identifier">next_sequence</span>.<span class="ruby-identifier">invoke_before</span>(<span class="ruby-identifier">env</span>)
-      <span class="ruby-identifier">env</span>.<span class="ruby-identifier">value</span> = <span class="ruby-operator">!</span><span class="ruby-identifier">env</span>.<span class="ruby-identifier">halted</span> <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-operator">!</span><span class="ruby-identifier">block_given?</span> <span class="ruby-operator">||</span> <span class="ruby-keyword">yield</span>)
-      <span class="ruby-identifier">next_sequence</span>.<span class="ruby-identifier">invoke_after</span>(<span class="ruby-identifier">env</span>)
-      <span class="ruby-identifier">env</span>.<span class="ruby-identifier">value</span>
-    <span class="ruby-keyword">else</span>
-      <span class="ruby-identifier">invoke_sequence</span>.<span class="ruby-identifier">call</span>
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activesupport/lib/active_support/callbacks.rb#L97" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

@@ -77,11 +77,6 @@ layout: default
             <td class="attr-value">[&quot;SCHEMA&quot;, &quot;EXPLAIN&quot;]</td>
           </tr>
           
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
-          
         
       </table>
     
@@ -110,23 +105,23 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/log_subscriber.rb, line 17
+    def self.reset_runtime
+      rt, self.runtime = runtime, 0
+      rt
+    end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-reset_runtime_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/log_subscriber.rb, line 17</span>
-<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">reset_runtime</span>
-  <span class="ruby-identifier">rt</span>, <span class="ruby-keyword">self</span>.<span class="ruby-identifier">runtime</span> = <span class="ruby-identifier">runtime</span>, <span class="ruby-value">0</span>
-  <span class="ruby-identifier">rt</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activerecord/lib/active_record/log_subscriber.rb#L17" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-c-runtime">
@@ -146,22 +141,22 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/log_subscriber.rb, line 13
+    def self.runtime
+      ActiveRecord::RuntimeRegistry.sql_runtime ||= 0
+    end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-runtime_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/log_subscriber.rb, line 13</span>
-<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">runtime</span>
-  <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">RuntimeRegistry</span>.<span class="ruby-identifier">sql_runtime</span> <span class="ruby-operator">||=</span> <span class="ruby-value">0</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activerecord/lib/active_record/log_subscriber.rb#L13" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-c-runtime-3D">
@@ -181,22 +176,22 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/log_subscriber.rb, line 9
+    def self.runtime=(value)
+      ActiveRecord::RuntimeRegistry.sql_runtime = value
+    end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-runtime-3D_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/log_subscriber.rb, line 9</span>
-<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">runtime=</span>(<span class="ruby-identifier">value</span>)
-  <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">RuntimeRegistry</span>.<span class="ruby-identifier">sql_runtime</span> = <span class="ruby-identifier">value</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activerecord/lib/active_record/log_subscriber.rb#L9" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     
@@ -220,44 +215,44 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/log_subscriber.rb, line 22
+    def sql(event)
+      self.class.runtime += event.duration
+      return unless logger.debug?
+
+      payload = event.payload
+
+      return if IGNORE_PAYLOAD_NAMES.include?(payload[:name])
+
+      name  = &quot;#{payload[:name]} (#{event.duration.round(1)}ms)&quot;
+      name  = &quot;CACHE #{name}&quot; if payload[:cached]
+      sql   = payload[:sql]
+      binds = nil
+
+      unless (payload[:binds] || []).empty?
+        casted_params = type_casted_binds(payload[:type_casted_binds])
+        binds = &quot;  &quot; + payload[:binds].zip(casted_params).map { |attr, value|
+          render_bind(attr, value)
+        }.inspect
+      end
+
+      name = colorize_payload_name(name, payload[:name])
+      sql  = color(sql, sql_color(sql), true) if colorize_logging
+
+      debug &quot;  #{name}  #{sql}#{binds}&quot;
+    end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-sql_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activerecord/lib/active_record/log_subscriber.rb, line 22</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">sql</span>(<span class="ruby-identifier">event</span>)
-  <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">runtime</span> <span class="ruby-operator">+=</span> <span class="ruby-identifier">event</span>.<span class="ruby-identifier">duration</span>
-  <span class="ruby-keyword">return</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">logger</span>.<span class="ruby-identifier">debug?</span>
-
-  <span class="ruby-identifier">payload</span> = <span class="ruby-identifier">event</span>.<span class="ruby-identifier">payload</span>
-
-  <span class="ruby-keyword">return</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">IGNORE_PAYLOAD_NAMES</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">payload</span>[<span class="ruby-value">:name</span>])
-
-  <span class="ruby-identifier">name</span>  = <span class="ruby-node">&quot;#{payload[:name]} (#{event.duration.round(1)}ms)&quot;</span>
-  <span class="ruby-identifier">name</span>  = <span class="ruby-node">&quot;CACHE #{name}&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">payload</span>[<span class="ruby-value">:cached</span>]
-  <span class="ruby-identifier">sql</span>   = <span class="ruby-identifier">payload</span>[<span class="ruby-value">:sql</span>]
-  <span class="ruby-identifier">binds</span> = <span class="ruby-keyword">nil</span>
-
-  <span class="ruby-keyword">unless</span> (<span class="ruby-identifier">payload</span>[<span class="ruby-value">:binds</span>] <span class="ruby-operator">||</span> []).<span class="ruby-identifier">empty?</span>
-    <span class="ruby-identifier">casted_params</span> = <span class="ruby-identifier">type_casted_binds</span>(<span class="ruby-identifier">payload</span>[<span class="ruby-value">:type_casted_binds</span>])
-    <span class="ruby-identifier">binds</span> = <span class="ruby-string">&quot;  &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">payload</span>[<span class="ruby-value">:binds</span>].<span class="ruby-identifier">zip</span>(<span class="ruby-identifier">casted_params</span>).<span class="ruby-identifier">map</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">attr</span>, <span class="ruby-identifier">value</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">render_bind</span>(<span class="ruby-identifier">attr</span>, <span class="ruby-identifier">value</span>)
-    }.<span class="ruby-identifier">inspect</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">name</span> = <span class="ruby-identifier">colorize_payload_name</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">payload</span>[<span class="ruby-value">:name</span>])
-  <span class="ruby-identifier">sql</span>  = <span class="ruby-identifier">color</span>(<span class="ruby-identifier">sql</span>, <span class="ruby-identifier">sql_color</span>(<span class="ruby-identifier">sql</span>), <span class="ruby-keyword">true</span>) <span class="ruby-keyword">if</span> <span class="ruby-identifier">colorize_logging</span>
-
-  <span class="ruby-identifier">debug</span> <span class="ruby-node">&quot;  #{name}  #{sql}#{binds}&quot;</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activerecord/lib/active_record/log_subscriber.rb#L22" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

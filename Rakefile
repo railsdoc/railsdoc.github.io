@@ -99,9 +99,9 @@ def generate_src(target_version:)
   end
 end
 
-EXISTING_DIRS = %w[classes files].freeze
+EXISTING_DIR_AND_FILES = %w[classes files index.html navigation.html].freeze
 def remove_existing_files(target_dir)
-  EXISTING_DIRS.each do |dir|
+  EXISTING_DIR_AND_FILES.each do |dir|
     rm_rf "#{target_dir}/#{dir}"
   end
 end

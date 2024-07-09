@@ -59,11 +59,6 @@ layout: default
             <td class="attr-value">ARGV.dup unless defined?(ORIG_ARGV)</td>
           </tr>
           
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
-          
         
       </table>
     
@@ -93,56 +88,56 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/isolation.rb, line 68
+        def run_in_isolation(&amp;blk)
+          require &quot;tempfile&quot;
+
+          if ENV[&quot;ISOLATION_TEST&quot;]
+            yield
+            test_result = defined?(Minitest::Result) ? Minitest::Result.from(self) : dup
+            File.open(ENV[&quot;ISOLATION_OUTPUT&quot;], &quot;w&quot;) do |file|
+              file.puts [Marshal.dump(test_result)].pack(&quot;m&quot;)
+            end
+            exit!
+          else
+            Tempfile.open(&quot;isolation&quot;) do |tmpfile|
+              env = {
+                &quot;ISOLATION_TEST&quot; =&gt; self.class.name,
+                &quot;ISOLATION_OUTPUT&quot; =&gt; tmpfile.path
+              }
+
+              test_opts = &quot;-n#{self.class.name}##{name}&quot;
+
+              load_path_args = []
+              $-I.each do |p|
+                load_path_args &lt;&lt; &quot;-I&quot;
+                load_path_args &lt;&lt; File.expand_path(p)
+              end
+
+              child = IO.popen([env, Gem.ruby, *load_path_args, $0, *ORIG_ARGV, test_opts])
+
+              begin
+                Process.wait(child.pid)
+              rescue Errno::ECHILD # The child process may exit before we wait
+                nil
+              end
+
+              return tmpfile.read.unpack1(&quot;m&quot;)
+            end
+          end
+        end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-run_in_isolation_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/testing/isolation.rb, line 68</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">run_in_isolation</span>(<span class="ruby-operator">&amp;</span><span class="ruby-identifier">blk</span>)
-  <span class="ruby-identifier">require</span> <span class="ruby-string">&quot;tempfile&quot;</span>
-
-  <span class="ruby-keyword">if</span> <span class="ruby-constant">ENV</span>[<span class="ruby-string">&quot;ISOLATION_TEST&quot;</span>]
-    <span class="ruby-keyword">yield</span>
-    <span class="ruby-identifier">test_result</span> = <span class="ruby-keyword">defined?</span>(<span class="ruby-constant">Minitest</span><span class="ruby-operator">::</span><span class="ruby-constant">Result</span>) <span class="ruby-operator">?</span> <span class="ruby-constant">Minitest</span><span class="ruby-operator">::</span><span class="ruby-constant">Result</span>.<span class="ruby-identifier">from</span>(<span class="ruby-keyword">self</span>) <span class="ruby-operator">:</span> <span class="ruby-identifier">dup</span>
-    <span class="ruby-constant">File</span>.<span class="ruby-identifier">open</span>(<span class="ruby-constant">ENV</span>[<span class="ruby-string">&quot;ISOLATION_OUTPUT&quot;</span>], <span class="ruby-string">&quot;w&quot;</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">file</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">file</span>.<span class="ruby-identifier">puts</span> [<span class="ruby-constant">Marshal</span>.<span class="ruby-identifier">dump</span>(<span class="ruby-identifier">test_result</span>)].<span class="ruby-identifier">pack</span>(<span class="ruby-string">&quot;m&quot;</span>)
-    <span class="ruby-keyword">end</span>
-    <span class="ruby-identifier">exit!</span>
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-constant">Tempfile</span>.<span class="ruby-identifier">open</span>(<span class="ruby-string">&quot;isolation&quot;</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">tmpfile</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">env</span> = {
-        <span class="ruby-string">&quot;ISOLATION_TEST&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">name</span>,
-        <span class="ruby-string">&quot;ISOLATION_OUTPUT&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">tmpfile</span>.<span class="ruby-identifier">path</span>
-      }
-
-      <span class="ruby-identifier">test_opts</span> = <span class="ruby-node">&quot;-n#{self.class.name}##{name}&quot;</span>
-
-      <span class="ruby-identifier">load_path_args</span> = []
-      <span class="ruby-identifier">$-I</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">p</span><span class="ruby-operator">|</span>
-        <span class="ruby-identifier">load_path_args</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-string">&quot;-I&quot;</span>
-        <span class="ruby-identifier">load_path_args</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-constant">File</span>.<span class="ruby-identifier">expand_path</span>(<span class="ruby-identifier">p</span>)
-      <span class="ruby-keyword">end</span>
-
-      <span class="ruby-identifier">child</span> = <span class="ruby-constant">IO</span>.<span class="ruby-identifier">popen</span>([<span class="ruby-identifier">env</span>, <span class="ruby-constant">Gem</span>.<span class="ruby-identifier">ruby</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">load_path_args</span>, <span class="ruby-identifier">$0</span>, <span class="ruby-operator">*</span><span class="ruby-constant">ORIG_ARGV</span>, <span class="ruby-identifier">test_opts</span>])
-
-      <span class="ruby-keyword">begin</span>
-        <span class="ruby-constant">Process</span>.<span class="ruby-identifier">wait</span>(<span class="ruby-identifier">child</span>.<span class="ruby-identifier">pid</span>)
-      <span class="ruby-keyword">rescue</span> <span class="ruby-constant">Errno</span><span class="ruby-operator">::</span><span class="ruby-constant">ECHILD</span> <span class="ruby-comment"># The child process may exit before we wait</span>
-        <span class="ruby-keyword">nil</span>
-      <span class="ruby-keyword">end</span>
-
-      <span class="ruby-keyword">return</span> <span class="ruby-identifier">tmpfile</span>.<span class="ruby-identifier">read</span>.<span class="ruby-identifier">unpack1</span>(<span class="ruby-string">&quot;m&quot;</span>)
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activesupport/lib/active_support/testing/isolation.rb#L68" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

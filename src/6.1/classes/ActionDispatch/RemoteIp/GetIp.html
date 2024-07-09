@@ -102,24 +102,24 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 88
+      def initialize(req, check_ip, proxies)
+        @req      = req
+        @check_ip = check_ip
+        @proxies  = proxies
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 88</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">req</span>, <span class="ruby-identifier">check_ip</span>, <span class="ruby-identifier">proxies</span>)
-  <span class="ruby-ivar">@req</span>      = <span class="ruby-identifier">req</span>
-  <span class="ruby-ivar">@check_ip</span> = <span class="ruby-identifier">check_ip</span>
-  <span class="ruby-ivar">@proxies</span>  = <span class="ruby-identifier">proxies</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/actionpack/lib/action_dispatch/middleware/remote_ip.rb#L88" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     
@@ -149,59 +149,59 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 112
+      def calculate_ip
+        # Set by the Rack web server, this is a single value.
+        remote_addr = ips_from(@req.remote_addr).last
+
+        # Could be a CSV list and/or repeated headers that were concatenated.
+        client_ips    = ips_from(@req.client_ip).reverse
+        forwarded_ips = ips_from(@req.x_forwarded_for).reverse
+
+        # +Client-Ip+ and +X-Forwarded-For+ should not, generally, both be set.
+        # If they are both set, it means that either:
+        #
+        # 1) This request passed through two proxies with incompatible IP header
+        #    conventions.
+        # 2) The client passed one of +Client-Ip+ or +X-Forwarded-For+
+        #    (whichever the proxy servers weren&#39;t using) themselves.
+        #
+        # Either way, there is no way for us to determine which header is the
+        # right one after the fact. Since we have no idea, if we are concerned
+        # about IP spoofing we need to give up and explode. (If you&#39;re not
+        # concerned about IP spoofing you can turn the +ip_spoofing_check+
+        # option off.)
+        should_check_ip = @check_ip &amp;&amp; client_ips.last &amp;&amp; forwarded_ips.last
+        if should_check_ip &amp;&amp; !forwarded_ips.include?(client_ips.last)
+          # We don&#39;t know which came from the proxy, and which from the user
+          raise IpSpoofAttackError, &quot;IP spoofing attack?! &quot; \
+            &quot;HTTP_CLIENT_IP=#{@req.client_ip.inspect} &quot; \
+            &quot;HTTP_X_FORWARDED_FOR=#{@req.x_forwarded_for.inspect}&quot;
+        end
+
+        # We assume these things about the IP headers:
+        #
+        #   - X-Forwarded-For will be a list of IPs, one per proxy, or blank
+        #   - Client-Ip is propagated from the outermost proxy, or is blank
+        #   - REMOTE_ADDR will be the IP that made the request to Rack
+        ips = [forwarded_ips, client_ips].flatten.compact
+
+        # If every single IP option is in the trusted list, return the IP
+        # that&#39;s furthest away
+        filter_proxies(ips + [remote_addr]).first || ips.last || remote_addr
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-calculate_ip_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 112</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">calculate_ip</span>
-  <span class="ruby-comment"># Set by the Rack web server, this is a single value.</span>
-  <span class="ruby-identifier">remote_addr</span> = <span class="ruby-identifier">ips_from</span>(<span class="ruby-ivar">@req</span>.<span class="ruby-identifier">remote_addr</span>).<span class="ruby-identifier">last</span>
-
-  <span class="ruby-comment"># Could be a CSV list and/or repeated headers that were concatenated.</span>
-  <span class="ruby-identifier">client_ips</span>    = <span class="ruby-identifier">ips_from</span>(<span class="ruby-ivar">@req</span>.<span class="ruby-identifier">client_ip</span>).<span class="ruby-identifier">reverse</span>
-  <span class="ruby-identifier">forwarded_ips</span> = <span class="ruby-identifier">ips_from</span>(<span class="ruby-ivar">@req</span>.<span class="ruby-identifier">x_forwarded_for</span>).<span class="ruby-identifier">reverse</span>
-
-  <span class="ruby-comment"># +Client-Ip+ and +X-Forwarded-For+ should not, generally, both be set.</span>
-  <span class="ruby-comment"># If they are both set, it means that either:</span>
-  <span class="ruby-comment">#</span>
-  <span class="ruby-comment"># 1) This request passed through two proxies with incompatible IP header</span>
-  <span class="ruby-comment">#    conventions.</span>
-  <span class="ruby-comment"># 2) The client passed one of +Client-Ip+ or +X-Forwarded-For+</span>
-  <span class="ruby-comment">#    (whichever the proxy servers weren&#39;t using) themselves.</span>
-  <span class="ruby-comment">#</span>
-  <span class="ruby-comment"># Either way, there is no way for us to determine which header is the</span>
-  <span class="ruby-comment"># right one after the fact. Since we have no idea, if we are concerned</span>
-  <span class="ruby-comment"># about IP spoofing we need to give up and explode. (If you&#39;re not</span>
-  <span class="ruby-comment"># concerned about IP spoofing you can turn the +ip_spoofing_check+</span>
-  <span class="ruby-comment"># option off.)</span>
-  <span class="ruby-identifier">should_check_ip</span> = <span class="ruby-ivar">@check_ip</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">client_ips</span>.<span class="ruby-identifier">last</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">forwarded_ips</span>.<span class="ruby-identifier">last</span>
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">should_check_ip</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-operator">!</span><span class="ruby-identifier">forwarded_ips</span>.<span class="ruby-identifier">include?</span>(<span class="ruby-identifier">client_ips</span>.<span class="ruby-identifier">last</span>)
-    <span class="ruby-comment"># We don&#39;t know which came from the proxy, and which from the user</span>
-    <span class="ruby-identifier">raise</span> <span class="ruby-constant">IpSpoofAttackError</span>, <span class="ruby-string">&quot;IP spoofing attack?! &quot;</span> \
-      <span class="ruby-node">&quot;HTTP_CLIENT_IP=#{@req.client_ip.inspect} &quot;</span> \
-      <span class="ruby-node">&quot;HTTP_X_FORWARDED_FOR=#{@req.x_forwarded_for.inspect}&quot;</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-comment"># We assume these things about the IP headers:</span>
-  <span class="ruby-comment">#</span>
-  <span class="ruby-comment">#   - X-Forwarded-For will be a list of IPs, one per proxy, or blank</span>
-  <span class="ruby-comment">#   - Client-Ip is propagated from the outermost proxy, or is blank</span>
-  <span class="ruby-comment">#   - REMOTE_ADDR will be the IP that made the request to Rack</span>
-  <span class="ruby-identifier">ips</span> = [<span class="ruby-identifier">forwarded_ips</span>, <span class="ruby-identifier">client_ips</span>].<span class="ruby-identifier">flatten</span>.<span class="ruby-identifier">compact</span>
-
-  <span class="ruby-comment"># If every single IP option is in the trusted list, return the IP</span>
-  <span class="ruby-comment"># that&#39;s furthest away</span>
-  <span class="ruby-identifier">filter_proxies</span>(<span class="ruby-identifier">ips</span> <span class="ruby-operator">+</span> [<span class="ruby-identifier">remote_addr</span>]).<span class="ruby-identifier">first</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">ips</span>.<span class="ruby-identifier">last</span> <span class="ruby-operator">||</span> <span class="ruby-identifier">remote_addr</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/actionpack/lib/action_dispatch/middleware/remote_ip.rb#L112" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-to_s">
@@ -221,22 +221,22 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 155
+      def to_s
+        @ip ||= calculate_ip
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-to_s_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 155</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">to_s</span>
-  <span class="ruby-ivar">@ip</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">calculate_ip</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/actionpack/lib/action_dispatch/middleware/remote_ip.rb#L155" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
       <h2 id="instance-private-methods">Instance Private methods</h2>
@@ -259,24 +259,24 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 174
+      def filter_proxies(ips) # :doc:
+        ips.reject do |ip|
+          @proxies.any? { |proxy| proxy === ip }
+        end
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-filter_proxies_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 174</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">filter_proxies</span>(<span class="ruby-identifier">ips</span>) <span class="ruby-comment"># :doc:</span>
-  <span class="ruby-identifier">ips</span>.<span class="ruby-identifier">reject</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">ip</span><span class="ruby-operator">|</span>
-    <span class="ruby-ivar">@proxies</span>.<span class="ruby-identifier">any?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">proxy</span><span class="ruby-operator">|</span> <span class="ruby-identifier">proxy</span> <span class="ruby-operator">===</span> <span class="ruby-identifier">ip</span> }
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/actionpack/lib/action_dispatch/middleware/remote_ip.rb#L174" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-ips_from">
@@ -296,32 +296,32 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 160
+      def ips_from(header) # :doc:
+        return [] unless header
+        # Split the comma-separated list into an array of strings.
+        ips = header.strip.split(/[,\s]+/)
+        ips.select do |ip|
+          # Only return IPs that are valid according to the IPAddr#new method.
+          range = IPAddr.new(ip).to_range
+          # We want to make sure nobody is sneaking a netmask in.
+          range.begin == range.end
+        rescue ArgumentError
+          nil
+        end
+      end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-ips_from_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 160</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">ips_from</span>(<span class="ruby-identifier">header</span>) <span class="ruby-comment"># :doc:</span>
-  <span class="ruby-keyword">return</span> [] <span class="ruby-keyword">unless</span> <span class="ruby-identifier">header</span>
-  <span class="ruby-comment"># Split the comma-separated list into an array of strings.</span>
-  <span class="ruby-identifier">ips</span> = <span class="ruby-identifier">header</span>.<span class="ruby-identifier">strip</span>.<span class="ruby-identifier">split</span>(<span class="ruby-regexp">/[,\s]+/</span>)
-  <span class="ruby-identifier">ips</span>.<span class="ruby-identifier">select</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">ip</span><span class="ruby-operator">|</span>
-    <span class="ruby-comment"># Only return IPs that are valid according to the IPAddr#new method.</span>
-    <span class="ruby-identifier">range</span> = <span class="ruby-constant">IPAddr</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">ip</span>).<span class="ruby-identifier">to_range</span>
-    <span class="ruby-comment"># We want to make sure nobody is sneaking a netmask in.</span>
-    <span class="ruby-identifier">range</span>.<span class="ruby-identifier">begin</span> <span class="ruby-operator">==</span> <span class="ruby-identifier">range</span>.<span class="ruby-identifier">end</span>
-  <span class="ruby-keyword">rescue</span> <span class="ruby-constant">ArgumentError</span>
-    <span class="ruby-keyword">nil</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/actionpack/lib/action_dispatch/middleware/remote_ip.rb#L160" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

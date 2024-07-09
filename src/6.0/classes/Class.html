@@ -173,73 +173,73 @@ object.setting?         # =&gt; NoMethodError
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/class/attribute.rb, line 87
+  def class_attribute(
+    *attrs,
+    instance_accessor: true,
+    instance_reader: instance_accessor,
+    instance_writer: instance_accessor,
+    instance_predicate: true,
+    default: nil
+  )
+    attrs.each do |name|
+      singleton_class.silence_redefinition_of_method(name)
+      define_singleton_method(name) { default }
+
+      singleton_class.silence_redefinition_of_method(&quot;#{name}?&quot;)
+      define_singleton_method(&quot;#{name}?&quot;) { !!public_send(name) } if instance_predicate
+
+      ivar = &quot;@#{name}&quot;.to_sym
+
+      singleton_class.silence_redefinition_of_method(&quot;#{name}=&quot;)
+      define_singleton_method(&quot;#{name}=&quot;) do |val|
+        redefine_singleton_method(name) { val }
+
+        if singleton_class?
+          class_eval do
+            redefine_method(name) do
+              if instance_variable_defined? ivar
+                instance_variable_get ivar
+              else
+                singleton_class.send name
+              end
+            end
+          end
+        end
+        val
+      end
+
+      if instance_reader
+        redefine_method(name) do
+          if instance_variable_defined?(ivar)
+            instance_variable_get ivar
+          else
+            self.class.public_send name
+          end
+        end
+
+        redefine_method(&quot;#{name}?&quot;) { !!public_send(name) } if instance_predicate
+      end
+
+      if instance_writer
+        redefine_method(&quot;#{name}=&quot;) do |val|
+          instance_variable_set ivar, val
+        end
+      end
+    end
+  end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-class_attribute_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/class/attribute.rb, line 87</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">class_attribute</span>(
-  <span class="ruby-operator">*</span><span class="ruby-identifier">attrs</span>,
-  <span class="ruby-value">instance_accessor:</span> <span class="ruby-keyword">true</span>,
-  <span class="ruby-value">instance_reader:</span> <span class="ruby-identifier">instance_accessor</span>,
-  <span class="ruby-value">instance_writer:</span> <span class="ruby-identifier">instance_accessor</span>,
-  <span class="ruby-value">instance_predicate:</span> <span class="ruby-keyword">true</span>,
-  <span class="ruby-value">default:</span> <span class="ruby-keyword">nil</span>
-)
-  <span class="ruby-identifier">attrs</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">silence_redefinition_of_method</span>(<span class="ruby-identifier">name</span>)
-    <span class="ruby-identifier">define_singleton_method</span>(<span class="ruby-identifier">name</span>) { <span class="ruby-identifier">default</span> }
-
-    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">silence_redefinition_of_method</span>(<span class="ruby-node">&quot;#{name}?&quot;</span>)
-    <span class="ruby-identifier">define_singleton_method</span>(<span class="ruby-node">&quot;#{name}?&quot;</span>) { <span class="ruby-operator">!</span><span class="ruby-operator">!</span><span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">name</span>) } <span class="ruby-keyword">if</span> <span class="ruby-identifier">instance_predicate</span>
-
-    <span class="ruby-identifier">ivar</span> = <span class="ruby-node">&quot;@#{name}&quot;</span>.<span class="ruby-identifier">to_sym</span>
-
-    <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">silence_redefinition_of_method</span>(<span class="ruby-node">&quot;#{name}=&quot;</span>)
-    <span class="ruby-identifier">define_singleton_method</span>(<span class="ruby-node">&quot;#{name}=&quot;</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">redefine_singleton_method</span>(<span class="ruby-identifier">name</span>) { <span class="ruby-identifier">val</span> }
-
-      <span class="ruby-keyword">if</span> <span class="ruby-identifier">singleton_class?</span>
-        <span class="ruby-identifier">class_eval</span> <span class="ruby-keyword">do</span>
-          <span class="ruby-identifier">redefine_method</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span>
-            <span class="ruby-keyword">if</span> <span class="ruby-identifier">instance_variable_defined?</span> <span class="ruby-identifier">ivar</span>
-              <span class="ruby-identifier">instance_variable_get</span> <span class="ruby-identifier">ivar</span>
-            <span class="ruby-keyword">else</span>
-              <span class="ruby-identifier">singleton_class</span>.<span class="ruby-identifier">send</span> <span class="ruby-identifier">name</span>
-            <span class="ruby-keyword">end</span>
-          <span class="ruby-keyword">end</span>
-        <span class="ruby-keyword">end</span>
-      <span class="ruby-keyword">end</span>
-      <span class="ruby-identifier">val</span>
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">instance_reader</span>
-      <span class="ruby-identifier">redefine_method</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span>
-        <span class="ruby-keyword">if</span> <span class="ruby-identifier">instance_variable_defined?</span>(<span class="ruby-identifier">ivar</span>)
-          <span class="ruby-identifier">instance_variable_get</span> <span class="ruby-identifier">ivar</span>
-        <span class="ruby-keyword">else</span>
-          <span class="ruby-keyword">self</span>.<span class="ruby-identifier">class</span>.<span class="ruby-identifier">public_send</span> <span class="ruby-identifier">name</span>
-        <span class="ruby-keyword">end</span>
-      <span class="ruby-keyword">end</span>
-
-      <span class="ruby-identifier">redefine_method</span>(<span class="ruby-node">&quot;#{name}?&quot;</span>) { <span class="ruby-operator">!</span><span class="ruby-operator">!</span><span class="ruby-identifier">public_send</span>(<span class="ruby-identifier">name</span>) } <span class="ruby-keyword">if</span> <span class="ruby-identifier">instance_predicate</span>
-    <span class="ruby-keyword">end</span>
-
-    <span class="ruby-keyword">if</span> <span class="ruby-identifier">instance_writer</span>
-      <span class="ruby-identifier">redefine_method</span>(<span class="ruby-node">&quot;#{name}=&quot;</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">val</span><span class="ruby-operator">|</span>
-        <span class="ruby-identifier">instance_variable_set</span> <span class="ruby-identifier">ivar</span>, <span class="ruby-identifier">val</span>
-      <span class="ruby-keyword">end</span>
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activesupport/lib/active_support/core_ext/class/attribute.rb#L87" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-descendants">
@@ -272,27 +272,27 @@ C.descendants # =&gt; [B, A, D]
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/class/subclasses.rb, line 21
+    def descendants
+      descendants = []
+      ObjectSpace.each_object(singleton_class) do |k|
+        next if k.singleton_class?
+        descendants.unshift k unless k == self
+      end
+      descendants
+    end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-descendants_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/class/subclasses.rb, line 21</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">descendants</span>
-  <span class="ruby-identifier">descendants</span> = []
-  <span class="ruby-constant">ObjectSpace</span>.<span class="ruby-identifier">each_object</span>(<span class="ruby-identifier">singleton_class</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">k</span><span class="ruby-operator">|</span>
-    <span class="ruby-keyword">next</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">k</span>.<span class="ruby-identifier">singleton_class?</span>
-    <span class="ruby-identifier">descendants</span>.<span class="ruby-identifier">unshift</span> <span class="ruby-identifier">k</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">k</span> <span class="ruby-operator">==</span> <span class="ruby-keyword">self</span>
-  <span class="ruby-keyword">end</span>
-  <span class="ruby-identifier">descendants</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activesupport/lib/active_support/core_ext/class/subclasses.rb#L21" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-subclasses">
@@ -319,26 +319,26 @@ Foo.subclasses # =&gt; [Bar]
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/class/subclasses.rb, line 47
+  def subclasses
+    subclasses, chain = [], descendants
+    chain.each do |k|
+      subclasses &lt;&lt; k unless chain.any? { |c| c &gt; k }
+    end
+    subclasses
+  end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-subclasses_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/core_ext/class/subclasses.rb, line 47</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">subclasses</span>
-  <span class="ruby-identifier">subclasses</span>, <span class="ruby-identifier">chain</span> = [], <span class="ruby-identifier">descendants</span>
-  <span class="ruby-identifier">chain</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">k</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">subclasses</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-identifier">k</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">chain</span>.<span class="ruby-identifier">any?</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">c</span><span class="ruby-operator">|</span> <span class="ruby-identifier">c</span> <span class="ruby-operator">&gt;</span> <span class="ruby-identifier">k</span> }
-  <span class="ruby-keyword">end</span>
-  <span class="ruby-identifier">subclasses</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/91cf62e7b43c33ae6263adf3d7563da9b68ff21d/activesupport/lib/active_support/core_ext/class/subclasses.rb#L47" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

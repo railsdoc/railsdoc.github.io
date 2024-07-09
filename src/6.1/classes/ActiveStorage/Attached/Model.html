@@ -129,20 +129,18 @@ end
           
 
           
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-has_many_attached_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 128</span>
-      <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_many_attached</span>(<span class="ruby-identifier">name</span>, <span class="ruby-value">dependent:</span> <span class="ruby-value">:purge_later</span>, <span class="ruby-value">service:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">strict_loading:</span> <span class="ruby-keyword">false</span>)
-        <span class="ruby-identifier">validate_service_configuration</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">service</span>)
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
 
-        <span class="ruby-identifier">generated_association_methods</span>.<span class="ruby-identifier">class_eval</span> <span class="ruby-identifier">&lt;&lt;-CODE</span>, <span class="ruby-keyword">__FILE__</span>, <span class="ruby-keyword">__LINE__</span> <span class="ruby-operator">+</span> <span class="ruby-value">1</span>
-<span class="ruby-value">          # frozen_string_literal: true
+              <pre><code class="ruby"># File activestorage/lib/active_storage/attached/model.rb, line 128
+      def has_many_attached(name, dependent: :purge_later, service: nil, strict_loading: false)
+        validate_service_configuration(name, service)
+
+        generated_association_methods.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+          # frozen_string_literal: true
           def #{name}
             @active_storage_attached ||= {}
             @active_storage_attached[:#{name}] ||= ActiveStorage::Attached::Many.new(&quot;#{name}&quot;, self)
@@ -163,40 +161,42 @@ end
               end
             end
           end
-</span><span class="ruby-identifier">        CODE</span>
+        CODE
 
-        <span class="ruby-identifier">has_many</span> <span class="ruby-value">:&quot;#{name}_attachments&quot;</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">where</span>(<span class="ruby-value">name:</span> <span class="ruby-identifier">name</span>) }, <span class="ruby-value">as:</span> <span class="ruby-value">:record</span>, <span class="ruby-value">class_name:</span> <span class="ruby-string">&quot;ActiveStorage::Attachment&quot;</span>, <span class="ruby-value">inverse_of:</span> <span class="ruby-value">:record</span>, <span class="ruby-value">dependent:</span> <span class="ruby-value">:destroy</span>, <span class="ruby-value">strict_loading:</span> <span class="ruby-identifier">strict_loading</span> <span class="ruby-keyword">do</span>
-          <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge</span>
-            <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge</span>)
-            <span class="ruby-identifier">reset</span>
-          <span class="ruby-keyword">end</span>
+        has_many :&quot;#{name}_attachments&quot;, -&gt; { where(name: name) }, as: :record, class_name: &quot;ActiveStorage::Attachment&quot;, inverse_of: :record, dependent: :destroy, strict_loading: strict_loading do
+          def purge
+            each(&amp;:purge)
+            reset
+          end
 
-          <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge_later</span>
-            <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge_later</span>)
-            <span class="ruby-identifier">reset</span>
-          <span class="ruby-keyword">end</span>
-        <span class="ruby-keyword">end</span>
-        <span class="ruby-identifier">has_many</span> <span class="ruby-value">:&quot;#{name}_blobs&quot;</span>, <span class="ruby-value">through:</span> <span class="ruby-value">:&quot;#{name}_attachments&quot;</span>, <span class="ruby-value">class_name:</span> <span class="ruby-string">&quot;ActiveStorage::Blob&quot;</span>, <span class="ruby-value">source:</span> <span class="ruby-value">:blob</span>, <span class="ruby-value">strict_loading:</span> <span class="ruby-identifier">strict_loading</span>
+          def purge_later
+            each(&amp;:purge_later)
+            reset
+          end
+        end
+        has_many :&quot;#{name}_blobs&quot;, through: :&quot;#{name}_attachments&quot;, class_name: &quot;ActiveStorage::Blob&quot;, source: :blob, strict_loading: strict_loading
 
-        <span class="ruby-identifier">scope</span> <span class="ruby-value">:&quot;with_attached_#{name}&quot;</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">includes</span>(<span class="ruby-value">&quot;#{name}_attachments&quot;:</span> <span class="ruby-value">:blob</span>) }
+        scope :&quot;with_attached_#{name}&quot;, -&gt; { includes(&quot;#{name}_attachments&quot;: :blob) }
 
-        <span class="ruby-identifier">after_save</span> { <span class="ruby-identifier">attachment_changes</span>[<span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>]&amp;.<span class="ruby-identifier">save</span> }
+        after_save { attachment_changes[name.to_s]&amp;.save }
 
-        <span class="ruby-identifier">after_commit</span>(<span class="ruby-value">on:</span> <span class="ruby-node">%i[ create update ]</span>) { <span class="ruby-identifier">attachment_changes</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>).<span class="ruby-identifier">try</span>(<span class="ruby-value">:upload</span>) }
+        after_commit(on: %i[ create update ]) { attachment_changes.delete(name.to_s).try(:upload) }
 
-        <span class="ruby-identifier">reflection</span> = <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">create</span>(
-          <span class="ruby-value">:has_many_attached</span>,
-          <span class="ruby-identifier">name</span>,
-          <span class="ruby-keyword">nil</span>,
-          { <span class="ruby-value">dependent:</span> <span class="ruby-identifier">dependent</span>, <span class="ruby-value">service_name:</span> <span class="ruby-identifier">service</span> },
-          <span class="ruby-keyword">self</span>
+        reflection = ActiveRecord::Reflection.create(
+          :has_many_attached,
+          name,
+          nil,
+          { dependent: dependent, service_name: service },
+          self
         )
-        <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">add_attachment_reflection</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">reflection</span>)
-      <span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+        ActiveRecord::Reflection.add_attachment_reflection(self, name, reflection)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/activestorage/lib/active_storage/attached/model.rb#L128" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-has_one_attached">
@@ -248,20 +248,18 @@ end
           
 
           
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-has_one_attached_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 50</span>
-      <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">has_one_attached</span>(<span class="ruby-identifier">name</span>, <span class="ruby-value">dependent:</span> <span class="ruby-value">:purge_later</span>, <span class="ruby-value">service:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">strict_loading:</span> <span class="ruby-keyword">false</span>)
-        <span class="ruby-identifier">validate_service_configuration</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">service</span>)
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
 
-        <span class="ruby-identifier">generated_association_methods</span>.<span class="ruby-identifier">class_eval</span> <span class="ruby-identifier">&lt;&lt;-CODE</span>, <span class="ruby-keyword">__FILE__</span>, <span class="ruby-keyword">__LINE__</span> <span class="ruby-operator">+</span> <span class="ruby-value">1</span>
-<span class="ruby-value">          # frozen_string_literal: true
+              <pre><code class="ruby"># File activestorage/lib/active_storage/attached/model.rb, line 50
+      def has_one_attached(name, dependent: :purge_later, service: nil, strict_loading: false)
+        validate_service_configuration(name, service)
+
+        generated_association_methods.class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+          # frozen_string_literal: true
           def #{name}
             @active_storage_attached ||= {}
             @active_storage_attached[:#{name}] ||= ActiveStorage::Attached::One.new(&quot;#{name}&quot;, self)
@@ -275,30 +273,32 @@ end
                 ActiveStorage::Attached::Changes::CreateOne.new(&quot;#{name}&quot;, self, attachable)
               end
           end
-</span><span class="ruby-identifier">        CODE</span>
+        CODE
 
-        <span class="ruby-identifier">has_one</span> <span class="ruby-value">:&quot;#{name}_attachment&quot;</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">where</span>(<span class="ruby-value">name:</span> <span class="ruby-identifier">name</span>) }, <span class="ruby-value">class_name:</span> <span class="ruby-string">&quot;ActiveStorage::Attachment&quot;</span>, <span class="ruby-value">as:</span> <span class="ruby-value">:record</span>, <span class="ruby-value">inverse_of:</span> <span class="ruby-value">:record</span>, <span class="ruby-value">dependent:</span> <span class="ruby-value">:destroy</span>, <span class="ruby-value">strict_loading:</span> <span class="ruby-identifier">strict_loading</span>
-        <span class="ruby-identifier">has_one</span> <span class="ruby-value">:&quot;#{name}_blob&quot;</span>, <span class="ruby-value">through:</span> <span class="ruby-value">:&quot;#{name}_attachment&quot;</span>, <span class="ruby-value">class_name:</span> <span class="ruby-string">&quot;ActiveStorage::Blob&quot;</span>, <span class="ruby-value">source:</span> <span class="ruby-value">:blob</span>, <span class="ruby-value">strict_loading:</span> <span class="ruby-identifier">strict_loading</span>
+        has_one :&quot;#{name}_attachment&quot;, -&gt; { where(name: name) }, class_name: &quot;ActiveStorage::Attachment&quot;, as: :record, inverse_of: :record, dependent: :destroy, strict_loading: strict_loading
+        has_one :&quot;#{name}_blob&quot;, through: :&quot;#{name}_attachment&quot;, class_name: &quot;ActiveStorage::Blob&quot;, source: :blob, strict_loading: strict_loading
 
-        <span class="ruby-identifier">scope</span> <span class="ruby-value">:&quot;with_attached_#{name}&quot;</span>, <span class="ruby-operator">-&gt;</span> { <span class="ruby-identifier">includes</span>(<span class="ruby-value">&quot;#{name}_attachment&quot;:</span> <span class="ruby-value">:blob</span>) }
+        scope :&quot;with_attached_#{name}&quot;, -&gt; { includes(&quot;#{name}_attachment&quot;: :blob) }
 
-        <span class="ruby-identifier">after_save</span> { <span class="ruby-identifier">attachment_changes</span>[<span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>]&amp;.<span class="ruby-identifier">save</span> }
+        after_save { attachment_changes[name.to_s]&amp;.save }
 
-        <span class="ruby-identifier">after_commit</span>(<span class="ruby-value">on:</span> <span class="ruby-node">%i[ create update ]</span>) { <span class="ruby-identifier">attachment_changes</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_s</span>).<span class="ruby-identifier">try</span>(<span class="ruby-value">:upload</span>) }
+        after_commit(on: %i[ create update ]) { attachment_changes.delete(name.to_s).try(:upload) }
 
-        <span class="ruby-identifier">reflection</span> = <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">create</span>(
-          <span class="ruby-value">:has_one_attached</span>,
-          <span class="ruby-identifier">name</span>,
-          <span class="ruby-keyword">nil</span>,
-          { <span class="ruby-value">dependent:</span> <span class="ruby-identifier">dependent</span>, <span class="ruby-value">service_name:</span> <span class="ruby-identifier">service</span> },
-          <span class="ruby-keyword">self</span>
+        reflection = ActiveRecord::Reflection.create(
+          :has_one_attached,
+          name,
+          nil,
+          { dependent: dependent, service_name: service },
+          self
         )
-        <span class="ruby-constant">ActiveRecord</span><span class="ruby-operator">::</span><span class="ruby-constant">Reflection</span>.<span class="ruby-identifier">add_attachment_reflection</span>(<span class="ruby-keyword">self</span>, <span class="ruby-identifier">name</span>, <span class="ruby-identifier">reflection</span>)
-      <span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+        ActiveRecord::Reflection.add_attachment_reflection(self, name, reflection)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/activestorage/lib/active_storage/attached/model.rb#L50" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-purge">
@@ -318,23 +318,23 @@ end
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/attached/model.rb, line 156
+          def purge
+            each(&amp;:purge)
+            reset
+          end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-purge_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 156</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge</span>
-  <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge</span>)
-  <span class="ruby-identifier">reset</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/activestorage/lib/active_storage/attached/model.rb#L156" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-purge_later">
@@ -354,23 +354,23 @@ end
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/attached/model.rb, line 161
+          def purge_later
+            each(&amp;:purge_later)
+            reset
+          end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-purge_later_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 161</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">purge_later</span>
-  <span class="ruby-identifier">each</span>(<span class="ruby-operator">&amp;</span><span class="ruby-value">:purge_later</span>)
-  <span class="ruby-identifier">reset</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/activestorage/lib/active_storage/attached/model.rb#L161" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-validate_service_configuration">
@@ -390,26 +390,26 @@ end
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/attached/model.rb, line 185
+        def validate_service_configuration(association_name, service)
+          if service.present?
+            ActiveStorage::Blob.services.fetch(service) do
+              raise ArgumentError, &quot;Cannot configure service :#{service} for #{name}##{association_name}&quot;
+            end
+          end
+        end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-validate_service_configuration_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activestorage/lib/active_storage/attached/model.rb, line 185</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">validate_service_configuration</span>(<span class="ruby-identifier">association_name</span>, <span class="ruby-identifier">service</span>)
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">service</span>.<span class="ruby-identifier">present?</span>
-    <span class="ruby-constant">ActiveStorage</span><span class="ruby-operator">::</span><span class="ruby-constant">Blob</span>.<span class="ruby-identifier">services</span>.<span class="ruby-identifier">fetch</span>(<span class="ruby-identifier">service</span>) <span class="ruby-keyword">do</span>
-      <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;Cannot configure service :#{service} for #{name}##{association_name}&quot;</span>
-    <span class="ruby-keyword">end</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/activestorage/lib/active_storage/attached/model.rb#L185" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

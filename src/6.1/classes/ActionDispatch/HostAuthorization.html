@@ -84,11 +84,6 @@ layout: default
             <td class="attr-value">[&quot;.localhost&quot;, IPAddr.new(&quot;0.0.0.0/0&quot;), IPAddr.new(&quot;::/0&quot;)]</td>
           </tr>
           
-            <tr valign='top'>
-              <td>&nbsp;</td>
-              <td colspan="2" class="attr-desc"></td>
-            </tr>
-          
         
       </table>
     
@@ -117,35 +112,35 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-c-new_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 124</span>
-    <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>(<span class="ruby-identifier">app</span>, <span class="ruby-identifier">hosts</span>, <span class="ruby-identifier">deprecated_response_app</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-value">exclude:</span> <span class="ruby-keyword">nil</span>, <span class="ruby-value">response_app:</span> <span class="ruby-keyword">nil</span>)
-      <span class="ruby-ivar">@app</span> = <span class="ruby-identifier">app</span>
-      <span class="ruby-ivar">@permissions</span> = <span class="ruby-constant">Permissions</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">hosts</span>)
-      <span class="ruby-ivar">@exclude</span> = <span class="ruby-identifier">exclude</span>
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
 
-      <span class="ruby-keyword">unless</span> <span class="ruby-identifier">deprecated_response_app</span>.<span class="ruby-identifier">nil?</span>
-        <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">Deprecation</span>.<span class="ruby-identifier">warn</span>(<span class="ruby-identifier">&lt;&lt;-MSG</span>.<span class="ruby-identifier">squish</span>)
-<span class="ruby-value">          `action_dispatch.hosts_response_app` is deprecated and will be ignored in Rails 7.0.
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 124
+    def initialize(app, hosts, deprecated_response_app = nil, exclude: nil, response_app: nil)
+      @app = app
+      @permissions = Permissions.new(hosts)
+      @exclude = exclude
+
+      unless deprecated_response_app.nil?
+        ActiveSupport::Deprecation.warn(&lt;&lt;-MSG.squish)
+          `action_dispatch.hosts_response_app` is deprecated and will be ignored in Rails 7.0.
           Use the Host Authorization `response_app` setting instead.
-</span><span class="ruby-identifier">        MSG</span>
+        MSG
 
-        <span class="ruby-identifier">response_app</span> <span class="ruby-operator">||=</span> <span class="ruby-identifier">deprecated_response_app</span>
-      <span class="ruby-keyword">end</span>
+        response_app ||= deprecated_response_app
+      end
 
-      <span class="ruby-ivar">@response_app</span> = <span class="ruby-identifier">response_app</span> <span class="ruby-operator">||</span> <span class="ruby-constant">DefaultResponseApp</span>.<span class="ruby-identifier">new</span>
-    <span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+      @response_app = response_app || DefaultResponseApp.new
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/actionpack/lib/action_dispatch/middleware/host_authorization.rb#L124" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     
@@ -169,31 +164,31 @@ layout: default
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 141
+    def call(env)
+      return @app.call(env) if @permissions.empty?
+
+      request = Request.new(env)
+
+      if authorized?(request) || excluded?(request)
+        mark_as_authorized(request)
+        @app.call(env)
+      else
+        @response_app.call(env)
+      end
+    end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-call_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File actionpack/lib/action_dispatch/middleware/host_authorization.rb, line 141</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">call</span>(<span class="ruby-identifier">env</span>)
-  <span class="ruby-keyword">return</span> <span class="ruby-ivar">@app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>) <span class="ruby-keyword">if</span> <span class="ruby-ivar">@permissions</span>.<span class="ruby-identifier">empty?</span>
-
-  <span class="ruby-identifier">request</span> = <span class="ruby-constant">Request</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">env</span>)
-
-  <span class="ruby-keyword">if</span> <span class="ruby-identifier">authorized?</span>(<span class="ruby-identifier">request</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">excluded?</span>(<span class="ruby-identifier">request</span>)
-    <span class="ruby-identifier">mark_as_authorized</span>(<span class="ruby-identifier">request</span>)
-    <span class="ruby-ivar">@app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>)
-  <span class="ruby-keyword">else</span>
-    <span class="ruby-ivar">@response_app</span>.<span class="ruby-identifier">call</span>(<span class="ruby-identifier">env</span>)
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/actionpack/lib/action_dispatch/middleware/host_authorization.rb#L141" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     

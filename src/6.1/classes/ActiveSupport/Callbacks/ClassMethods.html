@@ -151,27 +151,25 @@ end
           
 
           
-            
-            <div class="sourcecode">
-              
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-define_callbacks_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/callbacks.rb, line 812</span>
-        <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">define_callbacks</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">names</span>)
-          <span class="ruby-identifier">options</span> = <span class="ruby-identifier">names</span>.<span class="ruby-identifier">extract_options!</span>
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
 
-          <span class="ruby-identifier">names</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">name</span><span class="ruby-operator">|</span>
-            <span class="ruby-identifier">name</span> = <span class="ruby-identifier">name</span>.<span class="ruby-identifier">to_sym</span>
+              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 812
+        def define_callbacks(*names)
+          options = names.extract_options!
 
-            ([<span class="ruby-keyword">self</span>] <span class="ruby-operator">+</span> <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">DescendantsTracker</span>.<span class="ruby-identifier">descendants</span>(<span class="ruby-keyword">self</span>)).<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">target</span><span class="ruby-operator">|</span>
-              <span class="ruby-identifier">target</span>.<span class="ruby-identifier">set_callbacks</span> <span class="ruby-identifier">name</span>, <span class="ruby-constant">CallbackChain</span>.<span class="ruby-identifier">new</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">options</span>)
-            <span class="ruby-keyword">end</span>
+          names.each do |name|
+            name = name.to_sym
 
-            <span class="ruby-identifier">module_eval</span> <span class="ruby-identifier">&lt;&lt;-RUBY</span>, <span class="ruby-keyword">__FILE__</span>, <span class="ruby-keyword">__LINE__</span> <span class="ruby-operator">+</span> <span class="ruby-value">1</span>
-<span class="ruby-value">              def _run_#{name}_callbacks(&amp;block)
+            ([self] + ActiveSupport::DescendantsTracker.descendants(self)).each do |target|
+              target.set_callbacks name, CallbackChain.new(name, options)
+            end
+
+            module_eval &lt;&lt;-RUBY, __FILE__, __LINE__ + 1
+              def _run_#{name}_callbacks(&amp;block)
                 run_callbacks #{name.inspect}, &amp;block
               end
 
@@ -186,13 +184,15 @@ end
               def _#{name}_callbacks
                 __callbacks[#{name.inspect}]
               end
-</span><span class="ruby-identifier">            RUBY</span>
-          <span class="ruby-keyword">end</span>
-        <span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+            RUBY
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/activesupport/lib/active_support/callbacks.rb#L812" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-reset_callbacks">
@@ -212,30 +212,30 @@ end
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 722
+        def reset_callbacks(name)
+          callbacks = get_callbacks name
+
+          ActiveSupport::DescendantsTracker.descendants(self).each do |target|
+            chain = target.get_callbacks(name).dup
+            callbacks.each { |c| chain.delete(c) }
+            target.set_callbacks name, chain
+          end
+
+          set_callbacks(name, callbacks.dup.clear)
+        end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-reset_callbacks_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/callbacks.rb, line 722</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">reset_callbacks</span>(<span class="ruby-identifier">name</span>)
-  <span class="ruby-identifier">callbacks</span> = <span class="ruby-identifier">get_callbacks</span> <span class="ruby-identifier">name</span>
-
-  <span class="ruby-constant">ActiveSupport</span><span class="ruby-operator">::</span><span class="ruby-constant">DescendantsTracker</span>.<span class="ruby-identifier">descendants</span>(<span class="ruby-keyword">self</span>).<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">target</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">chain</span> = <span class="ruby-identifier">target</span>.<span class="ruby-identifier">get_callbacks</span>(<span class="ruby-identifier">name</span>).<span class="ruby-identifier">dup</span>
-    <span class="ruby-identifier">callbacks</span>.<span class="ruby-identifier">each</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">c</span><span class="ruby-operator">|</span> <span class="ruby-identifier">chain</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">c</span>) }
-    <span class="ruby-identifier">target</span>.<span class="ruby-identifier">set_callbacks</span> <span class="ruby-identifier">name</span>, <span class="ruby-identifier">chain</span>
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">set_callbacks</span>(<span class="ruby-identifier">name</span>, <span class="ruby-identifier">callbacks</span>.<span class="ruby-identifier">dup</span>.<span class="ruby-identifier">clear</span>)
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/activesupport/lib/active_support/callbacks.rb#L722" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-set_callback">
@@ -286,32 +286,32 @@ set_callback :save, :around, -&gt;(r, block) { stuff; result = block.call; stuff
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 673
+        def set_callback(name, *filter_list, &amp;block)
+          type, filters, options = normalize_callback_params(filter_list, block)
+
+          self_chain = get_callbacks name
+          mapped = filters.map do |filter|
+            Callback.build(self_chain, filter, type, options)
+          end
+
+          __update_callbacks(name) do |target, chain|
+            options[:prepend] ? chain.prepend(*mapped) : chain.append(*mapped)
+            target.set_callbacks name, chain
+          end
+        end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-set_callback_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/callbacks.rb, line 673</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">set_callback</span>(<span class="ruby-identifier">name</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">filter_list</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">type</span>, <span class="ruby-identifier">filters</span>, <span class="ruby-identifier">options</span> = <span class="ruby-identifier">normalize_callback_params</span>(<span class="ruby-identifier">filter_list</span>, <span class="ruby-identifier">block</span>)
-
-  <span class="ruby-identifier">self_chain</span> = <span class="ruby-identifier">get_callbacks</span> <span class="ruby-identifier">name</span>
-  <span class="ruby-identifier">mapped</span> = <span class="ruby-identifier">filters</span>.<span class="ruby-identifier">map</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">filter</span><span class="ruby-operator">|</span>
-    <span class="ruby-constant">Callback</span>.<span class="ruby-identifier">build</span>(<span class="ruby-identifier">self_chain</span>, <span class="ruby-identifier">filter</span>, <span class="ruby-identifier">type</span>, <span class="ruby-identifier">options</span>)
-  <span class="ruby-keyword">end</span>
-
-  <span class="ruby-identifier">__update_callbacks</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">target</span>, <span class="ruby-identifier">chain</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">options</span>[<span class="ruby-value">:prepend</span>] <span class="ruby-operator">?</span> <span class="ruby-identifier">chain</span>.<span class="ruby-identifier">prepend</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">mapped</span>) <span class="ruby-operator">:</span> <span class="ruby-identifier">chain</span>.<span class="ruby-identifier">append</span>(<span class="ruby-operator">*</span><span class="ruby-identifier">mapped</span>)
-    <span class="ruby-identifier">target</span>.<span class="ruby-identifier">set_callbacks</span> <span class="ruby-identifier">name</span>, <span class="ruby-identifier">chain</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/activesupport/lib/active_support/callbacks.rb#L673" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
         <div class="method">
           <h3 id="method-i-skip_callback">
@@ -338,42 +338,42 @@ end
           
 
           
-            
-            <div class="sourcecode">
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 697
+        def skip_callback(name, *filter_list, &amp;block)
+          type, filters, options = normalize_callback_params(filter_list, block)
+
+          options[:raise] = true unless options.key?(:raise)
+
+          __update_callbacks(name) do |target, chain|
+            filters.each do |filter|
+              callback = chain.find { |c| c.matches?(type, filter) }
+
+              if !callback &amp;&amp; options[:raise]
+                raise ArgumentError, &quot;#{type.to_s.capitalize} #{name} callback #{filter.inspect} has not been defined&quot;
+              end
+
+              if callback &amp;&amp; (options.key?(:if) || options.key?(:unless))
+                new_callback = callback.merge_conditional_options(chain, if_option: options[:if], unless_option: options[:unless])
+                chain.insert(chain.index(callback), new_callback)
+              end
+
+              chain.delete(callback)
+            end
+            target.set_callbacks name, chain
+          end
+        end</code></pre>
               
-              <p class="source-link">
-                Source:
-                
-              </p>
-              <div id="method-i-skip_callback_source">
-                <pre><code class="ruby"><span class="ruby-comment"># File activesupport/lib/active_support/callbacks.rb, line 697</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">skip_callback</span>(<span class="ruby-identifier">name</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">filter_list</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span>)
-  <span class="ruby-identifier">type</span>, <span class="ruby-identifier">filters</span>, <span class="ruby-identifier">options</span> = <span class="ruby-identifier">normalize_callback_params</span>(<span class="ruby-identifier">filter_list</span>, <span class="ruby-identifier">block</span>)
-
-  <span class="ruby-identifier">options</span>[<span class="ruby-value">:raise</span>] = <span class="ruby-keyword">true</span> <span class="ruby-keyword">unless</span> <span class="ruby-identifier">options</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:raise</span>)
-
-  <span class="ruby-identifier">__update_callbacks</span>(<span class="ruby-identifier">name</span>) <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">target</span>, <span class="ruby-identifier">chain</span><span class="ruby-operator">|</span>
-    <span class="ruby-identifier">filters</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">filter</span><span class="ruby-operator">|</span>
-      <span class="ruby-identifier">callback</span> = <span class="ruby-identifier">chain</span>.<span class="ruby-identifier">find</span> { <span class="ruby-operator">|</span><span class="ruby-identifier">c</span><span class="ruby-operator">|</span> <span class="ruby-identifier">c</span>.<span class="ruby-identifier">matches?</span>(<span class="ruby-identifier">type</span>, <span class="ruby-identifier">filter</span>) }
-
-      <span class="ruby-keyword">if</span> <span class="ruby-operator">!</span><span class="ruby-identifier">callback</span> <span class="ruby-operator">&amp;&amp;</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:raise</span>]
-        <span class="ruby-identifier">raise</span> <span class="ruby-constant">ArgumentError</span>, <span class="ruby-node">&quot;#{type.to_s.capitalize} #{name} callback #{filter.inspect} has not been defined&quot;</span>
-      <span class="ruby-keyword">end</span>
-
-      <span class="ruby-keyword">if</span> <span class="ruby-identifier">callback</span> <span class="ruby-operator">&amp;&amp;</span> (<span class="ruby-identifier">options</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:if</span>) <span class="ruby-operator">||</span> <span class="ruby-identifier">options</span>.<span class="ruby-identifier">key?</span>(<span class="ruby-value">:unless</span>))
-        <span class="ruby-identifier">new_callback</span> = <span class="ruby-identifier">callback</span>.<span class="ruby-identifier">merge_conditional_options</span>(<span class="ruby-identifier">chain</span>, <span class="ruby-value">if_option:</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:if</span>], <span class="ruby-value">unless_option:</span> <span class="ruby-identifier">options</span>[<span class="ruby-value">:unless</span>])
-        <span class="ruby-identifier">chain</span>.<span class="ruby-identifier">insert</span>(<span class="ruby-identifier">chain</span>.<span class="ruby-identifier">index</span>(<span class="ruby-identifier">callback</span>), <span class="ruby-identifier">new_callback</span>)
-      <span class="ruby-keyword">end</span>
-
-      <span class="ruby-identifier">chain</span>.<span class="ruby-identifier">delete</span>(<span class="ruby-identifier">callback</span>)
-    <span class="ruby-keyword">end</span>
-    <span class="ruby-identifier">target</span>.<span class="ruby-identifier">set_callbacks</span> <span class="ruby-identifier">name</span>, <span class="ruby-identifier">chain</span>
-  <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></code></pre>
-              </div>
-            </div>
-            
-          </div>
+                <a href="https://github.com/rails/rails/blob/9ab33753b6bab1809fc73d35b98a5c1d0c96ba1b/activesupport/lib/active_support/callbacks.rb#L697" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
         
       
     
