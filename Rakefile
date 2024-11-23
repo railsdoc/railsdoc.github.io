@@ -4,8 +4,8 @@ require 'yaml'
 require 'bundler'
 
 SOURCE_DIR = 'src'
-INDEX_HTML = 'files/railties/RDOC_MAIN_rdoc.html'
-NEW_INDEX_HTML = 'files/railties/RDOC_MAIN_md.html'
+INDEX_HTML = 'files/railties/RDOC_MAIN_md.html'
+OLD_INDEX_HTML = 'files/railties/RDOC_MAIN_rdoc.html'
 MY_SDOC_BRANCH = 'main'
 
 desc 'Generate documentation for default Rails version and build Jekyll site'
@@ -85,9 +85,9 @@ def generate_src(target_version:)
   cd target_dir do
     # Generate index.html
     if Gem::Version.new(target_version) >= Gem::Version.new('7.1')
-      cp NEW_INDEX_HTML, 'index.html'
-    else
       cp INDEX_HTML, 'index.html'
+    else
+      cp OLD_INDEX_HTML, 'index.html'
     end
 
     # Prepend version number to the absolute path in navigation.html
