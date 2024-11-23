@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.1.3</span><br />
+            <span>Ruby on Rails 7.1.5</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -217,12 +217,16 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
       def initialize(...)
         super
 
+        if @config[:prepared_statements]
+          raise ArgumentError, &quot;Trilogy currently doesn&#39;t support prepared statements. Remove `prepared_statements: true` from your database configuration.&quot;
+        end
+
         # Trilogy ignore `socket` if `host is set. We want the opposite to allow
         # configuring UNIX domain sockets via `DATABASE_URL`.
         @config.delete(:host) if @config[:socket]
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L102" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L102" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -260,7 +264,7 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
           raise translate_connect_error(config, error)
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L57" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L57" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -300,7 +304,7 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
           SSL_MODES.fetch(m.to_sym, mode)
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L64" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L64" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -346,7 +350,7 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
           end
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L73" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L73" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -380,14 +384,14 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 142
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 146
       def active?
-        connection&amp;.ping || false
+        !(@raw_connection.nil? || @raw_connection.closed?) &amp;&amp; @lock.synchronize { @raw_connection&amp;.ping } || false
       rescue ::Trilogy::Error
         false
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L142" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L146" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -417,16 +421,16 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 158
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 162
       def discard!
-        super
-        unless connection.nil?
-          connection.discard!
-          self.connection = nil
+        @lock.synchronize do
+          super
+          @raw_connection&amp;.discard!
+          @raw_connection = nil
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L158" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L162" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -456,16 +460,16 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 150
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 154
       def disconnect!
-        super
-        unless connection.nil?
-          connection.close
-          self.connection = nil
+        @lock.synchronize do
+          super
+          @raw_connection&amp;.close
+          @raw_connection = nil
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L150" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L154" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -495,14 +499,14 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 136
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 140
       def quote_string(string)
         with_raw_connection(allow_retry: true, materialize_transactions: false) do |conn|
           conn.escape(string)
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L136" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L140" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -532,12 +536,12 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 128
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 132
       def savepoint_errors_invalidate_transactions?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L128" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L132" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -567,12 +571,12 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 116
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 120
       def supports_comments?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L116" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L120" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -602,12 +606,12 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 120
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 124
       def supports_comments_in_create?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L120" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L124" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -637,12 +641,12 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 112
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 116
       def supports_json?
         !mariadb? &amp;&amp; database_version &gt;= &quot;5.7.8&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L112" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L116" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -672,12 +676,12 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 132
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 136
       def supports_lazy_transactions?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L132" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L136" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -707,12 +711,12 @@ SSL_MODE_VERIFY_IDENTITY: ::Trilogy::SSL_VERIFY_IDENTITY
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 124
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb, line 128
       def supports_savepoints?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/36c1591bcb5e0ee3084759c7f42a706fe5bb7ca7/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L124" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/8984f4c4982f5c94bd6fb8ada42d7418bc403076/activerecord/lib/active_record/connection_adapters/trilogy_adapter.rb#L128" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
