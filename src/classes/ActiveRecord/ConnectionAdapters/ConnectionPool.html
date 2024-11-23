@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.2.0.beta2</span><br />
+            <span>Ruby on Rails 7.2.2</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -25,6 +25,8 @@ layout: default
             <li><a href="../../../files/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue_rb.html">activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb</a></li>
             
             <li><a href="../../../files/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/reaper_rb.html">activerecord/lib/active_record/connection_adapters/abstract/connection_pool/reaper.rb</a></li>
+            
+            <li><a href="../../../files/activerecord/lib/active_record/connection_adapters/abstract/query_cache_rb.html">activerecord/lib/active_record/connection_adapters/abstract/query_cache.rb</a></li>
             
         </ul>
     </div>
@@ -143,6 +145,10 @@ layout: default
       
         <li>
           <a href="#method-i-flush-21">flush!</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-install_executor_hooks">install_executor_hooks</a>
         </li>
       
         <li>
@@ -290,6 +296,41 @@ layout: default
       <h2 id="class-public-methods">Class Public methods</h2>
       
         <div class="method">
+          <h3 id="method-c-install_executor_hooks">
+            
+              install_executor_hooks(executor = ActiveSupport::Executor)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 207
+        def install_executor_hooks(executor = ActiveSupport::Executor)
+          executor.register_hook(ExecutorHooks)
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L207" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
           <h3 id="method-c-new">
             
               new(pool_config)
@@ -315,7 +356,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 220
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 227
       def initialize(pool_config)
         super()
 
@@ -352,6 +393,7 @@ layout: default
 
         @available = ConnectionLeasingQueue.new self
         @pinned_connection = nil
+        @pinned_connections_depth = 0
 
         @async_executor = build_async_executor
 
@@ -361,7 +403,7 @@ layout: default
         @reaper.run
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L220" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L227" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -397,12 +439,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 357
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 379
       def active_connection?
         connection_lease.connection
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L357" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L379" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -434,7 +476,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 549
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 573
       def checkin(conn)
         return if @pinned_connection.equal?(conn)
 
@@ -451,7 +493,7 @@ layout: default
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L549" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L573" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -492,15 +534,17 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 528
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 550
       def checkout(checkout_timeout = @checkout_timeout)
         if @pinned_connection
-          synchronize do
-            @pinned_connection.verify!
-            # Any leased connection must be in @connections otherwise
-            # some methods like #connected? won&#39;t behave correctly
-            unless @connections.include?(@pinned_connection)
-              @connections &lt;&lt; @pinned_connection
+          @pinned_connection.lock.synchronize do
+            synchronize do
+              @pinned_connection.verify!
+              # Any leased connection must be in @connections otherwise
+              # some methods like #connected? won&#39;t behave correctly
+              unless @connections.include?(@pinned_connection)
+                @connections &lt;&lt; @pinned_connection
+              end
             end
           end
           @pinned_connection
@@ -509,7 +553,7 @@ layout: default
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L528" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L550" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -544,7 +588,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 486
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 508
       def clear_reloadable_connections(raise_on_acquisition_timeout = true)
         with_exclusively_acquired_all_connections(raise_on_acquisition_timeout) do
           synchronize do
@@ -561,7 +605,7 @@ layout: default
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L486" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L508" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -593,12 +637,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 510
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 532
       def clear_reloadable_connections!
         clear_reloadable_connections(false)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L510" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L532" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -628,12 +672,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 408
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 430
       def connected?
         synchronize { @connections.any?(&amp;:connected?) }
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L408" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L430" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -663,7 +707,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 305
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 320
       def connection
         ActiveRecord.deprecator.warn(&lt;&lt;~MSG)
           ActiveRecord::ConnectionAdapters::ConnectionPool#connection is deprecated
@@ -672,7 +716,7 @@ layout: default
         lease_connection
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L305" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L320" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -706,12 +750,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 423
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 445
       def connections
         synchronize { @connections.dup }
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L423" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L445" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -746,7 +790,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 433
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 455
       def disconnect(raise_on_acquisition_timeout = true)
         with_exclusively_acquired_all_connections(raise_on_acquisition_timeout) do
           synchronize do
@@ -764,7 +808,7 @@ layout: default
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L433" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L455" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -796,12 +840,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 456
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 478
       def disconnect!
         disconnect(false)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L456" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L478" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -831,7 +875,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 624
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 646
       def flush(minimum_idle = @idle_timeout)
         return if minimum_idle.nil?
 
@@ -852,7 +896,7 @@ layout: default
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L624" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L646" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -882,13 +926,13 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 646
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 668
       def flush!
         reap
         flush(-1)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L646" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L668" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -920,14 +964,14 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 295
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 310
       def lease_connection
         lease = connection_lease
         lease.sticky = true
         lease.connection ||= checkout
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L295" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L310" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -957,7 +1001,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 599
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 623
       def reap
         stale_connections = synchronize do
           return if self.discarded?
@@ -976,11 +1020,9 @@ layout: default
             remove conn
           end
         end
-
-        prune_thread_cache
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L599" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L623" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1012,7 +1054,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 369
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 391
       def release_connection(existing_lease = nil)
         if conn = connection_lease.release
           checkin conn
@@ -1021,7 +1063,7 @@ layout: default
         false
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L369" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L391" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1051,7 +1093,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 567
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 591
       def remove(conn)
         needs_new_connection = false
 
@@ -1081,7 +1123,7 @@ layout: default
         bulk_make_new_connections(1) if needs_new_connection
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L567" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L591" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1111,12 +1153,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 265
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 280
       def schema_cache
         @schema_cache ||= BoundSchemaReflection.new(schema_reflection, self)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L265" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L280" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1146,13 +1188,13 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 269
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 284
       def schema_reflection=(schema_reflection)
         pool_config.schema_reflection = schema_reflection
         @schema_cache = nil
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L269" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L284" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1185,7 +1227,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 658
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 680
       def stat
         synchronize do
           {
@@ -1200,7 +1242,7 @@ layout: default
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L658" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L680" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1230,7 +1272,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 386
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb, line 408
       def with_connection(prevent_permanent_checkout: false)
         lease = connection_lease
         sticky_was = lease.sticky
@@ -1252,7 +1294,7 @@ layout: default
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L386" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/connection_pool.rb#L408" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

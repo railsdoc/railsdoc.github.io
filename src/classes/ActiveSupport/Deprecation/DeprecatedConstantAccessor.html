@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.2.0.beta2</span><br />
+            <span>Ruby on Rails 7.2.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -20,30 +20,6 @@ layout: default
     </div>
     <div id="bodyContent">
         <div id="content">
-  
-    <div class="description">
-      
-<p><a href="DeprecatedConstantAccessor.html"><code>DeprecatedConstantAccessor</code></a> transforms a constant into a deprecated one by hooking <code>const_missing</code>.</p>
-
-<p>It takes the names of an old (deprecated) constant and of a new constant (both in string form) and a deprecator.</p>
-
-<p>The deprecated constant now returns the same object as the new one rather than a proxy object, so it can be used transparently in <code>rescue</code> blocks etc.</p>
-
-<pre><code>PLANETS = %w(mercury venus earth mars jupiter saturn uranus neptune pluto)
-
-# (In a later update, the original implementation of `PLANETS` has been removed.)
-
-PLANETS_POST_2006 = %w(mercury venus earth mars jupiter saturn uranus neptune)
-include ActiveSupport::Deprecation::DeprecatedConstantAccessor
-deprecate_constant &#39;PLANETS&#39;, &#39;PLANETS_POST_2006&#39;, deprecator: ActiveSupport::Deprecation.new
-
-PLANETS.map { |planet| planet.capitalize }
-# =&gt; DEPRECATION WARNING: PLANETS is deprecated! Use PLANETS_POST_2006 instead.
-     (Backtrace information…)
-     [&quot;Mercury&quot;, &quot;Venus&quot;, &quot;Earth&quot;, &quot;Mars&quot;, &quot;Jupiter&quot;, &quot;Saturn&quot;, &quot;Uranus&quot;, &quot;Neptune&quot;]
-</code></pre>
-
-    </div>
   
 
   
@@ -112,7 +88,7 @@ PLANETS.map { |planet| planet.capitalize }
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 28
+              <pre><code class="ruby"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 6
       def self.included(base)
         require &quot;active_support/inflector/methods&quot;
 
@@ -127,15 +103,60 @@ PLANETS.map { |planet| planet.capitalize }
             super
           end
 
-          def deprecate_constant(const_name, new_constant, deprecator:, message: nil)
+          # Provides a way to rename constants with a deprecation cycle in which
+          # both the old and new names work, but using the old one prints a
+          # deprecation message.
+          #
+          # In order to rename &lt;tt&gt;A::B&lt;/tt&gt; to &lt;tt&gt;C::D&lt;/tt&gt;, you need to delete the
+          # definition of &lt;tt&gt;A::B&lt;/tt&gt; and declare the deprecation in +A+:
+          #
+          #   require &quot;active_support/deprecation&quot;
+          #
+          #   module A
+          #     include ActiveSupport::Deprecation::DeprecatedConstantAccessor
+          #
+          #     deprecate_constant &quot;B&quot;, &quot;C::D&quot;, deprecator: ActiveSupport::Deprecation.new
+          #   end
+          #
+          # The first argument is a constant name (no colons). It is the name of
+          # the constant you want to deprecate in the enclosing class or module.
+          #
+          # The second argument is the constant path of the replacement. That
+          # has to be a full path even if the replacement is defined in the same
+          # namespace as the deprecated one was.
+          #
+          # In both cases, strings and symbols are supported.
+          #
+          # The +deprecator+ keyword argument is the object that will print the
+          # deprecation message, an instance of ActiveSupport::Deprecation.
+          #
+          # With that in place, references to &lt;tt&gt;A::B&lt;/tt&gt; still work, they
+          # evaluate to &lt;tt&gt;C::D&lt;/tt&gt; now, and trigger a deprecation warning:
+          #
+          #   DEPRECATION WARNING: A::B is deprecated! Use C::D instead.
+          #   (called from ...)
+          #
+          # The message can be customized with the optional +message+ keyword
+          # argument.
+          #
+          # For this to work, a +const_missing+ hook is installed. When client
+          # code references the deprecated constant, the callback prints the
+          # message and constantizes the replacement.
+          #
+          # Caveat: If the deprecated constant name is reachable in a different
+          # namespace and Ruby constant lookup finds it, the hook won&#39;t be
+          # called and the deprecation won&#39;t work as intended. This may happen,
+          # for example, if an ancestor of the enclosing namespace has a
+          # constant with the same name. This is an unsupported edge case.
+          def deprecate_constant(old_constant_name, new_constant_path, deprecator:, message: nil)
             class_variable_set(:@@_deprecated_constants, {}) unless class_variable_defined?(:@@_deprecated_constants)
-            class_variable_get(:@@_deprecated_constants)[const_name.to_s] = { new: new_constant, message: message, deprecator: deprecator }
+            class_variable_get(:@@_deprecated_constants)[old_constant_name.to_s] = { new: new_constant_path, message: message, deprecator: deprecator }
           end
         end
         base.singleton_class.prepend extension
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/deprecation/constant_accessor.rb#L28" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/deprecation/constant_accessor.rb#L6" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -169,7 +190,7 @@ PLANETS.map { |planet| planet.capitalize }
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 32
+              <pre><code class="ruby"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 10
           def const_missing(missing_const_name)
             if class_variable_defined?(:@@_deprecated_constants)
               if (replacement = class_variable_get(:@@_deprecated_constants)[missing_const_name.to_s])
@@ -180,7 +201,7 @@ PLANETS.map { |planet| planet.capitalize }
             super
           end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/deprecation/constant_accessor.rb#L32" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/deprecation/constant_accessor.rb#L10" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -189,13 +210,44 @@ PLANETS.map { |planet| planet.capitalize }
         <div class="method">
           <h3 id="method-i-deprecate_constant">
             
-              deprecate_constant(const_name, new_constant, deprecator:, message: nil)
+              deprecate_constant(old_constant_name, new_constant_path, deprecator:, message: nil)
             
           </h3>
 
           
             <div class="description">
-              
+              <p>Provides a way to rename constants with a deprecation cycle in which both the old and new names work, but using the old one prints a deprecation message.</p>
+
+<p>In order to rename <code>A::B</code> to <code>C::D</code>, you need to delete the definition of <code>A::B</code> and declare the deprecation in <code>A</code>:</p>
+
+<pre><code>require &quot;active_support/deprecation&quot;
+
+module A
+  include ActiveSupport::Deprecation::DeprecatedConstantAccessor
+
+  deprecate_constant &quot;B&quot;, &quot;C::D&quot;, deprecator: ActiveSupport::Deprecation.new
+end
+</code></pre>
+
+<p>The first argument is a constant name (no colons). It is the name of the constant you want to deprecate in the enclosing class or module.</p>
+
+<p>The second argument is the constant path of the replacement. That has to be a full path even if the replacement is defined in the same namespace as the deprecated one was.</p>
+
+<p>In both cases, strings and symbols are supported.</p>
+
+<p>The <code>deprecator</code> keyword argument is the object that will print the deprecation message, an instance of <a href="../Deprecation.html"><code>ActiveSupport::Deprecation</code></a>.</p>
+
+<p>With that in place, references to <code>A::B</code> still work, they evaluate to <code>C::D</code> now, and trigger a deprecation warning:</p>
+
+<pre><code>DEPRECATION WARNING: A::B is deprecated! Use C::D instead.
+(called from ...)
+</code></pre>
+
+<p>The message can be customized with the optional <code>message</code> keyword argument.</p>
+
+<p>For this to work, a <code>const_missing</code> hook is installed. When client code references the deprecated constant, the callback prints the message and constantizes the replacement.</p>
+
+<p>Caveat: If the deprecated constant name is reachable in a different namespace and Ruby constant lookup finds it, the hook won’t be called and the deprecation won’t work as intended. This may happen, for example, if an ancestor of the enclosing namespace has a constant with the same name. This is an unsupported edge case.</p>
             </div>
           
 
@@ -210,13 +262,13 @@ PLANETS.map { |planet| planet.capitalize }
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 42
-          def deprecate_constant(const_name, new_constant, deprecator:, message: nil)
+              <pre><code class="ruby"># File activesupport/lib/active_support/deprecation/constant_accessor.rb, line 65
+          def deprecate_constant(old_constant_name, new_constant_path, deprecator:, message: nil)
             class_variable_set(:@@_deprecated_constants, {}) unless class_variable_defined?(:@@_deprecated_constants)
-            class_variable_get(:@@_deprecated_constants)[const_name.to_s] = { new: new_constant, message: message, deprecator: deprecator }
+            class_variable_get(:@@_deprecated_constants)[old_constant_name.to_s] = { new: new_constant_path, message: message, deprecator: deprecator }
           end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activesupport/lib/active_support/deprecation/constant_accessor.rb#L42" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/deprecation/constant_accessor.rb#L65" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
