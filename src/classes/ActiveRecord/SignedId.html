@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.2.0.beta2</span><br />
+            <span>Ruby on Rails 7.2.2</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -107,7 +107,7 @@ layout: default
       class_attribute :signed_id_verifier_secret, instance_writer: false
 </code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/signed_id.rb#L13" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/signed_id.rb#L13" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -126,7 +126,13 @@ layout: default
 
           
             <div class="description">
-              <p>Returns a signed id that’s generated using a preconfigured <code>ActiveSupport::MessageVerifier</code> instance. This signed id is tamper proof, so it’s safe to send in an email or otherwise share with the outside world. It can furthermore be set to expire (the default is not to expire), and scoped down with a specific purpose. If the expiration date has been exceeded before <code>find_signed</code> is called, the id won’t find the designated record. If a purpose is set, this too must match.</p>
+              <p>Returns a signed id that’s generated using a preconfigured <code>ActiveSupport::MessageVerifier</code> instance.</p>
+
+<p>This signed id is tamper proof, so it’s safe to send in an email or otherwise share with the outside world. However, as with any message signed with a <code>ActiveSupport::MessageVerifier</code>, <a href="../ActiveSupport/MessageVerifier.html#class-ActiveSupport::MessageVerifier-label-Signing+is+not+encryption">the signed id is not encrypted</a>. It’s just encoded and protected against tampering.</p>
+
+<p>This means that the ID can be decoded by anyone; however, if tampered with (so to point to a different ID), the cryptographic signature will no longer match, and the signed id will be considered invalid and return nil when passed to <code>find_signed</code> (or raise with <code>find_signed!</code>).</p>
+
+<p>It can furthermore be set to expire (the default is not to expire), and scoped down with a specific purpose. If the expiration date has been exceeded before <code>find_signed</code> is called, the id won’t find the designated record. If a purpose is set, this too must match.</p>
 
 <p>If you accidentally let a signed id out in the wild that you wish to retract sooner than its expiration date (or maybe you forgot to set an expiration date while meaning to!), you can use the purpose to essentially version the <a href="SignedId.html#method-i-signed_id"><code>signed_id</code></a>, like so:</p>
 
@@ -148,14 +154,14 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 122
+              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 131
     def signed_id(expires_in: nil, expires_at: nil, purpose: nil)
       raise ArgumentError, &quot;Cannot get a signed_id for a new record&quot; if new_record?
 
       self.class.signed_id_verifier.generate id, expires_in: expires_in, expires_at: expires_at, purpose: self.class.combine_signed_id_purposes(purpose)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/b752c38e81a310c1aaca78c7cdd1784009ea189a/activerecord/lib/active_record/signed_id.rb#L122" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/signed_id.rb#L131" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
