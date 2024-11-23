@@ -20,7 +20,7 @@ task :switch_default_rails do
   switch_rails(default_rails_version)
 end
 
-desc 'Generate adn build documentation for older versions of Rails'
+desc 'Generate and build documentation for older versions of Rails'
 task :build_multi do
   # WORKAROUND: use `reverse_each` instead of `each` to avoid nokogiri installation error
   config['rails_versions'].reverse_each do |version, detail|
