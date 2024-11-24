@@ -1,0 +1,429 @@
+---
+title: ActiveRecord::AttributeMethods::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::AttributeMethods::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/attribute_methods_rb.html">activerecord/lib/active_record/attribute_methods.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-alias_attribute">alias_attribute</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-alias_attribute_method_definition">alias_attribute_method_definition</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attribute_method-3F">attribute_method?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attribute_names">attribute_names</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-dangerous_class_method-3F">dangerous_class_method?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-has_attribute-3F">has_attribute?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-instance_method_already_implemented-3F">instance_method_already_implemented?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-alias_attribute">
+            
+              alias_attribute(new_name, old_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Allows you to make aliases for attributes.</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+  alias_attribute :nickname, :name
+end
+
+person = Person.create(name: &#39;Bob&#39;)
+person.name     # =&gt; &quot;Bob&quot;
+person.nickname # =&gt; &quot;Bob&quot;
+</code></pre>
+
+<p>The alias can also be used for querying:</p>
+
+<pre><code>Person.where(nickname: &quot;Bob&quot;)
+# SELECT &quot;people&quot;.* FROM &quot;people&quot; WHERE &quot;people&quot;.&quot;name&quot; = &quot;Bob&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 66
+      def alias_attribute(new_name, old_name)
+        super
+
+        if @alias_attributes_mass_generated
+          ActiveSupport::CodeGenerator.batch(generated_attribute_methods, __FILE__, __LINE__) do |code_generator|
+            generate_alias_attribute_methods(code_generator, new_name, old_name)
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/attribute_methods.rb#L66" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-alias_attribute_method_definition">
+            
+              alias_attribute_method_definition(code_generator, pattern, new_name, old_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 87
+      def alias_attribute_method_definition(code_generator, pattern, new_name, old_name)
+        old_name = old_name.to_s
+
+        if !abstract_class? &amp;&amp; !has_attribute?(old_name)
+          raise ArgumentError, &quot;#{self.name} model aliases `#{old_name}`, but `#{old_name}` is not an attribute. &quot; \
+            &quot;Use `alias_method :#{new_name}, :#{old_name}` or define the method manually.&quot;
+        else
+          define_attribute_method_pattern(pattern, old_name, owner: code_generator, as: new_name, override: true)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/attribute_methods.rb#L87" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attribute_method-3F">
+            
+              attribute_method?(attribute)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns <code>true</code> if <code>attribute</code> is an attribute method and table exists, <code>false</code> otherwise.</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+end
+
+Person.attribute_method?(&#39;name&#39;)   # =&gt; true
+Person.attribute_method?(:age=)    # =&gt; true
+Person.attribute_method?(:nothing) # =&gt; false
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 223
+      def attribute_method?(attribute)
+        super || (table_exists? &amp;&amp; column_names.include?(attribute.to_s.delete_suffix(&quot;=&quot;)))
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/attribute_methods.rb#L223" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attribute_names">
+            
+              attribute_names()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns an array of column names as strings if it’s not an abstract class and table exists. Otherwise it returns an empty array.</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+end
+
+Person.attribute_names
+# =&gt; [&quot;id&quot;, &quot;created_at&quot;, &quot;updated_at&quot;, &quot;name&quot;, &quot;age&quot;]
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 235
+      def attribute_names
+        @attribute_names ||= if !abstract_class? &amp;&amp; table_exists?
+          attribute_types.keys
+        else
+          []
+        end.freeze
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/attribute_methods.rb#L235" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-dangerous_class_method-3F">
+            
+              dangerous_class_method?(method_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>A class method is ‘dangerous’ if it is already (re)defined by Active Record, but not by any ancestors. (So ‘puts’ is not dangerous but ‘new’ is.)</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 200
+      def dangerous_class_method?(method_name)
+        return true if RESTRICTED_CLASS_METHODS.include?(method_name.to_s)
+
+        if Base.respond_to?(method_name, true)
+          if Object.respond_to?(method_name, true)
+            Base.method(method_name).owner != Object.method(method_name).owner
+          else
+            true
+          end
+        else
+          false
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/attribute_methods.rb#L200" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-has_attribute-3F">
+            
+              has_attribute?(attr_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if the given attribute exists, otherwise false.</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+  alias_attribute :new_name, :name
+end
+
+Person.has_attribute?(&#39;name&#39;)     # =&gt; true
+Person.has_attribute?(&#39;new_name&#39;) # =&gt; true
+Person.has_attribute?(:age)       # =&gt; true
+Person.has_attribute?(:nothing)   # =&gt; false
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 253
+      def has_attribute?(attr_name)
+        attr_name = attr_name.to_s
+        attr_name = attribute_aliases[attr_name] || attr_name
+        attribute_types.key?(attr_name)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/attribute_methods.rb#L253" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-instance_method_already_implemented-3F">
+            
+              instance_method_already_implemented?(method_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Raises an <a href="../DangerousAttributeError.html"><code>ActiveRecord::DangerousAttributeError</code></a> exception when an Active Record method is defined in the model, otherwise <code>false</code>.</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+  def save
+    &#39;already defined by Active Record&#39;
+  end
+end
+
+Person.instance_method_already_implemented?(:save)
+# =&gt; ActiveRecord::DangerousAttributeError: save is defined by Active Record. Check to make sure that you don&#39;t have an attribute or method with the same name.
+
+Person.instance_method_already_implemented?(:name)
+# =&gt; false
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods.rb, line 164
+      def instance_method_already_implemented?(method_name)
+        if dangerous_attribute_method?(method_name)
+          raise DangerousAttributeError, &quot;#{method_name} is defined by Active Record. Check to make sure that you don&#39;t have an attribute or method with the same name.&quot;
+        end
+
+        if superclass == Base
+          super
+        else
+          # If ThisClass &lt; ... &lt; SomeSuperClass &lt; ... &lt; Base and SomeSuperClass
+          # defines its own attribute method, then we don&#39;t want to override that.
+          defined = method_defined_within?(method_name, superclass, Base) &amp;&amp;
+            ! superclass.instance_method(method_name).owner.is_a?(GeneratedAttributeMethods)
+          defined || super
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/attribute_methods.rb#L164" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,336 @@
+---
+title: ActionController::Base
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionController::Base
+            
+                <span class="parent">&lt;
+                    
+                    Metal
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_controller/base_rb.html">actionpack/lib/action_controller/base.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActionController::Base-label-Action+Controller+Base">Action Controller <a href="Base.html"><code>Base</code></a></h1>
+
+<p>Action Controllers are the core of a web request in <a href="../Rails.html"><code>Rails</code></a>. They are made up of one or more actions that are executed on request and then either it renders a template or redirects to another action. An action is defined as a public method on the controller, which will automatically be made accessible to the web-server through <a href="../Rails.html"><code>Rails</code></a> Routes.</p>
+
+<p>By default, only the ApplicationController in a <a href="../Rails.html"><code>Rails</code></a> application inherits from <code>ActionController::Base</code>. All other controllers inherit from ApplicationController. This gives you one class to configure things such as request forgery protection and filtering of sensitive request parameters.</p>
+
+<p>A sample controller could look like this:</p>
+
+<pre><code>class PostsController &lt; ApplicationController
+  def index
+    @posts = Post.all
+  end
+
+  def create
+    @post = Post.create params[:post]
+    redirect_to posts_path
+  end
+end
+</code></pre>
+
+<p>Actions, by default, render a template in the <code>app/views</code> directory corresponding to the name of the controller and action after executing code in the action. For example, the <code>index</code> action of the PostsController would render the template <code>app/views/posts/index.html.erb</code> by default after populating the <code>@posts</code> instance variable.</p>
+
+<p>Unlike index, the create action will not render a template. After performing its main purpose (creating a new post), it initiates a redirect instead. This redirect works by returning an external <code>302 Moved</code> HTTP response that takes the user to the index action.</p>
+
+<p>These two methods represent the two basic action archetypes used in Action Controllers: Get-and-show and do-and-redirect. Most actions are variations on these themes.</p>
+
+<h2 id="class-ActionController::Base-label-Requests">Requests</h2>
+
+<p>For every request, the router determines the value of the <code>controller</code> and <code>action</code> keys. These determine which controller and action are called. The remaining request parameters, the session (if one is available), and the full request with all the HTTP headers are made available to the action through accessor methods. Then the action is performed.</p>
+
+<p>The full request object is available via the request accessor and is primarily used to query for HTTP headers:</p>
+
+<pre><code>def server_ip
+  location = request.env[&quot;REMOTE_ADDR&quot;]
+  render plain: &quot;This server hosted at #{location}&quot;
+end
+</code></pre>
+
+<h2 id="class-ActionController::Base-label-Parameters"><a href="Parameters.html"><code>Parameters</code></a></h2>
+
+<p>All request parameters, whether they come from a query string in the URL or form data submitted through a POST request are available through the <code>params</code> method which returns a hash. For example, an action that was performed through <code>/posts?category=All&amp;limit=5</code> will include <code>{ &quot;category&quot; =&gt; &quot;All&quot;, &quot;limit&quot; =&gt; &quot;5&quot; }</code> in <code>params</code>.</p>
+
+<p>It’s also possible to construct multi-dimensional parameter hashes by specifying keys using brackets, such as:</p>
+
+<pre><code>&lt;input type=&quot;text&quot; name=&quot;post[name]&quot; value=&quot;david&quot;&gt;
+&lt;input type=&quot;text&quot; name=&quot;post[address]&quot; value=&quot;hyacintvej&quot;&gt;
+</code></pre>
+
+<p>A request coming from a form holding these inputs will include <code>{ &quot;post&quot; =&gt; { &quot;name&quot; =&gt; &quot;david&quot;, &quot;address&quot; =&gt; &quot;hyacintvej&quot; } }</code>. If the address input had been named <code>post[address][street]</code>, the <code>params</code> would have included <code>{ &quot;post&quot; =&gt; { &quot;address&quot; =&gt; { &quot;street&quot; =&gt; &quot;hyacintvej&quot; } } }</code>. There’s no limit to the depth of the nesting.</p>
+
+<h2 id="class-ActionController::Base-label-Sessions">Sessions</h2>
+
+<p>Sessions allow you to store objects in between requests. This is useful for objects that are not yet ready to be persisted, such as a Signup object constructed in a multi-paged process, or objects that don’t change much and are needed all the time, such as a User object for a system that requires login. The session should not be used, however, as a cache for objects where it’s likely they could be changed unknowingly. It’s usually too much work to keep it all synchronized – something databases already excel at.</p>
+
+<p>You can place objects in the session by using the <code>session</code> method, which accesses a hash:</p>
+
+<pre><code>session[:person] = Person.authenticate(user_name, password)
+</code></pre>
+
+<p>You can retrieve it again through the same hash:</p>
+
+<pre><code>&quot;Hello #{session[:person]}&quot;
+</code></pre>
+
+<p>For removing objects from the session, you can either assign a single key to <code>nil</code>:</p>
+
+<pre><code># removes :person from session
+session[:person] = nil
+</code></pre>
+
+<p>or you can remove the entire session with <code>reset_session</code>.</p>
+
+<p>By default, sessions are stored in an encrypted browser cookie (see <a href="../ActionDispatch/Session/CookieStore.html"><code>ActionDispatch::Session::CookieStore</code></a>). Thus the user will not be able to read or edit the session data. However, the user can keep a copy of the cookie even after it has expired, so you should avoid storing sensitive information in cookie-based sessions.</p>
+
+<h2 id="class-ActionController::Base-label-Responses">Responses</h2>
+
+<p>Each action results in a response, which holds the headers and document to be sent to the user’s browser. The actual response object is generated automatically through the use of renders and redirects and requires no user intervention.</p>
+
+<h2 id="class-ActionController::Base-label-Renders">Renders</h2>
+
+<p>Action Controller sends content to the user by using one of five rendering methods. The most versatile and common is the rendering of a template. Included in the Action Pack is the Action View, which enables rendering of <a href="../ERB.html"><code>ERB</code></a> templates. It’s automatically configured. The controller passes objects to the view by assigning instance variables:</p>
+
+<pre><code>def show
+  @post = Post.find(params[:id])
+end
+</code></pre>
+
+<p>Which are then automatically available to the view:</p>
+
+<pre><code>Title: &lt;%= @post.title %&gt;
+</code></pre>
+
+<p>You don’t have to rely on the automated rendering. For example, actions that could result in the rendering of different templates will use the manual rendering methods:</p>
+
+<pre><code>def search
+  @results = Search.find(params[:query])
+  case @results.count
+    when 0 then render action: &quot;no_results&quot;
+    when 1 then render action: &quot;show&quot;
+    when 2..10 then render action: &quot;show_many&quot;
+  end
+end
+</code></pre>
+
+<p>Read more about writing <a href="../ERB.html"><code>ERB</code></a> and Builder templates in <a href="../ActionView/Base.html"><code>ActionView::Base</code></a>.</p>
+
+<h2 id="class-ActionController::Base-label-Redirects">Redirects</h2>
+
+<p>Redirects are used to move from one action to another. For example, after a <code>create</code> action, which stores a blog entry to the database, we might like to show the user the new entry. Because we’re following good DRY principles (Don’t Repeat Yourself), we’re going to reuse (and redirect to) a <code>show</code> action that we’ll assume has already been created. The code might look like this:</p>
+
+<pre><code>def create
+  @entry = Entry.new(params[:entry])
+  if @entry.save
+    # The entry was saved correctly, redirect to show
+    redirect_to action: &#39;show&#39;, id: @entry.id
+  else
+    # things didn&#39;t go so well, do something else
+  end
+end
+</code></pre>
+
+<p>In this case, after saving our new entry to the database, the user is redirected to the <code>show</code> method, which is then executed. Note that this is an external HTTP-level redirection which will cause the browser to make a second request (a GET to the show action), and not some internal re-routing which calls both “create” and then “show” within one request.</p>
+
+<p>Learn more about <code>redirect_to</code> and what options you have in <a href="Redirecting.html"><code>ActionController::Redirecting</code></a>.</p>
+
+<h2 id="class-ActionController::Base-label-Calling+multiple+redirects+or+renders">Calling multiple redirects or renders</h2>
+
+<p>An action may perform only a single render or a single redirect. Attempting to do either again will result in a DoubleRenderError:</p>
+
+<pre><code>def do_something
+  redirect_to action: &quot;elsewhere&quot;
+  render action: &quot;overthere&quot; # raises DoubleRenderError
+end
+</code></pre>
+
+<p>If you need to redirect on the condition of something, then be sure to add “return” to halt execution.</p>
+
+<pre><code>def do_something
+  if monkeys.nil?
+    redirect_to(action: &quot;elsewhere&quot;)
+    return
+  end
+  render action: &quot;overthere&quot; # won&#39;t be called if monkeys is nil
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-without_modules">without_modules</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">MODULES</td>
+            <td>=</td>
+            <td class="attr-value">[
+AbstractController::Rendering,
+AbstractController::Translation,
+AbstractController::AssetPaths,
+Helpers,
+UrlFor,
+Redirecting,
+ActionView::Layouts,
+Rendering,
+Renderers::All,
+ConditionalGet,
+EtagWithTemplateDigest,
+EtagWithFlash,
+Caching,
+MimeResponds,
+ImplicitRender,
+StrongParameters,
+ParameterEncoding,
+Cookies,
+Flash,
+FormBuilder,
+RequestForgeryProtection,
+ContentSecurityPolicy,
+PermissionsPolicy,
+RateLimiting,
+AllowBrowser,
+Streaming,
+DataStreaming,
+HttpAuthentication::Basic::ControllerMethods,
+HttpAuthentication::Digest::ControllerMethods,
+HttpAuthentication::Token::ControllerMethods,
+DefaultHeaders,
+Logging,
+AbstractController::Callbacks,
+Rescue,
+Instrumentation,
+ParamsWrapper
+]</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">PROTECTED_IVARS</td>
+            <td>=</td>
+            <td class="attr-value">AbstractController::Rendering::DEFAULT_PROTECTED_INSTANCE_VARIABLES + %i(
+@_params @_response @_request @_config @_url_options @_action_has_layout @_view_context_class
+@_view_renderer @_lookup_context @_routes @_view_runtime @_db_runtime @_helper_proxy
+@_marked_for_same_origin_verification @_rendered_format
+)</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>Define some internal variables that should not be propagated to the view.</p></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-without_modules">
+            
+              without_modules(*modules)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Shortcut helper that returns all the modules included in <a href="Base.html"><code>ActionController::Base</code></a> except the ones passed as arguments:</p>
+
+<pre><code>class MyBaseController &lt; ActionController::Metal
+  ActionController::Base.without_modules(:ParamsWrapper, :Streaming).each do |left|
+    include left
+  end
+end
+</code></pre>
+
+<p>This gives better control over what you want to exclude and makes it easier to create a bare controller class, instead of listing the modules required manually.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/base.rb, line 222
+    def self.without_modules(*modules)
+      modules = modules.map do |m|
+        m.is_a?(Symbol) ? ActionController.const_get(m) : m
+      end
+
+      MODULES - modules
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_controller/base.rb#L222" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+    
+  
+</div>
+
+    </div>
+</div>

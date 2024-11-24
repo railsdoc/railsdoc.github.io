@@ -1,0 +1,227 @@
+---
+title: ActiveRecord::Middleware::DatabaseSelector
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::Middleware::DatabaseSelector
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/middleware/database_selector_rb.html">activerecord/lib/active_record/middleware/database_selector.rb</a></li>
+            
+            <li><a href="../../../files/activerecord/lib/active_record/middleware/database_selector/resolver_rb.html">activerecord/lib/active_record/middleware/database_selector/resolver.rb</a></li>
+            
+            <li><a href="../../../files/activerecord/lib/active_record/middleware/database_selector/resolver/session_rb.html">activerecord/lib/active_record/middleware/database_selector/resolver/session.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveRecord::Middleware::DatabaseSelector-label-Database+Selector+Middleware">Database Selector Middleware</h1>
+
+<p>The <a href="DatabaseSelector.html"><code>DatabaseSelector</code></a> <a href="../Middleware.html"><code>Middleware</code></a> provides a framework for automatically swapping from the primary to the replica database connection. Rails provides a basic framework to determine when to swap and allows for applications to write custom strategy classes to override the default behavior.</p>
+
+<p>The resolver class defines when the application should switch (i.e. read from the primary if a write occurred less than 2 seconds ago) and a resolver context class that sets a value that helps the resolver class decide when to switch.</p>
+
+<p>Rails default middleware uses the request’s session to set a timestamp that informs the application when to read from a primary or read from a replica.</p>
+
+<p>To use the <a href="DatabaseSelector.html"><code>DatabaseSelector</code></a> in your application with default settings, run the provided generator.</p>
+
+<pre><code>$ bin/rails g active_record:multi_db
+</code></pre>
+
+<p>This will create a file named <code>config/initializers/multi_db.rb</code> with the following contents:</p>
+
+<pre><code>Rails.application.configure do
+  config.active_record.database_selector = { delay: 2.seconds }
+  config.active_record.database_resolver = ActiveRecord::Middleware::DatabaseSelector::Resolver
+  config.active_record.database_resolver_context = ActiveRecord::Middleware::DatabaseSelector::Resolver::Session
+end
+</code></pre>
+
+<p>Alternatively you can set the options in your environment config or any other config file loaded on boot.</p>
+
+<p>The default behavior can be changed by setting the config options to a custom class:</p>
+
+<pre><code>config.active_record.database_selector = { delay: 2.seconds }
+config.active_record.database_resolver = MyResolver
+config.active_record.database_resolver_context = MyResolver::MySession
+</code></pre>
+
+<p>Note: If you are using <code>rails new my_app --minimal</code> you will need to call <code>require &quot;active_support/core_ext/integer/time&quot;</code> to load the core extension in order to use <code>2.seconds</code></p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-call">call</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>context_klass</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>options</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>resolver_klass</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(app, resolver_klass = nil, context_klass = nil, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/middleware/database_selector.rb, line 52
+      def initialize(app, resolver_klass = nil, context_klass = nil, options = {})
+        @app = app
+        @resolver_klass = resolver_klass || Resolver
+        @context_klass = context_klass || Resolver::Session
+        @options = options
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/middleware/database_selector.rb#L52" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-call">
+            
+              call(env)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><a href="../Middleware.html"><code>Middleware</code></a> that determines which database connection to use in a multiple database application.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/middleware/database_selector.rb, line 63
+      def call(env)
+        request = ActionDispatch::Request.new(env)
+
+        select_database(request) do
+          @app.call(env)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/middleware/database_selector.rb#L63" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

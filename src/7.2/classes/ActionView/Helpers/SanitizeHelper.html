@@ -1,0 +1,343 @@
+---
+title: ActionView::Helpers::SanitizeHelper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionView::Helpers::SanitizeHelper
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionview/lib/action_view/helpers/sanitize_helper_rb.html">actionview/lib/action_view/helpers/sanitize_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionView::Helpers::SanitizeHelper-label-Action+View+Sanitize+Helpers">Action View Sanitize Helpers</h1>
+
+<p>The <a href="SanitizeHelper.html"><code>SanitizeHelper</code></a> module provides a set of methods for scrubbing text of undesired HTML elements. These helper methods extend Action View making them callable within your template files.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-sanitize">sanitize</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-sanitize_css">sanitize_css</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-strip_links">strip_links</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-strip_tags">strip_tags</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-sanitize">
+            
+              sanitize(html, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sanitizes HTML input, stripping all but known-safe tags and attributes.</p>
+
+<p>It also strips <code>href</code> / <code>src</code> attributes with unsafe protocols like <code>javascript:</code>, while also protecting against attempts to use Unicode, ASCII, and hex character references to work around these protocol filters.</p>
+
+<p>The default sanitizer is <code>Rails::HTML5::SafeListSanitizer</code>. See <a href="https://github.com/rails/rails-html-sanitizer">Rails HTML Sanitizers</a> for more information.</p>
+
+<p>Custom sanitization rules can also be provided.</p>
+
+<p>Please note that sanitizing user-provided text does not guarantee that the resulting markup is valid or even well-formed.</p>
+
+<h4 id="method-i-sanitize-label-Options">Options</h4>
+<dl class="rdoc-list label-list"><dt><code>:tags</code>
+<dd>
+<p>An array of allowed tags.</p>
+</dd><dt><code>:attributes</code>
+<dd>
+<p>An array of allowed attributes.</p>
+</dd><dt><code>:scrubber</code>
+<dd>
+<p>A <a href="https://github.com/rails/rails-html-sanitizer">Rails::HTML scrubber</a> or <a href="https://github.com/flavorjones/loofah">Loofah::Scrubber</a> object that defines custom sanitization rules. A custom scrubber takes precedence over custom tags and attributes.</p>
+</dd></dl>
+
+<h4 id="method-i-sanitize-label-Examples">Examples</h4>
+
+<h5 id="method-i-sanitize-label-Normal+use">Normal use</h5>
+
+<pre><code>&lt;%= sanitize @comment.body %&gt;
+</code></pre>
+
+<h5 id="method-i-sanitize-label-Providing+custom+lists+of+permitted+tags+and+attributes">Providing custom lists of permitted tags and attributes</h5>
+
+<pre><code>&lt;%= sanitize @comment.body, tags: %w(strong em a), attributes: %w(href) %&gt;
+</code></pre>
+
+<h5 id="method-i-sanitize-label-Providing+a+custom+Rails-3A-3AHTML+scrubber">Providing a custom <code>Rails::HTML</code> scrubber</h5>
+
+<pre><code>class CommentScrubber &lt; Rails::HTML::PermitScrubber
+  def initialize
+    super
+    self.tags = %w( form script comment blockquote )
+    self.attributes = %w( style )
+  end
+
+  def skip_node?(node)
+    node.text?
+  end
+end
+</code></pre>
+
+<p></p>
+
+<pre><code>&lt;%= sanitize @comment.body, scrubber: CommentScrubber.new %&gt;
+</code></pre>
+
+<p>See <a href="https://github.com/rails/rails-html-sanitizer">Rails HTML Sanitizer</a> for documentation about <code>Rails::HTML</code> scrubbers.</p>
+
+<h5 id="method-i-sanitize-label-Providing+a+custom+Loofah-3A-3AScrubber">Providing a custom <code>Loofah::Scrubber</code></h5>
+
+<pre><code>scrubber = Loofah::Scrubber.new do |node|
+  node.remove if node.name == &#39;script&#39;
+end
+</code></pre>
+
+<p></p>
+
+<pre><code>&lt;%= sanitize @comment.body, scrubber: scrubber %&gt;
+</code></pre>
+
+<p>See <a href="https://github.com/flavorjones/loofah">Loofah’s documentation</a> for more information about defining custom <code>Loofah::Scrubber</code> objects.</p>
+
+<h4 id="method-i-sanitize-label-Global+Configuration">Global Configuration</h4>
+
+<p>To set the default allowed tags or attributes across your application:</p>
+
+<pre><code># In config/application.rb
+config.action_view.sanitized_allowed_tags = [&#39;strong&#39;, &#39;em&#39;, &#39;a&#39;]
+config.action_view.sanitized_allowed_attributes = [&#39;href&#39;, &#39;title&#39;]
+</code></pre>
+
+<p>The default, starting in Rails 7.1, is to use an HTML5 parser for sanitization (if it is available, see NOTE below). If you wish to revert back to the previous HTML4 behavior, you can do so by setting the following in your application configuration:</p>
+
+<pre><code># In config/application.rb
+config.action_view.sanitizer_vendor = Rails::HTML4::Sanitizer
+</code></pre>
+
+<p>Or, if you’re upgrading from a previous version of Rails and wish to opt into the HTML5 behavior:</p>
+
+<pre><code># In config/application.rb
+config.action_view.sanitizer_vendor = Rails::HTML5::Sanitizer
+</code></pre>
+
+<p>NOTE: <code>Rails::HTML5::Sanitizer</code> is not supported on JRuby, so on JRuby platforms Rails will fall back to using <code>Rails::HTML4::Sanitizer</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 111
+      def sanitize(html, options = {})
+        self.class.safe_list_sanitizer.sanitize(html, options)&amp;.html_safe
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/sanitize_helper.rb#L111" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-sanitize_css">
+            
+              sanitize_css(style)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sanitizes a block of CSS code. Used by <a href="SanitizeHelper.html#method-i-sanitize"><code>sanitize</code></a> when it comes across a style attribute.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 116
+      def sanitize_css(style)
+        self.class.safe_list_sanitizer.sanitize_css(style)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/sanitize_helper.rb#L116" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-strip_links">
+            
+              strip_links(html)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Strips all link tags from <code>html</code> leaving just the link text.</p>
+
+<pre><code>strip_links(&#39;&lt;a href=&quot;http://www.rubyonrails.org&quot;&gt;Ruby on Rails&lt;/a&gt;&#39;)
+# =&gt; Ruby on Rails
+
+strip_links(&#39;Please e-mail me at &lt;a href=&quot;mailto:me@email.com&quot;&gt;me@email.com&lt;/a&gt;.&#39;)
+# =&gt; Please e-mail me at me@email.com.
+
+strip_links(&#39;Blog: &lt;a href=&quot;http://www.myblog.com/&quot; class=&quot;nav&quot; target=\&quot;_blank\&quot;&gt;Visit&lt;/a&gt;.&#39;)
+# =&gt; Blog: Visit.
+
+strip_links(&#39;&lt;&lt;a href=&quot;https://example.org&quot;&gt;malformed &amp; link&lt;/a&gt;&#39;)
+# =&gt; &amp;lt;malformed &amp;amp; link
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 150
+      def strip_links(html)
+        self.class.link_sanitizer.sanitize(html)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/sanitize_helper.rb#L150" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-strip_tags">
+            
+              strip_tags(html)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Strips all HTML tags from <code>html</code>, including comments and special characters.</p>
+
+<pre><code>strip_tags(&quot;Strip &lt;i&gt;these&lt;/i&gt; tags!&quot;)
+# =&gt; Strip these tags!
+
+strip_tags(&quot;&lt;b&gt;Bold&lt;/b&gt; no more!  &lt;a href=&#39;more.html&#39;&gt;See more here&lt;/a&gt;...&quot;)
+# =&gt; Bold no more!  See more here...
+
+strip_tags(&quot;&lt;div id=&#39;top-bar&#39;&gt;Welcome to my website!&lt;/div&gt;&quot;)
+# =&gt; Welcome to my website!
+
+strip_tags(&quot;&gt; A quote from Smith &amp; Wesson&quot;)
+# =&gt; &amp;gt; A quote from Smith &amp;amp; Wesson
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/sanitize_helper.rb, line 133
+      def strip_tags(html)
+        self.class.full_sanitizer.sanitize(html)&amp;.html_safe
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/sanitize_helper.rb#L133" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

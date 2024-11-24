@@ -1,0 +1,1359 @@
+---
+title: ActiveRecord::Persistence
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Persistence
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/persistence_rb.html">activerecord/lib/active_record/persistence.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveRecord::Persistence-label-Active+Record+Persistence">Active Record Persistence</h1>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Persistence/ClassMethods.html">ActiveRecord::Persistence::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-becomes">becomes</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-becomes-21">becomes!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-decrement">decrement</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-decrement-21">decrement!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete">delete</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-destroy">destroy</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-destroy-21">destroy!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-destroyed-3F">destroyed?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-increment">increment</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-increment-21">increment!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-new_record-3F">new_record?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-persisted-3F">persisted?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-previously_new_record-3F">previously_new_record?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-previously_persisted-3F">previously_persisted?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-reload">reload</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-save">save</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-save-21">save!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-toggle">toggle</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-toggle-21">toggle!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-touch">touch</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-update">update</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-update-21">update!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-update_attribute">update_attribute</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-update_attribute-21">update_attribute!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-update_column">update_column</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-update_columns">update_columns</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-becomes">
+            
+              becomes(klass)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns an instance of the specified <code>klass</code> with the attributes of the current record. This is mostly useful in relation to single table inheritance (STI) structures where you want a subclass to appear as the superclass. This can be used along with record identification in Action Pack to allow, say, <code>Client &lt; Company</code> to do something like render <code>partial: @client.becomes(Company)</code> to render that instance using the companies/company partial instead of clients/client.</p>
+
+<p>Note: The new instance will share a link to the same attributes as the original class. Therefore the STI column value will still be the same. Any change to the attributes on either instance will affect both instances. This includes any attribute initialization done by the new instance.</p>
+
+<p>If you want to change the STI column as well, use <a href="Persistence.html#method-i-becomes-21"><code>becomes!</code></a> instead.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 489
+    def becomes(klass)
+      became = klass.allocate
+
+      became.send(:initialize) do |becoming|
+        @attributes.reverse_merge!(becoming.instance_variable_get(:@attributes))
+        becoming.instance_variable_set(:@attributes, @attributes)
+        becoming.instance_variable_set(:@mutations_from_database, @mutations_from_database ||= nil)
+        becoming.instance_variable_set(:@new_record, new_record?)
+        becoming.instance_variable_set(:@destroyed, destroyed?)
+        becoming.errors.copy!(errors)
+      end
+
+      became
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L489" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-becomes-21">
+            
+              becomes!(klass)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Wrapper around <a href="Persistence.html#method-i-becomes"><code>becomes</code></a> that also changes the instance’s STI column value. This is especially useful if you want to persist the changed class in your database.</p>
+
+<p>Note: The old instance’s STI column value will be changed too, as both objects share the same set of attributes.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 510
+    def becomes!(klass)
+      became = becomes(klass)
+      sti_type = nil
+      if !klass.descends_from_active_record?
+        sti_type = klass.sti_name
+      end
+      became.public_send(&quot;#{klass.inheritance_column}=&quot;, sti_type)
+      became
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L510" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-decrement">
+            
+              decrement(attribute, by = 1)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Initializes <code>attribute</code> to zero if <code>nil</code> and subtracts the value passed as <code>by</code> (default is 1). The decrement is performed directly on the underlying attribute, no setter is invoked. Only makes sense for number-based attributes. Returns <code>self</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 657
+    def decrement(attribute, by = 1)
+      increment(attribute, -by)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L657" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-decrement-21">
+            
+              decrement!(attribute, by = 1, touch: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Wrapper around <a href="Persistence.html#method-i-decrement"><code>decrement</code></a> that writes the update to the database. Only <code>attribute</code> is updated; the record itself is not saved. This means that any other modified attributes will still be dirty. <a href="Validations.html"><code>Validations</code></a> and callbacks are skipped. Supports the <code>touch</code> option from <code>update_counters</code>, see that for more. Returns <code>self</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 667
+    def decrement!(attribute, by = 1, touch: nil)
+      increment!(attribute, -by, touch: touch)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L667" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete">
+            
+              delete()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Deletes the record in the database and freezes this instance to reflect that no changes should be made (since they can’t be persisted). Returns the frozen instance.</p>
+
+<p>The row is simply removed with an SQL <code>DELETE</code> statement on the record’s primary key, and no callbacks are executed.</p>
+
+<p>Note that this will also delete records marked as <a href="Core.html#method-i-readonly-3F">#readonly?</a>.</p>
+
+<p>To enforce the object’s <code>before_destroy</code> and <code>after_destroy</code> callbacks or any <code>:dependent</code> association options, use <a href="Persistence.html#method-i-destroy"><code>destroy</code></a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 441
+    def delete
+      _delete_row if persisted?
+      @destroyed = true
+      @previously_new_record = false
+      freeze
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L441" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-destroy">
+            
+              destroy()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Deletes the record in the database and freezes this instance to reflect that no changes should be made (since they can’t be persisted).</p>
+
+<p>There’s a series of callbacks associated with <a href="Persistence.html#method-i-destroy"><code>destroy</code></a>. If the <code>before_destroy</code> callback throws <code>:abort</code> the action is cancelled and <a href="Persistence.html#method-i-destroy"><code>destroy</code></a> returns <code>false</code>. See <a href="Callbacks.html"><code>ActiveRecord::Callbacks</code></a> for further details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 455
+    def destroy
+      _raise_readonly_record_error if readonly?
+      destroy_associations
+      @_trigger_destroy_callback ||= persisted? &amp;&amp; destroy_row &gt; 0
+      @destroyed = true
+      @previously_new_record = false
+      freeze
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L455" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-destroy-21">
+            
+              destroy!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Deletes the record in the database and freezes this instance to reflect that no changes should be made (since they can’t be persisted).</p>
+
+<p>There’s a series of callbacks associated with <a href="Persistence.html#method-i-destroy-21"><code>destroy!</code></a>. If the <code>before_destroy</code> callback throws <code>:abort</code> the action is cancelled and <a href="Persistence.html#method-i-destroy-21"><code>destroy!</code></a> raises <a href="RecordNotDestroyed.html"><code>ActiveRecord::RecordNotDestroyed</code></a>. See <a href="Callbacks.html"><code>ActiveRecord::Callbacks</code></a> for further details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 471
+    def destroy!
+      destroy || _raise_record_not_destroyed
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L471" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-destroyed-3F">
+            
+              destroyed?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if this object has been destroyed, otherwise returns false.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 357
+    def destroyed?
+      @destroyed
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L357" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-increment">
+            
+              increment(attribute, by = 1)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Initializes <code>attribute</code> to zero if <code>nil</code> and adds the value passed as <code>by</code> (default is 1). The increment is performed directly on the underlying attribute, no setter is invoked. Only makes sense for number-based attributes. Returns <code>self</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 634
+    def increment(attribute, by = 1)
+      self[attribute] ||= 0
+      self[attribute] += by
+      self
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L634" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-increment-21">
+            
+              increment!(attribute, by = 1, touch: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Wrapper around <a href="Persistence.html#method-i-increment"><code>increment</code></a> that writes the update to the database. Only <code>attribute</code> is updated; the record itself is not saved. This means that any other modified attributes will still be dirty. <a href="Validations.html"><code>Validations</code></a> and callbacks are skipped. Supports the <code>touch</code> option from <code>update_counters</code>, see that for more. Returns <code>self</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 646
+    def increment!(attribute, by = 1, touch: nil)
+      increment(attribute, by)
+      change = public_send(attribute) - (public_send(:&quot;#{attribute}_in_database&quot;) || 0)
+      self.class.update_counters(id, attribute =&gt; change, touch: touch)
+      public_send(:&quot;clear_#{attribute}_change&quot;)
+      self
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L646" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-new_record-3F">
+            
+              new_record?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if this object hasn’t been saved yet – that is, a record for the object doesn’t exist in the database yet; otherwise, returns false.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 340
+    def new_record?
+      @new_record
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L340" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-persisted-3F">
+            
+              persisted?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if the record is persisted, i.e. it’s not a new record and it was not destroyed, otherwise returns false.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 363
+    def persisted?
+      !(@new_record || @destroyed)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L363" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-previously_new_record-3F">
+            
+              previously_new_record?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if this object was just created – that is, prior to the last update or delete, the object didn’t exist in the database and new_record? would have returned true.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 347
+    def previously_new_record?
+      @previously_new_record
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L347" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-previously_persisted-3F">
+            
+              previously_persisted?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if this object was previously persisted but now it has been deleted.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 352
+    def previously_persisted?
+      !new_record? &amp;&amp; destroyed?
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L352" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-reload">
+            
+              reload(options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Reloads the record from the database.</p>
+
+<p>This method finds the record by its primary key (which could be assigned manually) and modifies the receiver in-place:</p>
+
+<pre><code>account = Account.new
+# =&gt; #&lt;Account id: nil, email: nil&gt;
+account.id = 1
+account.reload
+# Account Load (1.2ms)  SELECT &quot;accounts&quot;.* FROM &quot;accounts&quot; WHERE &quot;accounts&quot;.&quot;id&quot; = $1 LIMIT 1  [[&quot;id&quot;, 1]]
+# =&gt; #&lt;Account id: 1, email: &#39;account@example.com&#39;&gt;
+</code></pre>
+
+<p><a href="Attributes.html"><code>Attributes</code></a> are reloaded from the database, and caches busted, in particular the associations cache and the <a href="QueryCache.html"><code>QueryCache</code></a>.</p>
+
+<p>If the record no longer exists in the database <a href="RecordNotFound.html"><code>ActiveRecord::RecordNotFound</code></a> is raised. Otherwise, in addition to the in-place modification the method returns <code>self</code> for convenience.</p>
+
+<p>The optional <code>:lock</code> flag option allows you to lock the reloaded record:</p>
+
+<pre><code>reload(lock: true) # reload with pessimistic locking
+</code></pre>
+
+<p>Reloading is commonly used in test suites to test something is actually written to the database, or when some action modifies the corresponding row in the database but not the object in memory:</p>
+
+<pre><code>assert account.deposit!(25)
+assert_equal 25, account.credit        # check it is updated in memory
+assert_equal 25, account.reload.credit # check it is also persisted
+</code></pre>
+
+<p>Another common use case is optimistic locking handling:</p>
+
+<pre><code>def with_optimistic_retry
+  begin
+    yield
+  rescue ActiveRecord::StaleObjectError
+    begin
+      # Reload lock_version in particular.
+      reload
+    rescue ActiveRecord::RecordNotFound
+      # If the record is gone there is nothing to do.
+    else
+      retry
+    end
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 744
+    def reload(options = nil)
+      self.class.connection_pool.clear_query_cache
+
+      fresh_object = if apply_scoping?(options)
+        _find_record((options || {}).merge(all_queries: true))
+      else
+        self.class.unscoped { _find_record(options) }
+      end
+
+      @association_cache = fresh_object.instance_variable_get(:@association_cache)
+      @association_cache.each_value { |association| association.owner = self }
+      @attributes = fresh_object.instance_variable_get(:@attributes)
+      @new_record = false
+      @previously_new_record = false
+      self
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L744" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-save">
+            
+              save(**options)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Saves the model.</p>
+
+<p>If the model is new, a record gets created in the database, otherwise the existing record gets updated.</p>
+
+<p>By default, save always runs validations. If any of them fail the action is cancelled and <a href="Persistence.html#method-i-save"><code>save</code></a> returns <code>false</code>, and the record won’t be saved. However, if you supply <code>validate: false</code>, validations are bypassed altogether. See <a href="Validations.html"><code>ActiveRecord::Validations</code></a> for more information.</p>
+
+<p>By default, <a href="Persistence.html#method-i-save"><code>save</code></a> also sets the <code>updated_at</code>/<code>updated_on</code> attributes to the current time. However, if you supply <code>touch: false</code>, these timestamps will not be updated.</p>
+
+<p>There’s a series of callbacks associated with <a href="Persistence.html#method-i-save"><code>save</code></a>. If any of the <code>before_*</code> callbacks throws <code>:abort</code> the action is cancelled and <a href="Persistence.html#method-i-save"><code>save</code></a> returns <code>false</code>. See <a href="Callbacks.html"><code>ActiveRecord::Callbacks</code></a> for further details.</p>
+
+<p><a href="Attributes.html"><code>Attributes</code></a> marked as readonly are silently ignored if the record is being updated.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 392
+    def save(**options, &amp;block)
+      create_or_update(**options, &amp;block)
+    rescue ActiveRecord::RecordInvalid
+      false
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L392" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-save-21">
+            
+              save!(**options)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Saves the model.</p>
+
+<p>If the model is new, a record gets created in the database, otherwise the existing record gets updated.</p>
+
+<p>By default, <a href="Persistence.html#method-i-save-21"><code>save!</code></a> always runs validations. If any of them fail <a href="RecordInvalid.html"><code>ActiveRecord::RecordInvalid</code></a> gets raised, and the record won’t be saved. However, if you supply <code>validate: false</code>, validations are bypassed altogether. See <a href="Validations.html"><code>ActiveRecord::Validations</code></a> for more information.</p>
+
+<p>By default, <a href="Persistence.html#method-i-save-21"><code>save!</code></a> also sets the <code>updated_at</code>/<code>updated_on</code> attributes to the current time. However, if you supply <code>touch: false</code>, these timestamps will not be updated.</p>
+
+<p>There’s a series of callbacks associated with <a href="Persistence.html#method-i-save-21"><code>save!</code></a>. If any of the <code>before_*</code> callbacks throws <code>:abort</code> the action is cancelled and <a href="Persistence.html#method-i-save-21"><code>save!</code></a> raises <a href="RecordNotSaved.html"><code>ActiveRecord::RecordNotSaved</code></a>. See <a href="Callbacks.html"><code>ActiveRecord::Callbacks</code></a> for further details.</p>
+
+<p><a href="Attributes.html"><code>Attributes</code></a> marked as readonly are silently ignored if the record is being updated.</p>
+
+<p>Unless an error is raised, returns true.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 425
+    def save!(**options, &amp;block)
+      create_or_update(**options, &amp;block) || raise(RecordNotSaved.new(&quot;Failed to save the record&quot;, self))
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L425" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-toggle">
+            
+              toggle(attribute)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Assigns to <code>attribute</code> the boolean opposite of <code>attribute?</code>. So if the predicate returns <code>true</code> the attribute will become <code>false</code>. This method toggles directly the underlying value without calling any setter. Returns <code>self</code>.</p>
+
+<p>Example:</p>
+
+<pre><code>user = User.first
+user.banned? # =&gt; false
+user.toggle(:banned)
+user.banned? # =&gt; true
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 683
+    def toggle(attribute)
+      self[attribute] = !public_send(&quot;#{attribute}?&quot;)
+      self
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L683" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-toggle-21">
+            
+              toggle!(attribute)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Wrapper around <a href="Persistence.html#method-i-toggle"><code>toggle</code></a> that saves the record. This method differs from its non-bang version in the sense that it passes through the attribute setter. Saving is not subjected to validation checks. Returns <code>true</code> if the record could be saved.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 692
+    def toggle!(attribute)
+      toggle(attribute).update_attribute(attribute, self[attribute])
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L692" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-touch">
+            
+              touch(*names, time: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Saves the record with the updated_at/on attributes set to the current time or the time specified. Please note that no validation is performed and only the <code>after_touch</code>, <code>after_commit</code> and <code>after_rollback</code> callbacks are executed.</p>
+
+<p>This method can be passed attribute names and an optional time argument. If attribute names are passed, they are updated along with updated_at/on attributes. If no time argument is passed, the current time is used as default.</p>
+
+<pre><code>product.touch                         # updates updated_at/on with current time
+product.touch(time: Time.new(2015, 2, 16, 0, 0, 0)) # updates updated_at/on with specified time
+product.touch(:designed_at)           # updates the designed_at attribute and updated_at/on
+product.touch(:started_at, :ended_at) # updates started_at, ended_at and updated_at/on attributes
+</code></pre>
+
+<p>If used along with <a href="Associations/ClassMethods.html#method-i-belongs_to">belongs_to</a> then <code>touch</code> will invoke <code>touch</code> method on associated object.</p>
+
+<pre><code>class Brake &lt; ActiveRecord::Base
+  belongs_to :car, touch: true
+end
+
+class Car &lt; ActiveRecord::Base
+  belongs_to :corporation, touch: true
+end
+
+# triggers @brake.car.touch and @brake.car.corporation.touch
+@brake.touch
+</code></pre>
+
+<p>Note that <code>touch</code> must be used on a persisted object, or else an <a href="ActiveRecordError.html"><code>ActiveRecordError</code></a> will be thrown. For example:</p>
+
+<pre><code>ball = Ball.new
+ball.touch(:updated_at)   # =&gt; raises ActiveRecordError
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 795
+    def touch(*names, time: nil)
+      _raise_record_not_touched_error unless persisted?
+      _raise_readonly_record_error if readonly?
+
+      attribute_names = timestamp_attributes_for_update_in_model
+      attribute_names = (attribute_names | names).map! do |name|
+        name = name.to_s
+        name = self.class.attribute_aliases[name] || name
+        verify_readonly_attribute(name)
+        name
+      end
+
+      unless attribute_names.empty?
+        affected_rows = _touch_row(attribute_names, time)
+        @_trigger_update_callback = affected_rows == 1
+      else
+        true
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L795" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-update">
+            
+              update(attributes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Updates the attributes of the model from the passed-in hash and saves the record, all wrapped in a transaction. If the object is invalid, the saving will fail and false will be returned.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 565
+    def update(attributes)
+      # The following transaction covers any possible database side-effects of the
+      # attributes assignment. For example, setting the IDs of a child collection.
+      with_transaction_returning_status do
+        assign_attributes(attributes)
+        save
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L565" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-update-21">
+            
+              update!(attributes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Updates its receiver just like <a href="Persistence.html#method-i-update"><code>update</code></a> but calls <a href="Persistence.html#method-i-save-21"><code>save!</code></a> instead of <code>save</code>, so an exception is raised if the record is invalid and saving will fail.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 576
+    def update!(attributes)
+      # The following transaction covers any possible database side-effects of the
+      # attributes assignment. For example, setting the IDs of a child collection.
+      with_transaction_returning_status do
+        assign_attributes(attributes)
+        save!
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L576" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-update_attribute">
+            
+              update_attribute(name, value)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Updates a single attribute and saves the record. This is especially useful for boolean flags on existing records. Also note that</p>
+<ul><li>
+<p>Validation is skipped.</p>
+</li><li>
+<p>Callbacks are invoked.</p>
+</li><li>
+<p>updated_at/updated_on column is updated if that column is available.</p>
+</li><li>
+<p>Updates all the attributes that are dirty in this object.</p>
+</li></ul>
+
+<p>This method raises an <a href="ActiveRecordError.html"><code>ActiveRecord::ActiveRecordError</code></a> if the attribute is marked as readonly.</p>
+
+<p>Also see <a href="Persistence.html#method-i-update_column"><code>update_column</code></a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 532
+    def update_attribute(name, value)
+      name = name.to_s
+      verify_readonly_attribute(name)
+      public_send(&quot;#{name}=&quot;, value)
+
+      save(validate: false)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L532" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-update_attribute-21">
+            
+              update_attribute!(name, value)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Updates a single attribute and saves the record. This is especially useful for boolean flags on existing records. Also note that</p>
+<ul><li>
+<p>Validation is skipped.</p>
+</li><li>
+<p>Callbacks are invoked.</p>
+</li><li>
+<p>updated_at/updated_on column is updated if that column is available.</p>
+</li><li>
+<p>Updates all the attributes that are dirty in this object.</p>
+</li></ul>
+
+<p>This method raises an <a href="ActiveRecordError.html"><code>ActiveRecord::ActiveRecordError</code></a> if the attribute is marked as readonly.</p>
+
+<p>If any of the <code>before_*</code> callbacks throws <code>:abort</code> the action is cancelled and <a href="Persistence.html#method-i-update_attribute-21"><code>update_attribute!</code></a> raises <a href="RecordNotSaved.html"><code>ActiveRecord::RecordNotSaved</code></a>. See <a href="Callbacks.html"><code>ActiveRecord::Callbacks</code></a> for further details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 554
+    def update_attribute!(name, value)
+      name = name.to_s
+      verify_readonly_attribute(name)
+      public_send(&quot;#{name}=&quot;, value)
+
+      save!(validate: false)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L554" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-update_column">
+            
+              update_column(name, value)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Equivalent to <code>update_columns(name =&gt; value)</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 586
+    def update_column(name, value)
+      update_columns(name =&gt; value)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L586" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-update_columns">
+            
+              update_columns(attributes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Updates the attributes directly in the database issuing an UPDATE SQL statement and sets them in the receiver:</p>
+
+<pre><code>user.update_columns(last_request_at: Time.current)
+</code></pre>
+
+<p>This is the fastest way to update attributes because it goes straight to the database, but take into account that in consequence the regular update procedures are totally bypassed. In particular:</p>
+<ul><li>
+<p>Validations are skipped.</p>
+</li><li>
+<p>Callbacks are skipped.</p>
+</li><li>
+<p><code>updated_at</code>/<code>updated_on</code> are not updated.</p>
+</li><li>
+<p>However, attributes are serialized with the same rules as <a href="Relation.html#method-i-update_all"><code>ActiveRecord::Relation#update_all</code></a></p>
+</li></ul>
+
+<p>This method raises an <a href="ActiveRecordError.html"><code>ActiveRecord::ActiveRecordError</code></a> when called on new objects, or when at least one of the attributes is marked as readonly.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/persistence.rb, line 606
+    def update_columns(attributes)
+      raise ActiveRecordError, &quot;cannot update a new record&quot; if new_record?
+      raise ActiveRecordError, &quot;cannot update a destroyed record&quot; if destroyed?
+      _raise_readonly_record_error if readonly?
+
+      attributes = attributes.transform_keys do |key|
+        name = key.to_s
+        name = self.class.attribute_aliases[name] || name
+        verify_readonly_attribute(name) || name
+      end
+
+      update_constraints = _query_constraints_hash
+      attributes = attributes.each_with_object({}) do |(k, v), h|
+        h[k] = @attributes.write_cast_value(k, v)
+        clear_attribute_change(k)
+      end
+
+      affected_rows = self.class._update_record(
+        attributes,
+        update_constraints
+      )
+
+      affected_rows == 1
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/persistence.rb#L606" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

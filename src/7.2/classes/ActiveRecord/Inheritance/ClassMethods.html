@@ -1,0 +1,603 @@
+---
+title: ActiveRecord::Inheritance::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Inheritance::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/inheritance_rb.html">activerecord/lib/active_record/inheritance.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-abstract_class-3F">abstract_class?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-base_class-3F">base_class?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-compute_type">compute_type</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-descends_from_active_record-3F">descends_from_active_record?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-polymorphic_class_for">polymorphic_class_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-polymorphic_name">polymorphic_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-primary_abstract_class">primary_abstract_class</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-sti_class_for">sti_class_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-sti_name">sti_name</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>abstract_class</td>
+            <td class='attr-desc'><p>Set this to <code>true</code> if this is an abstract class (see <code>abstract_class?</code>). If you are using inheritance with Active Record and don’t want a class to be considered as part of the STI hierarchy, you must set this to true. <code>ApplicationRecord</code>, for example, is generated as an abstract class.</p>
+
+<p>Consider the following default behavior:</p>
+
+<pre><code>Shape = Class.new(ActiveRecord::Base)
+Polygon = Class.new(Shape)
+Square = Class.new(Polygon)
+
+Shape.table_name   # =&gt; &quot;shapes&quot;
+Polygon.table_name # =&gt; &quot;shapes&quot;
+Square.table_name  # =&gt; &quot;shapes&quot;
+Shape.create!      # =&gt; #&lt;Shape id: 1, type: nil&gt;
+Polygon.create!    # =&gt; #&lt;Polygon id: 2, type: &quot;Polygon&quot;&gt;
+Square.create!     # =&gt; #&lt;Square id: 3, type: &quot;Square&quot;&gt;
+</code></pre>
+
+<p>However, when using <code>abstract_class</code>, <code>Shape</code> is omitted from the hierarchy:</p>
+
+<pre><code>class Shape &lt; ActiveRecord::Base
+  self.abstract_class = true
+end
+Polygon = Class.new(Shape)
+Square = Class.new(Polygon)
+
+Shape.table_name   # =&gt; nil
+Polygon.table_name # =&gt; &quot;polygons&quot;
+Square.table_name  # =&gt; &quot;polygons&quot;
+Shape.create!      # =&gt; NotImplementedError: Shape is an abstract class and cannot be instantiated.
+Polygon.create!    # =&gt; #&lt;Polygon id: 1, type: nil&gt;
+Square.create!     # =&gt; #&lt;Square id: 2, type: &quot;Square&quot;&gt;
+</code></pre>
+
+<p>Note that in the above example, to disallow the creation of a plain <code>Polygon</code>, you should use <code>validates :type, presence: true</code>, instead of setting it as an abstract class. This way, <code>Polygon</code> will stay in the hierarchy, and Active Record will continue to correctly derive the table name.</p></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>base_class</td>
+            <td class='attr-desc'><p>Returns the first class in the inheritance hierarchy that descends from either an abstract class or from <code>ActiveRecord::Base</code>.</p>
+
+<p>Consider the following behaviour:</p>
+
+<pre><code>class ApplicationRecord &lt; ActiveRecord::Base
+  self.abstract_class = true
+end
+class Shape &lt; ApplicationRecord
+  self.abstract_class = true
+end
+Polygon = Class.new(Shape)
+Square = Class.new(Polygon)
+
+ApplicationRecord.base_class # =&gt; ApplicationRecord
+Shape.base_class # =&gt; Shape
+Polygon.base_class # =&gt; Polygon
+Square.base_class # =&gt; Polygon
+</code></pre></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-abstract_class-3F">
+            
+              abstract_class?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns whether this class is an abstract class or not.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/inheritance.rb, line 167
+      def abstract_class?
+        @abstract_class == true
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/inheritance.rb#L167" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-base_class-3F">
+            
+              base_class?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns whether the class is a base class. See <a href="ClassMethods.html#attribute-i-base_class"><code>base_class</code></a> for more information.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/inheritance.rb, line 119
+      def base_class?
+        base_class == self
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/inheritance.rb#L119" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-descends_from_active_record-3F">
+            
+              descends_from_active_record?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns <code>true</code> if this does not need STI type condition. Returns <code>false</code> if STI type condition needs to be applied.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/inheritance.rb, line 82
+      def descends_from_active_record?
+        if self == Base
+          false
+        elsif superclass.abstract_class?
+          superclass.descends_from_active_record?
+        else
+          superclass == Base || !columns_hash.include?(inheritance_column)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/inheritance.rb#L82" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-new">
+            
+              new(attributes = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Determines if one of the attributes passed in is the inheritance column, and if the inheritance column is attr accessible, it initializes an instance of the given subclass instead of the base class.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/inheritance.rb, line 56
+      def new(attributes = nil, &amp;block)
+        if abstract_class? || self == Base
+          raise NotImplementedError, &quot;#{self} is an abstract class and cannot be instantiated.&quot;
+        end
+
+        if _has_attribute?(inheritance_column)
+          subclass = subclass_from_attributes(attributes)
+
+          if subclass.nil? &amp;&amp; scope_attributes = current_scope&amp;.scope_for_create
+            subclass = subclass_from_attributes(scope_attributes)
+          end
+
+          if subclass.nil? &amp;&amp; base_class?
+            subclass = subclass_from_attributes(column_defaults)
+          end
+        end
+
+        if subclass &amp;&amp; subclass != self
+          subclass.new(attributes, &amp;block)
+        else
+          super
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/inheritance.rb#L56" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-polymorphic_class_for">
+            
+              polymorphic_class_for(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the class for the provided <code>name</code>.</p>
+
+<p>It is used to find the class correspondent to the value stored in the polymorphic type column.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/inheritance.rb, line 218
+      def polymorphic_class_for(name)
+        if store_full_class_name
+          name.constantize
+        else
+          compute_type(name)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/inheritance.rb#L218" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-polymorphic_name">
+            
+              polymorphic_name()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the value to be stored in the polymorphic type column for Polymorphic <a href="../Associations.html"><code>Associations</code></a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/inheritance.rb, line 211
+      def polymorphic_name
+        store_full_class_name ? base_class.name : base_class.name.demodulize
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/inheritance.rb#L211" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-primary_abstract_class">
+            
+              primary_abstract_class()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets the application record class for Active Record</p>
+
+<p>This is useful if your application uses a different class than ApplicationRecord for your primary abstract class. This class will share a database connection with Active Record. It is the class that connects to your primary database.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/inheritance.rb, line 177
+      def primary_abstract_class
+        if ActiveRecord.application_record_class &amp;&amp; ActiveRecord.application_record_class.name != name
+          raise ArgumentError, &quot;The `primary_abstract_class` is already set to #{ActiveRecord.application_record_class.inspect}. There can only be one `primary_abstract_class` in an application.&quot;
+        end
+
+        self.abstract_class = true
+        ActiveRecord.application_record_class = self
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/inheritance.rb#L177" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-sti_class_for">
+            
+              sti_class_for(type_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the class for the provided <code>type_name</code>.</p>
+
+<p>It is used to find the class correspondent to the value stored in the inheritance column.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/inheritance.rb, line 194
+      def sti_class_for(type_name)
+        if store_full_sti_class &amp;&amp; store_full_class_name
+          type_name.constantize
+        else
+          compute_type(type_name)
+        end
+      rescue NameError
+        raise SubclassNotFound,
+          &quot;The single-table inheritance mechanism failed to locate the subclass: &#39;#{type_name}&#39;. &quot; \
+          &quot;This error is raised because the column &#39;#{inheritance_column}&#39; is reserved for storing the class in case of inheritance. &quot; \
+          &quot;Please rename this column if you didn&#39;t intend it to be used for storing the inheritance class &quot; \
+          &quot;or overwrite #{name}.inheritance_column to use another column for that information. &quot; \
+          &quot;If you wish to disable single-table inheritance for #{name} set &quot; \
+          &quot;#{name}.inheritance_column to nil&quot;
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/inheritance.rb#L194" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-sti_name">
+            
+              sti_name()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the value to be stored in the inheritance column for STI.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/inheritance.rb, line 187
+      def sti_name
+        store_full_sti_class &amp;&amp; store_full_class_name ? name : name.demodulize
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/inheritance.rb#L187" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+      <h2 id="instance-protected-methods">Instance Protected methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-compute_type">
+            
+              compute_type(type_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the class type of the record using the current module as a prefix. So descendants of MyApp::Business::Account would appear as MyApp::Business::AccountSubclass.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/inheritance.rb, line 242
+        def compute_type(type_name)
+          if type_name.start_with?(&quot;::&quot;)
+            # If the type is prefixed with a scope operator then we assume that
+            # the type_name is an absolute reference.
+            type_name.constantize
+          else
+            type_candidate = @_type_candidates_cache[type_name]
+            if type_candidate &amp;&amp; type_constant = type_candidate.safe_constantize
+              return type_constant
+            end
+
+            # Build a list of candidates to search for
+            candidates = []
+            name.scan(/::|$/) { candidates.unshift &quot;#{$`}::#{type_name}&quot; }
+            candidates &lt;&lt; type_name
+
+            candidates.each do |candidate|
+              constant = candidate.safe_constantize
+              if candidate == constant.to_s
+                @_type_candidates_cache[type_name] = candidate
+                return constant
+              end
+            end
+
+            raise NameError.new(&quot;uninitialized constant #{candidates.first}&quot;, candidates.first)
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/inheritance.rb#L242" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

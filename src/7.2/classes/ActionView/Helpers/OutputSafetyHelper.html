@@ -1,0 +1,222 @@
+---
+title: ActionView::Helpers::OutputSafetyHelper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionView::Helpers::OutputSafetyHelper
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionview/lib/action_view/helpers/output_safety_helper_rb.html">actionview/lib/action_view/helpers/output_safety_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionView::Helpers::OutputSafetyHelper-label-Action+View+Raw+Output+Helpers">Action View Raw Output Helpers</h1>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-raw">raw</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-safe_join">safe_join</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_sentence">to_sentence</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-raw">
+            
+              raw(stringish)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>This method outputs without escaping a string. Since escaping tags is now default, this can be used when you don’t want Rails to automatically escape tags. This is not recommended if the data is coming from the user’s input.</p>
+
+<p>For example:</p>
+
+<pre><code>raw @user.name
+# =&gt; &#39;Jimmy &lt;alert&gt;Tables&lt;/alert&gt;&#39;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/output_safety_helper.rb, line 18
+      def raw(stringish)
+        stringish.to_s.html_safe
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/output_safety_helper.rb#L18" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-safe_join">
+            
+              safe_join(array, sep = $,)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>This method returns an HTML safe string similar to what <code>Array#join</code> would return. The array is flattened, and all items, including the supplied separator, are HTML escaped unless they are HTML safe, and the returned string is marked as HTML safe.</p>
+
+<pre><code>safe_join([tag.p(&quot;foo&quot;), &quot;&lt;p&gt;bar&lt;/p&gt;&quot;], &quot;&lt;br&gt;&quot;)
+# =&gt; &quot;&lt;p&gt;foo&lt;/p&gt;&amp;lt;br&amp;gt;&amp;lt;p&amp;gt;bar&amp;lt;/p&amp;gt;&quot;
+
+safe_join([tag.p(&quot;foo&quot;), tag.p(&quot;bar&quot;)], tag.br)
+# =&gt; &quot;&lt;p&gt;foo&lt;/p&gt;&lt;br&gt;&lt;p&gt;bar&lt;/p&gt;&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/output_safety_helper.rb, line 33
+      def safe_join(array, sep = $,)
+        sep = ERB::Util.unwrapped_html_escape(sep)
+
+        array.flatten.map! { |i| ERB::Util.unwrapped_html_escape(i) }.join(sep).html_safe
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/output_safety_helper.rb#L33" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_sentence">
+            
+              to_sentence(array, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Converts the array to a comma-separated sentence where the last element is joined by the connector word. This is the html_safe-aware version of ActiveSupport’s <a href="https://api.rubyonrails.org/classes/Array.html#method-i-to_sentence">Array#to_sentence</a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/output_safety_helper.rb, line 43
+      def to_sentence(array, options = {})
+        options.assert_valid_keys(:words_connector, :two_words_connector, :last_word_connector, :locale)
+
+        default_connectors = {
+          words_connector: &quot;, &quot;,
+          two_words_connector: &quot; and &quot;,
+          last_word_connector: &quot;, and &quot;
+        }
+        if defined?(I18n)
+          i18n_connectors = I18n.translate(:&#39;support.array&#39;, locale: options[:locale], default: {})
+          default_connectors.merge!(i18n_connectors)
+        end
+        options = default_connectors.merge!(options)
+
+        case array.length
+        when 0
+          &quot;&quot;.html_safe
+        when 1
+          ERB::Util.html_escape(array[0])
+        when 2
+          safe_join([array[0], array[1]], options[:two_words_connector])
+        else
+          safe_join([safe_join(array[0...-1], options[:words_connector]), options[:last_word_connector], array[-1]], nil)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/output_safety_helper.rb#L43" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,288 @@
+---
+title: ActiveRecord::TestFixtures::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::TestFixtures::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/test_fixtures_rb.html">activerecord/lib/active_record/test_fixtures.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-fixtures">fixtures</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-set_fixture_class">set_fixture_class</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-setup_fixture_accessors">setup_fixture_accessors</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-uses_transaction">uses_transaction</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-uses_transaction-3F">uses_transaction?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-fixtures">
+            
+              fixtures(*fixture_set_names)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/test_fixtures.rb, line 56
+      def fixtures(*fixture_set_names)
+        if fixture_set_names.first == :all
+          raise StandardError, &quot;No fixture path found. Please set `#{self}.fixture_paths`.&quot; if fixture_paths.blank?
+          fixture_set_names = fixture_paths.flat_map do |path|
+            names = Dir[::File.join(path, &quot;{**,*}/*.{yml}&quot;)].uniq
+            names.reject! { |f| f.start_with?(file_fixture_path.to_s) } if defined?(file_fixture_path) &amp;&amp; file_fixture_path
+            names.map! { |f| f[path.to_s.size..-5].delete_prefix(&quot;/&quot;) }
+          end.uniq
+        else
+          fixture_set_names = fixture_set_names.flatten.map(&amp;:to_s)
+        end
+
+        self.fixture_table_names = (fixture_table_names | fixture_set_names).sort
+        setup_fixture_accessors(fixture_set_names)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/test_fixtures.rb#L56" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-set_fixture_class">
+            
+              set_fixture_class(class_names = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets the model class for a fixture when the class name cannot be inferred from the fixture name.</p>
+
+<p>Examples:</p>
+
+<pre><code>set_fixture_class some_fixture:        SomeModel,
+                  &#39;namespaced/fixture&#39; =&gt; Another::Model
+</code></pre>
+
+<p>The keys must be the fixture names, that coincide with the short paths to the fixture files.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/test_fixtures.rb, line 52
+      def set_fixture_class(class_names = {})
+        self.fixture_class_names = fixture_class_names.merge(class_names.stringify_keys)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/test_fixtures.rb#L52" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-setup_fixture_accessors">
+            
+              setup_fixture_accessors(fixture_set_names = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/test_fixtures.rb, line 72
+      def setup_fixture_accessors(fixture_set_names = nil)
+        fixture_set_names = Array(fixture_set_names || fixture_table_names)
+        unless fixture_set_names.empty?
+          self.fixture_sets = fixture_sets.dup
+          fixture_set_names.each do |fs_name|
+            key = fs_name.to_s.include?(&quot;/&quot;) ? -fs_name.to_s.tr(&quot;/&quot;, &quot;_&quot;) : fs_name
+            key = -key.to_s if key.is_a?(Symbol)
+            fs_name = -fs_name.to_s if fs_name.is_a?(Symbol)
+            fixture_sets[key] = fs_name
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/test_fixtures.rb#L72" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-uses_transaction">
+            
+              uses_transaction(*methods)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Prevents automatically wrapping each specified test in a transaction, to allow application logic transactions to be tested in a top-level (non-nested) context.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/test_fixtures.rb, line 88
+      def uses_transaction(*methods)
+        @uses_transaction = [] unless defined?(@uses_transaction)
+        @uses_transaction.concat methods.map(&amp;:to_s)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/test_fixtures.rb#L88" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-uses_transaction-3F">
+            
+              uses_transaction?(method)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/test_fixtures.rb, line 93
+      def uses_transaction?(method)
+        @uses_transaction = [] unless defined?(@uses_transaction)
+        @uses_transaction.include?(method.to_s)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/test_fixtures.rb#L93" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

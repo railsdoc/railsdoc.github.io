@@ -1,0 +1,539 @@
+---
+title: ActiveRecord::ConnectionAdapters::Quoting
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::ConnectionAdapters::Quoting
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/connection_adapters/abstract/quoting_rb.html">activerecord/lib/active_record/connection_adapters/abstract/quoting.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveRecord::ConnectionAdapters::Quoting-label-Active+Record+Connection+Adapters+Quoting">Active Record Connection Adapters Quoting</h1>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-quote">quote</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-quote_column_name">quote_column_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-quote_string">quote_string</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-quote_table_name">quote_table_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-quote_table_name_for_assignment">quote_table_name_for_assignment</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-quoted_date">quoted_date</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-quoted_false">quoted_false</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-quoted_true">quoted_true</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-type_cast">type_cast</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-unquoted_false">unquoted_false</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-unquoted_true">unquoted_true</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-quote">
+            
+              quote(value)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Quotes the column value to help prevent <a href="https://en.wikipedia.org/wiki/SQL_injection">SQL injection attacks</a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 73
+      def quote(value)
+        case value
+        when String, Symbol, ActiveSupport::Multibyte::Chars
+          &quot;&#39;#{quote_string(value.to_s)}&#39;&quot;
+        when true       then quoted_true
+        when false      then quoted_false
+        when nil        then &quot;NULL&quot;
+        # BigDecimals need to be put in a non-normalized form and quoted.
+        when BigDecimal then value.to_s(&quot;F&quot;)
+        when Numeric then value.to_s
+        when Type::Binary::Data then quoted_binary(value)
+        when Type::Time::Value then &quot;&#39;#{quoted_time(value)}&#39;&quot;
+        when Date, Time then &quot;&#39;#{quoted_date(value)}&#39;&quot;
+        when Class      then &quot;&#39;#{value}&#39;&quot;
+        else raise TypeError, &quot;can&#39;t quote #{value.class.name}&quot;
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/quoting.rb#L73" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-quote_column_name">
+            
+              quote_column_name(column_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Quotes the column name.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 136
+      def quote_column_name(column_name)
+        self.class.quote_column_name(column_name)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/quoting.rb#L136" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-quote_string">
+            
+              quote_string(s)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Quotes a string, escaping any ‘ (single quote) and \ (backslash) characters.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 131
+      def quote_string(s)
+        s.gsub(&quot;\\&quot;, &#39;\&amp;\&amp;&#39;).gsub(&quot;&#39;&quot;, &quot;&#39;&#39;&quot;) # &#39; (for ruby-mode)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/quoting.rb#L131" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-quote_table_name">
+            
+              quote_table_name(table_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Quotes the table name.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 141
+      def quote_table_name(table_name)
+        self.class.quote_table_name(table_name)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/quoting.rb#L141" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-quote_table_name_for_assignment">
+            
+              quote_table_name_for_assignment(table, attr)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Override to return the quoted table name for assignment. Defaults to table quoting.</p>
+
+<p>This works for <a href="MySQL.html"><code>MySQL</code></a> where table.column can be used to resolve ambiguity.</p>
+
+<p>We override this in the sqlite3 and postgresql adapters to use only the column name (as per syntax requirements).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 153
+      def quote_table_name_for_assignment(table, attr)
+        quote_table_name(&quot;#{table}.#{attr}&quot;)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/quoting.rb#L153" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-quoted_date">
+            
+              quoted_date(value)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Quote date/time values for use in SQL input. Includes microseconds if the value is a <a href="../../Time.html"><code>Time</code></a> responding to usec.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 184
+      def quoted_date(value)
+        if value.acts_like?(:time)
+          if default_timezone == :utc
+            value = value.getutc if !value.utc?
+          else
+            value = value.getlocal
+          end
+        end
+
+        result = value.to_fs(:db)
+        if value.respond_to?(:usec) &amp;&amp; value.usec &gt; 0
+          result &lt;&lt; &quot;.&quot; &lt;&lt; sprintf(&quot;%06d&quot;, value.usec)
+        else
+          result
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/quoting.rb#L184" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-quoted_false">
+            
+              quoted_false()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 174
+      def quoted_false
+        &quot;FALSE&quot;
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/quoting.rb#L174" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-quoted_true">
+            
+              quoted_true()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 166
+      def quoted_true
+        &quot;TRUE&quot;
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/quoting.rb#L166" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-type_cast">
+            
+              type_cast(value)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Cast a <code>value</code> to a type that the database understands. For example, SQLite does not understand dates, so this method will convert a <a href="../../Date.html"><code>Date</code></a> to a <a href="../../String.html"><code>String</code></a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 94
+      def type_cast(value)
+        case value
+        when Symbol, ActiveSupport::Multibyte::Chars, Type::Binary::Data
+          value.to_s
+        when true       then unquoted_true
+        when false      then unquoted_false
+        # BigDecimals need to be put in a non-normalized form and quoted.
+        when BigDecimal then value.to_s(&quot;F&quot;)
+        when nil, Numeric, String then value
+        when Type::Time::Value then quoted_time(value)
+        when Date, Time then quoted_date(value)
+        else raise TypeError, &quot;can&#39;t cast #{value.class.name}&quot;
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/quoting.rb#L94" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-unquoted_false">
+            
+              unquoted_false()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 178
+      def unquoted_false
+        false
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/quoting.rb#L178" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-unquoted_true">
+            
+              unquoted_true()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/quoting.rb, line 170
+      def unquoted_true
+        true
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/connection_adapters/abstract/quoting.rb#L170" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

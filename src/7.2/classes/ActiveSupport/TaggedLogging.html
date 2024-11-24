@@ -1,0 +1,230 @@
+---
+title: ActiveSupport::TaggedLogging
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::TaggedLogging
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/tagged_logging_rb.html">activesupport/lib/active_support/tagged_logging.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveSupport::TaggedLogging-label-Active+Support+Tagged+Logging">Active Support Tagged Logging</h1>
+
+<p>Wraps any standard <a href="Logger.html"><code>Logger</code></a> object to provide tagging capabilities.</p>
+
+<p>May be called with a block:</p>
+
+<pre><code>logger = ActiveSupport::TaggedLogging.new(Logger.new(STDOUT))
+logger.tagged(&#39;BCX&#39;) { logger.info &#39;Stuff&#39; }                                  # Logs &quot;[BCX] Stuff&quot;
+logger.tagged(&#39;BCX&#39;, &quot;Jason&quot;) { |tagged_logger| tagged_logger.info &#39;Stuff&#39; }  # Logs &quot;[BCX] [Jason] Stuff&quot;
+logger.tagged(&#39;BCX&#39;) { logger.tagged(&#39;Jason&#39;) { logger.info &#39;Stuff&#39; } }       # Logs &quot;[BCX] [Jason] Stuff&quot;
+</code></pre>
+
+<p>If called without a block, a new logger will be returned with applied tags:</p>
+
+<pre><code>logger = ActiveSupport::TaggedLogging.new(Logger.new(STDOUT))
+logger.tagged(&quot;BCX&quot;).info &quot;Stuff&quot;                 # Logs &quot;[BCX] Stuff&quot;
+logger.tagged(&quot;BCX&quot;, &quot;Jason&quot;).info &quot;Stuff&quot;        # Logs &quot;[BCX] [Jason] Stuff&quot;
+logger.tagged(&quot;BCX&quot;).tagged(&quot;Jason&quot;).info &quot;Stuff&quot; # Logs &quot;[BCX] [Jason] Stuff&quot;
+</code></pre>
+
+<p>This is used by the default <a href="../Rails.html#attribute-c-logger"><code>Rails.logger</code></a> as configured by Railties to make it easy to stamp log lines with subdomains, request ids, and anything else to aid debugging of multi-user production applications.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-flush">flush</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-tagged">tagged</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(logger)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/tagged_logging.rb, line 116
+    def self.new(logger)
+      logger = logger.clone
+
+      if logger.formatter
+        logger.formatter = logger.formatter.clone
+
+        # Workaround for https://bugs.ruby-lang.org/issues/20250
+        # Can be removed when Ruby 3.4 is the least supported version.
+        logger.formatter.object_id if logger.formatter.is_a?(Proc)
+      else
+        # Ensure we set a default formatter so we aren&#39;t extending nil!
+        logger.formatter = ActiveSupport::Logger::SimpleFormatter.new
+      end
+
+      logger.formatter.extend Formatter
+      logger.extend(self)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/tagged_logging.rb#L116" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-flush">
+            
+              flush()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/tagged_logging.rb, line 147
+    def flush
+      clear_tags!
+      super if defined?(super)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/tagged_logging.rb#L147" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-tagged">
+            
+              tagged(*tags)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/tagged_logging.rb, line 136
+    def tagged(*tags)
+      if block_given?
+        formatter.tagged(*tags) { yield self }
+      else
+        logger = ActiveSupport::TaggedLogging.new(self)
+        logger.formatter.extend LocalTagStorage
+        logger.push_tags(*formatter.current_tags, *tags)
+        logger
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/tagged_logging.rb#L136" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

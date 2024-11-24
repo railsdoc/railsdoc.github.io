@@ -1,0 +1,516 @@
+---
+title: ActionView::Base
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionView::Base
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionview/lib/action_view/base_rb.html">actionview/lib/action_view/base.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActionView::Base-label-Action+View+Base">Action View Base</h1>
+
+<p>Action View templates can be written in several ways. If the template file has a <code>.erb</code> extension, then it uses the <a href="https://rubygems.org/gems/erubi">erubi</a> template system which can embed Ruby into an HTML document. If the template file has a <code>.builder</code> extension, then Jim Weirich’s Builder::XmlMarkup library is used.</p>
+
+<h2 id="class-ActionView::Base-label-ERB"><a href="../ERB.html"><code>ERB</code></a></h2>
+
+<p>You trigger <a href="../ERB.html"><code>ERB</code></a> by using embeddings such as <code>&lt;% %&gt;</code>, <code>&lt;% -%&gt;</code>, and <code>&lt;%= %&gt;</code>. The <code>&lt;%= %&gt;</code> tag set is used when you want output. Consider the following loop for names:</p>
+
+<pre><code>&lt;b&gt;Names of all the people&lt;/b&gt;
+&lt;% @people.each do |person| %&gt;
+  Name: &lt;%= person.name %&gt;&lt;br/&gt;
+&lt;% end %&gt;
+</code></pre>
+
+<p>The loop is set up in regular embedding tags <code>&lt;% %&gt;</code>, and the name is written using the output embedding tag <code>&lt;%= %&gt;</code>. Note that this is not just a usage suggestion. Regular output functions like print or puts won’t work with <a href="../ERB.html"><code>ERB</code></a> templates. So this would be wrong:</p>
+
+<pre><code>&lt;%# WRONG %&gt;
+Hi, Mr. &lt;% puts &quot;Frodo&quot; %&gt;
+</code></pre>
+
+<p>If you absolutely must write from within a function use <code>concat</code>.</p>
+
+<p>When on a line that only contains whitespaces except for the tag, <code>&lt;% %&gt;</code> suppresses leading and trailing whitespace, including the trailing newline. <code>&lt;% %&gt;</code> and <code>&lt;%- -%&gt;</code> are the same. Note however that <code>&lt;%= %&gt;</code> and <code>&lt;%= -%&gt;</code> are different: only the latter removes trailing whitespaces.</p>
+
+<h3 id="class-ActionView::Base-label-Using+sub+templates">Using sub templates</h3>
+
+<p>Using sub templates allows you to sidestep tedious replication and extract common display structures in shared templates. The classic example is the use of a header and footer (even though the Action Pack-way would be to use <a href="Layouts.html"><code>Layouts</code></a>):</p>
+
+<pre><code>&lt;%= render &quot;application/header&quot; %&gt;
+Something really specific and terrific
+&lt;%= render &quot;application/footer&quot; %&gt;
+</code></pre>
+
+<p>As you see, we use the output embeddings for the render methods. The render call itself will just return a string holding the result of the rendering. The output embedding writes it to the current template.</p>
+
+<p>But you don’t have to restrict yourself to static includes. Templates can share variables amongst themselves by using instance variables defined using the regular embedding tags. Like this:</p>
+
+<pre><code>&lt;% @page_title = &quot;A Wonderful Hello&quot; %&gt;
+&lt;%= render &quot;application/header&quot; %&gt;
+</code></pre>
+
+<p>Now the header can pick up on the <code>@page_title</code> variable and use it for outputting a title tag:</p>
+
+<pre><code>&lt;title&gt;&lt;%= @page_title %&gt;&lt;/title&gt;
+</code></pre>
+
+<h3 id="class-ActionView::Base-label-Passing+local+variables+to+sub+templates">Passing local variables to sub templates</h3>
+
+<p>You can pass local variables to sub templates by using a hash with the variable names as keys and the objects as values:</p>
+
+<pre><code>&lt;%= render &quot;application/header&quot;, { headline: &quot;Welcome&quot;, person: person } %&gt;
+</code></pre>
+
+<p>These can now be accessed in <code>application/header</code> with:</p>
+
+<pre><code>Headline: &lt;%= headline %&gt;
+First name: &lt;%= person.first_name %&gt;
+</code></pre>
+
+<p>The local variables passed to sub templates can be accessed as a hash using the <code>local_assigns</code> hash. This lets you access the variables as:</p>
+
+<pre><code>Headline: &lt;%= local_assigns[:headline] %&gt;
+</code></pre>
+
+<p>This is useful in cases where you aren’t sure if the local variable has been assigned. Alternatively, you could also use <code>defined? headline</code> to first check if the variable has been assigned before using it.</p>
+
+<p>By default, templates will accept any <code>locals</code> as keyword arguments. To restrict what <code>locals</code> a template accepts, add a <code>locals:</code> magic comment:</p>
+
+<pre><code>&lt;%# locals: (headline:) %&gt;
+
+Headline: &lt;%= headline %&gt;
+</code></pre>
+
+<p>In cases where the local variables are optional, declare the keyword argument with a default value:</p>
+
+<pre><code>&lt;%# locals: (headline: nil) %&gt;
+
+&lt;% unless headline.nil? %&gt;
+Headline: &lt;%= headline %&gt;
+&lt;% end %&gt;
+</code></pre>
+
+<p>Read more about strict locals in <a href="https://guides.rubyonrails.org/action_view_overview.html#strict-locals">Action View Overview</a> in the guides.</p>
+
+<h3 id="class-ActionView::Base-label-Template+caching"><a href="Template.html"><code>Template</code></a> caching</h3>
+
+<p>By default, Rails will compile each template to a method in order to render it. When you alter a template, Rails will check the file’s modification time and recompile it in development mode.</p>
+
+<h2 id="class-ActionView::Base-label-Builder">Builder</h2>
+
+<p>Builder templates are a more programmatic alternative to <a href="../ERB.html"><code>ERB</code></a>. They are especially useful for generating XML content. An XmlMarkup object named <code>xml</code> is automatically made available to templates with a <code>.builder</code> extension.</p>
+
+<p>Here are some basic examples:</p>
+
+<pre><code>xml.em(&quot;emphasized&quot;)                                 # =&gt; &lt;em&gt;emphasized&lt;/em&gt;
+xml.em { xml.b(&quot;emph &amp; bold&quot;) }                      # =&gt; &lt;em&gt;&lt;b&gt;emph &amp;amp; bold&lt;/b&gt;&lt;/em&gt;
+xml.a(&quot;A Link&quot;, &quot;href&quot; =&gt; &quot;http://onestepback.org&quot;)  # =&gt; &lt;a href=&quot;http://onestepback.org&quot;&gt;A Link&lt;/a&gt;
+xml.target(&quot;name&quot; =&gt; &quot;compile&quot;, &quot;option&quot; =&gt; &quot;fast&quot;)  # =&gt; &lt;target option=&quot;fast&quot; name=&quot;compile&quot;\&gt;
+                                                     # NOTE: order of attributes is not specified.
+</code></pre>
+
+<p>Any method with a block will be treated as an XML markup tag with nested markup in the block. For example, the following:</p>
+
+<pre><code>xml.div do
+  xml.h1(@person.name)
+  xml.p(@person.bio)
+end
+</code></pre>
+
+<p>would produce something like:</p>
+
+<pre><code>&lt;div&gt;
+  &lt;h1&gt;David Heinemeier Hansson&lt;/h1&gt;
+  &lt;p&gt;A product of Danish Design during the Winter of &#39;79...&lt;/p&gt;
+&lt;/div&gt;
+</code></pre>
+
+<p>Here is a full-length RSS example actually used on Basecamp:</p>
+
+<pre><code>xml.rss(&quot;version&quot; =&gt; &quot;2.0&quot;, &quot;xmlns:dc&quot; =&gt; &quot;http://purl.org/dc/elements/1.1/&quot;) do
+  xml.channel do
+    xml.title(@feed_title)
+    xml.link(@url)
+    xml.description &quot;Basecamp: Recent items&quot;
+    xml.language &quot;en-us&quot;
+    xml.ttl &quot;40&quot;
+
+    @recent_items.each do |item|
+      xml.item do
+        xml.title(item_title(item))
+        xml.description(item_description(item)) if item_description(item)
+        xml.pubDate(item_pubDate(item))
+        xml.guid(@person.firm.account.url + @recent_items.url(item))
+        xml.link(@person.firm.account.url + @recent_items.url(item))
+
+        xml.tag!(&quot;dc:creator&quot;, item.author_name) if item_has_creator?(item)
+      end
+    end
+  end
+end
+</code></pre>
+
+<p>For more information on Builder please consult the <a href="https://github.com/rails/builder">source code</a>.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-_run">_run</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-cache_template_loading">cache_template_loading</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-cache_template_loading-3D">cache_template_loading=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-compiled_method_container">compiled_method_container</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-in_rendering_context">in_rendering_context</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-inspect">inspect</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>lookup_context</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>view_renderer</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-cache_template_loading">
+            
+              cache_template_loading()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/base.rb, line 187
+      def cache_template_loading
+        ActionView::Resolver.caching?
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/base.rb#L187" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-cache_template_loading-3D">
+            
+              cache_template_loading=(value)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/base.rb, line 191
+      def cache_template_loading=(value)
+        ActionView::Resolver.caching = value
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/base.rb#L191" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-inspect">
+            
+              inspect()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/base.rb, line 207
+          def inspect
+            &quot;#&lt;ActionView::Base:#{&#39;%#016x&#39; % (object_id &lt;&lt; 1)}&gt;&quot;
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/base.rb#L207" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-_run">
+            
+              _run(method, template, locals, buffer, add_to_stack: true, has_strict_locals: false, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/base.rb, line 261
+    def _run(method, template, locals, buffer, add_to_stack: true, has_strict_locals: false, &amp;block)
+      _old_output_buffer, _old_virtual_path, _old_template = @output_buffer, @virtual_path, @current_template
+      @current_template = template if add_to_stack
+      @output_buffer = buffer
+
+      if has_strict_locals
+        begin
+          public_send(method, locals, buffer, **locals, &amp;block)
+        rescue ArgumentError =&gt; argument_error
+          raise(
+            ArgumentError,
+            argument_error.
+              message.
+                gsub(&quot;unknown keyword:&quot;, &quot;unknown local:&quot;).
+                gsub(&quot;missing keyword:&quot;, &quot;missing local:&quot;).
+                gsub(&quot;no keywords accepted&quot;, &quot;no locals accepted&quot;).
+                concat(&quot; for #{@current_template.short_identifier}&quot;)
+          )
+        end
+      else
+        public_send(method, locals, buffer, &amp;block)
+      end
+    ensure
+      @output_buffer, @virtual_path, @current_template = _old_output_buffer, _old_virtual_path, _old_template
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/base.rb#L261" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-compiled_method_container">
+            
+              compiled_method_container()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/base.rb, line 287
+    def compiled_method_container
+      raise NotImplementedError, &lt;&lt;~msg.squish
+        Subclasses of ActionView::Base must implement `compiled_method_container`
+        or use the class method `with_empty_template_cache` for constructing
+        an ActionView::Base subclass that has an empty cache.
+      msg
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/base.rb#L287" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-in_rendering_context">
+            
+              in_rendering_context(options)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/base.rb, line 295
+    def in_rendering_context(options)
+      old_view_renderer  = @view_renderer
+      old_lookup_context = @lookup_context
+
+      if !lookup_context.html_fallback_for_js &amp;&amp; options[:formats]
+        formats = Array(options[:formats])
+        if formats == [:js]
+          formats &lt;&lt; :html
+        end
+        @lookup_context = lookup_context.with_prepended_formats(formats)
+        @view_renderer = ActionView::Renderer.new @lookup_context
+      end
+
+      yield @view_renderer
+    ensure
+      @view_renderer = old_view_renderer
+      @lookup_context = old_lookup_context
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/base.rb#L295" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

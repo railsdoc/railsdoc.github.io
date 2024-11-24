@@ -1,0 +1,360 @@
+---
+title: ActiveSupport::ExecutionWrapper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::ExecutionWrapper
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/execution_wrapper_rb.html">activesupport/lib/active_support/execution_wrapper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-complete-21">complete!</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-register_hook">register_hook</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-run-21">run!</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-to_complete">to_complete</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-to_run">to_run</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-wrap">wrap</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="Callbacks.html">
+              ActiveSupport::Callbacks
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-register_hook">
+            
+              register_hook(hook, outer: false)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Register an object to be invoked during both the <code>run</code> and <code>complete</code> steps.</p>
+
+<p><code>hook.complete</code> will be passed the value returned from <code>hook.run</code>, and will only be invoked if <code>run</code> has previously been called. (Mostly, this means it won’t be invoked if an exception occurs in a preceding <code>to_run</code> block; all ordinary <code>to_complete</code> blocks are invoked in that situation.)</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/execution_wrapper.rb, line 50
+    def self.register_hook(hook, outer: false)
+      if outer
+        to_run RunHook.new(hook), prepend: true
+        to_complete :after, CompleteHook.new(hook)
+      else
+        to_run RunHook.new(hook)
+        to_complete CompleteHook.new(hook)
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/execution_wrapper.rb#L50" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-run-21">
+            
+              run!(reset: false)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Run this execution.</p>
+
+<p>Returns an instance, whose <code>complete!</code> method <strong>must</strong> be invoked after the work has been performed.</p>
+
+<p>Where possible, prefer <code>wrap</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/execution_wrapper.rb, line 66
+    def self.run!(reset: false)
+      if reset
+        lost_instance = IsolatedExecutionState.delete(active_key)
+        lost_instance&amp;.complete!
+      else
+        return Null if active?
+      end
+
+      new.tap do |instance|
+        success = nil
+        begin
+          instance.run!
+          success = true
+        ensure
+          instance.complete! unless success
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/execution_wrapper.rb#L66" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-to_complete">
+            
+              to_complete(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/execution_wrapper.rb, line 21
+    def self.to_complete(*args, &amp;block)
+      set_callback(:complete, *args, &amp;block)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/execution_wrapper.rb#L21" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-to_run">
+            
+              to_run(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/execution_wrapper.rb, line 17
+    def self.to_run(*args, &amp;block)
+      set_callback(:run, *args, &amp;block)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/execution_wrapper.rb#L17" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-wrap">
+            
+              wrap(source: &quot;application.active_support&quot;)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Perform the work in the supplied block as an execution.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/execution_wrapper.rb, line 86
+    def self.wrap(source: &quot;application.active_support&quot;)
+      return yield if active?
+
+      instance = run!
+      begin
+        yield
+      rescue =&gt; error
+        error_reporter&amp;.report(error, handled: false, source: source)
+        raise
+      ensure
+        instance.complete!
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/execution_wrapper.rb#L86" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-complete-21">
+            
+              complete!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Complete this in-flight execution. This method <strong>must</strong> be called exactly once on the result of any call to <code>run!</code>.</p>
+
+<p>Where possible, prefer <code>wrap</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/execution_wrapper.rb, line 135
+    def complete!
+      complete
+    ensure
+      IsolatedExecutionState.delete(self.class.active_key)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/execution_wrapper.rb#L135" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

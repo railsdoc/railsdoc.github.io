@@ -1,0 +1,199 @@
+---
+title: ActiveRecord::MismatchedForeignKey
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::MismatchedForeignKey
+            
+                <span class="parent">&lt;
+                    
+                    <a href="StatementInvalid.html">ActiveRecord::StatementInvalid</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/errors_rb.html">activerecord/lib/active_record/errors.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Raised when a foreign key constraint cannot be added because the column type does not match the referenced column type.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-set_query">set_query</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new( message: nil, sql: nil, binds: nil, table: nil, foreign_key: nil, target_table: nil, primary_key: nil, primary_key_column: nil, query_parser: nil, connection_pool: nil )
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/errors.rb, line 226
+    def initialize(
+      message: nil,
+      sql: nil,
+      binds: nil,
+      table: nil,
+      foreign_key: nil,
+      target_table: nil,
+      primary_key: nil,
+      primary_key_column: nil,
+      query_parser: nil,
+      connection_pool: nil
+    )
+      @original_message = message
+      @query_parser = query_parser
+
+      if table
+        type = primary_key_column.bigint? ? :bigint : primary_key_column.type
+        msg = &lt;&lt;~EOM.squish
+          Column `#{foreign_key}` on table `#{table}` does not match column `#{primary_key}` on `#{target_table}`,
+          which has type `#{primary_key_column.sql_type}`.
+          To resolve this issue, change the type of the `#{foreign_key}` column on `#{table}` to be :#{type}.
+          (For example `t.#{type} :#{foreign_key}`).
+        EOM
+      else
+        msg = &lt;&lt;~EOM.squish
+          There is a mismatch between the foreign key and primary key column types.
+          Verify that the foreign key column type and the primary key of the associated table match types.
+        EOM
+      end
+      if message
+        msg &lt;&lt; &quot;\nOriginal message: #{message}&quot;
+      end
+
+      super(msg, sql: sql, binds: binds, connection_pool: connection_pool)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/errors.rb#L226" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-set_query">
+            
+              set_query(sql, binds)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/errors.rb, line 262
+    def set_query(sql, binds)
+      if @query_parser &amp;&amp; !@sql
+        self.class.new(
+          message: @original_message,
+          sql: sql,
+          binds: binds,
+          connection_pool: @connection_pool,
+          **@query_parser.call(sql)
+        ).tap do |exception|
+          exception.set_backtrace backtrace
+        end
+      else
+        super
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/errors.rb#L262" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

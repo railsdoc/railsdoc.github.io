@@ -1,0 +1,1266 @@
+---
+title: ActionView::Helpers::FormOptionsHelper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionView::Helpers::FormOptionsHelper
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionview/lib/action_view/helpers/form_options_helper_rb.html">actionview/lib/action_view/helpers/form_options_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionView::Helpers::FormOptionsHelper-label-Action+View+Form+Option+Helpers">Action View Form Option Helpers</h1>
+
+<p>Provides a number of methods for turning different kinds of containers into a set of option tags.</p>
+
+<p>The <code>collection_select</code>, <code>select</code> and <code>time_zone_select</code> methods take an <code>options</code> parameter, a hash:</p>
+<ul><li>
+<p><code>:include_blank</code> - set to true or a prompt string if the first option element of the select element is a blank. Useful if there is not a default value required for the select element.</p>
+
+<pre><code>select(:post, :category, Post::CATEGORIES, { include_blank: true })
+</code></pre>
+
+<p>could become:</p>
+
+<pre><code>&lt;select name=&quot;post[category]&quot; id=&quot;post_category&quot;&gt;
+  &lt;option value=&quot;&quot; label=&quot; &quot;&gt;&lt;/option&gt;
+  &lt;option value=&quot;joke&quot;&gt;joke&lt;/option&gt;
+  &lt;option value=&quot;poem&quot;&gt;poem&lt;/option&gt;
+&lt;/select&gt;
+</code></pre>
+
+<p>Another common case is a select tag for a <code>belongs_to</code>-associated object.</p>
+
+<p>Example with <code>@post.person_id =&gt; 2</code>:</p>
+
+<pre><code>select(:post, :person_id, Person.all.collect { |p| [ p.name, p.id ] }, { include_blank: &quot;None&quot; })
+</code></pre>
+
+<p>could become:</p>
+
+<pre><code>&lt;select name=&quot;post[person_id]&quot; id=&quot;post_person_id&quot;&gt;
+  &lt;option value=&quot;&quot;&gt;None&lt;/option&gt;
+  &lt;option value=&quot;1&quot;&gt;David&lt;/option&gt;
+  &lt;option value=&quot;2&quot; selected=&quot;selected&quot;&gt;Eileen&lt;/option&gt;
+  &lt;option value=&quot;3&quot;&gt;Rafael&lt;/option&gt;
+&lt;/select&gt;
+</code></pre>
+</li><li>
+<p><code>:prompt</code> - set to true or a prompt string. When the select element doesn’t have a value yet, this prepends an option with a generic prompt – “Please select” – or the given prompt string.</p>
+
+<pre><code>select(:post, :person_id, Person.all.collect { |p| [ p.name, p.id ] }, { prompt: &quot;Select Person&quot; })
+</code></pre>
+
+<p>could become:</p>
+
+<pre><code>&lt;select name=&quot;post[person_id]&quot; id=&quot;post_person_id&quot;&gt;
+  &lt;option value=&quot;&quot;&gt;Select Person&lt;/option&gt;
+  &lt;option value=&quot;1&quot;&gt;David&lt;/option&gt;
+  &lt;option value=&quot;2&quot;&gt;Eileen&lt;/option&gt;
+  &lt;option value=&quot;3&quot;&gt;Rafael&lt;/option&gt;
+&lt;/select&gt;
+</code></pre>
+</li><li>
+<p><code>:index</code> - like the other form helpers, <code>select</code> can accept an <code>:index</code> option to manually set the ID used in the resulting output. Unlike other helpers, <code>select</code> expects this option to be in the <code>html_options</code> parameter.</p>
+
+<pre><code>select(&quot;album[]&quot;, :genre, %w[ rap rock country ], {}, { index: nil })
+</code></pre>
+
+<p>becomes:</p>
+
+<pre><code>&lt;select name=&quot;album[][genre]&quot; id=&quot;album__genre&quot;&gt;
+  &lt;option value=&quot;rap&quot;&gt;rap&lt;/option&gt;
+  &lt;option value=&quot;rock&quot;&gt;rock&lt;/option&gt;
+  &lt;option value=&quot;country&quot;&gt;country&lt;/option&gt;
+&lt;/select&gt;
+</code></pre>
+</li><li>
+<p><code>:disabled</code> - can be a single value or an array of values that will be disabled options in the final output.</p>
+
+<pre><code>select(:post, :category, Post::CATEGORIES, { disabled: &quot;restricted&quot; })
+</code></pre>
+
+<p>could become:</p>
+
+<pre><code>&lt;select name=&quot;post[category]&quot; id=&quot;post_category&quot;&gt;
+  &lt;option value=&quot;joke&quot;&gt;joke&lt;/option&gt;
+  &lt;option value=&quot;poem&quot;&gt;poem&lt;/option&gt;
+  &lt;option disabled=&quot;disabled&quot; value=&quot;restricted&quot;&gt;restricted&lt;/option&gt;
+&lt;/select&gt;
+</code></pre>
+
+<p>When used with the <code>collection_select</code> helper, <code>:disabled</code> can also be a Proc that identifies those options that should be disabled.</p>
+
+<pre><code>collection_select(:post, :category_id, Category.all, :id, :name, { disabled: -&gt; (category) { category.archived? } })
+</code></pre>
+
+<p>If the categories “2008 stuff” and “Christmas” return true when the method <code>archived?</code> is called, this would return:</p>
+
+<pre><code>&lt;select name=&quot;post[category_id]&quot; id=&quot;post_category_id&quot;&gt;
+  &lt;option value=&quot;1&quot; disabled=&quot;disabled&quot;&gt;2008 stuff&lt;/option&gt;
+  &lt;option value=&quot;2&quot; disabled=&quot;disabled&quot;&gt;Christmas&lt;/option&gt;
+  &lt;option value=&quot;3&quot;&gt;Jokes&lt;/option&gt;
+  &lt;option value=&quot;4&quot;&gt;Poems&lt;/option&gt;
+&lt;/select&gt;
+</code></pre>
+</li></ul>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-collection_check_boxes">collection_check_boxes</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-collection_radio_buttons">collection_radio_buttons</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-collection_select">collection_select</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-grouped_collection_select">grouped_collection_select</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-grouped_options_for_select">grouped_options_for_select</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-option_groups_from_collection_for_select">option_groups_from_collection_for_select</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-options_for_select">options_for_select</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-options_from_collection_for_select">options_from_collection_for_select</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-select">select</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-time_zone_options_for_select">time_zone_options_for_select</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-time_zone_select">time_zone_select</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-weekday_options_for_select">weekday_options_for_select</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-weekday_select">weekday_select</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="TextHelper.html">
+              ActionView::Helpers::TextHelper
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-collection_check_boxes">
+            
+              collection_check_boxes(object, method, collection, value_method, text_method, options = {}, html_options = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns check box tags for the collection of existing return values of <code>method</code> for <code>object</code>‘s class. The value returned from calling <code>method</code> on the instance <code>object</code> will be selected. If calling <code>method</code> returns <code>nil</code>, no selection is made.</p>
+
+<p>The <code>:value_method</code> and <code>:text_method</code> parameters are methods to be called on each member of <code>collection</code>. The return values are used as the <code>value</code> attribute and contents of each check box tag, respectively. They can also be any object that responds to <code>call</code>, such as a <code>proc</code>, that will be called for each member of the <code>collection</code> to retrieve the value/text.</p>
+
+<p>Example object structure for use with this method:</p>
+
+<pre><code>class Post &lt; ActiveRecord::Base
+  has_and_belongs_to_many :authors
+end
+class Author &lt; ActiveRecord::Base
+  has_and_belongs_to_many :posts
+  def name_with_initial
+    &quot;#{first_name.first}. #{last_name}&quot;
+  end
+end
+</code></pre>
+
+<p>Sample usage (selecting the associated Author for an instance of Post, <code>@post</code>):</p>
+
+<pre><code>collection_check_boxes(:post, :author_ids, Author.all, :id, :name_with_initial)
+</code></pre>
+
+<p>If <code>@post.author_ids</code> is already <code>[1]</code>, this would return:</p>
+
+<pre><code>&lt;input id=&quot;post_author_ids_1&quot; name=&quot;post[author_ids][]&quot; type=&quot;checkbox&quot; value=&quot;1&quot; checked=&quot;checked&quot; /&gt;
+&lt;label for=&quot;post_author_ids_1&quot;&gt;D. Heinemeier Hansson&lt;/label&gt;
+&lt;input id=&quot;post_author_ids_2&quot; name=&quot;post[author_ids][]&quot; type=&quot;checkbox&quot; value=&quot;2&quot; /&gt;
+&lt;label for=&quot;post_author_ids_2&quot;&gt;D. Thomas&lt;/label&gt;
+&lt;input id=&quot;post_author_ids_3&quot; name=&quot;post[author_ids][]&quot; type=&quot;checkbox&quot; value=&quot;3&quot; /&gt;
+&lt;label for=&quot;post_author_ids_3&quot;&gt;M. Clark&lt;/label&gt;
+&lt;input name=&quot;post[author_ids][]&quot; type=&quot;hidden&quot; value=&quot;&quot; /&gt;
+</code></pre>
+
+<p>It is also possible to customize the way the elements will be shown by giving a block to the method:</p>
+
+<pre><code>collection_check_boxes(:post, :author_ids, Author.all, :id, :name_with_initial) do |b|
+  b.label { b.check_box }
+end
+</code></pre>
+
+<p>The argument passed to the block is a special kind of builder for this collection, which has the ability to generate the label and check box for the current item in the collection, with proper text and value. Using it, you can change the label and check box display order or even use the label as wrapper, as in the example above.</p>
+
+<p>The builder methods <code>label</code> and <code>check_box</code> also accept extra HTML options:</p>
+
+<pre><code>collection_check_boxes(:post, :author_ids, Author.all, :id, :name_with_initial) do |b|
+  b.label(class: &quot;check_box&quot;) { b.check_box(class: &quot;check_box&quot;) }
+end
+</code></pre>
+
+<p>There are also three special methods available: <code>object</code>, <code>text</code> and <code>value</code>, which are the current item being rendered, its text and value methods, respectively. You can use them like this:</p>
+
+<pre><code>collection_check_boxes(:post, :author_ids, Author.all, :id, :name_with_initial) do |b|
+   b.label(:&quot;data-value&quot; =&gt; b.value) { b.check_box + b.text }
+end
+</code></pre>
+
+<h4 id="method-i-collection_check_boxes-label-Gotcha">Gotcha</h4>
+
+<p>When no selection is made for a collection of checkboxes most web browsers will not send any value.</p>
+
+<p>For example, if we have a <code>User</code> model with <code>category_ids</code> field and we have the following code in our update action:</p>
+
+<pre><code>@user.update(params[:user])
+</code></pre>
+
+<p>If no <code>category_ids</code> are selected then we can safely assume this field will not be updated.</p>
+
+<p>This is possible thanks to a hidden field generated by the helper method for every collection of checkboxes. This hidden field is given the same field name as the checkboxes with a blank value.</p>
+
+<p>In the rare case you don’t want this hidden field, you can pass the <code>include_hidden: false</code> option to the helper method.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 782
+      def collection_check_boxes(object, method, collection, value_method, text_method, options = {}, html_options = {}, &amp;block)
+        Tags::CollectionCheckBoxes.new(object, method, self, collection, value_method, text_method, options, html_options).render(&amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L782" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-collection_radio_buttons">
+            
+              collection_radio_buttons(object, method, collection, value_method, text_method, options = {}, html_options = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns radio button tags for the collection of existing return values of <code>method</code> for <code>object</code>‘s class. The value returned from calling <code>method</code> on the instance <code>object</code> will be selected. If calling <code>method</code> returns <code>nil</code>, no selection is made.</p>
+
+<p>The <code>:value_method</code> and <code>:text_method</code> parameters are methods to be called on each member of <code>collection</code>. The return values are used as the <code>value</code> attribute and contents of each radio button tag, respectively. They can also be any object that responds to <code>call</code>, such as a <code>proc</code>, that will be called for each member of the <code>collection</code> to retrieve the value/text.</p>
+
+<p>Example object structure for use with this method:</p>
+
+<pre><code>class Post &lt; ActiveRecord::Base
+  belongs_to :author
+end
+
+class Author &lt; ActiveRecord::Base
+  has_many :posts
+
+  def name_with_initial
+    &quot;#{first_name.first}. #{last_name}&quot;
+  end
+end
+</code></pre>
+
+<p>Sample usage (selecting the associated Author for an instance of Post, <code>@post</code>):</p>
+
+<pre><code>collection_radio_buttons(:post, :author_id, Author.all, :id, :name_with_initial)
+</code></pre>
+
+<p>If <code>@post.author_id</code> is already <code>1</code>, this would return:</p>
+
+<pre><code>&lt;input id=&quot;post_author_id_1&quot; name=&quot;post[author_id]&quot; type=&quot;radio&quot; value=&quot;1&quot; checked=&quot;checked&quot; /&gt;
+&lt;label for=&quot;post_author_id_1&quot;&gt;D. Heinemeier Hansson&lt;/label&gt;
+&lt;input id=&quot;post_author_id_2&quot; name=&quot;post[author_id]&quot; type=&quot;radio&quot; value=&quot;2&quot; /&gt;
+&lt;label for=&quot;post_author_id_2&quot;&gt;D. Thomas&lt;/label&gt;
+&lt;input id=&quot;post_author_id_3&quot; name=&quot;post[author_id]&quot; type=&quot;radio&quot; value=&quot;3&quot; /&gt;
+&lt;label for=&quot;post_author_id_3&quot;&gt;M. Clark&lt;/label&gt;
+</code></pre>
+
+<p>It is also possible to customize the way the elements will be shown by giving a block to the method:</p>
+
+<pre><code>collection_radio_buttons(:post, :author_id, Author.all, :id, :name_with_initial) do |b|
+  b.label { b.radio_button }
+end
+</code></pre>
+
+<p>The argument passed to the block is a special kind of builder for this collection, which has the ability to generate the label and radio button for the current item in the collection, with proper text and value. Using it, you can change the label and radio button display order or even use the label as wrapper, as in the example above.</p>
+
+<p>The builder methods <code>label</code> and <code>radio_button</code> also accept extra HTML options:</p>
+
+<pre><code>collection_radio_buttons(:post, :author_id, Author.all, :id, :name_with_initial) do |b|
+  b.label(class: &quot;radio_button&quot;) { b.radio_button(class: &quot;radio_button&quot;) }
+end
+</code></pre>
+
+<p>There are also three special methods available: <code>object</code>, <code>text</code> and <code>value</code>, which are the current item being rendered, its text and value methods, respectively. You can use them like this:</p>
+
+<pre><code>collection_radio_buttons(:post, :author_id, Author.all, :id, :name_with_initial) do |b|
+   b.label(:&quot;data-value&quot; =&gt; b.value) { b.radio_button + b.text }
+end
+</code></pre>
+
+<h4 id="method-i-collection_radio_buttons-label-Gotcha">Gotcha</h4>
+
+<p>The HTML specification says when nothing is selected on a collection of radio buttons web browsers do not send any value to server. Unfortunately this introduces a gotcha: if a <code>User</code> model has a <code>category_id</code> field and in the form no category is selected, no <code>category_id</code> parameter is sent. So, any strong parameters idiom like:</p>
+
+<pre><code>params.require(:user).permit(...)
+</code></pre>
+
+<p>will raise an error since no <code>{user: ...}</code> will be present.</p>
+
+<p>To prevent this the helper generates an auxiliary hidden field before every collection of radio buttons. The hidden field has the same name as collection radio button and blank value.</p>
+
+<p>In case if you don’t want the helper to generate this hidden field you can specify <code>include_hidden: false</code> option.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 698
+      def collection_radio_buttons(object, method, collection, value_method, text_method, options = {}, html_options = {}, &amp;block)
+        Tags::CollectionRadioButtons.new(object, method, self, collection, value_method, text_method, options, html_options).render(&amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L698" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-collection_select">
+            
+              collection_select(object, method, collection, value_method, text_method, options = {}, html_options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns <code>&lt;select&gt;</code> and <code>&lt;option&gt;</code> tags for the collection of existing return values of <code>method</code> for <code>object</code>‘s class. The value returned from calling <code>method</code> on the instance <code>object</code> will be selected. If calling <code>method</code> returns <code>nil</code>, no selection is made without including <code>:prompt</code> or <code>:include_blank</code> in the <code>options</code> hash.</p>
+
+<p>The <code>:value_method</code> and <code>:text_method</code> parameters are methods to be called on each member of <code>collection</code>. The return values are used as the <code>value</code> attribute and contents of each <code>&lt;option&gt;</code> tag, respectively. They can also be any object that responds to <code>call</code>, such as a <code>proc</code>, that will be called for each member of the <code>collection</code> to retrieve the value/text.</p>
+
+<p>Example object structure for use with this method:</p>
+
+<pre><code>class Post &lt; ActiveRecord::Base
+  belongs_to :author
+end
+
+class Author &lt; ActiveRecord::Base
+  has_many :posts
+
+  def name_with_initial
+    &quot;#{first_name.first}. #{last_name}&quot;
+  end
+end
+</code></pre>
+
+<p>Sample usage (selecting the associated Author for an instance of Post, <code>@post</code>):</p>
+
+<pre><code>collection_select(:post, :author_id, Author.all, :id, :name_with_initial, prompt: true)
+</code></pre>
+
+<p>If <code>@post.author_id</code> is already <code>1</code>, this would return:</p>
+
+<pre><code>&lt;select name=&quot;post[author_id]&quot; id=&quot;post_author_id&quot;&gt;
+  &lt;option value=&quot;&quot;&gt;Please select&lt;/option&gt;
+  &lt;option value=&quot;1&quot; selected=&quot;selected&quot;&gt;D. Heinemeier Hansson&lt;/option&gt;
+  &lt;option value=&quot;2&quot;&gt;D. Thomas&lt;/option&gt;
+  &lt;option value=&quot;3&quot;&gt;M. Clark&lt;/option&gt;
+&lt;/select&gt;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 199
+      def collection_select(object, method, collection, value_method, text_method, options = {}, html_options = {})
+        Tags::CollectionSelect.new(object, method, self, collection, value_method, text_method, options, html_options).render
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L199" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-grouped_collection_select">
+            
+              grouped_collection_select(object, method, collection, group_method, group_label_method, option_key_method, option_value_method, options = {}, html_options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns <code>&lt;select&gt;</code>, <code>&lt;optgroup&gt;</code> and <code>&lt;option&gt;</code> tags for the collection of existing return values of <code>method</code> for <code>object</code>‘s class. The value returned from calling <code>method</code> on the instance <code>object</code> will be selected. If calling <code>method</code> returns <code>nil</code>, no selection is made without including <code>:prompt</code> or <code>:include_blank</code> in the <code>options</code> hash.</p>
+
+<p>Parameters:</p>
+<ul><li>
+<p><code>object</code> - The instance of the class to be used for the select tag</p>
+</li><li>
+<p><code>method</code> - The attribute of <code>object</code> corresponding to the select tag</p>
+</li><li>
+<p><code>collection</code> - An array of objects representing the <code>&lt;optgroup&gt;</code> tags.</p>
+</li><li>
+<p><code>group_method</code> - The name of a method which, when called on a member of <code>collection</code>, returns an array of child objects representing the <code>&lt;option&gt;</code> tags. It can also be any object that responds to <code>call</code>, such as a <code>proc</code>, that will be called for each member of the <code>collection</code> to retrieve the value.</p>
+</li><li>
+<p><code>group_label_method</code> - The name of a method which, when called on a member of <code>collection</code>, returns a string to be used as the <code>label</code> attribute for its <code>&lt;optgroup&gt;</code> tag. It can also be any object that responds to <code>call</code>, such as a <code>proc</code>, that will be called for each member of the <code>collection</code> to retrieve the label.</p>
+</li><li>
+<p><code>option_key_method</code> - The name of a method which, when called on a child object of a member of <code>collection</code>, returns a value to be used as the <code>value</code> attribute for its <code>&lt;option&gt;</code> tag.</p>
+</li><li>
+<p><code>option_value_method</code> - The name of a method which, when called on a child object of a member of <code>collection</code>, returns a value to be used as the contents of its <code>&lt;option&gt;</code> tag.</p>
+</li></ul>
+
+<p>Example object structure for use with this method:</p>
+
+<pre><code># attributes: id, name
+class Continent &lt; ActiveRecord::Base
+  has_many :countries
+end
+
+# attributes: id, name, continent_id
+class Country &lt; ActiveRecord::Base
+  belongs_to :continent
+end
+
+# attributes: id, name, country_id
+class City &lt; ActiveRecord::Base
+  belongs_to :country
+end
+</code></pre>
+
+<p>Sample usage:</p>
+
+<pre><code>grouped_collection_select(:city, :country_id, @continents, :countries, :name, :id, :name)
+</code></pre>
+
+<p>Possible output:</p>
+
+<pre><code>&lt;select name=&quot;city[country_id]&quot; id=&quot;city_country_id&quot;&gt;
+  &lt;optgroup label=&quot;Africa&quot;&gt;
+    &lt;option value=&quot;1&quot;&gt;South Africa&lt;/option&gt;
+    &lt;option value=&quot;3&quot;&gt;Somalia&lt;/option&gt;
+  &lt;/optgroup&gt;
+  &lt;optgroup label=&quot;Europe&quot;&gt;
+    &lt;option value=&quot;7&quot; selected=&quot;selected&quot;&gt;Denmark&lt;/option&gt;
+    &lt;option value=&quot;2&quot;&gt;Ireland&lt;/option&gt;
+  &lt;/optgroup&gt;
+&lt;/select&gt;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 258
+      def grouped_collection_select(object, method, collection, group_method, group_label_method, option_key_method, option_value_method, options = {}, html_options = {})
+        Tags::GroupedCollectionSelect.new(object, method, self, collection, group_method, group_label_method, option_key_method, option_value_method, options, html_options).render
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L258" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-grouped_options_for_select">
+            
+              grouped_options_for_select(grouped_options, selected_key = nil, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a string of <code>&lt;option&gt;</code> tags, like <code>options_for_select</code>, but wraps them with <code>&lt;optgroup&gt;</code> tags:</p>
+
+<pre><code>grouped_options = [
+ [&#39;North America&#39;,
+   [[&#39;United States&#39;,&#39;US&#39;],&#39;Canada&#39;]],
+ [&#39;Europe&#39;,
+   [&#39;Denmark&#39;,&#39;Germany&#39;,&#39;France&#39;]]
+]
+grouped_options_for_select(grouped_options)
+
+grouped_options = {
+  &#39;North America&#39; =&gt; [[&#39;United States&#39;,&#39;US&#39;], &#39;Canada&#39;],
+  &#39;Europe&#39; =&gt; [&#39;Denmark&#39;,&#39;Germany&#39;,&#39;France&#39;]
+}
+grouped_options_for_select(grouped_options)
+</code></pre>
+
+<p>Possible output:</p>
+
+<pre><code>&lt;optgroup label=&quot;North America&quot;&gt;
+  &lt;option value=&quot;US&quot;&gt;United States&lt;/option&gt;
+  &lt;option value=&quot;Canada&quot;&gt;Canada&lt;/option&gt;
+&lt;/optgroup&gt;
+&lt;optgroup label=&quot;Europe&quot;&gt;
+  &lt;option value=&quot;Denmark&quot;&gt;Denmark&lt;/option&gt;
+  &lt;option value=&quot;Germany&quot;&gt;Germany&lt;/option&gt;
+  &lt;option value=&quot;France&quot;&gt;France&lt;/option&gt;
+&lt;/optgroup&gt;
+</code></pre>
+
+<p>Parameters:</p>
+<ul><li>
+<p><code>grouped_options</code> - Accepts a nested array or hash of strings. The first value serves as the <code>&lt;optgroup&gt;</code> label while the second value must be an array of options. The second value can be a nested array of text-value pairs. See <code>options_for_select</code> for more info.</p>
+
+<pre><code>Ex. [&quot;North America&quot;,[[&quot;United States&quot;,&quot;US&quot;],[&quot;Canada&quot;,&quot;CA&quot;]]]
+</code></pre>
+
+<p>An optional third value can be provided as HTML attributes for the <code>optgroup</code>.</p>
+
+<pre><code>Ex. [&quot;North America&quot;,[[&quot;United States&quot;,&quot;US&quot;],[&quot;Canada&quot;,&quot;CA&quot;]], { disabled: &quot;disabled&quot; }]
+</code></pre>
+</li><li>
+<p><code>selected_key</code> - A value equal to the <code>value</code> attribute for one of the <code>&lt;option&gt;</code> tags, which will have the <code>selected</code> attribute set. Note: It is possible for this value to match multiple options as you might have the same option in multiple groups. Each will then get <code>selected=&quot;selected&quot;</code>.</p>
+</li></ul>
+
+<p>Options:</p>
+<ul><li>
+<p><code>:prompt</code> - set to true or a prompt string. When the select element doesn’t have a value yet, this prepends an option with a generic prompt - “Please select” - or the given prompt string.</p>
+</li><li>
+<p><code>:divider</code> - the divider for the options groups.</p>
+
+<pre><code>grouped_options = [
+  [[&#39;United States&#39;,&#39;US&#39;], &#39;Canada&#39;],
+  [&#39;Denmark&#39;,&#39;Germany&#39;,&#39;France&#39;]
+]
+grouped_options_for_select(grouped_options, nil, divider: &#39;---------&#39;)
+</code></pre>
+
+<p>Possible output:</p>
+
+<pre><code>&lt;optgroup label=&quot;---------&quot;&gt;
+  &lt;option value=&quot;US&quot;&gt;United States&lt;/option&gt;
+  &lt;option value=&quot;Canada&quot;&gt;Canada&lt;/option&gt;
+&lt;/optgroup&gt;
+&lt;optgroup label=&quot;---------&quot;&gt;
+  &lt;option value=&quot;Denmark&quot;&gt;Denmark&lt;/option&gt;
+  &lt;option value=&quot;Germany&quot;&gt;Germany&lt;/option&gt;
+  &lt;option value=&quot;France&quot;&gt;France&lt;/option&gt;
+&lt;/optgroup&gt;
+</code></pre>
+</li></ul>
+
+<p><strong>Note:</strong> Only the <code>&lt;optgroup&gt;</code> and <code>&lt;option&gt;</code> tags are returned, so you still have to wrap the output in an appropriate <code>&lt;select&gt;</code> tag.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 534
+      def grouped_options_for_select(grouped_options, selected_key = nil, options = {})
+        prompt  = options[:prompt]
+        divider = options[:divider]
+
+        body = &quot;&quot;.html_safe
+
+        if prompt
+          body.safe_concat content_tag(&quot;option&quot;, prompt_text(prompt), value: &quot;&quot;)
+        end
+
+        grouped_options.each do |container|
+          html_attributes = option_html_attributes(container)
+
+          if divider
+            label = divider
+          else
+            label, container = container
+          end
+
+          html_attributes = { label: label }.merge!(html_attributes)
+          body.safe_concat content_tag(&quot;optgroup&quot;, options_for_select(container, selected_key), html_attributes)
+        end
+
+        body
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L534" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-option_groups_from_collection_for_select">
+            
+              option_groups_from_collection_for_select(collection, group_method, group_label_method, option_key_method, option_value_method, selected_key = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a string of <code>&lt;option&gt;</code> tags, like <code>options_from_collection_for_select</code>, but groups them by <code>&lt;optgroup&gt;</code> tags based on the object relationships of the arguments.</p>
+
+<p>Parameters:</p>
+<ul><li>
+<p><code>collection</code> - An array of objects representing the <code>&lt;optgroup&gt;</code> tags.</p>
+</li><li>
+<p><code>group_method</code> - The name of a method which, when called on a member of <code>collection</code>, returns an array of child objects representing the <code>&lt;option&gt;</code> tags.</p>
+</li><li>
+<p><code>group_label_method</code> - The name of a method which, when called on a member of <code>collection</code>, returns a string to be used as the <code>label</code> attribute for its <code>&lt;optgroup&gt;</code> tag.</p>
+</li><li>
+<p><code>option_key_method</code> - The name of a method which, when called on a child object of a member of <code>collection</code>, returns a value to be used as the <code>value</code> attribute for its <code>&lt;option&gt;</code> tag.</p>
+</li><li>
+<p><code>option_value_method</code> - The name of a method which, when called on a child object of a member of <code>collection</code>, returns a value to be used as the contents of its <code>&lt;option&gt;</code> tag.</p>
+</li><li>
+<p><code>selected_key</code> - A value equal to the <code>value</code> attribute for one of the <code>&lt;option&gt;</code> tags, which will have the <code>selected</code> attribute set. Corresponds to the return value of one of the calls to <code>option_key_method</code>. If <code>nil</code>, no selection is made. Can also be a hash if disabled values are to be specified.</p>
+</li></ul>
+
+<p>Example object structure for use with this method:</p>
+
+<pre><code>class Continent &lt; ActiveRecord::Base
+  has_many :countries
+  # attribs: id, name
+end
+
+class Country &lt; ActiveRecord::Base
+  belongs_to :continent
+  # attribs: id, name, continent_id
+end
+</code></pre>
+
+<p>Sample usage:</p>
+
+<pre><code>option_groups_from_collection_for_select(@continents, :countries, :name, :id, :name, 3)
+</code></pre>
+
+<p>Possible output:</p>
+
+<pre><code>&lt;optgroup label=&quot;Africa&quot;&gt;
+  &lt;option value=&quot;1&quot;&gt;Egypt&lt;/option&gt;
+  &lt;option value=&quot;4&quot;&gt;Rwanda&lt;/option&gt;
+  ...
+&lt;/optgroup&gt;
+&lt;optgroup label=&quot;Asia&quot;&gt;
+  &lt;option value=&quot;3&quot; selected=&quot;selected&quot;&gt;China&lt;/option&gt;
+  &lt;option value=&quot;12&quot;&gt;India&lt;/option&gt;
+  &lt;option value=&quot;5&quot;&gt;Japan&lt;/option&gt;
+  ...
+&lt;/optgroup&gt;
+</code></pre>
+
+<p><strong>Note:</strong> Only the <code>&lt;optgroup&gt;</code> and <code>&lt;option&gt;</code> tags are returned, so you still have to wrap the output in an appropriate <code>&lt;select&gt;</code> tag.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 462
+      def option_groups_from_collection_for_select(collection, group_method, group_label_method, option_key_method, option_value_method, selected_key = nil)
+        collection.map do |group|
+          option_tags = options_from_collection_for_select(
+            value_for_collection(group, group_method), option_key_method, option_value_method, selected_key)
+
+          content_tag(&quot;optgroup&quot;, option_tags, label: value_for_collection(group, group_label_method))
+        end.join.html_safe
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L462" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-options_for_select">
+            
+              options_for_select(container, selected = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Accepts a container (hash, array, enumerable, your type) and returns a string of option tags. Given a container where the elements respond to first and last (such as a two-element array), the “lasts” serve as option values and the “firsts” as option text. Hashes are turned into this form automatically, so the keys become “firsts” and values become lasts. If <code>selected</code> is specified, the matching “last” or element will get the selected option-tag. <code>selected</code> may also be an array of values to be selected when using a multiple select.</p>
+
+<pre><code>options_for_select([[&quot;Dollar&quot;, &quot;$&quot;], [&quot;Kroner&quot;, &quot;DKK&quot;]])
+# =&gt; &lt;option value=&quot;$&quot;&gt;Dollar&lt;/option&gt;
+# =&gt; &lt;option value=&quot;DKK&quot;&gt;Kroner&lt;/option&gt;
+
+options_for_select([ &quot;VISA&quot;, &quot;MasterCard&quot; ], &quot;MasterCard&quot;)
+# =&gt; &lt;option value=&quot;VISA&quot;&gt;VISA&lt;/option&gt;
+# =&gt; &lt;option selected=&quot;selected&quot; value=&quot;MasterCard&quot;&gt;MasterCard&lt;/option&gt;
+
+options_for_select({ &quot;Basic&quot; =&gt; &quot;$20&quot;, &quot;Plus&quot; =&gt; &quot;$40&quot; }, &quot;$40&quot;)
+# =&gt; &lt;option value=&quot;$20&quot;&gt;Basic&lt;/option&gt;
+# =&gt; &lt;option value=&quot;$40&quot; selected=&quot;selected&quot;&gt;Plus&lt;/option&gt;
+
+options_for_select([ &quot;VISA&quot;, &quot;MasterCard&quot;, &quot;Discover&quot; ], [&quot;VISA&quot;, &quot;Discover&quot;])
+# =&gt; &lt;option selected=&quot;selected&quot; value=&quot;VISA&quot;&gt;VISA&lt;/option&gt;
+# =&gt; &lt;option value=&quot;MasterCard&quot;&gt;MasterCard&lt;/option&gt;
+# =&gt; &lt;option selected=&quot;selected&quot; value=&quot;Discover&quot;&gt;Discover&lt;/option&gt;
+</code></pre>
+
+<p>You can optionally provide HTML attributes as the last element of the array.</p>
+
+<pre><code>options_for_select([ &quot;Denmark&quot;, [&quot;USA&quot;, { class: &#39;bold&#39; }], &quot;Sweden&quot; ], [&quot;USA&quot;, &quot;Sweden&quot;])
+# =&gt; &lt;option value=&quot;Denmark&quot;&gt;Denmark&lt;/option&gt;
+# =&gt; &lt;option value=&quot;USA&quot; class=&quot;bold&quot; selected=&quot;selected&quot;&gt;USA&lt;/option&gt;
+# =&gt; &lt;option value=&quot;Sweden&quot; selected=&quot;selected&quot;&gt;Sweden&lt;/option&gt;
+
+options_for_select([[&quot;Dollar&quot;, &quot;$&quot;, { class: &quot;bold&quot; }], [&quot;Kroner&quot;, &quot;DKK&quot;, { onclick: &quot;alert(&#39;HI&#39;);&quot; }]])
+# =&gt; &lt;option value=&quot;$&quot; class=&quot;bold&quot;&gt;Dollar&lt;/option&gt;
+# =&gt; &lt;option value=&quot;DKK&quot; onclick=&quot;alert(&#39;HI&#39;);&quot;&gt;Kroner&lt;/option&gt;
+</code></pre>
+
+<p>If you wish to specify disabled option tags, set <code>selected</code> to be a hash, with <code>:disabled</code> being either a value or array of values to be disabled. In this case, you can use <code>:selected</code> to specify selected option tags.</p>
+
+<pre><code>options_for_select([&quot;Free&quot;, &quot;Basic&quot;, &quot;Advanced&quot;, &quot;Super Platinum&quot;], disabled: &quot;Super Platinum&quot;)
+# =&gt; &lt;option value=&quot;Free&quot;&gt;Free&lt;/option&gt;
+# =&gt; &lt;option value=&quot;Basic&quot;&gt;Basic&lt;/option&gt;
+# =&gt; &lt;option value=&quot;Advanced&quot;&gt;Advanced&lt;/option&gt;
+# =&gt; &lt;option value=&quot;Super Platinum&quot; disabled=&quot;disabled&quot;&gt;Super Platinum&lt;/option&gt;
+
+options_for_select([&quot;Free&quot;, &quot;Basic&quot;, &quot;Advanced&quot;, &quot;Super Platinum&quot;], disabled: [&quot;Advanced&quot;, &quot;Super Platinum&quot;])
+# =&gt; &lt;option value=&quot;Free&quot;&gt;Free&lt;/option&gt;
+# =&gt; &lt;option value=&quot;Basic&quot;&gt;Basic&lt;/option&gt;
+# =&gt; &lt;option value=&quot;Advanced&quot; disabled=&quot;disabled&quot;&gt;Advanced&lt;/option&gt;
+# =&gt; &lt;option value=&quot;Super Platinum&quot; disabled=&quot;disabled&quot;&gt;Super Platinum&lt;/option&gt;
+
+options_for_select([&quot;Free&quot;, &quot;Basic&quot;, &quot;Advanced&quot;, &quot;Super Platinum&quot;], selected: &quot;Free&quot;, disabled: &quot;Super Platinum&quot;)
+# =&gt; &lt;option value=&quot;Free&quot; selected=&quot;selected&quot;&gt;Free&lt;/option&gt;
+# =&gt; &lt;option value=&quot;Basic&quot;&gt;Basic&lt;/option&gt;
+# =&gt; &lt;option value=&quot;Advanced&quot;&gt;Advanced&lt;/option&gt;
+# =&gt; &lt;option value=&quot;Super Platinum&quot; disabled=&quot;disabled&quot;&gt;Super Platinum&lt;/option&gt;
+</code></pre>
+
+<p>NOTE: Only the option tags are returned, you have to wrap this call in a regular HTML select tag.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 358
+      def options_for_select(container, selected = nil)
+        return container if String === container
+
+        selected, disabled = extract_selected_and_disabled(selected).map do |r|
+          Array(r).map(&amp;:to_s)
+        end
+
+        container.map do |element|
+          html_attributes = option_html_attributes(element)
+          text, value = option_text_and_value(element).map(&amp;:to_s)
+
+          html_attributes[:selected] ||= option_value_selected?(value, selected)
+          html_attributes[:disabled] ||= disabled &amp;&amp; option_value_selected?(value, disabled)
+          html_attributes[:value] = value
+
+          tag_builder.content_tag_string(:option, text, html_attributes)
+        end.join(&quot;\n&quot;).html_safe
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L358" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-options_from_collection_for_select">
+            
+              options_from_collection_for_select(collection, value_method, text_method, selected = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a string of option tags that have been compiled by iterating over the <code>collection</code> and assigning the result of a call to the <code>value_method</code> as the option value and the <code>text_method</code> as the option text.</p>
+
+<pre><code>options_from_collection_for_select(@people, &#39;id&#39;, &#39;name&#39;)
+# =&gt; &lt;option value=&quot;#{person.id}&quot;&gt;#{person.name}&lt;/option&gt;
+</code></pre>
+
+<p>This is more often than not used inside a select_tag like this example:</p>
+
+<pre><code>select_tag &#39;person&#39;, options_from_collection_for_select(@people, &#39;id&#39;, &#39;name&#39;)
+</code></pre>
+
+<p>If <code>selected</code> is specified as a value or array of values, the element(s) returning a match on <code>value_method</code> will be selected option tag(s).</p>
+
+<p>If <code>selected</code> is specified as a Proc, those members of the collection that return true for the anonymous function are the selected values.</p>
+
+<p><code>selected</code> can also be a hash, specifying both <code>:selected</code> and/or <code>:disabled</code> values as required.</p>
+
+<p>Be sure to specify the same class as the <code>value_method</code> when specifying selected or disabled options. Failure to do this will produce undesired results. Example:</p>
+
+<pre><code>options_from_collection_for_select(@people, &#39;id&#39;, &#39;name&#39;, &#39;1&#39;)
+</code></pre>
+
+<p>Will not select a person with the id of 1 because 1 (an <a href="../../Integer.html"><code>Integer</code></a>) is not the same as ‘1’ (a string)</p>
+
+<pre><code>options_from_collection_for_select(@people, &#39;id&#39;, &#39;name&#39;, 1)
+</code></pre>
+
+<p>should produce the desired results.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 401
+      def options_from_collection_for_select(collection, value_method, text_method, selected = nil)
+        options = collection.map do |element|
+          [value_for_collection(element, text_method), value_for_collection(element, value_method), option_html_attributes(element)]
+        end
+        selected, disabled = extract_selected_and_disabled(selected)
+        select_deselect = {
+          selected: extract_values_from_collection(collection, value_method, selected),
+          disabled: extract_values_from_collection(collection, value_method, disabled)
+        }
+
+        options_for_select(options, select_deselect)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L401" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-select">
+            
+              select(object, method, choices = nil, options = {}, html_options = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Create a select tag and a series of contained option tags for the provided object and method. The option currently held by the object will be selected, provided that the object is available.</p>
+
+<p>There are two possible formats for the <code>choices</code> parameter, corresponding to other helpers’ output:</p>
+<ul><li>
+<p>A flat collection (see <code>options_for_select</code>).</p>
+</li><li>
+<p>A nested collection (see <code>grouped_options_for_select</code>).</p>
+</li></ul>
+
+<p>Example with <code>@post.person_id =&gt; 2</code>:</p>
+
+<pre><code>select :post, :person_id, Person.all.collect { |p| [ p.name, p.id ] }, { include_blank: true })
+</code></pre>
+
+<p>would become:</p>
+
+<pre><code>&lt;select name=&quot;post[person_id]&quot; id=&quot;post_person_id&quot;&gt;
+  &lt;option value=&quot;&quot; label=&quot; &quot;&gt;&lt;/option&gt;
+  &lt;option value=&quot;1&quot;&gt;David&lt;/option&gt;
+  &lt;option value=&quot;2&quot; selected=&quot;selected&quot;&gt;Eileen&lt;/option&gt;
+  &lt;option value=&quot;3&quot;&gt;Rafael&lt;/option&gt;
+&lt;/select&gt;
+</code></pre>
+
+<p>This can be used to provide a default set of options in the standard way: before rendering the create form, a new model instance is assigned the default options and bound to @model_name. Usually this model is not saved to the database. Instead, a second model object is created when the create request is received. This allows the user to submit a form page more than once with the expected results of creating multiple records. In addition, this allows a single partial to be used to generate form inputs for both edit and create forms.</p>
+
+<p>By default, <code>post.person_id</code> is the selected option. Specify <code>selected: value</code> to use a different selection or <code>selected: nil</code> to leave all options unselected. Similarly, you can specify values to be disabled in the option tags by specifying the <code>:disabled</code> option. This can either be a single value or an array of values to be disabled.</p>
+
+<p>A block can be passed to <code>select</code> to customize how the options tags will be rendered. This is useful when the options tag has complex attributes.</p>
+
+<pre><code>select(report, :campaign_ids) do
+  available_campaigns.each do |c|
+    tag.option(c.name, value: c.id, data: { tags: c.tags.to_json })
+  end
+end
+</code></pre>
+
+<h4 id="method-i-select-label-Gotcha">Gotcha</h4>
+
+<p>The HTML specification says when <code>multiple</code> parameter passed to select and all options got deselected web browsers do not send any value to server. Unfortunately this introduces a gotcha: if a <code>User</code> model has many <code>roles</code> and have <code>role_ids</code> accessor, and in the form that edits roles of the user the user deselects all roles from <code>role_ids</code> multiple select box, no <code>role_ids</code> parameter is sent. So, any mass-assignment idiom like</p>
+
+<pre><code>@user.update(params[:user])
+</code></pre>
+
+<p>wouldn’t update roles.</p>
+
+<p>To prevent this the helper generates an auxiliary hidden field before every multiple select. The hidden field has the same name as multiple select and blank value.</p>
+
+<p><strong>Note:</strong> The client either sends only the hidden field (representing the deselected multiple select box), or both fields. This means that the resulting array always contains a blank string.</p>
+
+<p>In case if you don’t want the helper to generate this hidden field you can specify <code>include_hidden: false</code> option.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 159
+      def select(object, method, choices = nil, options = {}, html_options = {}, &amp;block)
+        Tags::Select.new(object, method, self, choices, options, html_options, &amp;block).render
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L159" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-time_zone_options_for_select">
+            
+              time_zone_options_for_select(selected = nil, priority_zones = nil, model = ::ActiveSupport::TimeZone)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a string of option tags for pretty much any time zone in the world. Supply an <a href="../../ActiveSupport/TimeZone.html"><code>ActiveSupport::TimeZone</code></a> name as <code>selected</code> to have it marked as the selected option tag. You can also supply an array of <a href="../../ActiveSupport/TimeZone.html"><code>ActiveSupport::TimeZone</code></a> objects as <code>priority_zones</code>, so that they will be listed above the rest of the (long) list. (You can use <a href="../../ActiveSupport/TimeZone.html#method-c-us_zones"><code>ActiveSupport::TimeZone.us_zones</code></a> as a convenience for obtaining a list of the US time zones, or a <a href="../../Regexp.html"><code>Regexp</code></a> to select the zones of your choice)</p>
+
+<p>The <code>selected</code> parameter must be either <code>nil</code>, or a string that names an <a href="../../ActiveSupport/TimeZone.html"><code>ActiveSupport::TimeZone</code></a>.</p>
+
+<p>By default, <code>model</code> is the <a href="../../ActiveSupport/TimeZone.html"><code>ActiveSupport::TimeZone</code></a> constant (which can be obtained in Active Record as a value object). The <code>model</code> parameter must respond to <code>all</code> and return an array of objects that represent time zones; each object must respond to <code>name</code>. If a <a href="../../Regexp.html"><code>Regexp</code></a> is given it will attempt to match the zones using <code>match?</code> method.</p>
+
+<p>NOTE: Only the option tags are returned, you have to wrap this call in a regular HTML select tag.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 579
+      def time_zone_options_for_select(selected = nil, priority_zones = nil, model = ::ActiveSupport::TimeZone)
+        zone_options = &quot;&quot;.html_safe
+
+        zones = model.all
+        convert_zones = lambda { |list| list.map { |z| [ z.to_s, z.name ] } }
+
+        if priority_zones
+          if priority_zones.is_a?(Regexp)
+            priority_zones = zones.select { |z| z.match?(priority_zones) }
+          end
+
+          zone_options.safe_concat options_for_select(convert_zones[priority_zones], selected)
+          zone_options.safe_concat content_tag(&quot;option&quot;, &quot;-------------&quot;, value: &quot;&quot;, disabled: true)
+          zone_options.safe_concat &quot;\n&quot;
+
+          zones = zones - priority_zones
+        end
+
+        zone_options.safe_concat options_for_select(convert_zones[zones], selected)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L579" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-time_zone_select">
+            
+              time_zone_select(object, method, priority_zones = nil, options = {}, html_options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns select and option tags for the given object and method, using <a href="FormOptionsHelper.html#method-i-time_zone_options_for_select"><code>time_zone_options_for_select</code></a> to generate the list of option tags.</p>
+
+<p>In addition to the <code>:include_blank</code> option documented above, this method also supports a <code>:model</code> option, which defaults to <a href="../../ActiveSupport/TimeZone.html"><code>ActiveSupport::TimeZone</code></a>. This may be used by users to specify a different time zone model object. (See <code>time_zone_options_for_select</code> for more information.)</p>
+
+<p>You can also supply an array of <a href="../../ActiveSupport/TimeZone.html"><code>ActiveSupport::TimeZone</code></a> objects as <code>priority_zones</code> so that they will be listed above the rest of the (long) list. You can use <a href="../../ActiveSupport/TimeZone.html#method-c-us_zones"><code>ActiveSupport::TimeZone.us_zones</code></a> for a list of US time zones, <a href="../../ActiveSupport/TimeZone.html#method-c-country_zones"><code>ActiveSupport::TimeZone.country_zones(country_code)</code></a> for another country’s time zones, or a <a href="../../Regexp.html"><code>Regexp</code></a> to select the zones of your choice.</p>
+
+<p>Finally, this method supports a <code>:default</code> option, which selects a default <a href="../../ActiveSupport/TimeZone.html"><code>ActiveSupport::TimeZone</code></a> if the object’s time zone is <code>nil</code>.</p>
+
+<pre><code>time_zone_select(:user, :time_zone, nil, include_blank: true)
+
+time_zone_select(:user, :time_zone, nil, default: &quot;Pacific Time (US &amp; Canada)&quot;)
+
+time_zone_select(:user, :time_zone, ActiveSupport::TimeZone.us_zones, default: &quot;Pacific Time (US &amp; Canada)&quot;)
+
+time_zone_select(:user, :time_zone, [ ActiveSupport::TimeZone[&quot;Alaska&quot;], ActiveSupport::TimeZone[&quot;Hawaii&quot;] ])
+
+time_zone_select(:user, :time_zone, /Australia/)
+
+time_zone_select(:user, :time_zone, ActiveSupport::TimeZone.all.sort, model: ActiveSupport::TimeZone)
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 292
+      def time_zone_select(object, method, priority_zones = nil, options = {}, html_options = {})
+        Tags::TimeZoneSelect.new(object, method, self, priority_zones, options, html_options).render
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L292" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-weekday_options_for_select">
+            
+              weekday_options_for_select(selected = nil, index_as_value: false, day_format: :day_names, beginning_of_week: Date.beginning_of_week)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a string of option tags for the days of the week.</p>
+
+<p>Options:</p>
+<ul><li>
+<p><code>:index_as_value</code> - Defaults to false, set to true to use the indexes from <code>I18n.translate(&quot;date.day_names&quot;)</code> as the values. By default, Sunday is always 0.</p>
+</li><li>
+<p><code>:day_format</code> - The I18n key of the array to use for the weekday options. Defaults to <code>:day_names</code>, set to <code>:abbr_day_names</code> for abbreviations.</p>
+</li><li>
+<p><code>:beginning_of_week</code> - Defaults to <a href="../../Date.html#method-c-beginning_of_week"><code>Date.beginning_of_week</code></a>.</p>
+</li></ul>
+
+<p>NOTE: Only the option tags are returned, you have to wrap this call in a regular HTML select tag.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 611
+      def weekday_options_for_select(selected = nil, index_as_value: false, day_format: :day_names, beginning_of_week: Date.beginning_of_week)
+        day_names = I18n.translate(&quot;date.#{day_format}&quot;)
+        day_names = day_names.map.with_index.to_a if index_as_value
+        day_names = day_names.rotate(Date::DAYS_INTO_WEEK.fetch(beginning_of_week))
+
+        options_for_select(day_names, selected)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L611" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-weekday_select">
+            
+              weekday_select(object, method, options = {}, html_options = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns select and option tags for the given object and method, using <code>weekday_options_for_select</code> to generate the list of option tags.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/form_options_helper.rb, line 298
+      def weekday_select(object, method, options = {}, html_options = {}, &amp;block)
+        Tags::WeekdaySelect.new(object, method, self, options, html_options, &amp;block).render
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/form_options_helper.rb#L298" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,659 @@
+---
+title: ActionText::Attachable
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionText::Attachable
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actiontext/lib/action_text/attachable_rb.html">actiontext/lib/action_text/attachable.rb</a></li>
+            
+            <li><a href="../../files/actiontext/lib/action_text/attachables/missing_attachable_rb.html">actiontext/lib/action_text/attachables/missing_attachable.rb</a></li>
+            
+            <li><a href="../../files/actiontext/lib/action_text/fixture_set_rb.html">actiontext/lib/action_text/fixture_set.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionText::Attachable-label-Action+Text+Attachable">Action Text <a href="Attachable.html"><code>Attachable</code></a></h1>
+
+<p>Include this module to make a record attachable to an <a href="Content.html"><code>ActionText::Content</code></a>.</p>
+
+<pre><code>class Person &lt; ApplicationRecord
+  include ActionText::Attachable
+end
+
+person = Person.create! name: &quot;Javan&quot;
+html = %Q(&lt;action-text-attachment sgid=&quot;#{person.attachable_sgid}&quot;&gt;&lt;/action-text-attachment&gt;)
+content = ActionText::Content.new(html)
+content.attachables # =&gt; [person]
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-attachable_content_type">attachable_content_type</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attachable_filename">attachable_filename</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attachable_filesize">attachable_filesize</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attachable_metadata">attachable_metadata</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attachable_sgid">attachable_sgid</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-from_attachable_sgid">from_attachable_sgid</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-from_attachable_sgid">from_attachable_sgid</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-from_node">from_node</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-previewable_attachable-3F">previewable_attachable?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_attachable_partial_path">to_attachable_partial_path</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_missing_attachable_partial_path">to_missing_attachable_partial_path</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_rich_text_attributes">to_rich_text_attributes</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_trix_content_attachment_partial_path">to_trix_content_attachment_partial_path</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">LOCATOR_NAME</td>
+            <td>=</td>
+            <td class="attr-value">&quot;attachable&quot;</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-from_attachable_sgid">
+            
+              from_attachable_sgid(sgid, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 43
+      def from_attachable_sgid(sgid, options = {})
+        method = sgid.is_a?(Array) ? :locate_many_signed : :locate_signed
+        record = GlobalID::Locator.public_send(method, sgid, options.merge(for: LOCATOR_NAME))
+        record || raise(ActiveRecord::RecordNotFound)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L43" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-from_node">
+            
+              from_node(node)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Extracts the <code>ActionText::Attachable</code> from the attachment HTML node:</p>
+
+<pre><code>person = Person.create! name: &quot;Javan&quot;
+html = %Q(&lt;action-text-attachment sgid=&quot;#{person.attachable_sgid}&quot;&gt;&lt;/action-text-attachment&gt;)
+fragment = ActionText::Fragment.wrap(html)
+attachment_node = fragment.find_all(ActionText::Attachment.tag_name).first
+ActionText::Attachable.from_node(attachment_node) # =&gt; person
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 31
+      def from_node(node)
+        if attachable = attachable_from_sgid(node[&quot;sgid&quot;])
+          attachable
+        elsif attachable = ActionText::Attachables::ContentAttachment.from_node(node)
+          attachable
+        elsif attachable = ActionText::Attachables::RemoteImage.from_node(node)
+          attachable
+        else
+          ActionText::Attachables::MissingAttachable.new(node[&quot;sgid&quot;])
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L31" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-attachable_content_type">
+            
+              attachable_content_type()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 83
+    def attachable_content_type
+      try(:content_type) || &quot;application/octet-stream&quot;
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L83" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attachable_filename">
+            
+              attachable_filename()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 87
+    def attachable_filename
+      filename.to_s if respond_to?(:filename)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L87" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attachable_filesize">
+            
+              attachable_filesize()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 91
+    def attachable_filesize
+      try(:byte_size) || try(:filesize)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L91" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attachable_metadata">
+            
+              attachable_metadata()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 95
+    def attachable_metadata
+      try(:metadata) || {}
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L95" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attachable_sgid">
+            
+              attachable_sgid()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the Signed Global ID for the attachable. The purpose of the ID is set to ‘attachable’ so it can’t be reused for other purposes.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 79
+    def attachable_sgid
+      to_sgid(expires_in: nil, for: LOCATOR_NAME).to_s
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L79" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-from_attachable_sgid">
+            
+              from_attachable_sgid(sgid)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 58
+      def from_attachable_sgid(sgid)
+        ActionText::Attachable.from_attachable_sgid(sgid, only: self)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L58" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-previewable_attachable-3F">
+            
+              previewable_attachable?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 99
+    def previewable_attachable?
+      false
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L99" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_attachable_partial_path">
+            
+              to_attachable_partial_path()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the path to the partial that is used for rendering the attachable. Defaults to <code>to_partial_path</code>.</p>
+
+<p>Override to render a different partial:</p>
+
+<pre><code>class User &lt; ApplicationRecord
+  def to_attachable_partial_path
+    &quot;users/attachable&quot;
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 127
+    def to_attachable_partial_path
+      to_partial_path
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L127" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_missing_attachable_partial_path">
+            
+              to_missing_attachable_partial_path()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the path to the partial that is used for rendering missing attachables. Defaults to “action_text/attachables/missing_attachable”.</p>
+
+<p>Override to render a different partial:</p>
+
+<pre><code>class User &lt; ApplicationRecord
+  def self.to_missing_attachable_partial_path
+    &quot;users/missing_attachable&quot;
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 72
+      def to_missing_attachable_partial_path
+        ActionText::Attachables::MissingAttachable::DEFAULT_PARTIAL_PATH
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L72" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_rich_text_attributes">
+            
+              to_rich_text_attributes(attributes = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 131
+    def to_rich_text_attributes(attributes = {})
+      attributes.dup.tap do |attrs|
+        attrs[:sgid] = attachable_sgid
+        attrs[:content_type] = attachable_content_type
+        attrs[:previewable] = true if previewable_attachable?
+        attrs[:filename] = attachable_filename
+        attrs[:filesize] = attachable_filesize
+        attrs[:width] = attachable_metadata[:width]
+        attrs[:height] = attachable_metadata[:height]
+      end.compact
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L131" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_trix_content_attachment_partial_path">
+            
+              to_trix_content_attachment_partial_path()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the path to the partial that is used for rendering the attachable in Trix. Defaults to <code>to_partial_path</code>.</p>
+
+<p>Override to render a different partial:</p>
+
+<pre><code>class User &lt; ApplicationRecord
+  def to_trix_content_attachment_partial_path
+    &quot;users/trix_content_attachment&quot;
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attachable.rb, line 113
+    def to_trix_content_attachment_partial_path
+      to_partial_path
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attachable.rb#L113" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

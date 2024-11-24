@@ -1,0 +1,684 @@
+---
+title: ActiveSupport::Cache::RedisCacheStore
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::Cache::RedisCacheStore
+            
+                <span class="parent">&lt;
+                    
+                    <a href="Store.html">ActiveSupport::Cache::Store</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/cache/redis_cache_store_rb.html">activesupport/lib/active_support/cache/redis_cache_store.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveSupport::Cache::RedisCacheStore-label-Redis+Cache+Store">Redis Cache Store</h1>
+
+<p>Deployment note: Take care to use a <strong>dedicated Redis cache</strong> rather than pointing this at a persistent Redis server (for example, one used as an Active Job queue). Redis won’t cope well with mixed usage patterns and it won’t expire cache entries by default.</p>
+
+<p>Redis cache server setup guide: <a href="https://redis.io/topics/lru-cache">redis.io/topics/lru-cache</a></p>
+<ul><li>
+<p>Supports vanilla Redis, hiredis, and <code>Redis::Distributed</code>.</p>
+</li><li>
+<p>Supports Memcached-like sharding across Redises with <code>Redis::Distributed</code>.</p>
+</li><li>
+<p>Fault tolerant. If the Redis server is unavailable, no exceptions are raised. <a href="../Cache.html"><code>Cache</code></a> fetches are all misses and writes are dropped.</p>
+</li><li>
+<p>Local cache. Hot in-memory primary cache within block/middleware scope.</p>
+</li><li>
+<p><code>read_multi</code> and <code>write_multi</code> support for Redis mget/mset. Use <code>Redis::Distributed</code> 4.0.1+ for distributed mget support.</p>
+</li><li>
+<p><code>delete_matched</code> support for Redis KEYS globs.</p>
+</li></ul>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-cleanup">cleanup</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clear">clear</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-decrement">decrement</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete_matched">delete_matched</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-increment">increment</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-inspect">inspect</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-read_multi">read_multi</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-stats">stats</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-supports_cache_versioning-3F">supports_cache_versioning?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">DEFAULT_ERROR_HANDLER</td>
+            <td>=</td>
+            <td class="attr-value">-&gt; (method:, returning:, exception:) do
+if logger
+logger.error { &quot;RedisCacheStore: #{method} failed, returned #{returning.inspect}: #{exception.class}: #{exception.message}&quot; }
+end
+ActiveSupport.error_reporter&amp;.report(
+exception,
+severity: :warning,
+source: &quot;redis_cache_store.active_support&quot;,
+)
+end</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">DEFAULT_REDIS_OPTIONS</td>
+            <td>=</td>
+            <td class="attr-value">{
+connect_timeout:    1,
+read_timeout:       1,
+write_timeout:      1,
+}</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MAX_KEY_BYTESIZE</td>
+            <td>=</td>
+            <td class="attr-value">1024</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>Keys are truncated with the Active Support digest if they exceed 1kB</p></td>
+            </tr>
+          
+        
+      </table>
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>max_key_bytesize</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>redis</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(error_handler: DEFAULT_ERROR_HANDLER, **redis_options)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Creates a new Redis cache store.</p>
+
+<p>There are four ways to provide the Redis client used by the cache: the <code>:redis</code> param can be a Redis instance or a block that returns a Redis instance, or the <code>:url</code> param can be a string or an array of strings which will be used to create a Redis instance or a <code>Redis::Distributed</code> instance.</p>
+
+<pre><code>Option  Class       Result
+:redis  Proc    -&gt;  options[:redis].call
+:redis  Object  -&gt;  options[:redis]
+:url    String  -&gt;  Redis.new(url: …)
+:url    Array   -&gt;  Redis::Distributed.new([{ url: … }, { url: … }, …])
+</code></pre>
+
+<p>No namespace is set by default. Provide one if the Redis cache server is shared with other apps: <code>namespace: &#39;myapp-cache&#39;</code>.</p>
+
+<p>Compression is enabled by default with a 1kB threshold, so cached values larger than 1kB are automatically compressed. Disable by passing <code>compress: false</code> or change the threshold by passing <code>compress_threshold: 4.kilobytes</code>.</p>
+
+<p>No expiry is set on cache entries by default. Redis is expected to be configured with an eviction policy that automatically deletes least-recently or -frequently used keys when it reaches max memory. See <a href="https://redis.io/topics/lru-cache">redis.io/topics/lru-cache</a> for cache server setup.</p>
+
+<p>Race condition TTL is not set by default. This can be used to avoid “thundering herd” cache writes when hot cache entries are expired. See <a href="Store.html#method-i-fetch"><code>ActiveSupport::Cache::Store#fetch</code></a> for more.</p>
+
+<p>Setting <code>skip_nil: true</code> will not cache nil results:</p>
+
+<pre><code>cache.fetch(&#39;foo&#39;) { nil }
+cache.fetch(&#39;bar&#39;, skip_nil: true) { nil }
+cache.exist?(&#39;foo&#39;) # =&gt; true
+cache.exist?(&#39;bar&#39;) # =&gt; false
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 149
+      def initialize(error_handler: DEFAULT_ERROR_HANDLER, **redis_options)
+        universal_options = redis_options.extract!(*UNIVERSAL_OPTIONS)
+
+        if pool_options = self.class.send(:retrieve_pool_options, redis_options)
+          @redis = ::ConnectionPool.new(pool_options) { self.class.build_redis(**redis_options) }
+        else
+          @redis = self.class.build_redis(**redis_options)
+        end
+
+        @max_key_bytesize = MAX_KEY_BYTESIZE
+        @error_handler = error_handler
+
+        super(universal_options)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/cache/redis_cache_store.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-supports_cache_versioning-3F">
+            
+              supports_cache_versioning?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Advertise cache versioning support.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 63
+      def self.supports_cache_versioning?
+        true
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/cache/redis_cache_store.rb#L63" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-cleanup">
+            
+              cleanup(options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><a href="../Cache.html"><code>Cache</code></a> <a href="Store.html"><code>Store</code></a> API implementation.</p>
+
+<p>Removes expired entries. Handled natively by Redis least-recently-/ least-frequently-used expiry, so manual cleanup is not supported.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 279
+      def cleanup(options = nil)
+        super
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/cache/redis_cache_store.rb#L279" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-clear">
+            
+              clear(options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Clear the entire cache on all Redis servers. Safe to use on shared servers if the cache is namespaced.</p>
+
+<p>Failsafe: Raises errors.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 287
+      def clear(options = nil)
+        failsafe :clear do
+          if namespace = merged_options(options)[:namespace]
+            delete_matched &quot;*&quot;, namespace: namespace
+          else
+            redis.then { |c| c.flushdb }
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/cache/redis_cache_store.rb#L287" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-decrement">
+            
+              decrement(name, amount = 1, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Decrement a cached integer value using the Redis decrby atomic operator. Returns the updated value.</p>
+
+<p>If the key is unset or has expired, it will be set to <code>-amount</code>:</p>
+
+<pre><code>cache.decrement(&quot;foo&quot;) # =&gt; -1
+</code></pre>
+
+<p>To set a specific value, call <a href="Store.html#method-i-write"><code>write</code></a> passing <code>raw: true</code>:</p>
+
+<pre><code>cache.write(&quot;baz&quot;, 5, raw: true)
+cache.decrement(&quot;baz&quot;) # =&gt; 4
+</code></pre>
+
+<p>Decrementing a non-numeric value, or a value written without <code>raw: true</code>, will fail and return <code>nil</code>.</p>
+
+<p>Failsafe: Raises errors.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 264
+      def decrement(name, amount = 1, options = nil)
+        options = merged_options(options)
+        key = normalize_key(name, options)
+
+        instrument :decrement, key, amount: amount do
+          failsafe :decrement do
+            change_counter(key, -amount, options)
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/cache/redis_cache_store.rb#L264" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete_matched">
+            
+              delete_matched(matcher, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><a href="../Cache.html"><code>Cache</code></a> <a href="Store.html"><code>Store</code></a> API implementation.</p>
+
+<p>Supports Redis KEYS glob patterns:</p>
+
+<pre><code>h?llo matches hello, hallo and hxllo
+h*llo matches hllo and heeeello
+h[ae]llo matches hello and hallo, but not hillo
+h[^e]llo matches hallo, hbllo, ... but not hello
+h[a-b]llo matches hallo and hbllo
+</code></pre>
+
+<p>Use \ to escape special characters if you want to match them verbatim.</p>
+
+<p>See <a href="https://redis.io/commands/KEYS">redis.io/commands/KEYS</a> for more.</p>
+
+<p>Failsafe: Raises errors.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 198
+      def delete_matched(matcher, options = nil)
+        unless String === matcher
+          raise ArgumentError, &quot;Only Redis glob strings are supported: #{matcher.inspect}&quot;
+        end
+        pattern = namespace_key(matcher, options)
+
+        instrument :delete_matched, pattern do
+          redis.then do |c|
+            cursor = &quot;0&quot;
+            # Fetch keys in batches using SCAN to avoid blocking the Redis server.
+            nodes = c.respond_to?(:nodes) ? c.nodes : [c]
+
+            nodes.each do |node|
+              begin
+                cursor, keys = node.scan(cursor, match: pattern, count: SCAN_BATCH_SIZE)
+                node.del(*keys) unless keys.empty?
+              end until cursor == &quot;0&quot;
+            end
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/cache/redis_cache_store.rb#L198" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-increment">
+            
+              increment(name, amount = 1, options = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Increment a cached integer value using the Redis incrby atomic operator. Returns the updated value.</p>
+
+<p>If the key is unset or has expired, it will be set to <code>amount</code>:</p>
+
+<pre><code>cache.increment(&quot;foo&quot;) # =&gt; 1
+cache.increment(&quot;bar&quot;, 100) # =&gt; 100
+</code></pre>
+
+<p>To set a specific value, call <a href="Store.html#method-i-write"><code>write</code></a> passing <code>raw: true</code>:</p>
+
+<pre><code>cache.write(&quot;baz&quot;, 5, raw: true)
+cache.increment(&quot;baz&quot;) # =&gt; 6
+</code></pre>
+
+<p>Incrementing a non-numeric value, or a value written without <code>raw: true</code>, will fail and return <code>nil</code>.</p>
+
+<p>Failsafe: Raises errors.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 237
+      def increment(name, amount = 1, options = nil)
+        options = merged_options(options)
+        key = normalize_key(name, options)
+
+        instrument :increment, key, amount: amount do
+          failsafe :increment do
+            change_counter(key, amount, options)
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/cache/redis_cache_store.rb#L237" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-inspect">
+            
+              inspect()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 164
+      def inspect
+        &quot;#&lt;#{self.class} options=#{options.inspect} redis=#{redis.inspect}&gt;&quot;
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/cache/redis_cache_store.rb#L164" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-read_multi">
+            
+              read_multi(*names)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><a href="../Cache.html"><code>Cache</code></a> <a href="Store.html"><code>Store</code></a> API implementation.</p>
+
+<p>Read multiple values at once. Returns a hash of requested keys -&gt; fetched values.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 172
+      def read_multi(*names)
+        return {} if names.empty?
+
+        options = names.extract_options!
+        instrument_multi(:read_multi, names, options) do |payload|
+          read_multi_entries(names, **options).tap do |results|
+            payload[:hits] = results.keys
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/cache/redis_cache_store.rb#L172" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-stats">
+            
+              stats()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Get info from redis servers.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/cache/redis_cache_store.rb, line 298
+      def stats
+        redis.then { |c| c.info }
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/cache/redis_cache_store.rb#L298" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

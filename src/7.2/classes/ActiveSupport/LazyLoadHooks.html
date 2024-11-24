@@ -1,0 +1,195 @@
+---
+title: ActiveSupport::LazyLoadHooks
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::LazyLoadHooks
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/lazy_load_hooks_rb.html">activesupport/lib/active_support/lazy_load_hooks.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveSupport::LazyLoadHooks-label-Lazy+Load+Hooks">Lazy Load Hooks</h1>
+
+<p><a href="LazyLoadHooks.html"><code>LazyLoadHooks</code></a> allows Rails to lazily load a lot of components and thus making the app boot faster. Because of this feature now there is no need to require <code>ActiveRecord::Base</code> at boot time purely to apply configuration. Instead a hook is registered that applies configuration once <code>ActiveRecord::Base</code> is loaded. Here <code>ActiveRecord::Base</code> is used as example but this feature can be applied elsewhere too.</p>
+
+<p>Here is an example where <a href="LazyLoadHooks.html#method-i-on_load"><code>on_load</code></a> method is called to register a hook.</p>
+
+<pre><code>initializer &#39;active_record.initialize_timezone&#39; do
+  ActiveSupport.on_load(:active_record) do
+    self.time_zone_aware_attributes = true
+    self.default_timezone = :utc
+  end
+end
+</code></pre>
+
+<p>When the entirety of <code>ActiveRecord::Base</code> has been evaluated then <a href="LazyLoadHooks.html#method-i-run_load_hooks"><code>run_load_hooks</code></a> is invoked. The very last line of <code>ActiveRecord::Base</code> is:</p>
+
+<pre><code>ActiveSupport.run_load_hooks(:active_record, ActiveRecord::Base)
+</code></pre>
+
+<p><a href="LazyLoadHooks.html#method-i-run_load_hooks"><code>run_load_hooks</code></a> will then execute all the hooks that were registered with the <a href="LazyLoadHooks.html#method-i-on_load"><code>on_load</code></a> method. In the case of the above example, it will execute the block of code that is in the <code>initializer</code>.</p>
+
+<p>Registering a hook that has already run results in that hook executing immediately. This allows hooks to be nested for code that relies on multiple lazily loaded components:</p>
+
+<pre><code>initializer &quot;action_text.renderer&quot; do
+  ActiveSupport.on_load(:action_controller_base) do
+    ActiveSupport.on_load(:action_text_content) do
+      self.default_renderer = Class.new(ActionController::Base).renderer
+    end
+  end
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-on_load">on_load</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-run_load_hooks">run_load_hooks</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-on_load">
+            
+              on_load(name, options = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Declares a block that will be executed when a Rails component is fully loaded. If the component has already loaded, the block is executed immediately.</p>
+
+<p>Options:</p>
+<ul><li>
+<p><code>:yield</code> - Yields the object that <a href="LazyLoadHooks.html#method-i-run_load_hooks"><code>run_load_hooks</code></a> to <code>block</code>.</p>
+</li><li>
+<p><code>:run_once</code> - Given <code>block</code> will run only once.</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/lazy_load_hooks.rb, line 60
+    def on_load(name, options = {}, &amp;block)
+      @loaded[name].each do |base|
+        execute_hook(name, base, options, block)
+      end
+
+      @load_hooks[name] &lt;&lt; [block, options]
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/lazy_load_hooks.rb#L60" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-run_load_hooks">
+            
+              run_load_hooks(name, base = Object)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Executes all blocks registered to <code>name</code> via <a href="LazyLoadHooks.html#method-i-on_load"><code>on_load</code></a>, using <code>base</code> as the evaluation context.</p>
+
+<pre><code>ActiveSupport.run_load_hooks(:active_record, ActiveRecord::Base)
+</code></pre>
+
+<p>In the case of the above example, it will execute all hooks registered for <code>:active_record</code> within the class <code>ActiveRecord::Base</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/lazy_load_hooks.rb, line 75
+    def run_load_hooks(name, base = Object)
+      @loaded[name] &lt;&lt; base
+      @load_hooks[name].each do |hook, options|
+        execute_hook(name, base, options, hook)
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/lazy_load_hooks.rb#L75" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

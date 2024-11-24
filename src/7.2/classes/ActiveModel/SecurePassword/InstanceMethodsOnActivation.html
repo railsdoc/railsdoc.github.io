@@ -1,0 +1,143 @@
+---
+title: ActiveModel::SecurePassword::InstanceMethodsOnActivation
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveModel::SecurePassword::InstanceMethodsOnActivation
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Module.html">Module</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activemodel/lib/active_model/secure_password_rb.html">activemodel/lib/active_model/secure_password.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(attribute)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/secure_password.rb, line 149
+      def initialize(attribute)
+        attr_reader attribute
+
+        define_method(&quot;#{attribute}=&quot;) do |unencrypted_password|
+          if unencrypted_password.nil?
+            instance_variable_set(&quot;@#{attribute}&quot;, nil)
+            self.public_send(&quot;#{attribute}_digest=&quot;, nil)
+          elsif !unencrypted_password.empty?
+            instance_variable_set(&quot;@#{attribute}&quot;, unencrypted_password)
+            cost = ActiveModel::SecurePassword.min_cost ? BCrypt::Engine::MIN_COST : BCrypt::Engine.cost
+            self.public_send(&quot;#{attribute}_digest=&quot;, BCrypt::Password.create(unencrypted_password, cost: cost))
+          end
+        end
+
+        attr_accessor :&quot;#{attribute}_confirmation&quot;, :&quot;#{attribute}_challenge&quot;
+
+        # Returns +self+ if the password is correct, otherwise +false+.
+        #
+        #   class User &lt; ActiveRecord::Base
+        #     has_secure_password validations: false
+        #   end
+        #
+        #   user = User.new(name: &#39;david&#39;, password: &#39;mUc3m00RsqyRe&#39;)
+        #   user.save
+        #   user.authenticate_password(&#39;notright&#39;)      # =&gt; false
+        #   user.authenticate_password(&#39;mUc3m00RsqyRe&#39;) # =&gt; user
+        define_method(&quot;authenticate_#{attribute}&quot;) do |unencrypted_password|
+          attribute_digest = public_send(&quot;#{attribute}_digest&quot;)
+          attribute_digest.present? &amp;&amp; BCrypt::Password.new(attribute_digest).is_password?(unencrypted_password) &amp;&amp; self
+        end
+
+        # Returns the salt, a small chunk of random data added to the password before it&#39;s hashed.
+        define_method(&quot;#{attribute}_salt&quot;) do
+          attribute_digest = public_send(&quot;#{attribute}_digest&quot;)
+          attribute_digest.present? ? BCrypt::Password.new(attribute_digest).salt : nil
+        end
+
+        alias_method :authenticate, :authenticate_password if attribute == :password
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activemodel/lib/active_model/secure_password.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+    
+  
+</div>
+
+    </div>
+</div>

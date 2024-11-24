@@ -1,0 +1,215 @@
+---
+title: ActionDispatch::DebugExceptions
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionDispatch::DebugExceptions
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/middleware/debug_exceptions_rb.html">actionpack/lib/action_dispatch/middleware/debug_exceptions.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActionDispatch::DebugExceptions-label-Action+Dispatch+DebugExceptions">Action Dispatch <a href="DebugExceptions.html"><code>DebugExceptions</code></a></h1>
+
+<p>This middleware is responsible for logging exceptions and showing a debugging page in case the request is local.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-call">call</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-register_interceptor">register_interceptor</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(app, routes_app = nil, response_format = :default, interceptors = self.class.interceptors)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/debug_exceptions.rb, line 23
+    def initialize(app, routes_app = nil, response_format = :default, interceptors = self.class.interceptors)
+      @app             = app
+      @routes_app      = routes_app
+      @response_format = response_format
+      @interceptors    = interceptors
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/middleware/debug_exceptions.rb#L23" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-register_interceptor">
+            
+              register_interceptor(object = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/debug_exceptions.rb, line 18
+    def self.register_interceptor(object = nil, &amp;block)
+      interceptor = object || block
+      interceptors &lt;&lt; interceptor
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/middleware/debug_exceptions.rb#L18" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-call">
+            
+              call(env)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/debug_exceptions.rb, line 30
+    def call(env)
+      _, headers, body = response = @app.call(env)
+
+      if headers[Constants::X_CASCADE] == &quot;pass&quot;
+        body.close if body.respond_to?(:close)
+        raise ActionController::RoutingError, &quot;No route matches [#{env[&#39;REQUEST_METHOD&#39;]}] #{env[&#39;PATH_INFO&#39;].inspect}&quot;
+      end
+
+      response
+    rescue Exception =&gt; exception
+      request = ActionDispatch::Request.new env
+      backtrace_cleaner = request.get_header(&quot;action_dispatch.backtrace_cleaner&quot;)
+      wrapper = ExceptionWrapper.new(backtrace_cleaner, exception)
+
+      invoke_interceptors(request, exception, wrapper)
+      raise exception unless wrapper.show?(request)
+      render_exception(request, exception, wrapper)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/middleware/debug_exceptions.rb#L30" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

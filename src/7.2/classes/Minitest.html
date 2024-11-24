@@ -1,0 +1,217 @@
+---
+title: Minitest
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            Minitest
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../files/railties/lib/minitest/rails_plugin_rb.html">railties/lib/minitest/rails_plugin.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Minitest/BacktraceFilterWithFallback.html">Minitest::BacktraceFilterWithFallback</a></li>
+      
+        <li><a href="Minitest/ProfileReporter.html">Minitest::ProfileReporter</a></li>
+      
+        <li><a href="Minitest/SuppressedSummaryReporter.html">Minitest::SuppressedSummaryReporter</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-plugin_rails_init">plugin_rails_init</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-plugin_rails_options">plugin_rails_options</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-plugin_rails_init">
+            
+              plugin_rails_init(options)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Owes great inspiration to test runner trailblazers like RSpec, minitest-reporters, maxitest, and others.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/minitest/rails_plugin.rb, line 111
+  def self.plugin_rails_init(options)
+    # Don&#39;t mess with Minitest unless RAILS_ENV is set
+    return unless ENV[&quot;RAILS_ENV&quot;]
+
+    unless options[:full_backtrace]
+      # Plugin can run without Rails loaded, check before filtering.
+      if ::Rails.respond_to?(:backtrace_cleaner)
+        Minitest.backtrace_filter = BacktraceFilterWithFallback.new(::Rails.backtrace_cleaner, Minitest.backtrace_filter)
+      end
+    end
+
+    # Suppress summary reports when outputting inline rerun snippets.
+    if reporter.reporters.reject! { |reporter| reporter.kind_of?(SummaryReporter) }
+      reporter &lt;&lt; SuppressedSummaryReporter.new(options[:io], options)
+    end
+
+    # Replace progress reporter for colors.
+    if reporter.reporters.reject! { |reporter| reporter.kind_of?(ProgressReporter) }
+      reporter &lt;&lt; ::Rails::TestUnitReporter.new(options[:io], options)
+    end
+
+    # Add slowest tests reporter at the end.
+    if options[:profile]
+      reporter &lt;&lt; ProfileReporter.new(options[:io], options)
+    end
+  end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/railties/lib/minitest/rails_plugin.rb#L111" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-plugin_rails_options">
+            
+              plugin_rails_options(opts, options)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/minitest/rails_plugin.rb, line 68
+  def self.plugin_rails_options(opts, options)
+    ::Rails::TestUnit::Runner.attach_before_load_options(opts)
+
+    opts.on(&quot;-b&quot;, &quot;--backtrace&quot;, &quot;Show the complete backtrace&quot;) do
+      options[:full_backtrace] = true
+    end
+
+    opts.on(&quot;-d&quot;, &quot;--defer-output&quot;, &quot;Output test failures and errors after the test run&quot;) do
+      options[:output_inline] = false
+    end
+
+    opts.on(&quot;-f&quot;, &quot;--fail-fast&quot;, &quot;Abort test run on first failure or error&quot;) do
+      options[:fail_fast] = true
+    end
+
+    opts.on(&quot;-c&quot;, &quot;--[no-]color&quot;, &quot;Enable color in the output&quot;) do |value|
+      options[:color] = value
+    end
+
+    opts.on(&quot;--profile [COUNT]&quot;, &quot;Enable profiling of tests and list the slowest test cases (default: 10)&quot;) do |value|
+      default_count = 10
+
+      if value.nil?
+        count = default_count
+      else
+        count = Integer(value, exception: false)
+        if count.nil?
+          warn(&quot;Non integer specified as profile count, separate &quot; \
+               &quot;your path from options with -- e.g. &quot; \
+               &quot;`#{::Rails::TestUnitReporter.executable} --profile -- #{value}`&quot;)
+          count = default_count
+        end
+      end
+
+      options[:profile] = count
+    end
+
+    options[:color] = true
+    options[:output_inline] = true
+  end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/railties/lib/minitest/rails_plugin.rb#L68" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+    
+  
+</div>
+
+    </div>
+</div>

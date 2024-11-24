@@ -1,0 +1,234 @@
+---
+title: ActionDispatch::Routing::Mapper::CustomUrls
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionDispatch::Routing::Mapper::CustomUrls
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/actionpack/lib/action_dispatch/routing/mapper_rb.html">actionpack/lib/action_dispatch/routing/mapper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-direct">direct</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-resolve">resolve</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-direct">
+            
+              direct(name, options = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Define custom URL helpers that will be added to the application’s routes. This allows you to override and/or replace the default behavior of routing helpers, e.g:</p>
+
+<pre><code>direct :homepage do
+  &quot;https://rubyonrails.org&quot;
+end
+
+direct :commentable do |model|
+  [ model, anchor: model.dom_id ]
+end
+
+direct :main do
+  { controller: &quot;pages&quot;, action: &quot;index&quot;, subdomain: &quot;www&quot; }
+end
+</code></pre>
+
+<p>The return value from the block passed to <code>direct</code> must be a valid set of arguments for <code>url_for</code> which will actually build the URL string. This can be one of the following:</p>
+<ul><li>
+<p>A string, which is treated as a generated URL</p>
+</li><li>
+<p>A hash, e.g. <code>{ controller: &quot;pages&quot;, action: &quot;index&quot; }</code></p>
+</li><li>
+<p>An array, which is passed to <code>polymorphic_url</code></p>
+</li><li>
+<p>An Active Model instance</p>
+</li><li>
+<p>An Active Model class</p>
+</li></ul>
+
+<p>NOTE: Other URL helpers can be called in the block but be careful not to invoke your custom URL helper again otherwise it will result in a stack overflow error.</p>
+
+<p>You can also specify default options that will be passed through to your URL helper definition, e.g:</p>
+
+<pre><code>direct :browse, page: 1, size: 10 do |options|
+  [ :products, options.merge(params.permit(:page, :size).to_h.symbolize_keys) ]
+end
+</code></pre>
+
+<p>In this instance the <code>params</code> object comes from the context in which the block is executed, e.g. generating a URL inside a controller action or a view. If the block is executed where there isn’t a <code>params</code> object such as this:</p>
+
+<pre><code>Rails.application.routes.url_helpers.browse_path
+</code></pre>
+
+<p>then it will raise a <code>NameError</code>. Because of this you need to be aware of the context in which you will use your custom URL helper when defining it.</p>
+
+<p>NOTE: The <code>direct</code> method can’t be used inside of a scope block such as <code>namespace</code> or <code>scope</code> and will raise an error if it detects that it is.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 2194
+        def direct(name, options = {}, &amp;block)
+          unless @scope.root?
+            raise RuntimeError, &quot;The direct method can&#39;t be used inside a routes scope block&quot;
+          end
+
+          @set.add_url_helper(name, options, &amp;block)
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/routing/mapper.rb#L2194" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-resolve">
+            
+              resolve(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Define custom polymorphic mappings of models to URLs. This alters the behavior of <code>polymorphic_url</code> and consequently the behavior of <code>link_to</code> and <code>form_for</code> when passed a model instance, e.g:</p>
+
+<pre><code>resource :basket
+
+resolve &quot;Basket&quot; do
+  [:basket]
+end
+</code></pre>
+
+<p>This will now generate “/basket” when a <code>Basket</code> instance is passed to <code>link_to</code> or <code>form_for</code> instead of the standard “/baskets/:id”.</p>
+
+<p>NOTE: This custom behavior only applies to simple polymorphic URLs where a single model instance is passed and not more complicated forms, e.g:</p>
+
+<pre><code># config/routes.rb
+resource :profile
+namespace :admin do
+  resources :users
+end
+
+resolve(&quot;User&quot;) { [:profile] }
+
+# app/views/application/_menu.html.erb
+link_to &quot;Profile&quot;, @current_user
+link_to &quot;Profile&quot;, [:admin, @current_user]
+</code></pre>
+
+<p>The first <code>link_to</code> will generate “/profile” but the second will generate the standard polymorphic URL of “/admin/users/1”.</p>
+
+<p>You can pass options to a polymorphic mapping - the arity for the block needs to be two as the instance is passed as the first argument, e.g:</p>
+
+<pre><code>resolve &quot;Basket&quot;, anchor: &quot;items&quot; do |basket, options|
+  [:basket, options]
+end
+</code></pre>
+
+<p>This generates the URL “/basket#items” because when the last item in an array passed to <code>polymorphic_url</code> is a hash then it’s treated as options to the URL helper that gets called.</p>
+
+<p>NOTE: The <code>resolve</code> method can’t be used inside of a scope block such as <code>namespace</code> or <code>scope</code> and will raise an error if it detects that it is.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 2246
+        def resolve(*args, &amp;block)
+          unless @scope.root?
+            raise RuntimeError, &quot;The resolve method can&#39;t be used inside a routes scope block&quot;
+          end
+
+          options = args.extract_options!
+          args = args.flatten(1)
+
+          args.each do |klass|
+            @set.add_polymorphic_mapping(klass, options, &amp;block)
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/routing/mapper.rb#L2246" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
