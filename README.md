@@ -12,15 +12,16 @@ The project goal is **making [api.rubyonrails.org](https://api.rubyonrails.org/)
 
 ### Additional Goals
 
-Thare are some enhancements in addition to SEO.
+There are some enhancements in addition to SEO.
 
 - [x] Built by [Jekyll](https://github.com/jekyll/jekyll)
 - [x] Styled by [bootstrap(v4)](https://github.com/twbs/bootstrap)
 - [x] No iframe layout
 - [x] Table of Contents
 - [x] Google Custom Search
+- [x] Multiple version documentation
 - [ ] Mobile-friendly design
-- [ ] Multiple version documentation
+- [ ] Comment System
 - [ ] etc. (see. https://github.com/railsdoc/railsdoc.github.io/issues)
 
 ## Feature Request  
