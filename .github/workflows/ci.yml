@@ -56,6 +56,13 @@ jobs:
   doc-build-others:
     runs-on: ubuntu-latest
     name: Rails Doc Build (older versions)
+    strategy:
+      matrix:
+        include:
+          - ruby-version: 2.7
+            build-rails-versions: "5.2,6.0,6.1"
+          - ruby-version: 3.3
+            build-rails-versions: "7.0,7.1,7.2"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,12 +70,12 @@ jobs:
       - name: fetch Rails tags
         working-directory: rails
         run: |
-          for version in v7 v6 v5.2; do
-            git fetch --depth=1 origin refs/tags/${version}*:refs/tags/${version}*
+          for version in $(echo "${{ matrix.build-rails-versions }}" | tr ',' ' '); do
+            git fetch --depth=1 origin refs/tags/v${version}*:refs/tags/v${version}*
           done
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 2.7
+          ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
       - name: Doc Build
-        run: rake build_multi
+        run: rake 'build_multi[${{ matrix.build-rails-versions }}]'
