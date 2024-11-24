@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.2.2</span><br />
+            <span>Ruby on Rails 8.0.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -23,7 +23,7 @@ layout: default
   
     <div class="description">
       
-<h1 id="module-ActionView::Helpers::RenderingHelper-label-Action+View+Rendering+Helpers">Action View Rendering Helpers</h1>
+<h1 id="module-ActionView::Helpers::RenderingHelper-label-Action+View+Rendering+Helpers">Action View <a href="../Rendering.html"><code>Rendering</code></a> <a href="../Helpers.html"><code>Helpers</code></a></h1>
 
 <p>Implements methods that allow rendering from a view context. In order to use this module, all you need is to implement view_renderer that returns an <a href="../Renderer.html"><code>ActionView::Renderer</code></a> object.</p>
 
@@ -135,7 +135,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionview/lib/action_view/helpers/rendering_helper.rb, line 97
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/rendering_helper.rb, line 207
       def _layout_for(*args, &amp;block)
         name = args.first
 
@@ -146,7 +146,7 @@ layout: default
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/rendering_helper.rb#L97" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionview/lib/action_view/helpers/rendering_helper.rb#L207" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -161,26 +161,145 @@ layout: default
 
           
             <div class="description">
-              <p>Returns the result of a render that’s dictated by the options hash. The primary options are:</p>
-<ul><li>
-<p><code>:partial</code> - See <a href="../PartialRenderer.html"><code>ActionView::PartialRenderer</code></a>.</p>
-</li><li>
-<p><code>:file</code> - Renders an explicit template file (this used to be the old default), add <code>:locals</code> to pass in those.</p>
-</li><li>
-<p><code>:inline</code> - Renders an inline template similar to how it’s done in the controller.</p>
-</li><li>
-<p><code>:plain</code> - Renders the text passed in out. Setting the content type as <code>text/plain</code>.</p>
-</li><li>
-<p><code>:html</code> - Renders the HTML safe string passed in out, otherwise performs HTML escape on the string first. Setting the content type as <code>text/html</code>.</p>
-</li><li>
-<p><code>:body</code> - Renders the text passed in, and inherits the content type of <code>text/plain</code> from <a href="../../ActionDispatch/Response.html"><code>ActionDispatch::Response</code></a> object.</p>
-</li></ul>
+              <p>Renders a template and returns the result.</p>
 
-<p>If no <code>options</code> hash is passed or if <code>:update</code> is specified, then:</p>
+<p>Pass the template to render as the first argument. This is shorthand syntax for partial rendering, so the template filename should be prefixed with an underscore. The partial renderer looks for the partial template in the directory of the calling template first.</p>
 
-<p>If an object responding to <code>render_in</code> is passed, <code>render_in</code> is called on the object, passing in the current view context.</p>
+<pre><code>&lt;% # app/views/posts/new.html.erb %&gt;
+&lt;%= render &quot;form&quot; %&gt;
+# =&gt; renders app/views/posts/_form.html.erb
+</code></pre>
 
-<p>Otherwise, a partial is rendered using the second parameter as the locals hash.</p>
+<p>Use the complete view path to render a partial from another directory.</p>
+
+<pre><code>&lt;% # app/views/posts/show.html.erb %&gt;
+&lt;%= render &quot;comments/form&quot; %&gt;
+# =&gt; renders app/views/comments/_form.html.erb
+</code></pre>
+
+<p>Without the rendering mode, the second argument can be a <a href="../../Hash.html"><code>Hash</code></a> of local variable assignments for the template.</p>
+
+<pre><code>&lt;% # app/views/posts/new.html.erb %&gt;
+&lt;%= render &quot;form&quot;, post: Post.new %&gt;
+# =&gt; renders app/views/posts/_form.html.erb
+</code></pre>
+
+<p>If the first argument responds to <code>render_in</code>, the template will be rendered by calling <code>render_in</code> with the current view context.</p>
+
+<pre><code>class Greeting
+  def render_in(view_context)
+    view_context.render html: &quot;&lt;h1&gt;Hello, World&lt;/h1&gt;&quot;
+  end
+
+  def format
+    :html
+  end
+end
+
+&lt;%= render Greeting.new %&gt;
+# =&gt; &quot;&lt;h1&gt;Hello, World&lt;/h1&gt;&quot;
+</code></pre>
+
+<h4 id="method-i-render-label-Rendering+Mode"><a href="../Rendering.html"><code>Rendering</code></a> Mode</h4>
+
+<p>Pass the rendering mode as first argument to override it.</p>
+<dl class="rdoc-list note-list"><dt><code>:partial</code>
+<dd>
+<p>See <a href="../PartialRenderer.html"><code>ActionView::PartialRenderer</code></a> for details.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render partial: &quot;form&quot;, locals: { post: Post.new } %&gt;
+    # =&gt; renders app/views/posts/_form.html.erb
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:file</code>
+<dd>
+<p>Renders the contents of a file. This option should <strong>not</strong> be used with unsanitized user input.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render file: &quot;/path/to/some/file&quot; %&gt;
+    # =&gt; renders /path/to/some/file
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:inline</code>
+<dd>
+<p>Renders an <a href="../../ERB.html"><code>ERB</code></a> template string.</p>
+</dd></dl>
+
+<pre><code>    &lt;% name = &quot;World&quot; %&gt;
+    &lt;%= render inline: &quot;&lt;h1&gt;Hello, &lt;%= name %&gt;!&lt;/h1&gt;&quot; %&gt;
+    # =&gt; renders &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:body</code>
+<dd>
+<p>Renders the provided text, and sets the format as <code>:text</code>.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render body: &quot;Hello, World!&quot; %&gt;
+    # =&gt; renders &quot;Hello, World!&quot;
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:plain</code>
+<dd>
+<p>Renders the provided text, and sets the format as <code>:text</code>.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render plain: &quot;Hello, World!&quot; %&gt;
+    # =&gt; renders &quot;Hello, World!&quot;
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:html</code>
+<dd>
+<p>Renders the provided HTML string, and sets the format as <code>:html</code>. If the string is not <code>html_safe?</code>, performs HTML escaping on the string before rendering.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render html: &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;.html_safe %&gt;
+    # =&gt; renders &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;
+
+    &lt;%= render html: &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot; %&gt;
+    # =&gt; renders &quot;&amp;lt;h1&amp;gt;Hello, World!&amp;lt;/h1&amp;gt;&quot;
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:renderable</code>
+<dd>
+<p>Renders the provided object by calling <code>render_in</code> with the current view context. The format is determined by calling <code>format</code> on the renderable if it responds to <code>format</code>, falling back to <code>:html</code> by default.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render renderable: Greeting.new %&gt;
+    # =&gt; renders &quot;&lt;h1&gt;Hello, World&lt;/h1&gt;&quot;
+</code></pre>
+
+<h4 id="method-i-render-label-Options">Options</h4>
+<dl class="rdoc-list note-list"><dt><code>:locals</code>
+<dd>
+<p><a href="../../Hash.html"><code>Hash</code></a> of local variable assignments for the template.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render inline: &quot;&lt;h1&gt;Hello, &lt;%= name %&gt;!&lt;/h1&gt;&quot;, locals: { name: &quot;World&quot; } %&gt;
+    # =&gt; renders &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:formats</code>
+<dd>
+<p>Override the current format to render a template for a different format.</p>
+</dd></dl>
+
+<pre><code>    &lt;% # app/views/posts/show.html.erb %&gt;
+    &lt;%= render template: &quot;posts/content&quot;, formats: [:text] %&gt;
+    # =&gt; renders app/views/posts/content.text.erb
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:variants</code>
+<dd>
+<p>Render a template for a different variant.</p>
+</dd></dl>
+
+<pre><code>    &lt;% # app/views/posts/show.html.erb %&gt;
+    &lt;%= render template: &quot;posts/content&quot;, variants: [:tablet] %&gt;
+    # =&gt; renders app/views/posts/content.html+tablet.erb
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:handlers</code>
+<dd>
+<p>Render a template for a different handler.</p>
+</dd></dl>
+
+<pre><code>    &lt;% # app/views/posts/show.html.erb %&gt;
+    &lt;%= render template: &quot;posts/content&quot;, handlers: [:builder] %&gt;
+    # =&gt; renders app/views/posts/content.html.builder
+</code></pre>
             </div>
           
 
@@ -195,7 +314,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionview/lib/action_view/helpers/rendering_helper.rb, line 30
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/rendering_helper.rb, line 138
       def render(options = {}, locals = {}, &amp;block)
         case options
         when Hash
@@ -215,7 +334,7 @@ layout: default
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionview/lib/action_view/helpers/rendering_helper.rb#L30" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionview/lib/action_view/helpers/rendering_helper.rb#L138" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

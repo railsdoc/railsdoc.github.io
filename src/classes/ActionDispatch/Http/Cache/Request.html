@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.2.2</span><br />
+            <span>Ruby on Rails 8.0.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -121,7 +121,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 30
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 32
         def etag_matches?(etag)
           if etag
             validators = if_none_match_etags
@@ -129,7 +129,7 @@ layout: default
           end
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/cache.rb#L30" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/cache.rb#L32" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -144,7 +144,7 @@ layout: default
 
           
             <div class="description">
-              <p>Check response freshness (<code>Last-Modified</code> and ETag) against request <code>If-Modified-Since</code> and <code>If-None-Match</code> conditions. If both headers are supplied, both must match, or the request is not considered fresh.</p>
+              <p>Check response freshness (<code>Last-Modified</code> and <code>ETag</code>) against request <code>If-Modified-Since</code> and <code>If-None-Match</code> conditions. If both headers are supplied, based on configuration, either <code>ETag</code> is preferred over <code>Last-Modified</code> or both are considered equally. You can adjust the preference with <code>config.action_dispatch.strict_freshness</code>. Reference: <a href="http://tools.ietf.org/html/rfc7232#section-6">tools.ietf.org/html/rfc7232#section-6</a></p>
             </div>
           
 
@@ -159,20 +159,30 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 40
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 45
         def fresh?(response)
-          last_modified = if_modified_since
-          etag          = if_none_match
+          if Request.strict_freshness
+            if if_none_match
+              etag_matches?(response.etag)
+            elsif if_modified_since
+              not_modified?(response.last_modified)
+            else
+              false
+            end
+          else
+            last_modified = if_modified_since
+            etag          = if_none_match
 
-          return false unless last_modified || etag
+            return false unless last_modified || etag
 
-          success = true
-          success &amp;&amp;= not_modified?(response.last_modified) if last_modified
-          success &amp;&amp;= etag_matches?(response.etag) if etag
-          success
+            success = true
+            success &amp;&amp;= not_modified?(response.last_modified) if last_modified
+            success &amp;&amp;= etag_matches?(response.etag) if etag
+            success
+          end
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/cache.rb#L40" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/cache.rb#L45" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -202,14 +212,14 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 12
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 14
         def if_modified_since
           if since = get_header(HTTP_IF_MODIFIED_SINCE)
             Time.rfc2822(since) rescue nil
           end
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/cache.rb#L12" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/cache.rb#L14" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -239,12 +249,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 18
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 20
         def if_none_match
           get_header HTTP_IF_NONE_MATCH
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/cache.rb#L18" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/cache.rb#L20" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -274,12 +284,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 22
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 24
         def if_none_match_etags
           if_none_match ? if_none_match.split(&quot;,&quot;).each(&amp;:strip!) : []
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/cache.rb#L22" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/cache.rb#L24" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -309,12 +319,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 26
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 28
         def not_modified?(modified_at)
           if_modified_since &amp;&amp; modified_at &amp;&amp; if_modified_since &gt;= modified_at
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/cache.rb#L26" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/cache.rb#L28" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

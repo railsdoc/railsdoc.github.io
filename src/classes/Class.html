@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.2.2</span><br />
+            <span>Ruby on Rails 8.0.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -175,7 +175,7 @@ object.setting?         # =&gt; NoMethodError
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/class/attribute.rb, line 85
+              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/class/attribute.rb, line 86
   def class_attribute(*attrs, instance_accessor: true,
     instance_reader: instance_accessor, instance_writer: instance_accessor, instance_predicate: true, default: nil)
 
@@ -185,24 +185,16 @@ object.setting?         # =&gt; NoMethodError
         raise TypeError, &quot;#{name.inspect} is not a symbol nor a string&quot;
       end
 
-      class_methods &lt;&lt; &lt;&lt;~RUBY # In case the method exists and is not public
-        silence_redefinition_of_method def #{name}
-        end
-      RUBY
+      name = name.to_sym
+      ::ActiveSupport::ClassAttribute.redefine(self, name, default)
 
-      methods &lt;&lt; &lt;&lt;~RUBY if instance_reader
-        silence_redefinition_of_method def #{name}
-          defined?(@#{name}) ? @#{name} : self.class.#{name}
-        end
-      RUBY
-
-      class_methods &lt;&lt; &lt;&lt;~RUBY
-        silence_redefinition_of_method def #{name}=(value)
-          redefine_method(:#{name}) { value } if singleton_class?
-          redefine_singleton_method(:#{name}) { value }
-          value
-        end
-      RUBY
+      unless singleton_class?
+        methods &lt;&lt; &lt;&lt;~RUBY if instance_reader
+          silence_redefinition_of_method def #{name}
+            defined?(@#{name}) ? @#{name} : self.class.#{name}
+          end
+        RUBY
+      end
 
       methods &lt;&lt; &lt;&lt;~RUBY if instance_writer
         silence_redefinition_of_method(:#{name}=)
@@ -219,11 +211,9 @@ object.setting?         # =&gt; NoMethodError
 
     location = caller_locations(1, 1).first
     class_eval([&quot;class &lt;&lt; self&quot;, *class_methods, &quot;end&quot;, *methods].join(&quot;;&quot;).tr(&quot;\n&quot;, &quot;;&quot;), location.path, location.lineno)
-
-    attrs.each { |name| public_send(&quot;#{name}=&quot;, default) }
   end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/core_ext/class/attribute.rb#L85" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activesupport/lib/active_support/core_ext/class/attribute.rb#L86" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -271,7 +261,7 @@ C.descendants # =&gt; [B, A, D]
     subclasses.concat(subclasses.flat_map(&amp;:descendants))
   end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/core_ext/class/subclasses.rb#L19" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activesupport/lib/active_support/core_ext/class/subclasses.rb#L19" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
