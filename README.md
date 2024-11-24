@@ -19,8 +19,9 @@ Thare are some enhancements in addition to SEO.
 - [x] No iframe layout
 - [x] Table of Contents
 - [x] Google Custom Search
+- [x] Multiple version documentation
 - [ ] Mobile-friendly design
-- [ ] Multiple version documentation
+- [ ] Comment System
 - [ ] etc. (see. https://github.com/railsdoc/railsdoc.github.io/issues)
 
 ## Feature Request  
