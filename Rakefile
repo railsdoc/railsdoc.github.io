@@ -21,9 +21,13 @@ task :switch_default_rails do
 end
 
 desc 'Generate and build documentation for older versions of Rails'
-task :build_multi do
-  # WORKAROUND: use `reverse_each` instead of `each` to avoid nokogiri installation error
-  config['rails_versions'].reverse_each do |version, detail|
+task :build_multi, [:versions] do |_t, args|
+  rails_versions = config['rails_versions'].reverse_each.to_h # Versions from oldest to newest
+  unless args[:versions].nil?
+    versions = args[:versions].split(',')
+    rails_versions.select! { |version, _| versions.include?(version) }
+  end
+  rails_versions.each do |version, detail|
     if detail['latest']
       puts "=== Skip Rails v#{version} because it's latest version ==="
       next
@@ -39,7 +43,7 @@ task :build_multi do
     generate_rails_rdoc
     generate_src(target_version: version)
   end
-  puts
+  puts "=== Build Jekyll site ==="
   sh 'bundle exec jekyll build'
 end
 
