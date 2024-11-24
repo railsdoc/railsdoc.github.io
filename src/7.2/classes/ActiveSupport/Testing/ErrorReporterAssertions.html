@@ -1,0 +1,195 @@
+---
+title: ActiveSupport::Testing::ErrorReporterAssertions
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Testing::ErrorReporterAssertions
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/testing/error_reporter_assertions_rb.html">activesupport/lib/active_support/testing/error_reporter_assertions.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="ErrorReporterAssertions/ErrorCollector.html">ActiveSupport::Testing::ErrorReporterAssertions::ErrorCollector</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-assert_error_reported">assert_error_reported</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_no_error_reported">assert_no_error_reported</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-assert_error_reported">
+            
+              assert_error_reported(error_class = StandardError, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Assertion that the block should cause at least one exception to be reported to <code>Rails.error</code>.</p>
+
+<p>Passes if the evaluated code in the yielded block reports a matching exception.</p>
+
+<pre><code>assert_error_reported(IOError) do
+  Rails.error.report(IOError.new(&quot;Oops&quot;))
+end
+</code></pre>
+
+<p>To test further details about the reported exception, you can use the return value.</p>
+
+<pre><code>report = assert_error_reported(IOError) do
+  # ...
+end
+assert_equal &quot;Oops&quot;, report.error.message
+assert_equal &quot;admin&quot;, report.context[:section]
+assert_equal :warning, report.severity
+assert_predicate report, :handled?
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/error_reporter_assertions.rb, line 88
+      def assert_error_reported(error_class = StandardError, &amp;block)
+        reports = ErrorCollector.record do
+          _assert_nothing_raised_or_warn(&quot;assert_error_reported&quot;, &amp;block)
+        end
+
+        if reports.empty?
+          assert(false, &quot;Expected a #{error_class.name} to be reported, but there were no errors reported.&quot;)
+        elsif (report = reports.find { |r| error_class === r.error })
+          self.assertions += 1
+          report
+        else
+          message = &quot;Expected a #{error_class.name} to be reported, but none of the &quot; \
+            &quot;#{reports.size} reported errors matched:  \n&quot; \
+            &quot;#{reports.map { |r| r.error.class.name }.join(&quot;\n  &quot;)}&quot;
+          assert(false, message)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/testing/error_reporter_assertions.rb#L88" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_no_error_reported">
+            
+              assert_no_error_reported(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Assertion that the block should not cause an exception to be reported to <code>Rails.error</code>.</p>
+
+<p>Passes if evaluated code in the yielded block reports no exception.</p>
+
+<pre><code>assert_no_error_reported do
+  perform_service(param: &#39;no_exception&#39;)
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/error_reporter_assertions.rb, line 62
+      def assert_no_error_reported(&amp;block)
+        reports = ErrorCollector.record do
+          _assert_nothing_raised_or_warn(&quot;assert_no_error_reported&quot;, &amp;block)
+        end
+        assert_predicate(reports, :empty?)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/testing/error_reporter_assertions.rb#L62" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,235 @@
+---
+title: Rails::Generators::Migration
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            Rails::Generators::Migration
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/railties/lib/rails/generators/migration_rb.html">railties/lib/rails/generators/migration.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Holds common methods for migrations. It assumes that migrations have the [0-9]*_name format and can be used by other frameworks (like Sequel) just by implementing the <code>next_migration_number</code> method.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-create_migration">create_migration</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-migration_template">migration_template</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-set_migration_assigns-21">set_migration_assigns!</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>migration_class_name</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>migration_file_name</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>migration_number</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-create_migration">
+            
+              create_migration(destination, data, config = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/rails/generators/migration.rb, line 35
+      def create_migration(destination, data, config = {}, &amp;block)
+        action Rails::Generators::Actions::CreateMigration.new(self, destination, block || data.to_s, config)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/railties/lib/rails/generators/migration.rb#L35" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-migration_template">
+            
+              migration_template(source, destination, config = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Creates a migration template at the given destination. The difference to the default template method is that the migration number is prepended to the destination file name.</p>
+
+<p>The migration number, migration file name, migration class name are available as instance variables in the template to be rendered.</p>
+
+<pre><code>migration_template &quot;migration.rb&quot;, &quot;db/migrate/add_foo_to_bar.rb&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/rails/generators/migration.rb, line 56
+      def migration_template(source, destination, config = {})
+        source = File.expand_path(find_in_source_paths(source.to_s))
+
+        set_migration_assigns!(destination)
+
+        dir, base = File.split(destination)
+        numbered_destination = File.join(dir, [&quot;%migration_number%&quot;, base].join(&quot;_&quot;))
+
+        file = create_migration numbered_destination, nil, config do
+          ERB.new(::File.binread(source), trim_mode: &quot;-&quot;, eoutvar: &quot;@output_buffer&quot;).result(binding)
+        end
+        Rails::Generators.add_generated_file(file)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/railties/lib/rails/generators/migration.rb#L56" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-set_migration_assigns-21">
+            
+              set_migration_assigns!(destination)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/rails/generators/migration.rb, line 39
+      def set_migration_assigns!(destination)
+        destination = File.expand_path(destination, destination_root)
+
+        migration_dir = File.dirname(destination)
+        @migration_number     = self.class.next_migration_number(migration_dir)
+        @migration_file_name  = File.basename(destination, &quot;.rb&quot;)
+        @migration_class_name = @migration_file_name.camelize
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/railties/lib/rails/generators/migration.rb#L39" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

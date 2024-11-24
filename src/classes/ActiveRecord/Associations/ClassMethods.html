@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.2.2</span><br />
+            <span>Ruby on Rails 8.0.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -289,22 +289,41 @@ end
            after_add: :congratulate_client,
            after_remove: :log_after_remove
 
-  def congratulate_client(record)
+  def congratulate_client(client)
     # ...
   end
 
-  def log_after_remove(record)
+  def log_after_remove(client)
     # ...
   end
 end
 </code></pre>
 
+<p><a href="../Callbacks.html"><code>Callbacks</code></a> can be defined in three ways:</p>
+<ol><li>
+<p>A symbol that references a method defined on the class with the associated collection. For example, <code>after_add: :congratulate_client</code> invokes <code>Firm#congratulate_client(client)</code>.</p>
+</li><li>
+<p>A callable with a signature that accepts both the record with the associated collection and the record being added or removed. For example, <code>after_add: -&gt;(firm, client) { ... }</code>.</p>
+</li><li>
+<p>An object that responds to the callback name. For example, passing <code>after_add: CallbackObject.new</code> invokes <code>CallbackObject#after_add(firm, client)</code>.</p>
+</li></ol>
+
 <p>It’s possible to stack callbacks by passing them as an array. Example:</p>
 
-<pre><code>class Firm &lt; ActiveRecord::Base
+<pre><code>class CallbackObject
+  def after_add(firm, client)
+    firm.log &lt;&lt; &quot;after_adding #{client.id}&quot;
+  end
+end
+
+class Firm &lt; ActiveRecord::Base
   has_many :clients,
            dependent: :destroy,
-           after_add: [:congratulate_client, -&gt; (firm, record) { firm.log &lt;&lt; &quot;after_adding#{record.id}&quot; }],
+           after_add: [
+             :congratulate_client,
+             -&gt; (firm, client) { firm.log &lt;&lt; &quot;after_adding #{client.id}&quot; },
+             CallbackObject.new
+           ],
            after_remove: :log_after_remove
 end
 </code></pre>
@@ -1057,13 +1076,13 @@ belongs_to :note, query_constraints: [:organization_id, :note_id]
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1659
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1689
         def belongs_to(name, scope = nil, **options)
           reflection = Builder::BelongsTo.build(self, name, scope, options)
           Reflection.add_reflection self, name, reflection
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/associations.rb#L1659" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activerecord/lib/active_record/associations.rb#L1689" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1082,7 +1101,7 @@ belongs_to :note, query_constraints: [:organization_id, :note_id]
 
 <p>The join table should not have a primary key or a model associated with it. You must manually generate the join table with a migration such as this:</p>
 
-<pre><code>class CreateDevelopersProjectsJoinTable &lt; ActiveRecord::Migration[7.2]
+<pre><code>class CreateDevelopersProjectsJoinTable &lt; ActiveRecord::Migration[8.0]
   def change
     create_join_table :developers, :projects
   end
@@ -1249,7 +1268,7 @@ has_and_belongs_to_many :categories, strict_loading: true
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1840
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1870
         def has_and_belongs_to_many(name, scope = nil, **options, &amp;extension)
           habtm_reflection = ActiveRecord::Reflection::HasAndBelongsToManyReflection.new(name, scope, options, self)
 
@@ -1288,7 +1307,7 @@ has_and_belongs_to_many :categories, strict_loading: true
           _reflections[name].parent_reflection = habtm_reflection
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/associations.rb#L1840" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activerecord/lib/active_record/associations.rb#L1870" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1502,6 +1521,18 @@ end
 </dd><dt><code>:index_errors</code>
 <dd>
 <p>Allows differentiation of multiple validation errors from the association records, by including an index in the error attribute name, e.g. <code>roles[2].level</code>. When set to <code>true</code>, the index is based on association order, i.e. database order, with yet to be persisted new records placed at the end. When set to <code>:nested_attributes_order</code>, the index is based on the record order received by nested attributes setter, when accepts_nested_attributes_for is used.</p>
+</dd><dt>:before_add
+<dd>
+<p>Defines an <a href="ClassMethods.html#module-ActiveRecord::Associations::ClassMethods-label-Association+callbacks">association callback</a> that gets triggered <strong>before an object is added</strong> to the association collection.</p>
+</dd><dt>:after_add
+<dd>
+<p>Defines an <a href="ClassMethods.html#module-ActiveRecord::Associations::ClassMethods-label-Association+callbacks">association callback</a> that gets triggered <strong>after an object is added</strong> to the association collection.</p>
+</dd><dt>:before_remove
+<dd>
+<p>Defines an <a href="ClassMethods.html#module-ActiveRecord::Associations::ClassMethods-label-Association+callbacks">association callback</a> that gets triggered <strong>before an object is removed</strong> from the association collection.</p>
+</dd><dt>:after_remove
+<dd>
+<p>Defines an <a href="ClassMethods.html#module-ActiveRecord::Associations::ClassMethods-label-Association+callbacks">association callback</a> that gets triggered <strong>after an object is removed</strong> from the association collection.</p>
 </dd></dl>
 
 <p>Option examples:</p>
@@ -1533,13 +1564,13 @@ has_many :comments, index_errors: :nested_attributes_order
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1272
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1302
         def has_many(name, scope = nil, **options, &amp;extension)
           reflection = Builder::HasMany.build(self, name, scope, options, &amp;extension)
           Reflection.add_reflection self, name, reflection
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/associations.rb#L1272" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activerecord/lib/active_record/associations.rb#L1302" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1732,13 +1763,13 @@ has_one :employment_record_book, query_constraints: [:organization_id, :employee
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1468
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1498
         def has_one(name, scope = nil, **options)
           reflection = Builder::HasOne.build(self, name, scope, options)
           Reflection.add_reflection self, name, reflection
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/associations.rb#L1468" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activerecord/lib/active_record/associations.rb#L1498" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

@@ -1,0 +1,270 @@
+---
+title: ActiveRecord::Encryption::Cipher
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::Encryption::Cipher
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/encryption_rb.html">activerecord/lib/active_record/encryption.rb</a></li>
+            
+            <li><a href="../../../files/activerecord/lib/active_record/encryption/cipher_rb.html">activerecord/lib/active_record/encryption/cipher.rb</a></li>
+            
+            <li><a href="../../../files/activerecord/lib/active_record/encryption/cipher/aes256_gcm_rb.html">activerecord/lib/active_record/encryption/cipher/aes256_gcm.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>The algorithm used for encrypting and decrypting <code>Message</code> objects.</p>
+
+<p>It uses AES-256-GCM. It will generate a random IV for non deterministic encryption (default) or derive an initialization vector from the encrypted content for deterministic encryption.</p>
+
+<p>See <code>Cipher::Aes256Gcm</code>.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Cipher/Aes256Gcm.html">ActiveRecord::Encryption::Cipher::Aes256Gcm</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-decrypt">decrypt</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-encrypt">encrypt</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-iv_length">iv_length</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-key_length">key_length</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">DEFAULT_ENCODING</td>
+            <td>=</td>
+            <td class="attr-value">Encoding::UTF_8</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-decrypt">
+            
+              decrypt(encrypted_message, key:)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Decrypt the provided <code>Message</code>.</p>
+
+<p>When <code>key</code> is an <a href="../../Array.html"><code>Array</code></a>, it will try all the keys raising a <code>ActiveRecord::Encryption::Errors::Decryption</code> if none works.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/cipher.rb, line 25
+      def decrypt(encrypted_message, key:)
+        try_to_decrypt_with_each(encrypted_message, keys: Array(key)).tap do |decrypted_text|
+          decrypted_text.force_encoding(encrypted_message.headers.encoding || DEFAULT_ENCODING)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/encryption/cipher.rb#L25" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-encrypt">
+            
+              encrypt(clean_text, key:, deterministic: false)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Encrypts the provided text and return an encrypted <code>Message</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/cipher.rb, line 15
+      def encrypt(clean_text, key:, deterministic: false)
+        cipher_for(key, deterministic: deterministic).encrypt(clean_text).tap do |message|
+          message.headers.encoding = clean_text.encoding.name unless clean_text.encoding == DEFAULT_ENCODING
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/encryption/cipher.rb#L15" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-iv_length">
+            
+              iv_length()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/cipher.rb, line 35
+      def iv_length
+        Aes256Gcm.iv_length
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/encryption/cipher.rb#L35" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-key_length">
+            
+              key_length()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/cipher.rb, line 31
+      def key_length
+        Aes256Gcm.key_length
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/encryption/cipher.rb#L31" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

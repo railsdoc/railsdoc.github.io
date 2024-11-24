@@ -1,0 +1,613 @@
+---
+title: ActiveRecord::Transactions::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Transactions::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/transactions_rb.html">activerecord/lib/active_record/transactions.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveRecord::Transactions::ClassMethods-label-Active+Record+Transactions">Active Record Transactions</h1>
+
+<p>Transactions are protective blocks where SQL statements are only permanent if they can all succeed as one atomic action. The classic example is a transfer between two accounts where you can only have a deposit if the withdrawal succeeded and vice versa. Transactions enforce the integrity of the database and guard the data against program errors or database break-downs. So basically you should use transaction blocks whenever you have a number of statements that must be executed together or not at all.</p>
+
+<p>For example:</p>
+
+<pre><code>ActiveRecord::Base.transaction do
+  david.withdrawal(100)
+  mary.deposit(100)
+end
+</code></pre>
+
+<p>This example will only take money from David and give it to Mary if neither <code>withdrawal</code> nor <code>deposit</code> raise an exception. Exceptions will force a ROLLBACK that returns the database to the state before the transaction began. Be aware, though, that the objects will <em>not</em> have their instance data returned to their pre-transactional state.</p>
+
+<h2 id="module-ActiveRecord::Transactions::ClassMethods-label-Different+Active+Record+classes+in+a+single+transaction">Different Active Record classes in a single transaction</h2>
+
+<p>Though the <a href="ClassMethods.html#method-i-transaction"><code>transaction</code></a> class method is called on some Active Record class, the objects within the transaction block need not all be instances of that class. This is because transactions are per-database connection, not per-model.</p>
+
+<p>In this example a <code>balance</code> record is transactionally saved even though <a href="ClassMethods.html#method-i-transaction"><code>transaction</code></a> is called on the <code>Account</code> class:</p>
+
+<pre><code>Account.transaction do
+  balance.save!
+  account.save!
+end
+</code></pre>
+
+<p>The <a href="ClassMethods.html#method-i-transaction"><code>transaction</code></a> method is also available as a model instance method. For example, you can also do this:</p>
+
+<pre><code>balance.transaction do
+  balance.save!
+  account.save!
+end
+</code></pre>
+
+<h2 id="module-ActiveRecord::Transactions::ClassMethods-label-Transactions+are+not+distributed+across+database+connections"><a href="../Transactions.html"><code>Transactions</code></a> are not distributed across database connections</h2>
+
+<p>A transaction acts on a single database connection. If you have multiple class-specific databases, the transaction will not protect interaction among them. One workaround is to begin a transaction on each class whose models you alter:</p>
+
+<pre><code>Student.transaction do
+  Course.transaction do
+    course.enroll(student)
+    student.units += course.units
+  end
+end
+</code></pre>
+
+<p>This is a poor solution, but fully distributed transactions are beyond the scope of Active Record.</p>
+
+<h2 id="module-ActiveRecord::Transactions::ClassMethods-label-save+and+destroy+are+automatically+wrapped+in+a+transaction"><code>save</code> and <code>destroy</code> are automatically wrapped in a transaction</h2>
+
+<p>Both <a href="../Persistence.html#method-i-save">#save</a> and <a href="../Persistence.html#method-i-destroy">#destroy</a> come wrapped in a transaction that ensures that whatever you do in validations or callbacks will happen under its protected cover. So you can use validations to check for values that the transaction depends on or you can raise exceptions in the callbacks to rollback, including <code>after_*</code> callbacks.</p>
+
+<p>As a consequence changes to the database are not seen outside your connection until the operation is complete. For example, if you try to update the index of a search engine in <code>after_save</code> the indexer won’t see the updated record. The <a href="ClassMethods.html#method-i-after_commit"><code>after_commit</code></a> callback is the only one that is triggered once the update is committed. See below.</p>
+
+<h2 id="module-ActiveRecord::Transactions::ClassMethods-label-Exception+handling+and+rolling+back"><a href="../../Exception.html"><code>Exception</code></a> handling and rolling back</h2>
+
+<p>Also have in mind that exceptions thrown within a transaction block will be propagated (after triggering the ROLLBACK), so you should be ready to catch those in your application code.</p>
+
+<p>One exception is the <a href="../Rollback.html"><code>ActiveRecord::Rollback</code></a> exception, which will trigger a ROLLBACK when raised, but not be re-raised by the transaction block. Any other exception will be re-raised.</p>
+
+<p><strong>Warning</strong>: one should not catch <a href="../StatementInvalid.html"><code>ActiveRecord::StatementInvalid</code></a> exceptions inside a transaction block. <a href="../StatementInvalid.html"><code>ActiveRecord::StatementInvalid</code></a> exceptions indicate that an error occurred at the database level, for example when a unique constraint is violated. On some database systems, such as PostgreSQL, database errors inside a transaction cause the entire transaction to become unusable until it’s restarted from the beginning. Here is an example which demonstrates the problem:</p>
+
+<pre><code># Suppose that we have a Number model with a unique column called &#39;i&#39;.
+Number.transaction do
+  Number.create(i: 0)
+  begin
+    # This will raise a unique constraint error...
+    Number.create(i: 0)
+  rescue ActiveRecord::StatementInvalid
+    # ...which we ignore.
+  end
+
+  # On PostgreSQL, the transaction is now unusable. The following
+  # statement will cause a PostgreSQL error, even though the unique
+  # constraint is no longer violated:
+  Number.create(i: 1)
+  # =&gt; &quot;PG::Error: ERROR:  current transaction is aborted, commands
+  #     ignored until end of transaction block&quot;
+end
+</code></pre>
+
+<p>One should restart the entire transaction if an <a href="../StatementInvalid.html"><code>ActiveRecord::StatementInvalid</code></a> occurred.</p>
+
+<h2 id="module-ActiveRecord::Transactions::ClassMethods-label-Nested+transactions">Nested transactions</h2>
+
+<p><a href="ClassMethods.html#method-i-transaction"><code>transaction</code></a> calls can be nested. By default, this makes all database statements in the nested transaction block become part of the parent transaction. For example, the following behavior may be surprising:</p>
+
+<pre><code>User.transaction do
+  User.create(username: &#39;Kotori&#39;)
+  User.transaction do
+    User.create(username: &#39;Nemu&#39;)
+    raise ActiveRecord::Rollback
+  end
+end
+</code></pre>
+
+<p>creates both “Kotori” and “Nemu”. Reason is the <a href="../Rollback.html"><code>ActiveRecord::Rollback</code></a> exception in the nested block does not issue a ROLLBACK. Since these exceptions are captured in transaction blocks, the parent block does not see it and the real transaction is committed.</p>
+
+<p>In order to get a ROLLBACK for the nested transaction you may ask for a real sub-transaction by passing <code>requires_new: true</code>. If anything goes wrong, the database rolls back to the beginning of the sub-transaction without rolling back the parent transaction. If we add it to the previous example:</p>
+
+<pre><code>User.transaction do
+  User.create(username: &#39;Kotori&#39;)
+  User.transaction(requires_new: true) do
+    User.create(username: &#39;Nemu&#39;)
+    raise ActiveRecord::Rollback
+  end
+end
+</code></pre>
+
+<p>only “Kotori” is created.</p>
+
+<p>Most databases don’t support true nested transactions. At the time of writing, the only database that we’re aware of that supports true nested transactions, is MS-SQL. Because of this, Active Record emulates nested transactions by using savepoints. See <a href="https://dev.mysql.com/doc/refman/en/savepoint.html">dev.mysql.com/doc/refman/en/savepoint.html</a> for more information about savepoints.</p>
+
+<h3 id="module-ActiveRecord::Transactions::ClassMethods-label-Callbacks">Callbacks</h3>
+
+<p>There are two types of callbacks associated with committing and rolling back transactions: <a href="ClassMethods.html#method-i-after_commit"><code>after_commit</code></a> and <a href="ClassMethods.html#method-i-after_rollback"><code>after_rollback</code></a>.</p>
+
+<p><a href="ClassMethods.html#method-i-after_commit"><code>after_commit</code></a> callbacks are called on every record saved or destroyed within a transaction immediately after the transaction is committed. <a href="ClassMethods.html#method-i-after_rollback"><code>after_rollback</code></a> callbacks are called on every record saved or destroyed within a transaction immediately after the transaction or savepoint is rolled back.</p>
+
+<p>These callbacks are useful for interacting with other systems since you will be guaranteed that the callback is only executed when the database is in a permanent state. For example, <a href="ClassMethods.html#method-i-after_commit"><code>after_commit</code></a> is a good spot to put in a hook to clearing a cache since clearing it from within a transaction could trigger the cache to be regenerated before the database is updated.</p>
+
+<h4 id="module-ActiveRecord::Transactions::ClassMethods-label-NOTE-3A+Callbacks+are+deduplicated+per+callback+by+filter.">NOTE: <a href="../Callbacks.html"><code>Callbacks</code></a> are deduplicated per callback by filter.</h4>
+
+<p>Trying to define multiple callbacks with the same filter will result in a single callback being run.</p>
+
+<p>For example:</p>
+
+<pre><code>after_commit :do_something
+after_commit :do_something # only the last one will be called
+</code></pre>
+
+<p>This applies to all variations of <code>after_*_commit</code> callbacks as well.</p>
+
+<pre><code>after_commit :do_something
+after_create_commit :do_something
+after_save_commit :do_something
+</code></pre>
+
+<p>It is recommended to use the <code>on:</code> option to specify when the callback should be run.</p>
+
+<pre><code>after_commit :do_something, on: [:create, :update]
+</code></pre>
+
+<p>This is equivalent to using <code>after_create_commit</code> and <code>after_update_commit</code>, but will not be deduplicated.</p>
+
+<h3 id="module-ActiveRecord::Transactions::ClassMethods-label-Caveats">Caveats</h3>
+
+<p>If you’re on MySQL, then do not use Data Definition Language (DDL) operations in nested transactions blocks that are emulated with savepoints. That is, do not execute statements like ‘CREATE TABLE’ inside such blocks. This is because MySQL automatically releases all savepoints upon executing a DDL operation. When <code>transaction</code> is finished and tries to release the savepoint it created earlier, a database error will occur because the savepoint has already been automatically released. The following example demonstrates the problem:</p>
+
+<pre><code>Model.lease_connection.transaction do                           # BEGIN
+  Model.lease_connection.transaction(requires_new: true) do     # CREATE SAVEPOINT active_record_1
+    Model.lease_connection.create_table(...)                    # active_record_1 now automatically released
+  end                                                     # RELEASE SAVEPOINT active_record_1
+                                                          # ^^^^ BOOM! database error!
+end
+</code></pre>
+
+<p>Note that “TRUNCATE” is also a MySQL DDL statement!</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-after_commit">after_commit</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-after_create_commit">after_create_commit</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-after_destroy_commit">after_destroy_commit</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-after_rollback">after_rollback</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-after_save_commit">after_save_commit</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-after_update_commit">after_update_commit</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-current_transaction">current_transaction</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-set_callback">set_callback</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-transaction">transaction</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-after_commit">
+            
+              after_commit(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>This callback is called after a record has been created, updated, or destroyed.</p>
+
+<p>You can specify that the callback should only be fired by a certain action with the <code>:on</code> option:</p>
+
+<pre><code>after_commit :do_foo, on: :create
+after_commit :do_bar, on: :update
+after_commit :do_baz, on: :destroy
+
+after_commit :do_foo_bar, on: [:create, :update]
+after_commit :do_bar_baz, on: [:update, :destroy]
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transactions.rb, line 266
+      def after_commit(*args, &amp;block)
+        set_options_for_callbacks!(args, prepend_option)
+        set_callback(:commit, :after, *args, &amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/transactions.rb#L266" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-after_create_commit">
+            
+              after_create_commit(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Shortcut for <code>after_commit :hook, on: :create</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transactions.rb, line 278
+      def after_create_commit(*args, &amp;block)
+        set_options_for_callbacks!(args, on: :create, **prepend_option)
+        set_callback(:commit, :after, *args, &amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/transactions.rb#L278" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-after_destroy_commit">
+            
+              after_destroy_commit(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Shortcut for <code>after_commit :hook, on: :destroy</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transactions.rb, line 290
+      def after_destroy_commit(*args, &amp;block)
+        set_options_for_callbacks!(args, on: :destroy, **prepend_option)
+        set_callback(:commit, :after, *args, &amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/transactions.rb#L290" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-after_rollback">
+            
+              after_rollback(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>This callback is called after a create, update, or destroy are rolled back.</p>
+
+<p>Please check the documentation of <a href="ClassMethods.html#method-i-after_commit"><code>after_commit</code></a> for options.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transactions.rb, line 298
+      def after_rollback(*args, &amp;block)
+        set_options_for_callbacks!(args, prepend_option)
+        set_callback(:rollback, :after, *args, &amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/transactions.rb#L298" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-after_save_commit">
+            
+              after_save_commit(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Shortcut for <code>after_commit :hook, on: [ :create, :update ]</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transactions.rb, line 272
+      def after_save_commit(*args, &amp;block)
+        set_options_for_callbacks!(args, on: [ :create, :update ], **prepend_option)
+        set_callback(:commit, :after, *args, &amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/transactions.rb#L272" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-after_update_commit">
+            
+              after_update_commit(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Shortcut for <code>after_commit :hook, on: :update</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transactions.rb, line 284
+      def after_update_commit(*args, &amp;block)
+        set_options_for_callbacks!(args, on: :update, **prepend_option)
+        set_callback(:commit, :after, *args, &amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/transactions.rb#L284" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-current_transaction">
+            
+              current_transaction()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a representation of the current transaction state, which can be a top level transaction, a savepoint, or the absence of a transaction.</p>
+
+<p>An object is always returned, whether or not a transaction is currently active. To check if a transaction was opened, use <code>current_transaction.open?</code>.</p>
+
+<p>See the <a href="../Transaction.html"><code>ActiveRecord::Transaction</code></a> documentation for detailed behavior.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transactions.rb, line 245
+      def current_transaction
+        connection_pool.active_connection&amp;.current_transaction&amp;.user_transaction || Transaction::NULL_TRANSACTION
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/transactions.rb#L245" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-set_callback">
+            
+              set_callback(name, *filter_list, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Similar to <a href="../../ActiveSupport/Callbacks/ClassMethods.html#method-i-set_callback"><code>ActiveSupport::Callbacks::ClassMethods#set_callback</code></a>, but with support for options available on <a href="ClassMethods.html#method-i-after_commit"><code>after_commit</code></a> and <a href="ClassMethods.html#method-i-after_rollback"><code>after_rollback</code></a> callbacks.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transactions.rb, line 305
+      def set_callback(name, *filter_list, &amp;block)
+        options = filter_list.extract_options!
+        filter_list &lt;&lt; options
+
+        if name.in?([:commit, :rollback]) &amp;&amp; options[:on]
+          fire_on = Array(options[:on])
+          assert_valid_transaction_action(fire_on)
+          options[:if] = [
+            -&gt; { transaction_include_any_action?(fire_on) },
+            *options[:if]
+          ]
+        end
+
+
+        super(name, *filter_list, &amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/transactions.rb#L305" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-transaction">
+            
+              transaction(**options, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>See the <a href="../ConnectionAdapters/DatabaseStatements.html#method-i-transaction"><code>ConnectionAdapters::DatabaseStatements#transaction</code></a> API docs.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/transactions.rb, line 232
+      def transaction(**options, &amp;block)
+        with_connection do |connection|
+          connection.transaction(**options, &amp;block)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/transactions.rb#L232" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

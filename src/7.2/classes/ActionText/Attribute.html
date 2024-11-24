@@ -1,0 +1,227 @@
+---
+title: ActionText::Attribute
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionText::Attribute
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actiontext/lib/action_text/attribute_rb.html">actiontext/lib/action_text/attribute.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-has_rich_text">has_rich_text</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-rich_text_association_names">rich_text_association_names</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-with_all_rich_text">with_all_rich_text</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-has_rich_text">
+            
+              has_rich_text(name, encrypted: false, strict_loading: strict_loading_by_default)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Provides access to a dependent <a href="RichText.html"><code>RichText</code></a> model that holds the body and attachments for a single named rich text attribute. This dependent attribute is lazily instantiated and will be auto-saved when it’s been changed. Example:</p>
+
+<pre><code>class Message &lt; ActiveRecord::Base
+  has_rich_text :content
+end
+
+message = Message.create!(content: &quot;&lt;h1&gt;Funny times!&lt;/h1&gt;&quot;)
+message.content? #=&gt; true
+message.content.to_s # =&gt; &quot;&lt;h1&gt;Funny times!&lt;/h1&gt;&quot;
+message.content.to_plain_text # =&gt; &quot;Funny times!&quot;
+</code></pre>
+
+<p>The dependent <a href="RichText.html"><code>RichText</code></a> model will also automatically process attachments links as sent via the Trix-powered editor. These attachments are associated with the <a href="RichText.html"><code>RichText</code></a> model using Active Storage.</p>
+
+<p>If you wish to preload the dependent <a href="RichText.html"><code>RichText</code></a> model, you can use the named scope:</p>
+
+<pre><code>Message.all.with_rich_text_content # Avoids N+1 queries when you just want the body, not the attachments.
+Message.all.with_rich_text_content_and_embeds # Avoids N+1 queries when you just want the body and attachments.
+Message.all.with_all_rich_text # Loads all rich text associations.
+</code></pre>
+
+<h4 id="method-i-has_rich_text-label-Options">Options</h4>
+<ul><li>
+<p><code>:encrypted</code> - Pass true to encrypt the rich text attribute. The encryption will be non-deterministic. See <code>ActiveRecord::Encryption::EncryptableRecord.encrypts</code>. Default: false.</p>
+</li><li>
+<p><code>:strict_loading</code> - Pass true to force strict loading. When omitted, <code>strict_loading:</code> will be set to the value of the <code>strict_loading_by_default</code> class attribute (false by default).</p>
+</li></ul>
+
+<p>Note: Action Text relies on polymorphic associations, which in turn store class names in the database. When renaming classes that use <code>has_rich_text</code>, make sure to also update the class names in the <code>action_text_rich_texts.record_type</code> polymorphic type column of the corresponding rows.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attribute.rb, line 50
+      def has_rich_text(name, encrypted: false, strict_loading: strict_loading_by_default)
+        class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+          def #{name}
+            rich_text_#{name} || build_rich_text_#{name}
+          end
+
+          def #{name}?
+            rich_text_#{name}.present?
+          end
+
+          def #{name}=(body)
+            self.#{name}.body = body
+          end
+        CODE
+
+        rich_text_class_name = encrypted ? &quot;ActionText::EncryptedRichText&quot; : &quot;ActionText::RichText&quot;
+        has_one :&quot;rich_text_#{name}&quot;, -&gt; { where(name: name) },
+          class_name: rich_text_class_name, as: :record, inverse_of: :record, autosave: true, dependent: :destroy,
+          strict_loading: strict_loading
+
+        scope :&quot;with_rich_text_#{name}&quot;, -&gt; { includes(&quot;rich_text_#{name}&quot;) }
+        scope :&quot;with_rich_text_#{name}_and_embeds&quot;, -&gt; { includes(&quot;rich_text_#{name}&quot;: { embeds_attachments: :blob }) }
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attribute.rb#L50" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-rich_text_association_names">
+            
+              rich_text_association_names()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the names of all rich text associations.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attribute.rb, line 80
+      def rich_text_association_names
+        reflect_on_all_associations(:has_one).collect(&amp;:name).select { |n| n.start_with?(&quot;rich_text_&quot;) }
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attribute.rb#L80" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-with_all_rich_text">
+            
+              with_all_rich_text()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Eager load all dependent <a href="RichText.html"><code>RichText</code></a> models in bulk.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actiontext/lib/action_text/attribute.rb, line 75
+      def with_all_rich_text
+        includes(rich_text_association_names)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actiontext/lib/action_text/attribute.rb#L75" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

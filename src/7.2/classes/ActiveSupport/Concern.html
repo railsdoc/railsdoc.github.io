@@ -1,0 +1,332 @@
+---
+title: ActiveSupport::Concern
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Concern
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/concern_rb.html">activesupport/lib/active_support/concern.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveSupport::Concern-label-Active+Support+Concern">Active Support Concern</h1>
+
+<p>A typical module looks like this:</p>
+
+<pre><code>module M
+  def self.included(base)
+    base.extend ClassMethods
+    base.class_eval do
+      scope :disabled, -&gt; { where(disabled: true) }
+    end
+  end
+
+  module ClassMethods
+    ...
+  end
+end
+</code></pre>
+
+<p>By using <code>ActiveSupport::Concern</code> the above module could instead be written as:</p>
+
+<pre><code>require &quot;active_support/concern&quot;
+
+module M
+  extend ActiveSupport::Concern
+
+  included do
+    scope :disabled, -&gt; { where(disabled: true) }
+  end
+
+  class_methods do
+    ...
+  end
+end
+</code></pre>
+
+<p>Moreover, it gracefully handles module dependencies. Given a <code>Foo</code> module and a <code>Bar</code> module which depends on the former, we would typically write the following:</p>
+
+<pre><code>module Foo
+  def self.included(base)
+    base.class_eval do
+      def self.method_injected_by_foo
+        ...
+      end
+    end
+  end
+end
+
+module Bar
+  def self.included(base)
+    base.method_injected_by_foo
+  end
+end
+
+class Host
+  include Foo # We need to include this dependency for Bar
+  include Bar # Bar is the module that Host really needs
+end
+</code></pre>
+
+<p>But why should <code>Host</code> care about <code>Bar</code>‘s dependencies, namely <code>Foo</code>? We could try to hide these from <code>Host</code> directly including <code>Foo</code> in <code>Bar</code>:</p>
+
+<pre><code>module Bar
+  include Foo
+  def self.included(base)
+    base.method_injected_by_foo
+  end
+end
+
+class Host
+  include Bar
+end
+</code></pre>
+
+<p>Unfortunately this won’t work, since when <code>Foo</code> is included, its <code>base</code> is the <code>Bar</code> module, not the <code>Host</code> class. With <code>ActiveSupport::Concern</code>, module dependencies are properly resolved:</p>
+
+<pre><code>require &quot;active_support/concern&quot;
+
+module Foo
+  extend ActiveSupport::Concern
+  included do
+    def self.method_injected_by_foo
+      ...
+    end
+  end
+end
+
+module Bar
+  extend ActiveSupport::Concern
+  include Foo
+
+  included do
+    self.method_injected_by_foo
+  end
+end
+
+class Host
+  include Bar # It works, now Bar takes care of its dependencies
+end
+</code></pre>
+
+<h3 id="module-ActiveSupport::Concern-label-Prepending+concerns">Prepending concerns</h3>
+
+<p>Just like <code>include</code>, concerns also support <code>prepend</code> with a corresponding <code>prepended do</code> callback. <code>module ClassMethods</code> or <code>class_methods do</code> are prepended as well.</p>
+
+<p><code>prepend</code> is also used for any dependencies.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-class_methods">class_methods</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-included">included</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-prepended">prepended</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-class_methods">
+            
+              class_methods(&amp;class_methods_module_definition)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Define class methods from given block. You can define private class methods as well.</p>
+
+<pre><code>module Example
+  extend ActiveSupport::Concern
+
+  class_methods do
+    def foo; puts &#39;foo&#39;; end
+
+    private
+      def bar; puts &#39;bar&#39;; end
+  end
+end
+
+class Buzz
+  include Example
+end
+
+Buzz.foo # =&gt; &quot;foo&quot;
+Buzz.bar # =&gt; private method &#39;bar&#39; called for Buzz:Class(NoMethodError)
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/concern.rb, line 209
+    def class_methods(&amp;class_methods_module_definition)
+      mod = const_defined?(:ClassMethods, false) ?
+        const_get(:ClassMethods) :
+        const_set(:ClassMethods, Module.new)
+
+      mod.module_eval(&amp;class_methods_module_definition)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/concern.rb#L209" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-included">
+            
+              included(base = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Evaluate given block in context of base class, so that you can write class macros here. When you define more than one <code>included</code> block, it raises an exception.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/concern.rb, line 158
+    def included(base = nil, &amp;block)
+      if base.nil?
+        if instance_variable_defined?(:@_included_block)
+          if @_included_block.source_location != block.source_location
+            raise MultipleIncludedBlocks
+          end
+        else
+          @_included_block = block
+        end
+      else
+        super
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/concern.rb#L158" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-prepended">
+            
+              prepended(base = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Evaluate given block in context of base class, so that you can write class macros here. When you define more than one <code>prepended</code> block, it raises an exception.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/concern.rb, line 175
+    def prepended(base = nil, &amp;block)
+      if base.nil?
+        if instance_variable_defined?(:@_prepended_block)
+          if @_prepended_block.source_location != block.source_location
+            raise MultiplePrependBlocks
+          end
+        else
+          @_prepended_block = block
+        end
+      else
+        super
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/concern.rb#L175" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

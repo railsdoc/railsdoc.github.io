@@ -1,0 +1,205 @@
+---
+title: ActiveRecord::Encryption::EnvelopeEncryptionKeyProvider
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::Encryption::EnvelopeEncryptionKeyProvider
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/encryption/envelope_encryption_key_provider_rb.html">activerecord/lib/active_record/encryption/envelope_encryption_key_provider.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Implements a simple envelope encryption approach where:</p>
+<ul><li>
+<p>It generates a random data-encryption key for each encryption operation.</p>
+</li><li>
+<p>It stores the generated key along with the encrypted payload. It encrypts this key with the master key provided in the <code>active_record_encryption.primary_key</code> credential.</p>
+</li></ul>
+
+<p>This provider can work with multiple master keys. It will use the last one for encrypting.</p>
+
+<p>When <code>config.active_record.encryption.store_key_references</code> is true, it will also store a reference to the specific master key that was used to encrypt the data-encryption key. When not set, it will try all the configured master keys looking for the right one, in order to return the right decryption key.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-active_primary_key">active_primary_key</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-decryption_keys">decryption_keys</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-encryption_key">encryption_key</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-active_primary_key">
+            
+              active_primary_key()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/envelope_encryption_key_provider.rb, line 31
+      def active_primary_key
+        @active_primary_key ||= primary_key_provider.encryption_key
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/encryption/envelope_encryption_key_provider.rb#L31" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-decryption_keys">
+            
+              decryption_keys(encrypted_message)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/envelope_encryption_key_provider.rb, line 26
+      def decryption_keys(encrypted_message)
+        secret = decrypt_data_key(encrypted_message)
+        secret ? [ActiveRecord::Encryption::Key.new(secret)] : []
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/encryption/envelope_encryption_key_provider.rb#L26" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-encryption_key">
+            
+              encryption_key()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/envelope_encryption_key_provider.rb, line 18
+      def encryption_key
+        random_secret = generate_random_secret
+        ActiveRecord::Encryption::Key.new(random_secret).tap do |key|
+          key.public_tags.encrypted_data_key = encrypt_data_key(random_secret)
+          key.public_tags.encrypted_data_key_id = active_primary_key.id if ActiveRecord::Encryption.config.store_key_references
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/encryption/envelope_encryption_key_provider.rb#L18" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

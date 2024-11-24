@@ -1,0 +1,610 @@
+---
+title: ActiveSupport::Notifications::Fanout
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::Notifications::Fanout
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/notifications/fanout_rb.html">activesupport/lib/active_support/notifications/fanout.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>This is a default queue implementation that ships with <a href="../Notifications.html"><code>Notifications</code></a>. It just pushes events to all registered log subscribers.</p>
+
+<p>This class is thread safe. All methods are reentrant.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Fanout/Subscribers.html">ActiveSupport::Notifications::Fanout::Subscribers</a></li>
+      
+      </ul>
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Fanout/Handle.html">ActiveSupport::Notifications::Fanout::Handle</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-all_listeners_for">all_listeners_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-build_handle">build_handle</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-finish">finish</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-listeners_for">listeners_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-listening-3F">listening?</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-publish">publish</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-publish_event">publish_event</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-start">start</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-subscribe">subscribe</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-unsubscribe">unsubscribe</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-wait">wait</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 51
+      def initialize
+        @mutex = Mutex.new
+        @string_subscribers = Concurrent::Map.new { |h, k| h.compute_if_absent(k) { [] } }
+        @other_subscribers = []
+        @all_listeners_for = Concurrent::Map.new
+        @groups_for = Concurrent::Map.new
+        @silenceable_groups_for = Concurrent::Map.new
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L51" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-all_listeners_for">
+            
+              all_listeners_for(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 298
+      def all_listeners_for(name)
+        # this is correctly done double-checked locking (Concurrent::Map&#39;s lookups have volatile semantics)
+        @all_listeners_for[name] || @mutex.synchronize do
+          # use synchronisation when accessing @subscribers
+          @all_listeners_for[name] ||=
+            @string_subscribers[name] + @other_subscribers.select { |s| s.subscribed_to?(name) }
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L298" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-build_handle">
+            
+              build_handle(name, id, payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 273
+      def build_handle(name, id, payload)
+        Handle.new(self, name, id, payload)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L273" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-finish">
+            
+              finish(name, id, payload, listeners = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 284
+      def finish(name, id, payload, listeners = nil)
+        handle_stack = IsolatedExecutionState[:_fanout_handle_stack]
+        handle = handle_stack.pop
+        handle.finish_with_values(name, id, payload)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L284" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-listeners_for">
+            
+              listeners_for(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 307
+      def listeners_for(name)
+        all_listeners_for(name).reject { |s| s.silenced?(name) }
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L307" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-listening-3F">
+            
+              listening?(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 311
+      def listening?(name)
+        all_listeners_for(name).any? { |s| !s.silenced?(name) }
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L311" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-publish">
+            
+              publish(name, *args)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 290
+      def publish(name, *args)
+        iterate_guarding_exceptions(listeners_for(name)) { |s| s.publish(name, *args) }
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L290" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-publish_event">
+            
+              publish_event(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 294
+      def publish_event(event)
+        iterate_guarding_exceptions(listeners_for(event.name)) { |s| s.publish_event(event) }
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L294" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-start">
+            
+              start(name, id, payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 277
+      def start(name, id, payload)
+        handle_stack = (IsolatedExecutionState[:_fanout_handle_stack] ||= [])
+        handle = build_handle(name, id, payload)
+        handle_stack &lt;&lt; handle
+        handle.start
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L277" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-subscribe">
+            
+              subscribe(pattern = nil, callable = nil, monotonic: false, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 65
+      def subscribe(pattern = nil, callable = nil, monotonic: false, &amp;block)
+        subscriber = Subscribers.new(pattern, callable || block, monotonic)
+        @mutex.synchronize do
+          case pattern
+          when String
+            @string_subscribers[pattern] &lt;&lt; subscriber
+            clear_cache(pattern)
+          when NilClass, Regexp
+            @other_subscribers &lt;&lt; subscriber
+            clear_cache
+          else
+            raise ArgumentError,  &quot;pattern must be specified as a String, Regexp or empty&quot;
+          end
+        end
+        subscriber
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L65" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-unsubscribe">
+            
+              unsubscribe(subscriber_or_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 82
+      def unsubscribe(subscriber_or_name)
+        @mutex.synchronize do
+          case subscriber_or_name
+          when String
+            @string_subscribers[subscriber_or_name].clear
+            clear_cache(subscriber_or_name)
+            @other_subscribers.each { |sub| sub.unsubscribe!(subscriber_or_name) }
+          else
+            pattern = subscriber_or_name.try(:pattern)
+            if String === pattern
+              @string_subscribers[pattern].delete(subscriber_or_name)
+              clear_cache(pattern)
+            else
+              @other_subscribers.delete(subscriber_or_name)
+              clear_cache
+            end
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L82" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-wait">
+            
+              wait()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>This is a sync queue, so there is no waiting.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications/fanout.rb, line 316
+      def wait
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/notifications/fanout.rb#L316" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

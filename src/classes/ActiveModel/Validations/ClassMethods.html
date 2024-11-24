@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.2.2</span><br />
+            <span>Ruby on Rails 8.0.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -127,12 +127,12 @@ User.attribute_method?(:age)  # =&gt; false
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 284
+              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 282
       def attribute_method?(attribute)
         method_defined?(attribute)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activemodel/lib/active_model/validations.rb#L284" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activemodel/lib/active_model/validations.rb#L282" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -195,13 +195,13 @@ Person.validators
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 248
+              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 246
       def clear_validators!
         reset_callbacks(:validate)
         _validators.clear
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activemodel/lib/active_model/validations.rb#L248" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activemodel/lib/active_model/validations.rb#L246" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -263,7 +263,9 @@ end
 <ul><li>
 <p><code>:on</code> - Specifies the contexts where this validation is active. Runs in all validation contexts by default <code>nil</code>. You can pass a symbol or an array of symbols. (e.g. <code>on: :create</code> or <code>on: :custom_validation_context</code> or <code>on: [:create, :custom_validation_context]</code>)</p>
 </li><li>
-<p><code>:if</code> - Specifies a method, proc, or string to call to determine if the validation should occur (e.g. <code>if: :allow_validation</code>, or <code>if: Proc.new { |user| user.signup_step &gt; 2 }</code>). The method, proc or string should return or evaluate to a <code>true</code> or <code>false</code> value.</p>
+<p><code>:except_on</code> - Specifies the contexts where this validation is not active. Runs in all validation contexts by default <code>nil</code>. You can pass a symbol or an array of symbols. (e.g. <code>except: :create</code> or <code>except_on: :custom_validation_context</code> or <code>except_on: [:create, :custom_validation_context]</code>)</p>
+</li><li>
+<p><code>:if</code> - Specifies a method, proc or string to call to determine if the validation should occur (e.g. <code>if: :allow_validation</code>, or <code>if: Proc.new { |user| user.signup_step &gt; 2 }</code>). The method, proc or string should return or evaluate to a <code>true</code> or <code>false</code> value.</p>
 </li><li>
 <p><code>:unless</code> - Specifies a method, proc, or string to call to determine if the validation should not occur (e.g. <code>unless: :skip_validation</code>, or <code>unless: Proc.new { |user| user.signup_step &lt;= 2 }</code>). The method, proc, or string should return or evaluate to a <code>true</code> or <code>false</code> value.</p>
 </li></ul>
@@ -283,7 +285,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 171
+              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 160
       def validate(*args, &amp;block)
         options = args.extract_options!
 
@@ -299,10 +301,19 @@ end
           options = options.merge(if: [predicate_for_validation_context(options[:on]), *options[:if]])
         end
 
+        if options.key?(:except_on)
+          options = options.dup
+          options[:except_on] = Array(options[:except_on])
+          options[:unless] = [
+            -&gt;(o) { (options[:except_on] &amp; Array(o.validation_context)).any? },
+            *options[:unless]
+          ]
+        end
+
         set_callback(:validate, *args, options, &amp;block)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activemodel/lib/active_model/validations.rb#L171" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activemodel/lib/active_model/validations.rb#L160" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -383,7 +394,9 @@ validates :password, length: 6..20
 <ul><li>
 <p><code>:on</code> - Specifies the contexts where this validation is active. Runs in all validation contexts by default <code>nil</code>. You can pass a symbol or an array of symbols. (e.g. <code>on: :create</code> or <code>on: :custom_validation_context</code> or <code>on: [:create, :custom_validation_context]</code>)</p>
 </li><li>
-<p><code>:if</code> - Specifies a method, proc, or string to call to determine if the validation should occur (e.g. <code>if: :allow_validation</code>, or <code>if: Proc.new { |user| user.signup_step &gt; 2 }</code>). The method, proc or string should return or evaluate to a <code>true</code> or <code>false</code> value.</p>
+<p><code>:except_on</code> - Specifies the contexts where this validation is not active. Runs in all validation contexts by default <code>nil</code>. You can pass a symbol or an array of symbols. (e.g. <code>except: :create</code> or <code>except_on: :custom_validation_context</code> or <code>except_on: [:create, :custom_validation_context]</code>)</p>
+</li><li>
+<p><code>:if</code> - Specifies a method, proc or string to call to determine if the validation should occur (e.g. <code>if: :allow_validation</code>, or <code>if: Proc.new { |user| user.signup_step &gt; 2 }</code>). The method, proc or string should return or evaluate to a <code>true</code> or <code>false</code> value.</p>
 </li><li>
 <p><code>:unless</code> - Specifies a method, proc, or string to call to determine if the validation should not occur (e.g. <code>unless: :skip_validation</code>, or <code>unless: Proc.new { |user| user.signup_step &lt;= 2 }</code>). The method, proc, or string should return or evaluate to a <code>true</code> or <code>false</code> value.</p>
 </li><li>
@@ -418,7 +431,7 @@ validates :token, length: { is: 24 }, strict: TokenLengthException
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/validations/validates.rb, line 106
+              <pre><code class="ruby"># File activemodel/lib/active_model/validations/validates.rb, line 111
       def validates(*attributes)
         defaults = attributes.extract_options!.dup
         validations = defaults.slice!(*_validates_default_keys)
@@ -443,7 +456,7 @@ validates :token, length: { is: 24 }, strict: TokenLengthException
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activemodel/lib/active_model/validations/validates.rb#L106" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activemodel/lib/active_model/validations/validates.rb#L111" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -486,14 +499,14 @@ person.valid?
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/validations/validates.rb, line 148
+              <pre><code class="ruby"># File activemodel/lib/active_model/validations/validates.rb, line 153
       def validates!(*attributes)
         options = attributes.extract_options!
         options[:strict] = true
         validates(*(attributes &lt;&lt; options))
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activemodel/lib/active_model/validations/validates.rb#L148" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activemodel/lib/active_model/validations/validates.rb#L153" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -525,6 +538,8 @@ end
 <ul><li>
 <p><code>:on</code> - Specifies the contexts where this validation is active. Runs in all validation contexts by default <code>nil</code>. You can pass a symbol or an array of symbols. (e.g. <code>on: :create</code> or <code>on: :custom_validation_context</code> or <code>on: [:create, :custom_validation_context]</code>)</p>
 </li><li>
+<p><code>:except_on</code> - Specifies the contexts where this validation is not active. Runs in all validation contexts by default <code>nil</code>. You can pass a symbol or an array of symbols. (e.g. <code>except: :create</code> or <code>except_on: :custom_validation_context</code> or <code>except_on: [:create, :custom_validation_context]</code>)</p>
+</li><li>
 <p><code>:allow_nil</code> - Skip validation if attribute is <code>nil</code>.</p>
 </li><li>
 <p><code>:allow_blank</code> - Skip validation if attribute is blank.</p>
@@ -547,12 +562,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 104
+              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 88
       def validates_each(*attr_names, &amp;block)
         validates_with BlockValidator, _merge_attributes(attr_names), &amp;block
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activemodel/lib/active_model/validations.rb#L104" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activemodel/lib/active_model/validations.rb#L88" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -658,7 +673,7 @@ end
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activemodel/lib/active_model/validations/with.rb#L88" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activemodel/lib/active_model/validations/with.rb#L88" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -704,12 +719,12 @@ Person.validators
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 206
+              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 204
       def validators
         _validators.values.flatten.uniq
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activemodel/lib/active_model/validations.rb#L206" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activemodel/lib/active_model/validations.rb#L204" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -754,14 +769,14 @@ Person.validators_on(:name)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 268
+              <pre><code class="ruby"># File activemodel/lib/active_model/validations.rb, line 266
       def validators_on(*attributes)
         attributes.flat_map do |attribute|
           _validators[attribute.to_sym]
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activemodel/lib/active_model/validations.rb#L268" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activemodel/lib/active_model/validations.rb#L266" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

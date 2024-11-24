@@ -1,0 +1,149 @@
+---
+title: ActiveSupport::Testing::Isolation::Subprocess
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Testing::Isolation::Subprocess
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/activesupport/lib/active_support/testing/isolation_rb.html">activesupport/lib/active_support/testing/isolation.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-run_in_isolation">run_in_isolation</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">ORIG_ARGV</td>
+            <td>=</td>
+            <td class="attr-value">ARGV.dup unless defined?(ORIG_ARGV)</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-run_in_isolation">
+            
+              run_in_isolation(&amp;blk)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Complicated H4X to get this working in Windows / JRuby with no forking.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/isolation.rb, line 80
+        def run_in_isolation(&amp;blk)
+          require &quot;tempfile&quot;
+
+          if ENV[&quot;ISOLATION_TEST&quot;]
+            yield
+            test_result = defined?(Minitest::Result) ? Minitest::Result.from(self) : dup
+            File.open(ENV[&quot;ISOLATION_OUTPUT&quot;], &quot;w&quot;) do |file|
+              file.puts [Marshal.dump(test_result)].pack(&quot;m&quot;)
+            end
+            exit!(0)
+          else
+            Tempfile.open(&quot;isolation&quot;) do |tmpfile|
+              env = {
+                &quot;ISOLATION_TEST&quot; =&gt; self.class.name,
+                &quot;ISOLATION_OUTPUT&quot; =&gt; tmpfile.path
+              }
+
+              test_opts = &quot;-n#{self.class.name}##{name}&quot;
+
+              load_path_args = []
+              $-I.each do |p|
+                load_path_args &lt;&lt; &quot;-I&quot;
+                load_path_args &lt;&lt; File.expand_path(p)
+              end
+
+              child = IO.popen([env, Gem.ruby, *load_path_args, $0, *ORIG_ARGV, test_opts])
+
+              status = nil
+              begin
+                _, status = Process.wait2(child.pid)
+              rescue Errno::ECHILD # The child process may exit before we wait
+                nil
+              end
+
+              return status, tmpfile.read.unpack1(&quot;m&quot;)
+            end
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activesupport/lib/active_support/testing/isolation.rb#L80" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

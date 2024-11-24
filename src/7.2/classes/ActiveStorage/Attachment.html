@@ -1,0 +1,451 @@
+---
+title: ActiveStorage::Attachment
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveStorage::Attachment
+            
+                <span class="parent">&lt;
+                    
+                    ActiveStorage::Record
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activestorage/app/models/active_storage/attachment_rb.html">activestorage/app/models/active_storage/attachment.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveStorage::Attachment-label-Active+Storage+Attachment">Active Storage Attachment</h1>
+
+<p>Attachments associate records with blobs. Usually that’s a one record-many blobs relationship, but it is possible to associate many different records with the same blob. A foreign-key constraint on the attachments table prevents blobs from being purged if they’re still attached to any records.</p>
+
+<p>Attachments also have access to all methods from <a href="Blob.html"><code>ActiveStorage::Blob</code></a>.</p>
+
+<p>If you wish to preload attachments or blobs, you can use these scopes:</p>
+
+<pre><code># preloads attachments, their corresponding blobs, and variant records (if using `ActiveStorage.track_variants`)
+User.all.with_attached_avatars
+
+# preloads blobs and variant records (if using `ActiveStorage.track_variants`)
+User.first.avatars.with_all_variant_records
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-blob">blob</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-preview">preview</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-purge">purge</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-purge_later">purge_later</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-record">record</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-representation">representation</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-variant">variant</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-with_all_variant_records">with_all_variant_records</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-with_all_variant_records">
+            
+              with_all_variant_records
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Eager load all variant records on an attachment at once.</p>
+
+<pre><code>User.first.avatars.with_all_variant_records
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/app/models/active_storage/attachment.rb, line 45
+  scope :with_all_variant_records, -&gt; { includes(blob: {
+    variant_records: { image_attachment: :blob },
+    preview_image_attachment: { blob: { variant_records: { image_attachment: :blob } } }
+</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activestorage/app/models/active_storage/attachment.rb#L45" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-blob">
+            
+              blob
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the associated <a href="Blob.html"><code>ActiveStorage::Blob</code></a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/app/models/active_storage/attachment.rb, line 31
+  belongs_to :blob, class_name: &quot;ActiveStorage::Blob&quot;, autosave: true, inverse_of: :attachments
+</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activestorage/app/models/active_storage/attachment.rb#L31" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-preview">
+            
+              preview(transformations)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns an <a href="Preview.html"><code>ActiveStorage::Preview</code></a> instance for the attachment with the set of <code>transformations</code> provided. Example:</p>
+
+<pre><code>video.preview(resize_to_limit: [100, 100]).processed.url
+</code></pre>
+
+<p>or if you are using pre-defined variants:</p>
+
+<pre><code>video.preview(:thumb).processed.url
+</code></pre>
+
+<p>See <a href="Blob/Representable.html#method-i-preview"><code>ActiveStorage::Blob::Representable#preview</code></a> for more information.</p>
+
+<p>Raises an <code>ArgumentError</code> if <code>transformations</code> is a <code>Symbol</code> which is an unknown pre-defined variant of the attachment.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/app/models/active_storage/attachment.rb, line 101
+  def preview(transformations)
+    transformations = transformations_by_name(transformations)
+    blob.preview(transformations)
+  end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activestorage/app/models/active_storage/attachment.rb#L101" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-purge">
+            
+              purge()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Synchronously deletes the attachment and <a href="Blob.html#method-i-purge">purges the blob</a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/app/models/active_storage/attachment.rb, line 51
+  def purge
+    transaction do
+      delete
+      record.touch if record&amp;.persisted?
+    end
+    blob&amp;.purge
+  end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activestorage/app/models/active_storage/attachment.rb#L51" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-purge_later">
+            
+              purge_later()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Deletes the attachment and <a href="Blob.html#method-i-purge_later">enqueues a background job</a> to purge the blob.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/app/models/active_storage/attachment.rb, line 60
+  def purge_later
+    transaction do
+      delete
+      record.touch if record&amp;.persisted?
+    end
+    blob&amp;.purge_later
+  end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activestorage/app/models/active_storage/attachment.rb#L60" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-record">
+            
+              record
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the associated record.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/app/models/active_storage/attachment.rb, line 25
+  belongs_to :record, polymorphic: true, touch: ActiveStorage.touch_attachment_records
+</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activestorage/app/models/active_storage/attachment.rb#L25" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-representation">
+            
+              representation(transformations)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns an <a href="Preview.html"><code>ActiveStorage::Preview</code></a> or an <a href="Variant.html"><code>ActiveStorage::Variant</code></a> for the attachment with set of <code>transformations</code> provided. Example:</p>
+
+<pre><code>avatar.representation(resize_to_limit: [100, 100]).processed.url
+</code></pre>
+
+<p>or if you are using pre-defined variants:</p>
+
+<pre><code>avatar.representation(:thumb).processed.url
+</code></pre>
+
+<p>See <a href="Blob/Representable.html#method-i-representation"><code>ActiveStorage::Blob::Representable#representation</code></a> for more information.</p>
+
+<p>Raises an <code>ArgumentError</code> if <code>transformations</code> is a <code>Symbol</code> which is an unknown pre-defined variant of the attachment.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/app/models/active_storage/attachment.rb, line 120
+  def representation(transformations)
+    transformations = transformations_by_name(transformations)
+    blob.representation(transformations)
+  end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activestorage/app/models/active_storage/attachment.rb#L120" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-variant">
+            
+              variant(transformations)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns an <a href="Variant.html"><code>ActiveStorage::Variant</code></a> or <a href="VariantWithRecord.html"><code>ActiveStorage::VariantWithRecord</code></a> instance for the attachment with the set of <code>transformations</code> provided. Example:</p>
+
+<pre><code>avatar.variant(resize_to_limit: [100, 100]).processed.url
+</code></pre>
+
+<p>or if you are using pre-defined variants:</p>
+
+<pre><code>avatar.variant(:thumb).processed.url
+</code></pre>
+
+<p>See <a href="Blob/Representable.html#method-i-variant"><code>ActiveStorage::Blob::Representable#variant</code></a> for more information.</p>
+
+<p>Raises an <code>ArgumentError</code> if <code>transformations</code> is a <code>Symbol</code> which is an unknown pre-defined variant of the attachment.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/app/models/active_storage/attachment.rb, line 82
+  def variant(transformations)
+    transformations = transformations_by_name(transformations)
+    blob.variant(transformations)
+  end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activestorage/app/models/active_storage/attachment.rb#L82" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

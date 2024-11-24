@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.2.2</span><br />
+            <span>Ruby on Rails 8.0.0</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -180,6 +180,10 @@ layout: default
       
         <li>
           <a href="#method-i-request_parameters-3D">request_parameters=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-request_parameters_list">request_parameters_list</a>
         </li>
       
         <li>
@@ -446,6 +450,20 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
     
 
     
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>rack_request</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
 
     <!-- Methods -->
     
@@ -475,12 +493,12 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 58
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 60
     def self.empty
       new({})
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L58" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L60" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -510,9 +528,12 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 62
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 64
     def initialize(env)
       super
+
+      @rack_request = Rack::Request.new(env)
+
       @method            = nil
       @request_method    = nil
       @remote_ip         = nil
@@ -521,7 +542,7 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
       @ip                = nil
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L62" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L64" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -559,22 +580,19 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 387
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 394
     def GET
       fetch_header(&quot;action_dispatch.request.query_parameters&quot;) do |k|
-        rack_query_params = super || {}
-        controller = path_parameters[:controller]
-        action = path_parameters[:action]
-        rack_query_params = Request::Utils.set_binary_encoding(self, rack_query_params, controller, action)
-        # Check for non UTF-8 parameter values, which would cause errors later
-        Request::Utils.check_param_encoding(rack_query_params)
-        set_header k, Request::Utils.normalize_encode_params(rack_query_params)
+        encoding_template = Request::Utils::CustomParamEncoder.action_encoding_template(self, path_parameters[:controller], path_parameters[:action])
+        rack_query_params = ActionDispatch::ParamBuilder.from_query_string(rack_request.query_string, encoding_template: encoding_template)
+
+        set_header k, rack_query_params
       end
-    rescue Rack::Utils::ParameterTypeError, Rack::Utils::InvalidParameterError, Rack::QueryParser::ParamsTooDeepError =&gt; e
+    rescue ActionDispatch::ParamError =&gt; e
       raise ActionController::BadRequest.new(&quot;Invalid query parameters: #{e.message}&quot;)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L387" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L394" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -608,21 +626,36 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 403
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 407
     def POST
       fetch_header(&quot;action_dispatch.request.request_parameters&quot;) do
-        pr = parse_formatted_parameters(params_parsers) do |params|
-          super || {}
+        encoding_template = Request::Utils::CustomParamEncoder.action_encoding_template(self, path_parameters[:controller], path_parameters[:action])
+
+        param_list = nil
+        pr = parse_formatted_parameters(params_parsers) do
+          if param_list = request_parameters_list
+            ActionDispatch::ParamBuilder.from_pairs(param_list, encoding_template: encoding_template)
+          else
+            # We&#39;re not using a version of Rack that provides raw form
+            # pairs; we must use its hash (and thus post-process it below).
+            fallback_request_parameters
+          end
         end
-        pr = Request::Utils.set_binary_encoding(self, pr, path_parameters[:controller], path_parameters[:action])
-        Request::Utils.check_param_encoding(pr)
-        self.request_parameters = Request::Utils.normalize_encode_params(pr)
+
+        # If the request body was parsed by a custom parser like JSON
+        # (and thus the above block was not run), we need to
+        # post-process the result hash.
+        if param_list.nil?
+          pr = ActionDispatch::ParamBuilder.from_hash(pr, encoding_template: encoding_template)
+        end
+
+        self.request_parameters = pr
       end
-    rescue Rack::Utils::ParameterTypeError, Rack::Utils::InvalidParameterError, Rack::QueryParser::ParamsTooDeepError, EOFError =&gt; e
+    rescue ActionDispatch::ParamError, EOFError =&gt; e
       raise ActionController::BadRequest.new(&quot;Invalid request parameters: #{e.message}&quot;)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L403" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L407" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -652,7 +685,7 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 419
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 459
     def authorization
       get_header(&quot;HTTP_AUTHORIZATION&quot;)   ||
       get_header(&quot;X-HTTP_AUTHORIZATION&quot;) ||
@@ -660,7 +693,7 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
       get_header(&quot;REDIRECT_X_HTTP_AUTHORIZATION&quot;)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L419" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L459" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -690,7 +723,7 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 349
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 356
     def body
       if raw_post = get_header(&quot;RAW_POST_DATA&quot;)
         raw_post = (+raw_post).force_encoding(Encoding::BINARY)
@@ -700,7 +733,7 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L349" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L356" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -730,12 +763,12 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 451
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 491
     def commit_csrf_token
       controller_instance.commit_csrf_token(self) if controller_instance.respond_to?(:commit_csrf_token)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L451" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L491" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -765,11 +798,11 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 440
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 480
     def commit_flash
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L440" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L480" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -799,13 +832,13 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 284
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 291
     def content_length
-      return raw_post.bytesize if headers.key?(&quot;Transfer-Encoding&quot;)
+      return raw_post.bytesize if has_header?(TRANSFER_ENCODING)
       super.to_i
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L284" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L291" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -835,14 +868,14 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 81
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 88
     def controller_class
       params = path_parameters
       params[:action] ||= &quot;index&quot;
       controller_class_for(params[:controller])
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L81" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L88" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -872,7 +905,7 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 87
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 94
     def controller_class_for(name)
       if name
         controller_param = name.underscore
@@ -891,7 +924,7 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L87" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L94" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -923,12 +956,12 @@ HTTP_X_CSRF_TOKEN HTTP_X_REQUEST_ID HTTP_X_FORWARDED_HOST
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 365
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 372
     def form_data?
       FORM_DATA_MEDIA_TYPES.include?(media_type)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L365" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L372" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -965,12 +998,12 @@ request.fullpath # =&gt; &quot;/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 263
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 270
     def fullpath
       @fullpath ||= super
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L263" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L270" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1003,12 +1036,12 @@ request.fullpath # =&gt; &quot;/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 225
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 232
     def headers
       @headers ||= Http::Headers.new(self)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L225" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L232" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1038,12 +1071,12 @@ request.fullpath # =&gt; &quot;/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 191
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 198
     def http_auth_salt
       get_header &quot;action_dispatch.http_auth_salt&quot;
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L191" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L198" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1073,12 +1106,12 @@ request.fullpath # =&gt; &quot;/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 298
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 305
     def ip
       @ip ||= super
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L298" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L305" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1111,12 +1144,12 @@ request.fullpath # =&gt; &quot;/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 108
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 115
     def key?(key)
       has_header? key
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L108" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L115" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1146,12 +1179,12 @@ request.fullpath # =&gt; &quot;/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 427
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 467
     def local?
       LOCALHOST.match?(remote_addr) &amp;&amp; LOCALHOST.match?(remote_ip)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L427" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L467" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1181,12 +1214,12 @@ request.fullpath # =&gt; &quot;/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 436
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 476
     def logger
       get_header(&quot;action_dispatch.logger&quot;)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L436" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L476" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1220,12 +1253,12 @@ request.media_type # =&gt; &quot;application/x-www-form-urlencoded&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 279
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 286
     def media_type
       content_mime_type&amp;.to_s
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L279" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L286" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1257,7 +1290,7 @@ request.media_type # =&gt; &quot;application/x-www-form-urlencoded&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 205
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 212
     def method(*args)
       if args.empty?
         @method ||= check_method(
@@ -1269,7 +1302,7 @@ request.media_type # =&gt; &quot;application/x-www-form-urlencoded&quot;
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L205" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L212" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1299,12 +1332,12 @@ request.media_type # =&gt; &quot;application/x-www-form-urlencoded&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 218
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 225
     def method_symbol
       HTTP_METHOD_LOOKUP[method]
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L218" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L225" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1341,12 +1374,12 @@ request.original_fullpath # =&gt; &#39;/foo?bar&#39;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 252
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 259
     def original_fullpath
       @original_fullpath ||= (get_header(&quot;ORIGINAL_FULLPATH&quot;) || fullpath)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L252" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L259" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1380,12 +1413,12 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 271
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 278
     def original_url
       base_url + original_fullpath
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L271" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L278" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1440,7 +1473,7 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 340
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 347
     def raw_post
       unless has_header? &quot;RAW_POST_DATA&quot;
         set_header(&quot;RAW_POST_DATA&quot;, read_body_stream)
@@ -1448,7 +1481,7 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
       get_header &quot;RAW_POST_DATA&quot;
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L340" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L347" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1478,12 +1511,12 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 304
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 311
     def remote_ip
       @remote_ip ||= (get_header(&quot;action_dispatch.remote_ip&quot;) || ip).to_s
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L304" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L311" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1513,13 +1546,13 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 308
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 315
     def remote_ip=(remote_ip)
       @remote_ip = nil
       set_header &quot;action_dispatch.remote_ip&quot;, remote_ip
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L308" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L315" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1555,12 +1588,12 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 323
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 330
     def request_id
       get_header ACTION_DISPATCH_REQUEST_ID
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L323" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L330" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1590,12 +1623,12 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 145
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 152
     def request_method
       @request_method ||= check_method(super)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L145" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L152" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1625,12 +1658,12 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 196
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 203
     def request_method_symbol
       HTTP_METHOD_LOOKUP[request_method]
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L196" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L203" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1685,13 +1718,65 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 431
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 471
     def request_parameters=(params)
       raise if params.nil?
       set_header(&quot;action_dispatch.request.request_parameters&quot;, params)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L431" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L471" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-request_parameters_list">
+            
+              request_parameters_list()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 436
+    def request_parameters_list
+      # We don&#39;t use Rack&#39;s parse result, but we must call it so Rack
+      # can populate the rack.request.* keys we need.
+      rack_post = rack_request.POST
+
+      if form_pairs = get_header(&quot;rack.request.form_pairs&quot;)
+        # Multipart
+        form_pairs
+      elsif form_vars = get_header(&quot;rack.request.form_vars&quot;)
+        # URL-encoded
+        ActionDispatch::QueryParser.each_pair(form_vars)
+      elsif rack_post &amp;&amp; !rack_post.empty?
+        # It was multipart, but Rack did not preserve a pair list
+        # (probably too old). Flat parameter list is not available.
+        nil
+      else
+        # No request body, or not a format Rack knows
+        []
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L436" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1721,12 +1806,12 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 447
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 487
     def reset_csrf_token
       controller_instance.reset_csrf_token(self) if controller_instance.respond_to?(:reset_csrf_token)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L447" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L487" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1756,13 +1841,13 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 373
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 380
     def reset_session
       session.destroy
       reset_csrf_token
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L373" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L380" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1795,12 +1880,12 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 153
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 160
     def route_uri_pattern
       get_header(&quot;action_dispatch.route_uri_pattern&quot;)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L153" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L160" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1839,12 +1924,12 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 241
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 248
     def send_early_hints(links)
       env[&quot;rack.early_hints&quot;]&amp;.call(links)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L241" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L248" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1874,12 +1959,12 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 334
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 341
     def server_software
       (get_header(&quot;SERVER_SOFTWARE&quot;) &amp;&amp; /^([a-zA-Z]+)/ =~ get_header(&quot;SERVER_SOFTWARE&quot;)) ? $1.downcase : nil
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L334" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L341" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1909,12 +1994,12 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 382
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 389
     def session_options=(options)
       Session::Options.set self, options
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L382" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L389" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1998,12 +2083,12 @@ request.original_url # =&gt; &quot;http://www.example.com/articles?page=2&quot;
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 292
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/request.rb, line 299
     def xml_http_request?
       /XMLHttpRequest/i.match?(get_header(&quot;HTTP_X_REQUESTED_WITH&quot;))
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/http/request.rb#L292" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/actionpack/lib/action_dispatch/http/request.rb#L299" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

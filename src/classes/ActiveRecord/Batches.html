@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 7.2.2</span><br />
+            <span>Ruby on Rails 8.0.0</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -92,7 +92,7 @@ layout: default
           <tr valign='top'>
             <td class="attr-name">ORDER_IGNORE_MESSAGE</td>
             <td>=</td>
-            <td class="attr-value">&quot;Scoped order is ignored, it&#39;s forced to be batch order.&quot;</td>
+            <td class="attr-value">&quot;Scoped order is ignored, use :cursor with :order to configure custom order.&quot;</td>
           </tr>
           
         
@@ -109,7 +109,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-find_each">
             
-              find_each(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: DEFAULT_ORDER, &amp;block)
+              find_each(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER, &amp;block)
             
           </h3>
 
@@ -141,13 +141,15 @@ end
 <ul><li>
 <p><code>:batch_size</code> - Specifies the size of the batch. Defaults to 1000.</p>
 </li><li>
-<p><code>:start</code> - Specifies the primary key value to start from, inclusive of the value.</p>
+<p><code>:start</code> - Specifies the cursor column value to start from, inclusive of the value.</p>
 </li><li>
-<p><code>:finish</code> - Specifies the primary key value to end at, inclusive of the value.</p>
+<p><code>:finish</code> - Specifies the cursor column value to end at, inclusive of the value.</p>
 </li><li>
 <p><code>:error_on_ignore</code> - Overrides the application config to specify if an error should be raised when an order is present in the relation.</p>
 </li><li>
-<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
+<p><code>:cursor</code> - Specifies the column to use for batching (can be a column name or an array of column names). Defaults to primary key.</p>
+</li><li>
+<p><code>:order</code> - Specifies the cursor column order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
 
 <pre><code>class Order &lt; ActiveRecord::Base
   self.primary_key = [:id_1, :id_2]
@@ -174,7 +176,9 @@ Person.find_each(start: 10_000) do |person|
 end
 </code></pre>
 
-<p>NOTE: Order can be ascending (:asc) or descending (:desc). It is automatically set to ascending on the primary key (“id ASC”). This also means that this method only works when the primary key is orderable (e.g. an integer or string).</p>
+<p>NOTE: Order can be ascending (:asc) or descending (:desc). It is automatically set to ascending on the primary key (“id ASC”). This also means that this method only works when the cursor column is orderable (e.g. an integer or string).</p>
+
+<p>NOTE: When using custom columns for batching, they should include at least one unique column (e.g. primary key) as a tiebreaker. Also, to reduce the likelihood of race conditions, all columns should be static (unchangeable after it was set).</p>
 
 <p>NOTE: By its nature, batch processing is subject to race conditions if other processes are modifying the database.</p>
             </div>
@@ -191,21 +195,22 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 79
-    def find_each(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: DEFAULT_ORDER, &amp;block)
+              <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 85
+    def find_each(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER, &amp;block)
       if block_given?
-        find_in_batches(start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, order: order) do |records|
+        find_in_batches(start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do |records|
           records.each(&amp;block)
         end
       else
-        enum_for(:find_each, start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, order: order) do
+        enum_for(:find_each, start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do
           relation = self
-          apply_limits(relation, start, finish, build_batch_orders(order)).size
+          cursor = Array(cursor)
+          apply_limits(relation, cursor, start, finish, build_batch_orders(cursor, order)).size
         end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/relation/batches.rb#L79" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activerecord/lib/active_record/relation/batches.rb#L85" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -214,7 +219,7 @@ end
         <div class="method">
           <h3 id="method-i-find_in_batches">
             
-              find_in_batches(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: DEFAULT_ORDER)
+              find_in_batches(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER)
             
           </h3>
 
@@ -242,13 +247,15 @@ end
 <ul><li>
 <p><code>:batch_size</code> - Specifies the size of the batch. Defaults to 1000.</p>
 </li><li>
-<p><code>:start</code> - Specifies the primary key value to start from, inclusive of the value.</p>
+<p><code>:start</code> - Specifies the cursor column value to start from, inclusive of the value.</p>
 </li><li>
-<p><code>:finish</code> - Specifies the primary key value to end at, inclusive of the value.</p>
+<p><code>:finish</code> - Specifies the cursor column value to end at, inclusive of the value.</p>
 </li><li>
 <p><code>:error_on_ignore</code> - Overrides the application config to specify if an error should be raised when an order is present in the relation.</p>
 </li><li>
-<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
+<p><code>:cursor</code> - Specifies the column to use for batching (can be a column name or an array of column names). Defaults to primary key.</p>
+</li><li>
+<p><code>:order</code> - Specifies the cursor column order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
 
 <pre><code>class Order &lt; ActiveRecord::Base
   self.primary_key = [:id_1, :id_2]
@@ -270,7 +277,9 @@ Person.find_in_batches(start: 10_000) do |group|
 end
 </code></pre>
 
-<p>NOTE: Order can be ascending (:asc) or descending (:desc). It is automatically set to ascending on the primary key (“id ASC”). This also means that this method only works when the primary key is orderable (e.g. an integer or string).</p>
+<p>NOTE: Order can be ascending (:asc) or descending (:desc). It is automatically set to ascending on the primary key (“id ASC”). This also means that this method only works when the cursor column is orderable (e.g. an integer or string).</p>
+
+<p>NOTE: When using custom columns for batching, they should include at least one unique column (e.g. primary key) as a tiebreaker. Also, to reduce the likelihood of race conditions, all columns should be static (unchangeable after it was set).</p>
 
 <p>NOTE: By its nature, batch processing is subject to race conditions if other processes are modifying the database.</p>
             </div>
@@ -287,22 +296,23 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 148
-    def find_in_batches(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, order: DEFAULT_ORDER)
+              <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 161
+    def find_in_batches(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER)
       relation = self
       unless block_given?
-        return to_enum(:find_in_batches, start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, order: order) do
-          total = apply_limits(relation, start, finish, build_batch_orders(order)).size
+        return to_enum(:find_in_batches, start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do
+          cursor = Array(cursor)
+          total = apply_limits(relation, cursor, start, finish, build_batch_orders(cursor, order)).size
           (total - 1).div(batch_size) + 1
         end
       end
 
-      in_batches(of: batch_size, start: start, finish: finish, load: true, error_on_ignore: error_on_ignore, order: order) do |batch|
+      in_batches(of: batch_size, start: start, finish: finish, load: true, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do |batch|
         yield batch.to_a
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/relation/batches.rb#L148" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activerecord/lib/active_record/relation/batches.rb#L161" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -311,7 +321,7 @@ end
         <div class="method">
           <h3 id="method-i-in_batches">
             
-              in_batches(of: 1000, start: nil, finish: nil, load: false, error_on_ignore: nil, order: DEFAULT_ORDER, use_ranges: nil, &amp;block)
+              in_batches(of: 1000, start: nil, finish: nil, load: false, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER, use_ranges: nil, &amp;block)
             
           </h3>
 
@@ -346,13 +356,15 @@ Person.in_batches.each_record(&amp;:party_all_night!)
 </li><li>
 <p><code>:load</code> - Specifies if the relation should be loaded. Defaults to false.</p>
 </li><li>
-<p><code>:start</code> - Specifies the primary key value to start from, inclusive of the value.</p>
+<p><code>:start</code> - Specifies the cursor column value to start from, inclusive of the value.</p>
 </li><li>
-<p><code>:finish</code> - Specifies the primary key value to end at, inclusive of the value.</p>
+<p><code>:finish</code> - Specifies the cursor column value to end at, inclusive of the value.</p>
 </li><li>
 <p><code>:error_on_ignore</code> - Overrides the application config to specify if an error should be raised when an order is present in the relation.</p>
 </li><li>
-<p><code>:order</code> - Specifies the primary key order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
+<p><code>:cursor</code> - Specifies the column to use for batching (can be a column name or an array of column names). Defaults to primary key.</p>
+</li><li>
+<p><code>:order</code> - Specifies the cursor column order (can be <code>:asc</code> or <code>:desc</code> or an array consisting of :asc or :desc). Defaults to <code>:asc</code>.</p>
 
 <pre><code>class Order &lt; ActiveRecord::Base
   self.primary_key = [:id_1, :id_2]
@@ -388,7 +400,9 @@ end
 <pre><code>Person.in_batches.each_record(&amp;:party_all_night!)
 </code></pre>
 
-<p>NOTE: Order can be ascending (:asc) or descending (:desc). It is automatically set to ascending on the primary key (“id ASC”). This also means that this method only works when the primary key is orderable (e.g. an integer or string).</p>
+<p>NOTE: Order can be ascending (:asc) or descending (:desc). It is automatically set to ascending on the primary key (“id ASC”). This also means that this method only works when the cursor column is orderable (e.g. an integer or string).</p>
+
+<p>NOTE: When using custom columns for batching, they should include at least one unique column (e.g. primary key) as a tiebreaker. Also, to reduce the likelihood of race conditions, all columns should be static (unchangeable after it was set).</p>
 
 <p>NOTE: By its nature, batch processing is subject to race conditions if other processes are modifying the database.</p>
             </div>
@@ -405,18 +419,17 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 239
-    def in_batches(of: 1000, start: nil, finish: nil, load: false, error_on_ignore: nil, order: DEFAULT_ORDER, use_ranges: nil, &amp;block)
-      unless Array(order).all? { |ord| [:asc, :desc].include?(ord) }
-        raise ArgumentError, &quot;:order must be :asc or :desc or an array consisting of :asc or :desc, got #{order.inspect}&quot;
-      end
+              <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 259
+    def in_batches(of: 1000, start: nil, finish: nil, load: false, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER, use_ranges: nil, &amp;block)
+      cursor = Array(cursor).map(&amp;:to_s)
+      ensure_valid_options_for_batching!(cursor, start, finish, order)
 
       if arel.orders.present?
         act_on_ignored_order(error_on_ignore)
       end
 
       unless block
-        return BatchEnumerator.new(of: of, start: start, finish: finish, relation: self, order: order, use_ranges: use_ranges)
+        return BatchEnumerator.new(of: of, start: start, finish: finish, relation: self, cursor: cursor, order: order, use_ranges: use_ranges)
       end
 
       batch_limit = of
@@ -431,6 +444,7 @@ end
           relation: self,
           start: start,
           finish: finish,
+          cursor: cursor,
           order: order,
           batch_limit: batch_limit,
           &amp;block
@@ -441,6 +455,7 @@ end
           start: start,
           finish: finish,
           load: load,
+          cursor: cursor,
           order: order,
           use_ranges: use_ranges,
           remaining: remaining,
@@ -450,7 +465,7 @@ end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/relation/batches.rb#L239" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activerecord/lib/active_record/relation/batches.rb#L259" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

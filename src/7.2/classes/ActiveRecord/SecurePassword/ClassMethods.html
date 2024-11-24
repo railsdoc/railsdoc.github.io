@@ -1,0 +1,138 @@
+---
+title: ActiveRecord::SecurePassword::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::SecurePassword::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/secure_password_rb.html">activerecord/lib/active_record/secure_password.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-authenticate_by">authenticate_by</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-authenticate_by">
+            
+              authenticate_by(attributes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Given a set of attributes, finds a record using the non-password attributes, and then authenticates that record using the password attributes. Returns the record if authentication succeeds; otherwise, returns <code>nil</code>.</p>
+
+<p>Regardless of whether a record is found, <code>authenticate_by</code> will cryptographically digest the given password attributes. This behavior helps mitigate timing-based enumeration attacks, wherein an attacker can determine if a passworded record exists even without knowing the password.</p>
+
+<p>Raises an ArgumentError if the set of attributes doesn’t contain at least one password and one non-password attribute.</p>
+
+<h4 id="method-i-authenticate_by-label-Examples">Examples</h4>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  has_secure_password
+end
+
+User.create(name: &quot;John Doe&quot;, email: &quot;jdoe@example.com&quot;, password: &quot;abc123&quot;)
+
+User.authenticate_by(email: &quot;jdoe@example.com&quot;, password: &quot;abc123&quot;).name # =&gt; &quot;John Doe&quot; (in 373.4ms)
+User.authenticate_by(email: &quot;jdoe@example.com&quot;, password: &quot;wrong&quot;)       # =&gt; nil (in 373.9ms)
+User.authenticate_by(email: &quot;wrong@example.com&quot;, password: &quot;abc123&quot;)     # =&gt; nil (in 373.6ms)
+
+User.authenticate_by(email: &quot;jdoe@example.com&quot;, password: nil) # =&gt; nil (no queries executed)
+User.authenticate_by(email: &quot;jdoe@example.com&quot;, password: &quot;&quot;)  # =&gt; nil (no queries executed)
+
+User.authenticate_by(email: &quot;jdoe@example.com&quot;) # =&gt; ArgumentError
+User.authenticate_by(password: &quot;abc123&quot;)        # =&gt; ArgumentError
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/secure_password.rb, line 41
+      def authenticate_by(attributes)
+        passwords, identifiers = attributes.to_h.partition do |name, value|
+          !has_attribute?(name) &amp;&amp; has_attribute?(&quot;#{name}_digest&quot;)
+        end.map(&amp;:to_h)
+
+        raise ArgumentError, &quot;One or more password arguments are required&quot; if passwords.empty?
+        raise ArgumentError, &quot;One or more finder arguments are required&quot; if identifiers.empty?
+
+        return if passwords.any? { |name, value| value.nil? || value.empty? }
+
+        if record = find_by(identifiers)
+          record if passwords.count { |name, value| record.public_send(:&quot;authenticate_#{name}&quot;, value) } == passwords.size
+        else
+          new(passwords)
+          nil
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/secure_password.rb#L41" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

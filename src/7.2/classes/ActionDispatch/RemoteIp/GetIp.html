@@ -1,0 +1,334 @@
+---
+title: ActionDispatch::RemoteIp::GetIp
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionDispatch::RemoteIp::GetIp
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionpack/lib/action_dispatch/middleware/remote_ip_rb.html">actionpack/lib/action_dispatch/middleware/remote_ip.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>The <a href="GetIp.html"><code>GetIp</code></a> class exists as a way to defer processing of the request data into an actual IP address. If the <a href="../Request.html#method-i-remote_ip"><code>ActionDispatch::Request#remote_ip</code></a> method is called, this class will calculate the value and then memoize it.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-calculate_ip">calculate_ip</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-filter_proxies">filter_proxies</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-ips_from">ips_from</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_s">to_s</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(req, check_ip, proxies)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 103
+      def initialize(req, check_ip, proxies)
+        @req      = req
+        @check_ip = check_ip
+        @proxies  = proxies
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/middleware/remote_ip.rb#L103" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-calculate_ip">
+            
+              calculate_ip()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sort through the various IP address headers, looking for the IP most likely to be the address of the actual remote client making this request.</p>
+
+<p>REMOTE_ADDR will be correct if the request is made directly against the Ruby process, on e.g. Heroku. When the request is proxied by another server like HAProxy or NGINX, the IP address that made the original request will be put in an <code>X-Forwarded-For</code> header. If there are multiple proxies, that header may contain a list of IPs. Other proxy services set the <code>Client-Ip</code> header instead, so we check that too.</p>
+
+<p>As discussed in <a href="https://web.archive.org/web/20170626095448/https://blog.gingerlime.com/2012/rails-ip-spoofing-vulnerabilities-and-protection/">this post about Rails IP Spoofing</a>, while the first IP in the list is likely to be the “originating” IP, it could also have been set by the client maliciously.</p>
+
+<p>In order to find the first address that is (probably) accurate, we take the list of IPs, remove known and trusted proxies, and then take the last address left, which was presumably set by one of those proxies.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 127
+      def calculate_ip
+        # Set by the Rack web server, this is a single value.
+        remote_addr = ips_from(@req.remote_addr).last
+
+        # Could be a CSV list and/or repeated headers that were concatenated.
+        client_ips    = ips_from(@req.client_ip).reverse!
+        forwarded_ips = ips_from(@req.x_forwarded_for).reverse!
+
+        # `Client-Ip` and `X-Forwarded-For` should not, generally, both be set. If they
+        # are both set, it means that either:
+        #
+        # 1) This request passed through two proxies with incompatible IP header
+        #     conventions.
+        #
+        # 2) The client passed one of `Client-Ip` or `X-Forwarded-For`
+        #     (whichever the proxy servers weren&#39;t using) themselves.
+        #
+        # Either way, there is no way for us to determine which header is the right one
+        # after the fact. Since we have no idea, if we are concerned about IP spoofing
+        # we need to give up and explode. (If you&#39;re not concerned about IP spoofing you
+        # can turn the `ip_spoofing_check` option off.)
+        should_check_ip = @check_ip &amp;&amp; client_ips.last &amp;&amp; forwarded_ips.last
+        if should_check_ip &amp;&amp; !forwarded_ips.include?(client_ips.last)
+          # We don&#39;t know which came from the proxy, and which from the user
+          raise IpSpoofAttackError, &quot;IP spoofing attack?! &quot; \
+            &quot;HTTP_CLIENT_IP=#{@req.client_ip.inspect} &quot; \
+            &quot;HTTP_X_FORWARDED_FOR=#{@req.x_forwarded_for.inspect}&quot;
+        end
+
+        # We assume these things about the IP headers:
+        #
+        #     - X-Forwarded-For will be a list of IPs, one per proxy, or blank
+        #     - Client-Ip is propagated from the outermost proxy, or is blank
+        #     - REMOTE_ADDR will be the IP that made the request to Rack
+        ips = forwarded_ips + client_ips
+        ips.compact!
+
+        # If every single IP option is in the trusted list, return the IP that&#39;s
+        # furthest away
+        filter_proxies(ips + [remote_addr]).first || ips.last || remote_addr
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/middleware/remote_ip.rb#L127" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_s">
+            
+              to_s()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Memoizes the value returned by <a href="GetIp.html#method-i-calculate_ip"><code>calculate_ip</code></a> and returns it for <a href="../Request.html"><code>ActionDispatch::Request</code></a> to use.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 171
+      def to_s
+        @ip ||= calculate_ip
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/middleware/remote_ip.rb#L171" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+      <h2 id="instance-private-methods">Instance Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-filter_proxies">
+            
+              filter_proxies(ips)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 191
+      def filter_proxies(ips) # :doc:
+        ips.reject do |ip|
+          @proxies.any? { |proxy| proxy === ip }
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/middleware/remote_ip.rb#L191" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-ips_from">
+            
+              ips_from(header)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/remote_ip.rb, line 176
+      def ips_from(header) # :doc:
+        return [] unless header
+        # Split the comma-separated list into an array of strings.
+        ips = header.strip.split(/[,\s]+/)
+        ips.select! do |ip|
+          # Only return IPs that are valid according to the IPAddr#new method.
+          range = IPAddr.new(ip).to_range
+          # We want to make sure nobody is sneaking a netmask in.
+          range.begin == range.end
+        rescue ArgumentError
+          nil
+        end
+        ips
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionpack/lib/action_dispatch/middleware/remote_ip.rb#L176" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

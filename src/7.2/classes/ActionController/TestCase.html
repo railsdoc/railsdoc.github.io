@@ -1,0 +1,208 @@
+---
+title: ActionController::TestCase
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionController::TestCase
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../ActiveSupport/TestCase.html">ActiveSupport::TestCase</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_controller/test_case_rb.html">actionpack/lib/action_controller/test_case.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActionController::TestCase-label-Action+Controller+Test+Case">Action Controller Test Case</h1>
+
+<p>Superclass for <a href="../ActionController.html"><code>ActionController</code></a> functional tests. Functional tests allow you to test a single controller action per test method.</p>
+
+<h2 id="class-ActionController::TestCase-label-Use+integration+style+controller+tests+over+functional+style+controller+tests.">Use integration style controller tests over functional style controller tests.</h2>
+
+<p><a href="../Rails.html"><code>Rails</code></a> discourages the use of functional tests in favor of integration tests (use <a href="../ActionDispatch/IntegrationTest.html"><code>ActionDispatch::IntegrationTest</code></a>).</p>
+
+<p>New <a href="../Rails.html"><code>Rails</code></a> applications no longer generate functional style controller tests and they should only be used for backward compatibility. Integration style controller tests perform actual requests, whereas functional style controller tests merely simulate a request. Besides, integration tests are as fast as functional tests and provide lot of helpers such as <code>as</code>, <code>parsed_body</code> for effective testing of controller actions including even <a href="API.html"><code>API</code></a> endpoints.</p>
+
+<h2 id="class-ActionController::TestCase-label-Basic+example">Basic example</h2>
+
+<p>Functional tests are written as follows: 1. First, one uses the <code>get</code>, <code>post</code>, <code>patch</code>, <code>put</code>, <code>delete</code>, or <code>head</code> method to simulate an HTTP request. 2. Then, one asserts whether the current state is as expected. “State” can be anything: the controller’s HTTP response, the database contents, etc.</p>
+
+<p>For example:</p>
+
+<pre><code>class BooksControllerTest &lt; ActionController::TestCase
+  def test_create
+    # Simulate a POST response with the given HTTP parameters.
+    post(:create, params: { book: { title: &quot;Love Hina&quot; }})
+
+    # Asserts that the controller tried to redirect us to
+    # the created book&#39;s URI.
+    assert_response :found
+
+    # Asserts that the controller really put the book in the database.
+    assert_not_nil Book.find_by(title: &quot;Love Hina&quot;)
+  end
+end
+</code></pre>
+
+<p>You can also send a real document in the simulated HTTP request.</p>
+
+<pre><code>def test_create
+  json = {book: { title: &quot;Love Hina&quot; }}.to_json
+  post :create, body: json
+end
+</code></pre>
+
+<h2 id="class-ActionController::TestCase-label-Special+instance+variables">Special instance variables</h2>
+
+<p><a href="TestCase.html"><code>ActionController::TestCase</code></a> will also automatically provide the following instance variables for use in the tests:</p>
+<dl class="rdoc-list note-list"><dt>@controller
+<dd>
+<p>The controller instance that will be tested.</p>
+</dd><dt>@request
+<dd>
+<p>An ActionController::TestRequest, representing the current HTTP request. You can modify this object before sending the HTTP request. For example, you might want to set some session properties before sending a GET request.</p>
+</dd><dt>@response
+<dd>
+<p>An <a href="../ActionDispatch/TestResponse.html"><code>ActionDispatch::TestResponse</code></a> object, representing the response of the last HTTP response. In the above example, <code>@response</code> becomes valid after calling <code>post</code>. If the various assert methods are not sufficient, then you may use this object to inspect the HTTP response in detail.</p>
+</dd></dl>
+
+<h2 id="class-ActionController::TestCase-label-Controller+is+automatically+inferred">Controller is automatically inferred</h2>
+
+<p><a href="TestCase.html"><code>ActionController::TestCase</code></a> will automatically infer the controller under test from the test class name. If the controller cannot be inferred from the test class name, you can explicitly set it with <code>tests</code>.</p>
+
+<pre><code>class SpecialEdgeCaseWidgetsControllerTest &lt; ActionController::TestCase
+  tests WidgetController
+end
+</code></pre>
+
+<h2 id="class-ActionController::TestCase-label-Testing+controller+internals"><a href="Testing.html"><code>Testing</code></a> controller internals</h2>
+
+<p>In addition to these specific assertions, you also have easy access to various collections that the regular test/unit assertions can be used against. These collections are:</p>
+<ul><li>
+<p>session: Objects being saved in the session.</p>
+</li><li>
+<p>flash: The flash objects currently in the session.</p>
+</li><li>
+<p>cookies: <a href="Cookies.html"><code>Cookies</code></a> being sent to the user on this request.</p>
+</li></ul>
+
+<p>These collections can be used just like any other hash:</p>
+
+<pre><code>assert_equal &quot;Dave&quot;, cookies[:name] # makes sure that a cookie called :name was set as &quot;Dave&quot;
+assert flash.empty? # makes sure that there&#39;s nothing in the flash
+</code></pre>
+
+<p>On top of the collections, you have the complete URL that a given action redirected to available in <code>redirect_to_url</code>.</p>
+
+<p>For redirects within the same controller, you can even call follow_redirect and the redirect will be followed, triggering another action call which can then be asserted against.</p>
+
+<h2 id="class-ActionController::TestCase-label-Manipulating+session+and+cookie+variables">Manipulating session and cookie variables</h2>
+
+<p>Sometimes you need to set up the session and cookie variables for a test. To do this just assign a value to the session or cookie collection:</p>
+
+<pre><code>session[:key] = &quot;value&quot;
+cookies[:key] = &quot;value&quot;
+</code></pre>
+
+<p>To clear the cookies for a test just clear the cookie collection:</p>
+
+<pre><code>cookies.clear
+</code></pre>
+
+<h2 id="class-ActionController::TestCase-label-Testing+named+routes"><a href="Testing.html"><code>Testing</code></a> named routes</h2>
+
+<p>If you’re using named routes, they can be easily tested using the original named routes’ methods straight in the test case.</p>
+
+<pre><code>assert_redirected_to page_url(title: &#39;foo&#39;)
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="TestCase/Behavior.html">ActionController::TestCase::Behavior</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="TestCase/Behavior.html">
+              ActionController::TestCase::Behavior
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>executor_around_each_request</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+    
+    
+  
+</div>
+
+    </div>
+</div>

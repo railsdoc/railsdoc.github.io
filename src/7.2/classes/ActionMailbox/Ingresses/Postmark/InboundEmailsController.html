@@ -1,0 +1,164 @@
+---
+title: ActionMailbox::Ingresses::Postmark::InboundEmailsController
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionMailbox::Ingresses::Postmark::InboundEmailsController
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../BaseController.html">ActionMailbox::BaseController</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/actionmailbox/app/controllers/action_mailbox/ingresses/postmark/inbound_emails_controller_rb.html">actionmailbox/app/controllers/action_mailbox/ingresses/postmark/inbound_emails_controller.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Ingests inbound emails from Postmark. Requires a <code>RawEmail</code> parameter containing a full RFC 822 message.</p>
+
+<p>Authenticates requests using HTTP basic access authentication. The username is always <code>actionmailbox</code>, and the password is read from the application’s encrypted credentials or an environment variable. See the Usage section below.</p>
+
+<p>Note that basic authentication is insecure over unencrypted HTTP. An attacker that intercepts cleartext requests to the Postmark ingress can learn its password. You should only use the Postmark ingress over HTTPS.</p>
+
+<p>Returns:</p>
+<ul><li>
+<p><code>204 No Content</code> if an inbound email is successfully recorded and enqueued for routing to the appropriate mailbox</p>
+</li><li>
+<p><code>401 Unauthorized</code> if the request’s signature could not be validated</p>
+</li><li>
+<p><code>404 Not Found</code> if Action Mailbox is not configured to accept inbound emails from Postmark</p>
+</li><li>
+<p><code>422 Unprocessable Entity</code> if the request is missing the required <code>RawEmail</code> parameter</p>
+</li><li>
+<p><code>500 Server Error</code> if the ingress password is not configured, or if one of the Active Record database, the Active Storage service, or the Active Job backend is misconfigured or unavailable</p>
+</li></ul>
+
+<h2 id="class-ActionMailbox::Ingresses::Postmark::InboundEmailsController-label-Usage">Usage</h2>
+<ol><li>
+<p>Tell Action Mailbox to accept emails from Postmark:</p>
+
+<pre><code># config/environments/production.rb
+config.action_mailbox.ingress = :postmark
+</code></pre>
+</li><li>
+<p>Generate a strong password that Action Mailbox can use to authenticate requests to the Postmark ingress.</p>
+
+<p>Use <code>bin/rails credentials:edit</code> to add the password to your application’s encrypted credentials under <code>action_mailbox.ingress_password</code>, where Action Mailbox will automatically find it:</p>
+
+<pre><code>action_mailbox:
+  ingress_password: ...
+</code></pre>
+
+<p>Alternatively, provide the password in the <code>RAILS_INBOUND_EMAIL_PASSWORD</code> environment variable.</p>
+</li><li>
+<p><a href="https://postmarkapp.com/manual#configure-your-inbound-webhook-url">Configure Postmark</a> to forward inbound emails to <code>/rails/action_mailbox/postmark/inbound_emails</code> with the username <code>actionmailbox</code> and the password you previously generated. If your application lived at <code>https://example.com</code>, you would configure your Postmark inbound webhook with the following fully-qualified URL:</p>
+
+<pre><code>https://actionmailbox:PASSWORD@example.com/rails/action_mailbox/postmark/inbound_emails
+</code></pre>
+
+<p><strong>NOTE:</strong> When configuring your Postmark inbound webhook, be sure to check the box labeled *“Include raw email content in JSON payload”*. Action Mailbox needs the raw email content to work.</p>
+</li></ol>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-create">create</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-create">
+            
+              create()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailbox/app/controllers/action_mailbox/ingresses/postmark/inbound_emails_controller.rb, line 51
+    def create
+      ActionMailbox::InboundEmail.create_and_extract_message_id! params.require(&quot;RawEmail&quot;)
+    rescue ActionController::ParameterMissing =&gt; error
+      logger.error &lt;&lt;~MESSAGE
+        #{error.message}
+
+        When configuring your Postmark inbound webhook, be sure to check the box
+        labeled &quot;Include raw email content in JSON payload&quot;.
+      MESSAGE
+      head :unprocessable_entity
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionmailbox/app/controllers/action_mailbox/ingresses/postmark/inbound_emails_controller.rb#L51" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

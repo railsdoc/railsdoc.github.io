@@ -1,0 +1,259 @@
+---
+title: ActiveRecord::SignedId::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::SignedId::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/signed_id_rb.html">activerecord/lib/active_record/signed_id.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-find_signed">find_signed</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-find_signed-21">find_signed!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-signed_id_verifier">signed_id_verifier</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-signed_id_verifier-3D">signed_id_verifier=</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-find_signed">
+            
+              find_signed(signed_id, purpose: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Lets you find a record based on a signed id that’s safe to put into the world without risk of tampering. This is particularly useful for things like password reset or email verification, where you want the bearer of the signed id to be able to interact with the underlying record, but usually only within a certain time period.</p>
+
+<p>You set the time period that the signed id is valid for during generation, using the instance method <code>signed_id(expires_in: 15.minutes)</code>. If the time has elapsed before a signed find is attempted, the signed id will no longer be valid, and nil is returned.</p>
+
+<p>It’s possible to further restrict the use of a signed id with a purpose. This helps when you have a general base model, like a User, which might have signed ids for several things, like password reset or email verification. The purpose that was set during generation must match the purpose set when finding. If there’s a mismatch, nil is again returned.</p>
+
+<h4 id="method-i-find_signed-label-Examples">Examples</h4>
+
+<pre><code>signed_id = User.first.signed_id expires_in: 15.minutes, purpose: :password_reset
+
+User.find_signed signed_id # =&gt; nil, since the purpose does not match
+
+travel 16.minutes
+User.find_signed signed_id, purpose: :password_reset # =&gt; nil, since the signed id has expired
+
+travel_back
+User.find_signed signed_id, purpose: :password_reset # =&gt; User.first
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 52
+      def find_signed(signed_id, purpose: nil)
+        raise UnknownPrimaryKey.new(self) if primary_key.nil?
+
+        if id = signed_id_verifier.verified(signed_id, purpose: combine_signed_id_purposes(purpose))
+          find_by primary_key =&gt; id
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/signed_id.rb#L52" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-find_signed-21">
+            
+              find_signed!(signed_id, purpose: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Works like <a href="ClassMethods.html#method-i-find_signed"><code>find_signed</code></a>, but will raise an <code>ActiveSupport::MessageVerifier::InvalidSignature</code> exception if the <code>signed_id</code> has either expired, has a purpose mismatch, is for another record, or has been tampered with. It will also raise an <code>ActiveRecord::RecordNotFound</code> exception if the valid signed id can’t find a record.</p>
+
+<h3 id="method-i-find_signed-21-label-Examples">Examples</h3>
+
+<pre><code>User.find_signed! &quot;bad data&quot; # =&gt; ActiveSupport::MessageVerifier::InvalidSignature
+
+signed_id = User.first.signed_id
+User.first.destroy
+User.find_signed! signed_id # =&gt; ActiveRecord::RecordNotFound
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 72
+      def find_signed!(signed_id, purpose: nil)
+        if id = signed_id_verifier.verify(signed_id, purpose: combine_signed_id_purposes(purpose))
+          find(id)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/signed_id.rb#L72" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-signed_id_verifier">
+            
+              signed_id_verifier()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>The verifier instance that all signed ids are generated and verified from. By default, it’ll be initialized with the class-level <code>signed_id_verifier_secret</code>, which within Rails comes from the <a href="../../Rails.html#method-c-application"><code>Rails.application</code></a>.key_generator. By default, it’s SHA256 for the digest and JSON for the serialization.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 81
+      def signed_id_verifier
+        @signed_id_verifier ||= begin
+          secret = signed_id_verifier_secret
+          secret = secret.call if secret.respond_to?(:call)
+
+          if secret.nil?
+            raise ArgumentError, &quot;You must set ActiveRecord::Base.signed_id_verifier_secret to use signed ids&quot;
+          else
+            ActiveSupport::MessageVerifier.new secret, digest: &quot;SHA256&quot;, serializer: JSON, url_safe: true
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/signed_id.rb#L81" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-signed_id_verifier-3D">
+            
+              signed_id_verifier=(verifier)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Allows you to pass in a custom verifier used for the signed ids. This also allows you to use different verifiers for different classes. This is also helpful if you need to rotate keys, as you can prepare your custom verifier for that in advance. See <code>ActiveSupport::MessageVerifier</code> for details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 97
+      def signed_id_verifier=(verifier)
+        @signed_id_verifier = verifier
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/activerecord/lib/active_record/signed_id.rb#L97" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

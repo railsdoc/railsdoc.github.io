@@ -1,0 +1,571 @@
+---
+title: ActionMailer::TestHelper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 7.2.2</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionMailer::TestHelper
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionmailer/lib/action_mailer/test_helper_rb.html">actionmailer/lib/action_mailer/test_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Provides helper methods for testing Action Mailer, including <a href="TestHelper.html#method-i-assert_emails"><code>assert_emails</code></a> and <a href="TestHelper.html#method-i-assert_no_emails"><code>assert_no_emails</code></a>.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-assert_emails">assert_emails</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_enqueued_email_with">assert_enqueued_email_with</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_enqueued_emails">assert_enqueued_emails</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_no_emails">assert_no_emails</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_no_enqueued_emails">assert_no_enqueued_emails</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-capture_emails">capture_emails</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-deliver_enqueued_emails">deliver_enqueued_emails</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="../ActiveJob/TestHelper.html">
+              ActiveJob::TestHelper
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-assert_emails">
+            
+              assert_emails(number, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that the number of emails sent matches the given number.</p>
+
+<pre><code>def test_emails
+  assert_emails 0
+  ContactMailer.welcome.deliver_now
+  assert_emails 1
+  ContactMailer.welcome.deliver_now
+  assert_emails 2
+end
+</code></pre>
+
+<p>If a block is passed, that block should cause the specified number of emails to be sent.</p>
+
+<pre><code>def test_emails_again
+  assert_emails 1 do
+    ContactMailer.welcome.deliver_now
+  end
+
+  assert_emails 2 do
+    ContactMailer.welcome.deliver_now
+    ContactMailer.welcome.deliver_later
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/test_helper.rb, line 35
+    def assert_emails(number, &amp;block)
+      if block_given?
+        diff = capture_emails(&amp;block).length
+        assert_equal number, diff, &quot;#{number} emails expected, but #{diff} were sent&quot;
+      else
+        assert_equal number, ActionMailer::Base.deliveries.size
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionmailer/lib/action_mailer/test_helper.rb#L35" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_enqueued_email_with">
+            
+              assert_enqueued_email_with(mailer, method, params: nil, args: nil, queue: nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that a specific email has been enqueued, optionally matching arguments and/or params.</p>
+
+<pre><code>def test_email
+  ContactMailer.welcome.deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome
+end
+
+def test_email_with_parameters
+  ContactMailer.with(greeting: &quot;Hello&quot;).welcome.deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome, args: { greeting: &quot;Hello&quot; }
+end
+
+def test_email_with_arguments
+  ContactMailer.welcome(&quot;Hello&quot;, &quot;Goodbye&quot;).deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome, args: [&quot;Hello&quot;, &quot;Goodbye&quot;]
+end
+
+def test_email_with_named_arguments
+  ContactMailer.welcome(greeting: &quot;Hello&quot;, farewell: &quot;Goodbye&quot;).deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome, args: [{ greeting: &quot;Hello&quot;, farewell: &quot;Goodbye&quot; }]
+end
+
+def test_email_with_parameters_and_arguments
+  ContactMailer.with(greeting: &quot;Hello&quot;).welcome(&quot;Cheers&quot;, &quot;Goodbye&quot;).deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome, params: { greeting: &quot;Hello&quot; }, args: [&quot;Cheers&quot;, &quot;Goodbye&quot;]
+end
+
+def test_email_with_parameters_and_named_arguments
+  ContactMailer.with(greeting: &quot;Hello&quot;).welcome(farewell: &quot;Goodbye&quot;).deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome, params: { greeting: &quot;Hello&quot; }, args: [{farewell: &quot;Goodbye&quot;}]
+end
+
+def test_email_with_parameterized_mailer
+  ContactMailer.with(greeting: &quot;Hello&quot;).welcome.deliver_later
+  assert_enqueued_email_with ContactMailer.with(greeting: &quot;Hello&quot;), :welcome
+end
+
+def test_email_with_matchers
+  ContactMailer.with(greeting: &quot;Hello&quot;).welcome(&quot;Cheers&quot;, &quot;Goodbye&quot;).deliver_later
+  assert_enqueued_email_with ContactMailer, :welcome,
+    params: -&gt;(params) { /hello/i.match?(params[:greeting]) },
+    args: -&gt;(args) { /cheers/i.match?(args[0]) }
+end
+</code></pre>
+
+<p>If a block is passed, that block should cause the specified email to be enqueued.</p>
+
+<pre><code>def test_email_in_block
+  assert_enqueued_email_with ContactMailer, :welcome do
+    ContactMailer.welcome.deliver_later
+  end
+end
+</code></pre>
+
+<p>If <code>args</code> is provided as a <a href="../Hash.html"><code>Hash</code></a>, a parameterized email is matched.</p>
+
+<pre><code>def test_parameterized_email
+  assert_enqueued_email_with ContactMailer, :welcome,
+    args: {email: &#39;user@example.com&#39;} do
+    ContactMailer.with(email: &#39;user@example.com&#39;).welcome.deliver_later
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/test_helper.rb, line 157
+    def assert_enqueued_email_with(mailer, method, params: nil, args: nil, queue: nil, &amp;block)
+      if mailer.is_a? ActionMailer::Parameterized::Mailer
+        params = mailer.instance_variable_get(:@params)
+        mailer = mailer.instance_variable_get(:@mailer)
+      end
+
+      args = Array(args) unless args.is_a?(Proc)
+      queue ||= mailer.deliver_later_queue_name || ActiveJob::Base.default_queue_name
+
+      expected = -&gt;(job_args) do
+        job_kwargs = job_args.extract_options!
+
+        [mailer.to_s, method.to_s, &quot;deliver_now&quot;] == job_args &amp;&amp;
+          params === job_kwargs[:params] &amp;&amp; args === job_kwargs[:args]
+      end
+
+      assert_enqueued_with(job: mailer.delivery_job, args: expected, queue: queue.to_s, &amp;block)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionmailer/lib/action_mailer/test_helper.rb#L157" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_enqueued_emails">
+            
+              assert_enqueued_emails(number, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that the number of emails enqueued for later delivery matches the given number.</p>
+
+<pre><code>def test_emails
+  assert_enqueued_emails 0
+  ContactMailer.welcome.deliver_later
+  assert_enqueued_emails 1
+  ContactMailer.welcome.deliver_later
+  assert_enqueued_emails 2
+end
+</code></pre>
+
+<p>If a block is passed, that block should cause the specified number of emails to be enqueued.</p>
+
+<pre><code>def test_emails_again
+  assert_enqueued_emails 1 do
+    ContactMailer.welcome.deliver_later
+  end
+
+  assert_enqueued_emails 2 do
+    ContactMailer.welcome.deliver_later
+    ContactMailer.welcome.deliver_later
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/test_helper.rb, line 91
+    def assert_enqueued_emails(number, &amp;block)
+      assert_enqueued_jobs(number, only: -&gt;(job) { delivery_job_filter(job) }, &amp;block)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionmailer/lib/action_mailer/test_helper.rb#L91" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_no_emails">
+            
+              assert_no_emails(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that no emails have been sent.</p>
+
+<pre><code>def test_emails
+  assert_no_emails
+  ContactMailer.welcome.deliver_now
+  assert_emails 1
+end
+</code></pre>
+
+<p>If a block is passed, that block should not cause any emails to be sent.</p>
+
+<pre><code>def test_emails_again
+  assert_no_emails do
+    # No emails should be sent from this block
+  end
+end
+</code></pre>
+
+<p>Note: This assertion is simply a shortcut for:</p>
+
+<pre><code>assert_emails 0, &amp;block
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/test_helper.rb, line 63
+    def assert_no_emails(&amp;block)
+      assert_emails 0, &amp;block
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionmailer/lib/action_mailer/test_helper.rb#L63" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_no_enqueued_emails">
+            
+              assert_no_enqueued_emails(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that no emails are enqueued for later delivery.</p>
+
+<pre><code>def test_no_emails
+  assert_no_enqueued_emails
+  ContactMailer.welcome.deliver_later
+  assert_enqueued_emails 1
+end
+</code></pre>
+
+<p>If a block is provided, it should not cause any emails to be enqueued.</p>
+
+<pre><code>def test_no_emails
+  assert_no_enqueued_emails do
+    # No emails should be enqueued from this block
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/test_helper.rb, line 191
+    def assert_no_enqueued_emails(&amp;block)
+      assert_enqueued_emails 0, &amp;block
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionmailer/lib/action_mailer/test_helper.rb#L191" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-capture_emails">
+            
+              capture_emails(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns any emails that are sent in the block.</p>
+
+<pre><code>def test_emails
+  emails = capture_emails do
+    ContactMailer.welcome.deliver_now
+  end
+  assert_equal &quot;Hi there&quot;, emails.first.subject
+
+  emails = capture_emails do
+    ContactMailer.welcome.deliver_now
+    ContactMailer.welcome.deliver_later
+  end
+  assert_equal &quot;Hi there&quot;, emails.first.subject
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/test_helper.rb, line 249
+    def capture_emails(&amp;block)
+      original_count = ActionMailer::Base.deliveries.size
+      deliver_enqueued_emails(&amp;block)
+      new_count = ActionMailer::Base.deliveries.size
+      diff = new_count - original_count
+      ActionMailer::Base.deliveries.last(diff)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionmailer/lib/action_mailer/test_helper.rb#L249" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-deliver_enqueued_emails">
+            
+              deliver_enqueued_emails(queue: nil, at: nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Delivers all enqueued emails. If a block is given, delivers all of the emails that were enqueued throughout the duration of the block. If a block is not given, delivers all the enqueued emails up to this point in the test.</p>
+
+<pre><code>def test_deliver_enqueued_emails
+  deliver_enqueued_emails do
+    ContactMailer.welcome.deliver_later
+  end
+
+  assert_emails 1
+end
+
+def test_deliver_enqueued_emails_without_block
+  ContactMailer.welcome.deliver_later
+
+  deliver_enqueued_emails
+
+  assert_emails 1
+end
+</code></pre>
+
+<p>If the <code>:queue</code> option is specified, then only the emails(s) enqueued to a specific queue will be performed.</p>
+
+<pre><code>def test_deliver_enqueued_emails_with_queue
+  deliver_enqueued_emails queue: :external_mailers do
+    CustomerMailer.deliver_later_queue_name = :external_mailers
+    CustomerMailer.welcome.deliver_later # will be performed
+    EmployeeMailer.deliver_later_queue_name = :internal_mailers
+    EmployeeMailer.welcome.deliver_later # will not be performed
+  end
+
+  assert_emails 1
+end
+</code></pre>
+
+<p>If the <code>:at</code> option is specified, then only delivers emails enqueued to deliver immediately or before the given time.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/test_helper.rb, line 231
+    def deliver_enqueued_emails(queue: nil, at: nil, &amp;block)
+      perform_enqueued_jobs(only: -&gt;(job) { delivery_job_filter(job) }, queue: queue, at: at, &amp;block)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/d0dcb8fa6073a0c4d42600c15e82e3bb386b27d3/actionmailer/lib/action_mailer/test_helper.rb#L231" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
