@@ -4,7 +4,7 @@ require 'yaml'
 require 'bundler'
 
 SOURCE_DIR = 'src'
-INDEX_HTML = 'files/railties/RDOC_MAIN.html'
+INDEX_HTML = 'files/railties/RDOC_MAIN_md.html'
 OLD_INDEX_HTML = 'files/railties/RDOC_MAIN_rdoc.html'
 MY_SDOC_BRANCH = 'main'
 
