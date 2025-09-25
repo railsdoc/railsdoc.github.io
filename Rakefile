@@ -73,7 +73,7 @@ def generate_rails_rdoc
       gemfile.gsub!(/"sdoc".*$/, %("sdoc", github: "toshimaru/sdoc", branch: "#{MY_SDOC_BRANCH}"))
       File.write('Gemfile', gemfile)
 
-      sh 'bundle install && bundle update sdoc'
+      sh 'bundle install --path vendor/bundle && bundle update sdoc'
       rm_rf 'doc'
       sh 'bundle exec rake rdoc'
     end
