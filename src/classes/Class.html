@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.0</span><br />
+            <span>Ruby on Rails 8.0.3</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -72,7 +72,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-class_attribute">
             
-              class_attribute(*attrs, instance_accessor: true, instance_reader: instance_accessor, instance_writer: instance_accessor, instance_predicate: true, default: nil)
+              class_attribute(*attrs, instance_accessor: true, instance_reader: instance_accessor, instance_writer: instance_accessor, instance_predicate: true, default: nil )
             
           </h3>
 
@@ -111,7 +111,7 @@ Base.setting                # =&gt; true
 
 <p>In the above case as long as Subclass does not assign a value to setting by performing <code>Subclass.setting = <em>something</em></code>, <code>Subclass.setting</code> would read value assigned to parent class. Once Subclass assigns a value then the value assigned by Subclass would be returned.</p>
 
-<p>This matches normal Ruby method inheritance: think of writing an attribute on a subclass as overriding the reader method. However, you need to be aware when using <code>class_attribute</code> with mutable structures as <code>Array</code> or <code>Hash</code>. In such cases, you don’t want to do changes in place. Instead use setters:</p>
+<p>This matches normal Ruby method inheritance: think of writing an attribute on a subclass as overriding the reader method. However, you need to be aware when using <a href="Class.html#method-i-class_attribute"><code>class_attribute</code></a> with mutable structures as <a href="Array.html"><code>Array</code></a> or <a href="Hash.html"><code>Hash</code></a>. In such cases, you don’t want to do changes in place. Instead use setters:</p>
 
 <pre><code>Base.setting = []
 Base.setting                # =&gt; []
@@ -177,8 +177,8 @@ object.setting?         # =&gt; NoMethodError
 
               <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/class/attribute.rb, line 86
   def class_attribute(*attrs, instance_accessor: true,
-    instance_reader: instance_accessor, instance_writer: instance_accessor, instance_predicate: true, default: nil)
-
+    instance_reader: instance_accessor, instance_writer: instance_accessor, instance_predicate: true, default: nil
+  )
     class_methods, methods = [], []
     attrs.each do |name|
       unless name.is_a?(Symbol) || name.is_a?(String)
@@ -186,12 +186,25 @@ object.setting?         # =&gt; NoMethodError
       end
 
       name = name.to_sym
-      ::ActiveSupport::ClassAttribute.redefine(self, name, default)
+      namespaced_name = :&quot;__class_attr_#{name}&quot;
+      ::ActiveSupport::ClassAttribute.redefine(self, name, namespaced_name, default)
 
-      unless singleton_class?
+      delegators = [
+        &quot;def #{name}; #{namespaced_name}; end&quot;,
+        &quot;def #{name}=(value); self.#{namespaced_name} = value; end&quot;,
+      ]
+
+      class_methods.concat(delegators)
+      if singleton_class?
+        methods.concat(delegators)
+      else
         methods &lt;&lt; &lt;&lt;~RUBY if instance_reader
           silence_redefinition_of_method def #{name}
-            defined?(@#{name}) ? @#{name} : self.class.#{name}
+            if defined?(@#{name})
+              @#{name}
+            else
+              self.class.#{name}
+            end
           end
         RUBY
       end
@@ -213,7 +226,7 @@ object.setting?         # =&gt; NoMethodError
     class_eval([&quot;class &lt;&lt; self&quot;, *class_methods, &quot;end&quot;, *methods].join(&quot;;&quot;).tr(&quot;\n&quot;, &quot;;&quot;), location.path, location.lineno)
   end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activesupport/lib/active_support/core_ext/class/attribute.rb#L86" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/core_ext/class/attribute.rb#L86" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -261,7 +274,7 @@ C.descendants # =&gt; [B, A, D]
     subclasses.concat(subclasses.flat_map(&amp;:descendants))
   end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activesupport/lib/active_support/core_ext/class/subclasses.rb#L19" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/core_ext/class/subclasses.rb#L19" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
