@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.0</span><br />
+            <span>Ruby on Rails 8.0.3</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -191,6 +191,7 @@ layout: default
               <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 17
     def initialize(bucket:, upload: {}, public: false, **options)
       @client = Aws::S3::Resource.new(**options)
+      @transfer_manager = Aws::S3::TransferManager.new(client: @client.client) if defined?(Aws::S3::TransferManager)
       @bucket = @client.bucket(bucket)
 
       @multipart_upload_threshold = upload.delete(:multipart_threshold) || 100.megabytes
@@ -200,7 +201,7 @@ layout: default
       @upload_options[:acl] = &quot;public-read&quot; if public?
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activestorage/lib/active_storage/service/s3_service.rb#L17" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L17" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -234,11 +235,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 100
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 101
     def compose(source_keys, destination_key, filename: nil, content_type: nil, disposition: nil, custom_metadata: {})
       content_disposition = content_disposition_with(type: disposition, filename: filename) if disposition &amp;&amp; filename
 
-      object_for(destination_key).upload_stream(
+      upload_stream(
+        key: destination_key,
         content_type: content_type,
         content_disposition: content_disposition,
         part_size: MINIMUM_UPLOAD_PART_SIZE,
@@ -253,7 +255,7 @@ layout: default
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activestorage/lib/active_storage/service/s3_service.rb#L100" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L101" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -283,14 +285,14 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 62
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 63
     def delete(key)
       instrument :delete, key: key do
         object_for(key).delete
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activestorage/lib/active_storage/service/s3_service.rb#L62" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L63" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -320,14 +322,14 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 68
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 69
     def delete_prefixed(prefix)
       instrument :delete_prefixed, prefix: prefix do
         bucket.objects(prefix: prefix).batch_delete!
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activestorage/lib/active_storage/service/s3_service.rb#L68" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L69" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -357,7 +359,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 40
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 41
     def download(key, &amp;block)
       if block_given?
         instrument :streaming_download, key: key do
@@ -372,7 +374,7 @@ layout: default
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activestorage/lib/active_storage/service/s3_service.rb#L40" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L41" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -402,7 +404,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 54
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 55
     def download_chunk(key, range)
       instrument :download_chunk, key: key, range: range do
         object_for(key).get(range: &quot;bytes=#{range.begin}-#{range.exclude_end? ? range.end - 1 : range.end}&quot;).body.string.force_encoding(Encoding::BINARY)
@@ -411,7 +413,7 @@ layout: default
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activestorage/lib/active_storage/service/s3_service.rb#L54" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L55" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -441,7 +443,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 74
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 75
     def exist?(key)
       instrument :exist, key: key do |payload|
         answer = object_for(key).exists?
@@ -450,7 +452,7 @@ layout: default
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activestorage/lib/active_storage/service/s3_service.rb#L74" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L75" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -480,14 +482,14 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 94
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 95
     def headers_for_direct_upload(key, content_type:, checksum:, filename: nil, disposition: nil, custom_metadata: {}, **)
       content_disposition = content_disposition_with(type: disposition, filename: filename) if filename
 
       { &quot;Content-Type&quot; =&gt; content_type, &quot;Content-MD5&quot; =&gt; checksum, &quot;Content-Disposition&quot; =&gt; content_disposition, **custom_metadata_headers(custom_metadata) }
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activestorage/lib/active_storage/service/s3_service.rb#L94" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L95" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -517,7 +519,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 28
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 29
     def upload(key, io, checksum: nil, filename: nil, content_type: nil, disposition: nil, custom_metadata: {}, **)
       instrument :upload, key: key, checksum: checksum do
         content_disposition = content_disposition_with(filename: filename, type: disposition) if disposition &amp;&amp; filename
@@ -530,7 +532,7 @@ layout: default
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activestorage/lib/active_storage/service/s3_service.rb#L28" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L29" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -560,7 +562,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 82
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 83
     def url_for_direct_upload(key, expires_in:, content_type:, content_length:, checksum:, custom_metadata: {})
       instrument :url, key: key do |payload|
         generated_url = object_for(key).presigned_url :put, expires_in: expires_in.to_i,
@@ -573,7 +575,7 @@ layout: default
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/dd8f7185faeca6ee968a6e9367f6d8601a83b8db/activestorage/lib/active_storage/service/s3_service.rb#L82" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L83" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
