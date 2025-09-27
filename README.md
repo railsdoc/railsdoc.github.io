@@ -51,7 +51,7 @@ $ rake build_multi[5.2,6.0,6.1]
 Set `RUBY_VERSION` in `.env` file and run `docker compose`.
 
 ```console
-$ cp .env.example .env
+$ cp .env.sample .env
 $ docker compose run app bash -c 'rake build_multi[5.2]'
 ```
 
