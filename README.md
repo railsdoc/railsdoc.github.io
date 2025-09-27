@@ -1,10 +1,10 @@
-# [railsdoc.github.io](https://railsdoc.github.io/) 
+# [railsdoc.github.io](https://railsdoc.github.io/)
 
 [![CI](https://github.com/railsdoc/railsdoc.github.io/actions/workflows/ci.yml/badge.svg)](https://github.com/railsdoc/railsdoc.github.io/actions/workflows/ci.yml)
 [![Deploy](https://github.com/railsdoc/railsdoc.github.io/actions/workflows/deploy.yml/badge.svg)](https://github.com/railsdoc/railsdoc.github.io/actions/workflows/deploy.yml)
 [![Netlify Status](https://api.netlify.com/api/v1/badges/c964029a-6d5a-4f3a-95e9-d35830a2fe83/deploy-status)](https://app.netlify.com/sites/railsdoc-preview/deploys)
 
-railsdoc.github.io is yet another Rails API documentation website.
+[railsdoc.github.io](https://railsdoc.github.io/) is yet another Rails API documentation website.
 
 ## Project Goal
 
@@ -23,6 +23,28 @@ There are some enhancements in addition to SEO.
 - [ ] Mobile-friendly design
 - [ ] Comment System
 - [ ] etc. (see. https://github.com/railsdoc/railsdoc.github.io/issues)
+
+## Setup
+
+```console
+$ bundle install
+```
+
+## Build docs
+
+```console
+$ rake build
+```
+
+This command generates Rails docs with `default_rails_version` defined in `_config.yml`.
+
+## Serve docs
+
+Serve html under `src` directory.
+
+```console
+$ bundle exec jekyll server
+```
 
 ## Docker Usage
 
