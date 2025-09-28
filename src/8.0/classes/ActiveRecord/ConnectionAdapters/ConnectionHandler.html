@@ -1,0 +1,653 @@
+---
+title: ActiveRecord::ConnectionAdapters::ConnectionHandler
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::ConnectionAdapters::ConnectionHandler
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/connection_adapters/abstract/connection_handler_rb.html">activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb</a></li>
+            
+            <li><a href="../../../files/activerecord/lib/active_record/connection_adapters/pool_config_rb.html">activerecord/lib/active_record/connection_adapters/pool_config.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveRecord::ConnectionAdapters::ConnectionHandler-label-Active+Record+Connection+Handler">Active Record Connection Handler</h1>
+
+<p><a href="ConnectionHandler.html"><code>ConnectionHandler</code></a> is a collection of <a href="ConnectionPool.html"><code>ConnectionPool</code></a> objects. It is used for keeping separate connection pools that connect to different databases.</p>
+
+<p>For example, suppose that you have 5 models, with the following hierarchy:</p>
+
+<pre><code>class Author &lt; ActiveRecord::Base
+end
+
+class BankAccount &lt; ActiveRecord::Base
+end
+
+class Book &lt; ActiveRecord::Base
+  establish_connection :library_db
+end
+
+class ScaryBook &lt; Book
+end
+
+class GoodBook &lt; Book
+end
+</code></pre>
+
+<p>And a database.yml that looked like this:</p>
+
+<pre><code>development:
+  database: my_application
+  host: localhost
+
+library_db:
+  database: library
+  host: some.library.org
+</code></pre>
+
+<p>Your primary database in the development environment is “my_application” but the Book model connects to a separate database called “library_db” (this can even be a database on a different machine).</p>
+
+<p>Book, ScaryBook, and GoodBook will all use the same connection pool to “library_db” while Author, BankAccount, and any other models you create will use the default connection pool to “my_application”.</p>
+
+<p>The various connection pools are managed by a single instance of <a href="ConnectionHandler.html"><code>ConnectionHandler</code></a> accessible via <a href="../Core.html#method-c-connection_handler"><code>ActiveRecord::Base.connection_handler</code></a>. All Active Record models use this handler to determine the connection pool that they should use.</p>
+
+<p>The <a href="ConnectionHandler.html"><code>ConnectionHandler</code></a> class is not coupled with the Active models, as it has no knowledge about the model. The model needs to pass a connection specification name to the handler, in order to look up the correct connection pool.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-active_connections-3F">active_connections?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clear_active_connections-21">clear_active_connections!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clear_all_connections-21">clear_all_connections!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clear_reloadable_connections-21">clear_reloadable_connections!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connected-3F">connected?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connection_pool_list">connection_pool_list</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connection_pools">connection_pools</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-establish_connection">establish_connection</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-flush_idle_connections-21">flush_idle_connections!</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-remove_connection_pool">remove_connection_pool</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-retrieve_connection_pool">retrieve_connection_pool</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 76
+      def initialize
+        # These caches are keyed by pool_config.connection_name (PoolConfig#connection_name).
+        @connection_name_to_pool_manager = Concurrent::Map.new(initial_capacity: 2)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L76" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-active_connections-3F">
+            
+              active_connections?(role = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if there are any active connections among the connection pools that the <a href="ConnectionHandler.html"><code>ConnectionHandler</code></a> is managing.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 157
+      def active_connections?(role = nil)
+        each_connection_pool(role).any?(&amp;:active_connection?)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L157" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-clear_active_connections-21">
+            
+              clear_active_connections!(role = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns any connections in use by the current thread back to the pool, and also returns connections to the pool cached by threads that are no longer alive.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 164
+      def clear_active_connections!(role = nil)
+        each_connection_pool(role).each do |pool|
+          pool.release_connection
+          pool.disable_query_cache!
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L164" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-clear_all_connections-21">
+            
+              clear_all_connections!(role = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 178
+      def clear_all_connections!(role = nil)
+        each_connection_pool(role).each(&amp;:disconnect!)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L178" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-clear_reloadable_connections-21">
+            
+              clear_reloadable_connections!(role = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Clears reloadable connection caches in all connection pools.</p>
+
+<p>See <a href="ConnectionPool.html#method-i-clear_reloadable_connections-21"><code>ConnectionPool#clear_reloadable_connections!</code></a> for details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 174
+      def clear_reloadable_connections!(role = nil)
+        each_connection_pool(role).each(&amp;:clear_reloadable_connections!)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L174" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-connected-3F">
+            
+              connected?(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if a connection that’s accessible to this class has already been opened.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 200
+      def connected?(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard)
+        pool = retrieve_connection_pool(connection_name, role: role, shard: shard)
+        pool &amp;&amp; pool.connected?
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L200" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-connection_pool_list">
+            
+              connection_pool_list(role = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the pools for a connection handler and given role. If <code>:all</code> is passed, all pools belonging to the connection handler will be returned.</p>
+            </div>
+          
+
+          
+            <div class="aka">
+              Also aliased as: <a href="ConnectionHandler.html#method-i-connection_pools">connection_pools</a>
+            </div>
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 95
+      def connection_pool_list(role = nil)
+        if role.nil? || role == :all
+          connection_name_to_pool_manager.values.flat_map { |m| m.pool_configs.map(&amp;:pool) }
+        else
+          connection_name_to_pool_manager.values.flat_map { |m| m.pool_configs(role).map(&amp;:pool) }
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L95" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-connection_pools">
+            
+              connection_pools(role = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+            <div class="aka">
+              Alias for: <a href="ConnectionHandler.html#method-i-connection_pool_list">connection_pool_list</a>
+            </div>
+          
+
+          
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-establish_connection">
+            
+              establish_connection(config, owner_name: Base, role: Base.current_role, shard: Base.current_shard, clobber: false)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 115
+      def establish_connection(config, owner_name: Base, role: Base.current_role, shard: Base.current_shard, clobber: false)
+        owner_name = determine_owner_name(owner_name, config)
+
+        pool_config = resolve_pool_config(config, owner_name, role, shard)
+        db_config = pool_config.db_config
+
+        pool_manager = set_pool_manager(pool_config.connection_descriptor)
+
+        # If there is an existing pool with the same values as the pool_config
+        # don&#39;t remove the connection. Connections should only be removed if we are
+        # establishing a connection on a class that is already connected to a different
+        # configuration.
+        existing_pool_config = pool_manager.get_pool_config(role, shard)
+
+        if !clobber &amp;&amp; existing_pool_config &amp;&amp; existing_pool_config.db_config == db_config
+          # Update the pool_config&#39;s connection class if it differs. This is used
+          # for ensuring that ActiveRecord::Base and the primary_abstract_class use
+          # the same pool. Without this granular swapping will not work correctly.
+          if owner_name.primary_class? &amp;&amp; (existing_pool_config.connection_descriptor != owner_name)
+            existing_pool_config.connection_descriptor = owner_name
+          end
+
+          existing_pool_config.pool
+        else
+          disconnect_pool_from_pool_manager(pool_manager, role, shard)
+          pool_manager.set_pool_config(role, shard, pool_config)
+
+          payload = {
+            connection_name: pool_config.connection_descriptor.name,
+            role: role,
+            shard: shard,
+            config: db_config.configuration_hash
+          }
+
+          ActiveSupport::Notifications.instrumenter.instrument(&quot;!connection.active_record&quot;, payload) do
+            pool_config.pool
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L115" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-flush_idle_connections-21">
+            
+              flush_idle_connections!(role = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Disconnects all currently idle connections.</p>
+
+<p>See <a href="ConnectionPool.html#method-i-flush-21"><code>ConnectionPool#flush!</code></a> for details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 185
+      def flush_idle_connections!(role = nil)
+        each_connection_pool(role).each(&amp;:flush!)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L185" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-remove_connection_pool">
+            
+              remove_connection_pool(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 205
+      def remove_connection_pool(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard)
+        if pool_manager = get_pool_manager(connection_name)
+          disconnect_pool_from_pool_manager(pool_manager, role, shard)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L205" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-retrieve_connection_pool">
+            
+              retrieve_connection_pool(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard, strict: false)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Retrieving the connection pool happens a lot, so we cache it in @connection_name_to_pool_manager. This makes retrieving the connection pool O(1) once the process is warm. When a connection is established or removed, we invalidate the cache.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb, line 214
+      def retrieve_connection_pool(connection_name, role: ActiveRecord::Base.current_role, shard: ActiveRecord::Base.current_shard, strict: false)
+        pool_manager = get_pool_manager(connection_name)
+        pool = pool_manager&amp;.get_pool_config(role, shard)&amp;.pool
+
+        if strict &amp;&amp; !pool
+          selector = [
+            (&quot;&#39;#{shard}&#39; shard&quot; unless shard == ActiveRecord::Base.default_shard),
+            (&quot;&#39;#{role}&#39; role&quot; unless role == ActiveRecord::Base.default_role),
+          ].compact.join(&quot; and &quot;)
+
+          selector = [
+            (connection_name unless connection_name == &quot;ActiveRecord::Base&quot;),
+            selector.presence,
+          ].compact.join(&quot; with &quot;)
+
+          selector = &quot; for #{selector}&quot; if selector.present?
+
+          message = &quot;No database connection defined#{selector}.&quot;
+
+          raise ConnectionNotDefined.new(message, connection_name: connection_name, shard: shard, role: role)
+        end
+
+        pool
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_handler.rb#L214" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

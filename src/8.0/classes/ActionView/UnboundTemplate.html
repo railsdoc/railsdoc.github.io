@@ -1,0 +1,197 @@
+---
+title: ActionView::UnboundTemplate
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionView::UnboundTemplate
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionview/lib/action_view/unbound_template_rb.html">actionview/lib/action_view/unbound_template.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-bind_locals">bind_locals</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>details</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>virtual_path</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(source, identifier, details:, virtual_path:)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/unbound_template.rb, line 10
+    def initialize(source, identifier, details:, virtual_path:)
+      @source = source
+      @identifier = identifier
+      @details = details
+      @virtual_path = virtual_path
+
+      @templates = Concurrent::Map.new(initial_capacity: 2)
+      @write_lock = Mutex.new
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionview/lib/action_view/unbound_template.rb#L10" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-bind_locals">
+            
+              bind_locals(locals)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/unbound_template.rb, line 20
+    def bind_locals(locals)
+      unless template = @templates[locals]
+        @write_lock.synchronize do
+          normalized_locals = normalize_locals(locals)
+
+          # We need ||=, both to dedup on the normalized locals and to check
+          # while holding the lock.
+          template = (@templates[normalized_locals] ||= build_template(normalized_locals))
+
+          if template.strict_locals?
+            # Under strict locals, we only need one template.
+            # This replaces the @templates Concurrent::Map with a hash which
+            # returns this template for every key.
+            @templates = Hash.new(template).freeze
+          else
+            # This may have already been assigned, but we&#39;ve already de-dup&#39;d so
+            # reassignment is fine.
+            @templates[locals.dup] = template
+          end
+        end
+      end
+      template
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionview/lib/action_view/unbound_template.rb#L20" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

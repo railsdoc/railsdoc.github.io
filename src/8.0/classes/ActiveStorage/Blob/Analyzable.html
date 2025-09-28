@@ -1,0 +1,206 @@
+---
+title: ActiveStorage::Blob::Analyzable
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveStorage::Blob::Analyzable
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activestorage/app/models/active_storage/blob/analyzable_rb.html">activestorage/app/models/active_storage/blob/analyzable.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveStorage::Blob::Analyzable-label-Active+Storage+Blob+Analyzable">Active Storage Blob Analyzable</h1>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-analyze">analyze</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-analyze_later">analyze_later</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-analyzed-3F">analyzed?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-analyze">
+            
+              analyze()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Extracts and stores metadata from the file associated with this blob using a relevant analyzer. Active Storage comes with built-in analyzers for images and videos. See <a href="../Analyzer/ImageAnalyzer.html"><code>ActiveStorage::Analyzer::ImageAnalyzer</code></a> and <a href="../Analyzer/VideoAnalyzer.html"><code>ActiveStorage::Analyzer::VideoAnalyzer</code></a> for information about the specific attributes they extract and the third-party libraries they require.</p>
+
+<p>To choose the analyzer for a blob, Active Storage calls <code>accept?</code> on each registered analyzer in order. It uses the first analyzer for which <code>accept?</code> returns true when given the blob. If no registered analyzer accepts the blob, no metadata is extracted from it.</p>
+
+<p>In a Rails application, add or remove analyzers by manipulating <a href="../../Rails.html#method-c-application"><code>Rails.application.config.active_storage.analyzers</code></a> in an initializer:</p>
+
+<pre><code># Add a custom analyzer for Microsoft Office documents:
+Rails.application.config.active_storage.analyzers.append DOCXAnalyzer
+
+# Remove the built-in video analyzer:
+Rails.application.config.active_storage.analyzers.delete ActiveStorage::Analyzer::VideoAnalyzer
+</code></pre>
+
+<p>Outside of a Rails application, manipulate <code>ActiveStorage.analyzers</code> instead.</p>
+
+<p>You won’t ordinarily need to call this method from a Rails application. New blobs are automatically and asynchronously analyzed via <a href="Analyzable.html#method-i-analyze_later"><code>analyze_later</code></a> when they’re attached for the first time.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/app/models/active_storage/blob/analyzable.rb, line 29
+  def analyze
+    update! metadata: metadata.merge(extract_metadata_via_analyzer)
+  end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/app/models/active_storage/blob/analyzable.rb#L29" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-analyze_later">
+            
+              analyze_later()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Enqueues an <a href="../AnalyzeJob.html"><code>ActiveStorage::AnalyzeJob</code></a> which calls <a href="Analyzable.html#method-i-analyze"><code>analyze</code></a>, or calls <a href="Analyzable.html#method-i-analyze"><code>analyze</code></a> inline based on analyzer class configuration.</p>
+
+<p>This method is automatically called for a blob when it’s attached for the first time. You can call it to analyze a blob again (e.g. if you add a new analyzer or modify an existing one).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/app/models/active_storage/blob/analyzable.rb, line 37
+  def analyze_later
+    if analyzer_class.analyze_later?
+      ActiveStorage::AnalyzeJob.perform_later(self)
+    else
+      analyze
+    end
+  end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/app/models/active_storage/blob/analyzable.rb#L37" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-analyzed-3F">
+            
+              analyzed?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if the blob has been analyzed.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/app/models/active_storage/blob/analyzable.rb, line 46
+  def analyzed?
+    analyzed
+  end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/app/models/active_storage/blob/analyzable.rb#L46" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

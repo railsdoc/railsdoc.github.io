@@ -1,0 +1,221 @@
+---
+title: ActionMailer::Parameterized
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionMailer::Parameterized
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionmailer/lib/action_mailer/parameterized_rb.html">actionmailer/lib/action_mailer/parameterized.rb</a></li>
+            
+            <li><a href="../../files/actionmailer/lib/action_mailer/test_helper_rb.html">actionmailer/lib/action_mailer/test_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionMailer::Parameterized-label-Action+Mailer+Parameterized">Action Mailer Parameterized</h1>
+
+<p>Provides the option to parameterize mailers in order to share instance variable setup, processing, and common headers.</p>
+
+<p>Consider this example that does not use parameterization:</p>
+
+<pre><code>class InvitationsMailer &lt; ApplicationMailer
+  def account_invitation(inviter, invitee)
+    @account = inviter.account
+    @inviter = inviter
+    @invitee = invitee
+
+    subject = &quot;#{@inviter.name} invited you to their Basecamp (#{@account.name})&quot;
+
+    mail \
+      subject:   subject,
+      to:        invitee.email_address,
+      from:      common_address(inviter),
+      reply_to:  inviter.email_address_with_name
+  end
+
+  def project_invitation(project, inviter, invitee)
+    @account = inviter.account
+    @project = project
+    @inviter = inviter
+    @invitee = invitee
+    @summarizer = ProjectInvitationSummarizer.new(@project.bucket)
+
+    subject = &quot;#{@inviter.name.familiar} added you to a project in Basecamp (#{@account.name})&quot;
+
+    mail \
+      subject:   subject,
+      to:        invitee.email_address,
+      from:      common_address(inviter),
+      reply_to:  inviter.email_address_with_name
+  end
+
+  def bulk_project_invitation(projects, inviter, invitee)
+    @account  = inviter.account
+    @projects = projects.sort_by(&amp;:name)
+    @inviter  = inviter
+    @invitee  = invitee
+
+    subject = &quot;#{@inviter.name.familiar} added you to some new stuff in Basecamp (#{@account.name})&quot;
+
+    mail \
+      subject:   subject,
+      to:        invitee.email_address,
+      from:      common_address(inviter),
+      reply_to:  inviter.email_address_with_name
+  end
+end
+
+InvitationsMailer.account_invitation(person_a, person_b).deliver_later
+</code></pre>
+
+<p>Using parameterized mailers, this can be rewritten as:</p>
+
+<pre><code>class InvitationsMailer &lt; ApplicationMailer
+  before_action { @inviter, @invitee = params[:inviter], params[:invitee] }
+  before_action { @account = params[:inviter].account }
+
+  default to:       -&gt; { @invitee.email_address },
+          from:     -&gt; { common_address(@inviter) },
+          reply_to: -&gt; { @inviter.email_address_with_name }
+
+  def account_invitation
+    mail subject: &quot;#{@inviter.name} invited you to their Basecamp (#{@account.name})&quot;
+  end
+
+  def project_invitation
+    @project    = params[:project]
+    @summarizer = ProjectInvitationSummarizer.new(@project.bucket)
+
+    mail subject: &quot;#{@inviter.name.familiar} added you to a project in Basecamp (#{@account.name})&quot;
+  end
+
+  def bulk_project_invitation
+    @projects = params[:projects].sort_by(&amp;:name)
+
+    mail subject: &quot;#{@inviter.name.familiar} added you to some new stuff in Basecamp (#{@account.name})&quot;
+  end
+end
+
+InvitationsMailer.with(inviter: person_a, invitee: person_b).account_invitation.deliver_later
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Parameterized/ClassMethods.html">ActionMailer::Parameterized::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-params">params</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [W]
+            </td>
+            <td class='attr-name'>params</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-params">
+            
+              params()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/parameterized.rb, line 95
+      def params
+        @params ||= {}
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionmailer/lib/action_mailer/parameterized.rb#L95" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

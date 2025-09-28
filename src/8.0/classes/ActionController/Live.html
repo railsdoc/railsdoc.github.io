@@ -1,0 +1,364 @@
+---
+title: ActionController::Live
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionController::Live
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_controller/metal/live_rb.html">actionpack/lib/action_controller/metal/live.rb</a></li>
+            
+            <li><a href="../../files/actionpack/lib/action_controller/test_case_rb.html">actionpack/lib/action_controller/test_case.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionController::Live-label-Action+Controller+Live">Action Controller <a href="Live.html"><code>Live</code></a></h1>
+
+<p>Mix this module into your controller, and all actions in that controller will be able to stream data to the client as it’s written.</p>
+
+<pre><code>class MyController &lt; ActionController::Base
+  include ActionController::Live
+
+  def stream
+    response.headers[&#39;Content-Type&#39;] = &#39;text/event-stream&#39;
+    100.times {
+      response.stream.write &quot;hello world\n&quot;
+      sleep 1
+    }
+  ensure
+    response.stream.close
+  end
+end
+</code></pre>
+
+<p>There are a few caveats with this module. You <strong>cannot</strong> write headers after the response has been committed (Response#committed? will return truthy). Calling <code>write</code> or <code>close</code> on the response stream will cause the response object to be committed. Make sure all headers are set before calling write or close on your stream.</p>
+
+<p>You <strong>must</strong> call close on your stream when you’re finished, otherwise the socket may be left open forever.</p>
+
+<p>The final caveat is that your actions are executed in a separate thread than the main thread. Make sure your actions are thread safe, and this shouldn’t be a problem (don’t share state across threads, etc).</p>
+
+<p>Note that <a href="../Rails.html"><code>Rails</code></a> includes <code>Rack::ETag</code> by default, which will buffer your response. As a result, streaming responses may not work properly with Rack 2.2.x, and you may need to implement workarounds in your application. You can either set the <code>ETag</code> or <code>Last-Modified</code> response headers or remove <code>Rack::ETag</code> from the middleware stack to address this issue.</p>
+
+<p>Here’s an example of how you can set the <code>Last-Modified</code> header if your Rack version is 2.2.x:</p>
+
+<pre><code>def stream
+  response.headers[&quot;Content-Type&quot;] = &quot;text/event-stream&quot;
+  response.headers[&quot;Last-Modified&quot;] = Time.now.httpdate # Add this line if your Rack version is 2.2.x
+  ...
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Live/ClassMethods.html">ActionController::Live::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Live/ClientDisconnected.html">ActionController::Live::ClientDisconnected</a></li>
+      
+        <li><a href="Live/SSE.html">ActionController::Live::SSE</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-live_thread_pool_executor">live_thread_pool_executor</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-process">process</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-response_body-3D">response_body=</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-send_stream">send_stream</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-live_thread_pool_executor">
+            
+              live_thread_pool_executor()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/live.rb, line 384
+      def self.live_thread_pool_executor
+        @live_thread_pool_executor ||= Concurrent::CachedThreadPool.new(name: &quot;action_controller.live&quot;)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/live.rb#L384" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-process">
+            
+              process(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/live.rb, line 270
+    def process(name)
+      t1 = Thread.current
+      locals = t1.keys.map { |key| [key, t1[key]] }
+
+      error = nil
+      # This processes the action in a child thread. It lets us return the response
+      # code and headers back up the Rack stack, and still process the body in
+      # parallel with sending data to the client.
+      new_controller_thread {
+        ActiveSupport::Dependencies.interlock.running do
+          t2 = Thread.current
+
+          # Since we&#39;re processing the view in a different thread, copy the thread locals
+          # from the main thread to the child thread. :&#39;(
+          locals.each { |k, v| t2[k] = v }
+          ActiveSupport::IsolatedExecutionState.share_with(t1)
+
+          begin
+            super(name)
+          rescue =&gt; e
+            if @_response.committed?
+              begin
+                @_response.stream.write(ActionView::Base.streaming_completion_on_exception) if request.format == :html
+                @_response.stream.call_on_error
+              rescue =&gt; exception
+                log_error(exception)
+              ensure
+                log_error(e)
+                @_response.stream.close
+              end
+            else
+              error = e
+            end
+          ensure
+            ActiveSupport::IsolatedExecutionState.clear
+            clean_up_thread_locals(locals, t2)
+
+            @_response.commit!
+          end
+        end
+      }
+
+      ActiveSupport::Dependencies.interlock.permit_concurrent_loads do
+        @_response.await_commit
+      end
+
+      raise error if error
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/live.rb#L270" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-response_body-3D">
+            
+              response_body=(body)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/live.rb, line 319
+    def response_body=(body)
+      super
+      response.close if response
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/live.rb#L319" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-send_stream">
+            
+              send_stream(filename:, disposition: &quot;attachment&quot;, type: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sends a stream to the browser, which is helpful when you’re generating exports or other running data where you don’t want the entire file buffered in memory first. Similar to send_data, but where the data is generated live.</p>
+
+<h4 id="method-i-send_stream-label-Options-3A">Options:</h4>
+<ul><li>
+<p><code>:filename</code> - suggests a filename for the browser to use.</p>
+</li><li>
+<p><code>:type</code> - specifies an HTTP content type. You can specify either a string or a symbol for a registered type with <a href="../Mime/Type.html#method-c-register"><code>Mime::Type.register</code></a>, for example :json. If omitted, type will be inferred from the file extension specified in <code>:filename</code>. If no content type is registered for the extension, the default type ‘application/octet-stream’ will be used.</p>
+</li><li>
+<p><code>:disposition</code> - specifies whether the file will be shown inline or downloaded. Valid values are ‘inline’ and ‘attachment’ (default).</p>
+</li></ul>
+
+<p>Example of generating a csv export:</p>
+
+<pre><code>send_stream(filename: &quot;subscribers.csv&quot;) do |stream|
+  stream.write &quot;email_address,updated_at\n&quot;
+
+  @subscribers.find_each do |subscriber|
+    stream.write &quot;#{subscriber.email_address},#{subscriber.updated_at}\n&quot;
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/live.rb, line 349
+    def send_stream(filename:, disposition: &quot;attachment&quot;, type: nil)
+      payload = { filename: filename, disposition: disposition, type: type }
+      ActiveSupport::Notifications.instrument(&quot;send_stream.action_controller&quot;, payload) do
+        response.headers[&quot;Content-Type&quot;] =
+          (type.is_a?(Symbol) ? Mime[type].to_s : type) ||
+          Mime::Type.lookup_by_extension(File.extname(filename).downcase.delete(&quot;.&quot;))&amp;.to_s ||
+          &quot;application/octet-stream&quot;
+
+        response.headers[&quot;Content-Disposition&quot;] =
+          ActionDispatch::Http::ContentDisposition.format(disposition: disposition, filename: filename)
+
+        yield response.stream
+      end
+    ensure
+      response.stream.close
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/live.rb#L349" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,349 @@
+---
+title: ActionView::Helpers::RenderingHelper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionView::Helpers::RenderingHelper
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionview/lib/action_view/helpers/rendering_helper_rb.html">actionview/lib/action_view/helpers/rendering_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionView::Helpers::RenderingHelper-label-Action+View+Rendering+Helpers">Action View <a href="../Rendering.html"><code>Rendering</code></a> <a href="../Helpers.html"><code>Helpers</code></a></h1>
+
+<p>Implements methods that allow rendering from a view context. In order to use this module, all you need is to implement view_renderer that returns an <a href="../Renderer.html"><code>ActionView::Renderer</code></a> object.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-_layout_for">_layout_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-render">render</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-_layout_for">
+            
+              _layout_for(*args, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Overrides <a href="RenderingHelper.html#method-i-_layout_for"><code>_layout_for</code></a> in the context object so it supports the case a block is passed to a partial. Returns the contents that are yielded to a layout, given a name or a block.</p>
+
+<p>You can think of a layout as a method that is called with a block. If the user calls <code>yield :some_name</code>, the block, by default, returns <code>content_for(:some_name)</code>. If the user calls simply <code>yield</code>, the default block returns <code>content_for(:layout)</code>.</p>
+
+<p>The user can override this default by passing a block to the layout:</p>
+
+<pre><code># The template
+&lt;%= render layout: &quot;my_layout&quot; do %&gt;
+  Content
+&lt;% end %&gt;
+
+# The layout
+&lt;html&gt;
+  &lt;%= yield %&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>In this case, instead of the default block, which would return <code>content_for(:layout)</code>, this method returns the block that was passed in to <code>render :layout</code>, and the response would be</p>
+
+<pre><code>&lt;html&gt;
+  Content
+&lt;/html&gt;
+</code></pre>
+
+<p>Finally, the block can take block arguments, which can be passed in by <code>yield</code>:</p>
+
+<pre><code># The template
+&lt;%= render layout: &quot;my_layout&quot; do |customer| %&gt;
+  Hello &lt;%= customer.name %&gt;
+&lt;% end %&gt;
+
+# The layout
+&lt;html&gt;
+  &lt;%= yield Struct.new(:name).new(&quot;David&quot;) %&gt;
+&lt;/html&gt;
+</code></pre>
+
+<p>In this case, the layout would receive the block passed into <code>render :layout</code>, and the struct specified would be passed into the block as an argument. The result would be</p>
+
+<pre><code>&lt;html&gt;
+  Hello David
+&lt;/html&gt;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/rendering_helper.rb, line 207
+      def _layout_for(*args, &amp;block)
+        name = args.first
+
+        if block &amp;&amp; !name.is_a?(Symbol)
+          capture(*args, &amp;block)
+        else
+          super
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionview/lib/action_view/helpers/rendering_helper.rb#L207" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-render">
+            
+              render(options = {}, locals = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Renders a template and returns the result.</p>
+
+<p>Pass the template to render as the first argument. This is shorthand syntax for partial rendering, so the template filename should be prefixed with an underscore. The partial renderer looks for the partial template in the directory of the calling template first.</p>
+
+<pre><code>&lt;% # app/views/posts/new.html.erb %&gt;
+&lt;%= render &quot;form&quot; %&gt;
+# =&gt; renders app/views/posts/_form.html.erb
+</code></pre>
+
+<p>Use the complete view path to render a partial from another directory.</p>
+
+<pre><code>&lt;% # app/views/posts/show.html.erb %&gt;
+&lt;%= render &quot;comments/form&quot; %&gt;
+# =&gt; renders app/views/comments/_form.html.erb
+</code></pre>
+
+<p>Without the rendering mode, the second argument can be a <a href="../../Hash.html"><code>Hash</code></a> of local variable assignments for the template.</p>
+
+<pre><code>&lt;% # app/views/posts/new.html.erb %&gt;
+&lt;%= render &quot;form&quot;, post: Post.new %&gt;
+# =&gt; renders app/views/posts/_form.html.erb
+</code></pre>
+
+<p>If the first argument responds to <code>render_in</code>, the template will be rendered by calling <code>render_in</code> with the current view context.</p>
+
+<pre><code>class Greeting
+  def render_in(view_context)
+    view_context.render html: &quot;&lt;h1&gt;Hello, World&lt;/h1&gt;&quot;
+  end
+
+  def format
+    :html
+  end
+end
+
+&lt;%= render Greeting.new %&gt;
+# =&gt; &quot;&lt;h1&gt;Hello, World&lt;/h1&gt;&quot;
+</code></pre>
+
+<h4 id="method-i-render-label-Rendering+Mode"><a href="../Rendering.html"><code>Rendering</code></a> Mode</h4>
+
+<p>Pass the rendering mode as first argument to override it.</p>
+<dl class="rdoc-list note-list"><dt><code>:partial</code></dt>
+<dd>
+<p>See <a href="../PartialRenderer.html"><code>ActionView::PartialRenderer</code></a> for details.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render partial: &quot;form&quot;, locals: { post: Post.new } %&gt;
+    # =&gt; renders app/views/posts/_form.html.erb
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:file</code></dt>
+<dd>
+<p>Renders the contents of a file. This option should <strong>not</strong> be used with unsanitized user input.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render file: &quot;/path/to/some/file&quot; %&gt;
+    # =&gt; renders /path/to/some/file
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:inline</code></dt>
+<dd>
+<p>Renders an <a href="../../ERB.html"><code>ERB</code></a> template string.</p>
+</dd></dl>
+
+<pre><code>    &lt;% name = &quot;World&quot; %&gt;
+    &lt;%= render inline: &quot;&lt;h1&gt;Hello, &lt;%= name %&gt;!&lt;/h1&gt;&quot; %&gt;
+    # =&gt; renders &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:body</code></dt>
+<dd>
+<p>Renders the provided text, and sets the format as <code>:text</code>.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render body: &quot;Hello, World!&quot; %&gt;
+    # =&gt; renders &quot;Hello, World!&quot;
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:plain</code></dt>
+<dd>
+<p>Renders the provided text, and sets the format as <code>:text</code>.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render plain: &quot;Hello, World!&quot; %&gt;
+    # =&gt; renders &quot;Hello, World!&quot;
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:html</code></dt>
+<dd>
+<p>Renders the provided HTML string, and sets the format as <code>:html</code>. If the string is not <code>html_safe?</code>, performs HTML escaping on the string before rendering.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render html: &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;.html_safe %&gt;
+    # =&gt; renders &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;
+
+    &lt;%= render html: &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot; %&gt;
+    # =&gt; renders &quot;&amp;lt;h1&amp;gt;Hello, World!&amp;lt;/h1&amp;gt;&quot;
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:renderable</code></dt>
+<dd>
+<p>Renders the provided object by calling <code>render_in</code> with the current view context. The format is determined by calling <code>format</code> on the renderable if it responds to <code>format</code>, falling back to <code>:html</code> by default.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render renderable: Greeting.new %&gt;
+    # =&gt; renders &quot;&lt;h1&gt;Hello, World&lt;/h1&gt;&quot;
+</code></pre>
+
+<h4 id="method-i-render-label-Options">Options</h4>
+<dl class="rdoc-list note-list"><dt><code>:locals</code></dt>
+<dd>
+<p><a href="../../Hash.html"><code>Hash</code></a> of local variable assignments for the template.</p>
+</dd></dl>
+
+<pre><code>    &lt;%= render inline: &quot;&lt;h1&gt;Hello, &lt;%= name %&gt;!&lt;/h1&gt;&quot;, locals: { name: &quot;World&quot; } %&gt;
+    # =&gt; renders &quot;&lt;h1&gt;Hello, World!&lt;/h1&gt;&quot;
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:formats</code></dt>
+<dd>
+<p>Override the current format to render a template for a different format.</p>
+</dd></dl>
+
+<pre><code>    &lt;% # app/views/posts/show.html.erb %&gt;
+    &lt;%= render template: &quot;posts/content&quot;, formats: [:text] %&gt;
+    # =&gt; renders app/views/posts/content.text.erb
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:variants</code></dt>
+<dd>
+<p>Render a template for a different variant.</p>
+</dd></dl>
+
+<pre><code>    &lt;% # app/views/posts/show.html.erb %&gt;
+    &lt;%= render template: &quot;posts/content&quot;, variants: [:tablet] %&gt;
+    # =&gt; renders app/views/posts/content.html+tablet.erb
+</code></pre>
+<dl class="rdoc-list note-list"><dt><code>:handlers</code></dt>
+<dd>
+<p>Render a template for a different handler.</p>
+</dd></dl>
+
+<pre><code>    &lt;% # app/views/posts/show.html.erb %&gt;
+    &lt;%= render template: &quot;posts/content&quot;, handlers: [:builder] %&gt;
+    # =&gt; renders app/views/posts/content.html.builder
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionview/lib/action_view/helpers/rendering_helper.rb, line 138
+      def render(options = {}, locals = {}, &amp;block)
+        case options
+        when Hash
+          in_rendering_context(options) do |renderer|
+            if block_given?
+              view_renderer.render_partial(self, options.merge(partial: options[:layout]), &amp;block)
+            else
+              view_renderer.render(self, options)
+            end
+          end
+        else
+          if options.respond_to?(:render_in)
+            options.render_in(self, &amp;block)
+          else
+            view_renderer.render_partial(self, partial: options, locals: locals, &amp;block)
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionview/lib/action_view/helpers/rendering_helper.rb#L138" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

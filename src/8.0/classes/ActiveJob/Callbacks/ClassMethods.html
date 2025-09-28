@@ -1,0 +1,399 @@
+---
+title: ActiveJob::Callbacks::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveJob::Callbacks::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activejob/lib/active_job/callbacks_rb.html">activejob/lib/active_job/callbacks.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>These methods will be included into any Active Job object, adding callbacks for <code>perform</code> and <code>enqueue</code> methods.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-after_enqueue">after_enqueue</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-after_perform">after_perform</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-around_enqueue">around_enqueue</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-around_perform">around_perform</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-before_enqueue">before_enqueue</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-before_perform">before_perform</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-after_enqueue">
+            
+              after_enqueue(*filters, &amp;blk)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Defines a callback that will get called right after the job is enqueued.</p>
+
+<pre><code>class VideoProcessJob &lt; ActiveJob::Base
+  queue_as :default
+
+  after_enqueue do |job|
+    result = job.successfully_enqueued? ? &quot;success&quot; : &quot;failure&quot;
+    $statsd.increment &quot;enqueue-video-job.#{result}&quot;
+  end
+
+  def perform(video_id)
+    Video.find(video_id).process
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/callbacks.rb, line 141
+      def after_enqueue(*filters, &amp;blk)
+        set_callback(:enqueue, :after, *filters, &amp;blk)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activejob/lib/active_job/callbacks.rb#L141" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-after_perform">
+            
+              after_perform(*filters, &amp;blk)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Defines a callback that will get called right after the job’s perform method has finished.</p>
+
+<pre><code>class VideoProcessJob &lt; ActiveJob::Base
+  queue_as :default
+
+  after_perform do |job|
+    UserMailer.notify_video_processed(job.arguments.first)
+  end
+
+  def perform(video_id)
+    Video.find(video_id).process
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/callbacks.rb, line 69
+      def after_perform(*filters, &amp;blk)
+        set_callback(:perform, :after, *filters, &amp;blk)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activejob/lib/active_job/callbacks.rb#L69" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-around_enqueue">
+            
+              around_enqueue(*filters, &amp;blk)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Defines a callback that will get called around the enqueuing of the job.</p>
+
+<pre><code>class VideoProcessJob &lt; ActiveJob::Base
+  queue_as :default
+
+  around_enqueue do |job, block|
+    $statsd.time &quot;video-job.process&quot; do
+      block.call
+    end
+  end
+
+  def perform(video_id)
+    Video.find(video_id).process
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/callbacks.rb, line 162
+      def around_enqueue(*filters, &amp;blk)
+        set_callback(:enqueue, :around, *filters, &amp;blk)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activejob/lib/active_job/callbacks.rb#L162" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-around_perform">
+            
+              around_perform(*filters, &amp;blk)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Defines a callback that will get called around the job’s perform method.</p>
+
+<pre><code>class VideoProcessJob &lt; ActiveJob::Base
+  queue_as :default
+
+  around_perform do |job, block|
+    UserMailer.notify_video_started_processing(job.arguments.first)
+    block.call
+    UserMailer.notify_video_processed(job.arguments.first)
+  end
+
+  def perform(video_id)
+    Video.find(video_id).process
+  end
+end
+</code></pre>
+
+<p>You can access the return value of the job only if the execution wasn’t halted.</p>
+
+<pre><code>class VideoProcessJob &lt; ActiveJob::Base
+  around_perform do |job, block|
+    value = block.call
+    puts value # =&gt; &quot;Hello World!&quot;
+  end
+
+  def perform
+    &quot;Hello World!&quot;
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/callbacks.rb, line 102
+      def around_perform(*filters, &amp;blk)
+        set_callback(:perform, :around, *filters, &amp;blk)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activejob/lib/active_job/callbacks.rb#L102" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-before_enqueue">
+            
+              before_enqueue(*filters, &amp;blk)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Defines a callback that will get called right before the job is enqueued.</p>
+
+<pre><code>class VideoProcessJob &lt; ActiveJob::Base
+  queue_as :default
+
+  before_enqueue do |job|
+    $statsd.increment &quot;enqueue-video-job.try&quot;
+  end
+
+  def perform(video_id)
+    Video.find(video_id).process
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/callbacks.rb, line 121
+      def before_enqueue(*filters, &amp;blk)
+        set_callback(:enqueue, :before, *filters, &amp;blk)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activejob/lib/active_job/callbacks.rb#L121" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-before_perform">
+            
+              before_perform(*filters, &amp;blk)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Defines a callback that will get called right before the job’s perform method is executed.</p>
+
+<pre><code>class VideoProcessJob &lt; ActiveJob::Base
+  queue_as :default
+
+  before_perform do |job|
+    UserMailer.notify_video_started_processing(job.arguments.first)
+  end
+
+  def perform(video_id)
+    Video.find(video_id).process
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/callbacks.rb, line 50
+      def before_perform(*filters, &amp;blk)
+        set_callback(:perform, :before, *filters, &amp;blk)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activejob/lib/active_job/callbacks.rb#L50" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

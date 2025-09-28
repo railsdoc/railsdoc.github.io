@@ -1,0 +1,234 @@
+---
+title: ActiveSupport::Callbacks
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Callbacks
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/callbacks_rb.html">activesupport/lib/active_support/callbacks.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveSupport::Callbacks-label-Active+Support+Callbacks">Active Support Callbacks</h1>
+
+<p>Callbacks are code hooks that are run at key points in an object’s life cycle. The typical use case is to have a base class define a set of callbacks relevant to the other functionality it supplies, so that subclasses can install callbacks that enhance or modify the base functionality without needing to override or redefine methods of the base class.</p>
+
+<p>Mixing in this module allows you to define the events in the object’s life cycle that will support callbacks (via <a href="Callbacks/ClassMethods.html#method-i-define_callbacks"><code>ClassMethods#define_callbacks</code></a>), set the instance methods, procs, or callback objects to be called (via <a href="Callbacks/ClassMethods.html#method-i-set_callback"><code>ClassMethods#set_callback</code></a>), and run the installed callbacks at the appropriate times (via <a href="Callbacks.html#method-i-run_callbacks"><code>run_callbacks</code></a>).</p>
+
+<p>By default callbacks are halted by throwing <code>:abort</code>. See <a href="Callbacks/ClassMethods.html#method-i-define_callbacks"><code>ClassMethods#define_callbacks</code></a> for details.</p>
+
+<p>Three kinds of callbacks are supported: before callbacks, run before a certain event; after callbacks, run after the event; and around callbacks, blocks that surround the event, triggering it when they yield. Callback code can be contained in instance methods, procs or lambdas, or callback objects that respond to certain predetermined methods. See <a href="Callbacks/ClassMethods.html#method-i-set_callback"><code>ClassMethods#set_callback</code></a> for details.</p>
+
+<pre><code>class Record
+  include ActiveSupport::Callbacks
+  define_callbacks :save
+
+  def save
+    run_callbacks :save do
+      puts &quot;- save&quot;
+    end
+  end
+end
+
+class PersonRecord &lt; Record
+  set_callback :save, :before, :saving_message
+  def saving_message
+    puts &quot;saving...&quot;
+  end
+
+  set_callback :save, :after do |object|
+    puts &quot;saved&quot;
+  end
+end
+
+person = PersonRecord.new
+person.save
+</code></pre>
+
+<p>Output:</p>
+
+<pre><code>saving...
+- save
+saved
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Callbacks/CallTemplate.html">ActiveSupport::Callbacks::CallTemplate</a></li>
+      
+        <li><a href="Callbacks/ClassMethods.html">ActiveSupport::Callbacks::ClassMethods</a></li>
+      
+        <li><a href="Callbacks/Conditionals.html">ActiveSupport::Callbacks::Conditionals</a></li>
+      
+        <li><a href="Callbacks/Filters.html">ActiveSupport::Callbacks::Filters</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-run_callbacks">run_callbacks</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">CALLBACK_FILTER_TYPES</td>
+            <td>=</td>
+            <td class="attr-value">[:before, :after, :around].freeze</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-run_callbacks">
+            
+              run_callbacks(kind, type = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Runs the callbacks for the given event.</p>
+
+<p>Calls the before and around callbacks in the order they were set, yields the block (if given one), and then runs the after callbacks in reverse order.</p>
+
+<p>If the callback chain was halted, returns <code>false</code>. Otherwise returns the result of the block, <code>nil</code> if no callbacks have been set, or <code>true</code> if callbacks have been set but no block is given.</p>
+
+<pre><code>run_callbacks :save do
+  save
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 96
+    def run_callbacks(kind, type = nil)
+      callbacks = __callbacks[kind.to_sym]
+
+      if callbacks.empty?
+        yield if block_given?
+      else
+        env = Filters::Environment.new(self, false, nil)
+
+        next_sequence = callbacks.compile(type)
+
+        # Common case: no &#39;around&#39; callbacks defined
+        if next_sequence.final?
+          next_sequence.invoke_before(env)
+          env.value = !env.halted &amp;&amp; (!block_given? || yield)
+          next_sequence.invoke_after(env)
+          env.value
+        else
+          invoke_sequence = Proc.new do
+            skipped = nil
+
+            while true
+              current = next_sequence
+              current.invoke_before(env)
+              if current.final?
+                env.value = !env.halted &amp;&amp; (!block_given? || yield)
+              elsif current.skip?(env)
+                (skipped ||= []) &lt;&lt; current
+                next_sequence = next_sequence.nested
+                next
+              else
+                next_sequence = next_sequence.nested
+                begin
+                  target, block, method, *arguments = current.expand_call_template(env, invoke_sequence)
+                  target.send(method, *arguments, &amp;block)
+                ensure
+                  next_sequence = current
+                end
+              end
+              current.invoke_after(env)
+              skipped.pop.invoke_after(env) while skipped&amp;.first
+              break env.value
+            end
+          end
+
+          invoke_sequence.call
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/callbacks.rb#L96" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

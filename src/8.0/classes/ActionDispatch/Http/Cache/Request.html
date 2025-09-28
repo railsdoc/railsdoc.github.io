@@ -1,0 +1,339 @@
+---
+title: ActionDispatch::Http::Cache::Request
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionDispatch::Http::Cache::Request
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/actionpack/lib/action_dispatch/http/cache_rb.html">actionpack/lib/action_dispatch/http/cache.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-etag_matches-3F">etag_matches?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-fresh-3F">fresh?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-if_modified_since">if_modified_since</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-if_none_match">if_none_match</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-if_none_match_etags">if_none_match_etags</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-not_modified-3F">not_modified?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">HTTP_IF_MODIFIED_SINCE</td>
+            <td>=</td>
+            <td class="attr-value">&quot;HTTP_IF_MODIFIED_SINCE&quot;</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">HTTP_IF_NONE_MATCH</td>
+            <td>=</td>
+            <td class="attr-value">&quot;HTTP_IF_NONE_MATCH&quot;</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-etag_matches-3F">
+            
+              etag_matches?(etag)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 32
+        def etag_matches?(etag)
+          if etag
+            validators = if_none_match_etags
+            validators.include?(etag) || validators.include?(&quot;*&quot;)
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/http/cache.rb#L32" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-fresh-3F">
+            
+              fresh?(response)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Check response freshness (<code>Last-Modified</code> and <code>ETag</code>) against request <code>If-Modified-Since</code> and <code>If-None-Match</code> conditions. If both headers are supplied, based on configuration, either <code>ETag</code> is preferred over <code>Last-Modified</code> or both are considered equally. You can adjust the preference with <code>config.action_dispatch.strict_freshness</code>. Reference: <a href="http://tools.ietf.org/html/rfc7232#section-6">tools.ietf.org/html/rfc7232#section-6</a></p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 45
+        def fresh?(response)
+          if Request.strict_freshness
+            if if_none_match
+              etag_matches?(response.etag)
+            elsif if_modified_since
+              not_modified?(response.last_modified)
+            else
+              false
+            end
+          else
+            last_modified = if_modified_since
+            etag          = if_none_match
+
+            return false unless last_modified || etag
+
+            success = true
+            success &amp;&amp;= not_modified?(response.last_modified) if last_modified
+            success &amp;&amp;= etag_matches?(response.etag) if etag
+            success
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/http/cache.rb#L45" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-if_modified_since">
+            
+              if_modified_since()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 14
+        def if_modified_since
+          if since = get_header(HTTP_IF_MODIFIED_SINCE)
+            Time.rfc2822(since) rescue nil
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/http/cache.rb#L14" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-if_none_match">
+            
+              if_none_match()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 20
+        def if_none_match
+          get_header HTTP_IF_NONE_MATCH
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/http/cache.rb#L20" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-if_none_match_etags">
+            
+              if_none_match_etags()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 24
+        def if_none_match_etags
+          if_none_match ? if_none_match.split(&quot;,&quot;).each(&amp;:strip!) : []
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/http/cache.rb#L24" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-not_modified-3F">
+            
+              not_modified?(modified_at)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/http/cache.rb, line 28
+        def not_modified?(modified_at)
+          if_modified_since &amp;&amp; modified_at &amp;&amp; if_modified_since &gt;= modified_at
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/http/cache.rb#L28" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

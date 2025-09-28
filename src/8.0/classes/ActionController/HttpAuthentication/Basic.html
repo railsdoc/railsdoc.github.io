@@ -1,0 +1,455 @@
+---
+title: ActionController::HttpAuthentication::Basic
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionController::HttpAuthentication::Basic
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionpack/lib/action_controller/metal/http_authentication_rb.html">actionpack/lib/action_controller/metal/http_authentication.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionController::HttpAuthentication::Basic-label-HTTP+Basic+authentication">HTTP <a href="Basic.html"><code>Basic</code></a> authentication</h1>
+
+<h3 id="module-ActionController::HttpAuthentication::Basic-label-Simple+Basic+example">Simple <a href="Basic.html"><code>Basic</code></a> example</h3>
+
+<pre><code>class PostsController &lt; ApplicationController
+  http_basic_authenticate_with name: &quot;dhh&quot;, password: &quot;secret&quot;, except: :index
+
+  def index
+    render plain: &quot;Everyone can see me!&quot;
+  end
+
+  def edit
+    render plain: &quot;I&#39;m only accessible if you know the password&quot;
+  end
+end
+</code></pre>
+
+<h3 id="module-ActionController::HttpAuthentication::Basic-label-Advanced+Basic+example">Advanced <a href="Basic.html"><code>Basic</code></a> example</h3>
+
+<p>Here is a more advanced <a href="Basic.html"><code>Basic</code></a> example where only Atom feeds and the XML <a href="../API.html"><code>API</code></a> are protected by HTTP authentication. The regular HTML interface is protected by a session approach:</p>
+
+<pre><code>class ApplicationController &lt; ActionController::Base
+  before_action :set_account, :authenticate
+
+  private
+    def set_account
+      @account = Account.find_by(url_name: request.subdomains.first)
+    end
+
+    def authenticate
+      case request.format
+      when Mime[:xml], Mime[:atom]
+        if user = authenticate_with_http_basic { |u, p| @account.users.authenticate(u, p) }
+          @current_user = user
+        else
+          request_http_basic_authentication
+        end
+      else
+        if session_authenticated?
+          @current_user = @account.users.find(session[:authenticated][:user_id])
+        else
+          redirect_to(login_url) and return false
+        end
+      end
+    end
+end
+</code></pre>
+
+<p>In your integration tests, you can do something like this:</p>
+
+<pre><code>def test_access_granted_from_xml
+  authorization = ActionController::HttpAuthentication::Basic.encode_credentials(users(:dhh).name, users(:dhh).password)
+
+  get &quot;/notes/1.xml&quot;, headers: { &#39;HTTP_AUTHORIZATION&#39; =&gt; authorization }
+
+  assert_equal 200, status
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Basic/ControllerMethods.html">ActionController::HttpAuthentication::Basic::ControllerMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-auth_param">auth_param</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-auth_scheme">auth_scheme</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-authenticate">authenticate</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-authentication_request">authentication_request</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-decode_credentials">decode_credentials</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-encode_credentials">encode_credentials</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-has_basic_credentials-3F">has_basic_credentials?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-user_name_and_password">user_name_and_password</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-auth_param">
+            
+              auth_param(request)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 130
+      def auth_param(request)
+        request.authorization.to_s.split(&quot; &quot;, 2).second
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L130" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-auth_scheme">
+            
+              auth_scheme(request)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 126
+      def auth_scheme(request)
+        request.authorization.to_s.split(&quot; &quot;, 2).first
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L126" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-authenticate">
+            
+              authenticate(request, &amp;login_procedure)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 108
+      def authenticate(request, &amp;login_procedure)
+        if has_basic_credentials?(request)
+          login_procedure.call(*user_name_and_password(request))
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L108" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-authentication_request">
+            
+              authentication_request(controller, realm, message)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 138
+      def authentication_request(controller, realm, message)
+        message ||= &quot;HTTP Basic: Access denied.\n&quot;
+        controller.headers[&quot;WWW-Authenticate&quot;] = %(Basic realm=&quot;#{realm.tr(&#39;&quot;&#39;, &quot;&quot;)}&quot;)
+        controller.status = 401
+        controller.response_body = message
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L138" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-decode_credentials">
+            
+              decode_credentials(request)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 122
+      def decode_credentials(request)
+        ::Base64.decode64(auth_param(request) || &quot;&quot;)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L122" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-encode_credentials">
+            
+              encode_credentials(user_name, password)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 134
+      def encode_credentials(user_name, password)
+        &quot;Basic #{::Base64.strict_encode64(&quot;#{user_name}:#{password}&quot;)}&quot;
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L134" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-has_basic_credentials-3F">
+            
+              has_basic_credentials?(request)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 114
+      def has_basic_credentials?(request)
+        request.authorization.present? &amp;&amp; (auth_scheme(request).downcase == &quot;basic&quot;)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L114" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-user_name_and_password">
+            
+              user_name_and_password(request)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 118
+      def user_name_and_password(request)
+        decode_credentials(request).split(&quot;:&quot;, 2)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L118" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,243 @@
+---
+title: ActiveSupport::Logger
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::Logger
+            
+                <span class="parent">&lt;
+                    
+                    Logger
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/logger_rb.html">activesupport/lib/active_support/logger.rb</a></li>
+            
+            <li><a href="../../files/activesupport/lib/active_support/logger_thread_safe_level_rb.html">activesupport/lib/active_support/logger_thread_safe_level.rb</a></li>
+            
+            <li><a href="../../files/activesupport/lib/active_support/tagged_logging_rb.html">activesupport/lib/active_support/tagged_logging.rb</a></li>
+            
+            <li><a href="../../files/railties/lib/rails/application/bootstrap_rb.html">railties/lib/rails/application/bootstrap.rb</a></li>
+            
+            <li><a href="../../files/railties/lib/rails/application/configuration_rb.html">railties/lib/rails/application/configuration.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Logger/SimpleFormatter.html">ActiveSupport::Logger::SimpleFormatter</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-logger_outputs_to-3F">logger_outputs_to?</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-normalize_sources">normalize_sources</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="LoggerSilence.html">
+              ActiveSupport::LoggerSilence
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-logger_outputs_to-3F">
+            
+              logger_outputs_to?(logger, *sources)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true if the logger destination matches one of the sources</p>
+
+<pre><code>logger = Logger.new(STDOUT)
+ActiveSupport::Logger.logger_outputs_to?(logger, STDOUT)
+# =&gt; true
+
+logger = Logger.new(&#39;/var/log/rails.log&#39;)
+ActiveSupport::Logger.logger_outputs_to?(logger, &#39;/var/log/rails.log&#39;)
+# =&gt; true
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/logger.rb, line 20
+    def self.logger_outputs_to?(logger, *sources)
+      loggers = if logger.is_a?(BroadcastLogger)
+        logger.broadcasts
+      else
+        [logger]
+      end
+
+      logdevs = loggers.map { |logger| logger.instance_variable_get(:@logdev) }
+      logger_sources = logdevs.filter_map { |logdev| logdev.try(:filename) || logdev.try(:dev) }
+
+      normalize_sources(sources).intersect?(normalize_sources(logger_sources))
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/logger.rb#L20" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(*args, **kwargs)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/logger.rb, line 33
+    def initialize(*args, **kwargs)
+      super
+      @formatter ||= SimpleFormatter.new
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/logger.rb#L33" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-normalize_sources">
+            
+              normalize_sources(sources)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/logger.rb, line 47
+      def self.normalize_sources(sources)
+        sources.map do |source|
+          source = source.path if source.respond_to?(:path)
+          source = File.realpath(source) if source.is_a?(String) &amp;&amp; File.exist?(source)
+          source
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/logger.rb#L47" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+    
+  
+</div>
+
+    </div>
+</div>

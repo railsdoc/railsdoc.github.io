@@ -1,0 +1,279 @@
+---
+title: Digest::UUID
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            Digest::UUID
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/core_ext/digest/uuid_rb.html">activesupport/lib/active_support/core_ext/digest/uuid.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-nil_uuid">nil_uuid</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-uuid_from_hash">uuid_from_hash</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-uuid_v3">uuid_v3</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-uuid_v4">uuid_v4</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-uuid_v5">uuid_v5</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-nil_uuid">
+            
+              nil_uuid()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the nil <a href="UUID.html"><code>UUID</code></a>. This is a special form of <a href="UUID.html"><code>UUID</code></a> that is specified to have all 128 bits set to zero.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/digest/uuid.rb, line 58
+    def self.nil_uuid
+      &quot;00000000-0000-0000-0000-000000000000&quot;
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/core_ext/digest/uuid.rb#L58" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-uuid_from_hash">
+            
+              uuid_from_hash(hash_class, namespace, name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Generates a v5 non-random <a href="UUID.html"><code>UUID</code></a> (Universally Unique IDentifier).</p>
+
+<p>Using OpenSSL::Digest::MD5 generates version 3 UUIDs; OpenSSL::Digest::SHA1 generates version 5 UUIDs. <a href="UUID.html#method-c-uuid_from_hash"><code>uuid_from_hash</code></a> always generates the same <a href="UUID.html"><code>UUID</code></a> for a given name and namespace combination.</p>
+
+<p>See RFC 4122 for details of <a href="UUID.html"><code>UUID</code></a> at: <a href="https://www.ietf.org/rfc/rfc4122.txt">www.ietf.org/rfc/rfc4122.txt</a></p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/digest/uuid.rb, line 19
+    def self.uuid_from_hash(hash_class, namespace, name)
+      if hash_class == Digest::MD5 || hash_class == OpenSSL::Digest::MD5
+        version = 3
+      elsif hash_class == Digest::SHA1 || hash_class == OpenSSL::Digest::SHA1
+        version = 5
+      else
+        raise ArgumentError, &quot;Expected OpenSSL::Digest::SHA1 or OpenSSL::Digest::MD5, got #{hash_class.name}.&quot;
+      end
+
+      uuid_namespace = pack_uuid_namespace(namespace)
+
+      hash = hash_class.new
+      hash.update(uuid_namespace)
+      hash.update(name)
+
+      ary = hash.digest.unpack(&quot;NnnnnN&quot;)
+      ary[2] = (ary[2] &amp; 0x0FFF) | (version &lt;&lt; 12)
+      ary[3] = (ary[3] &amp; 0x3FFF) | 0x8000
+
+      &quot;%08x-%04x-%04x-%04x-%04x%08x&quot; % ary
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/core_ext/digest/uuid.rb#L19" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-uuid_v3">
+            
+              uuid_v3(uuid_namespace, name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Convenience method for <a href="UUID.html#method-c-uuid_from_hash"><code>uuid_from_hash</code></a> using OpenSSL::Digest::MD5.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/digest/uuid.rb, line 42
+    def self.uuid_v3(uuid_namespace, name)
+      uuid_from_hash(OpenSSL::Digest::MD5, uuid_namespace, name)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/core_ext/digest/uuid.rb#L42" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-uuid_v4">
+            
+              uuid_v4()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Convenience method for SecureRandom.uuid.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/digest/uuid.rb, line 52
+    def self.uuid_v4
+      SecureRandom.uuid
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/core_ext/digest/uuid.rb#L52" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-uuid_v5">
+            
+              uuid_v5(uuid_namespace, name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Convenience method for <a href="UUID.html#method-c-uuid_from_hash"><code>uuid_from_hash</code></a> using OpenSSL::Digest::SHA1.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/digest/uuid.rb, line 47
+    def self.uuid_v5(uuid_namespace, name)
+      uuid_from_hash(OpenSSL::Digest::SHA1, uuid_namespace, name)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/core_ext/digest/uuid.rb#L47" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+    
+  
+</div>
+
+    </div>
+</div>

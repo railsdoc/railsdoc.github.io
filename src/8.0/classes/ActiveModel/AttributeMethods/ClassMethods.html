@@ -1,0 +1,616 @@
+---
+title: ActiveModel::AttributeMethods::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveModel::AttributeMethods::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activemodel/lib/active_model/attribute_methods_rb.html">activemodel/lib/active_model/attribute_methods.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-alias_attribute">alias_attribute</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attribute_alias">attribute_alias</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attribute_alias-3F">attribute_alias?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attribute_method_affix">attribute_method_affix</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attribute_method_prefix">attribute_method_prefix</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attribute_method_suffix">attribute_method_suffix</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-define_attribute_method">define_attribute_method</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-define_attribute_methods">define_attribute_methods</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-undefine_attribute_methods">undefine_attribute_methods</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-alias_attribute">
+            
+              alias_attribute(new_name, old_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Allows you to make aliases for attributes.</p>
+
+<pre><code>class Person
+  include ActiveModel::AttributeMethods
+
+  attr_accessor :name
+  attribute_method_suffix &#39;_short?&#39;
+  define_attribute_methods :name
+
+  alias_attribute :nickname, :name
+
+  private
+    def attribute_short?(attr)
+      send(attr).length &lt; 5
+    end
+end
+
+person = Person.new
+person.name = &#39;Bob&#39;
+person.name            # =&gt; &quot;Bob&quot;
+person.nickname        # =&gt; &quot;Bob&quot;
+person.name_short?     # =&gt; true
+person.nickname_short? # =&gt; true
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attribute_methods.rb, line 203
+      def alias_attribute(new_name, old_name)
+        old_name = old_name.to_s
+        new_name = new_name.to_s
+        self.attribute_aliases = attribute_aliases.merge(new_name =&gt; old_name)
+        aliases_by_attribute_name[old_name] &lt;&lt; new_name
+        eagerly_generate_alias_attribute_methods(new_name, old_name)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/attribute_methods.rb#L203" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attribute_alias">
+            
+              attribute_alias(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the original name for the alias <code>name</code></p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attribute_methods.rb, line 245
+      def attribute_alias(name)
+        attribute_aliases[name.to_s]
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/attribute_methods.rb#L245" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attribute_alias-3F">
+            
+              attribute_alias?(new_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Is <code>new_name</code> an alias?</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attribute_methods.rb, line 240
+      def attribute_alias?(new_name)
+        attribute_aliases.key? new_name.to_s
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/attribute_methods.rb#L240" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attribute_method_affix">
+            
+              attribute_method_affix(*affixes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Declares a method available for all attributes with the given prefix and suffix. Uses <code>method_missing</code> and <code>respond_to?</code> to rewrite the method.</p>
+
+<pre><code>#{prefix}#{attr}#{suffix}(*args, &amp;block)
+</code></pre>
+
+<p>to</p>
+
+<pre><code>#{prefix}attribute#{suffix}(#{attr}, *args, &amp;block)
+</code></pre>
+
+<p>An <code>#{prefix}attribute#{suffix}</code> instance method must exist and accept at least the <code>attr</code> argument.</p>
+
+<pre><code>class Person
+  include ActiveModel::AttributeMethods
+
+  attr_accessor :name
+  attribute_method_affix prefix: &#39;reset_&#39;, suffix: &#39;_to_default!&#39;
+  define_attribute_methods :name
+
+  private
+    def reset_attribute_to_default!(attr)
+      send(&quot;#{attr}=&quot;, &#39;Default Name&#39;)
+    end
+end
+
+person = Person.new
+person.name                         # =&gt; &#39;Gem&#39;
+person.reset_name_to_default!
+person.name                         # =&gt; &#39;Default Name&#39;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attribute_methods.rb, line 175
+      def attribute_method_affix(*affixes)
+        self.attribute_method_patterns += affixes.map! { |affix| AttributeMethodPattern.new(**affix) }
+        undefine_attribute_methods
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/attribute_methods.rb#L175" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attribute_method_prefix">
+            
+              attribute_method_prefix(*prefixes, parameters: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Declares a method available for all attributes with the given prefix. Uses <code>method_missing</code> and <code>respond_to?</code> to rewrite the method.</p>
+
+<pre><code>#{prefix}#{attr}(*args, &amp;block)
+</code></pre>
+
+<p>to</p>
+
+<pre><code>#{prefix}attribute(#{attr}, *args, &amp;block)
+</code></pre>
+
+<p>An instance method <code>#{prefix}attribute</code> must exist and accept at least the <code>attr</code> argument.</p>
+
+<pre><code>class Person
+  include ActiveModel::AttributeMethods
+
+  attr_accessor :name
+  attribute_method_prefix &#39;clear_&#39;
+  define_attribute_methods :name
+
+  private
+    def clear_attribute(attr)
+      send(&quot;#{attr}=&quot;, nil)
+    end
+end
+
+person = Person.new
+person.name = &#39;Bob&#39;
+person.name          # =&gt; &quot;Bob&quot;
+person.clear_name
+person.name          # =&gt; nil
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attribute_methods.rb, line 106
+      def attribute_method_prefix(*prefixes, parameters: nil)
+        self.attribute_method_patterns += prefixes.map! { |prefix| AttributeMethodPattern.new(prefix: prefix, parameters: parameters) }
+        undefine_attribute_methods
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/attribute_methods.rb#L106" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attribute_method_suffix">
+            
+              attribute_method_suffix(*suffixes, parameters: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Declares a method available for all attributes with the given suffix. Uses <code>method_missing</code> and <code>respond_to?</code> to rewrite the method.</p>
+
+<pre><code>#{attr}#{suffix}(*args, &amp;block)
+</code></pre>
+
+<p>to</p>
+
+<pre><code>attribute#{suffix}(#{attr}, *args, &amp;block)
+</code></pre>
+
+<p>An <code>attribute#{suffix}</code> instance method must exist and accept at least the <code>attr</code> argument.</p>
+
+<pre><code>class Person
+  include ActiveModel::AttributeMethods
+
+  attr_accessor :name
+  attribute_method_suffix &#39;_short?&#39;
+  define_attribute_methods :name
+
+  private
+    def attribute_short?(attr)
+      send(attr).length &lt; 5
+    end
+end
+
+person = Person.new
+person.name = &#39;Bob&#39;
+person.name          # =&gt; &quot;Bob&quot;
+person.name_short?   # =&gt; true
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attribute_methods.rb, line 140
+      def attribute_method_suffix(*suffixes, parameters: nil)
+        self.attribute_method_patterns += suffixes.map! { |suffix| AttributeMethodPattern.new(suffix: suffix, parameters: parameters) }
+        undefine_attribute_methods
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/attribute_methods.rb#L140" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-define_attribute_method">
+            
+              define_attribute_method(attr_name, _owner: generated_attribute_methods, as: attr_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Declares an attribute that should be prefixed and suffixed by <a href="../AttributeMethods.html"><code>ActiveModel::AttributeMethods</code></a>.</p>
+
+<p>To use, pass an attribute name (as string or symbol). Be sure to declare <a href="ClassMethods.html#method-i-define_attribute_method"><code>define_attribute_method</code></a> after you define any prefix, suffix or affix method, or they will not hook in.</p>
+
+<pre><code>class Person
+  include ActiveModel::AttributeMethods
+
+  attr_accessor :name
+  attribute_method_suffix &#39;_short?&#39;
+
+  # Call to define_attribute_method must appear after the
+  # attribute_method_prefix, attribute_method_suffix or
+  # attribute_method_affix declarations.
+  define_attribute_method :name
+
+  private
+    def attribute_short?(attr)
+      send(attr).length &lt; 5
+    end
+end
+
+person = Person.new
+person.name = &#39;Bob&#39;
+person.name        # =&gt; &quot;Bob&quot;
+person.name_short? # =&gt; true
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attribute_methods.rb, line 311
+      def define_attribute_method(attr_name, _owner: generated_attribute_methods, as: attr_name)
+        ActiveSupport::CodeGenerator.batch(_owner, __FILE__, __LINE__) do |owner|
+          attribute_method_patterns.each do |pattern|
+            define_attribute_method_pattern(pattern, attr_name, owner: owner, as: as)
+          end
+          attribute_method_patterns_cache.clear
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/attribute_methods.rb#L311" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-define_attribute_methods">
+            
+              define_attribute_methods(*attr_names)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Declares the attributes that should be prefixed and suffixed by <a href="../AttributeMethods.html"><code>ActiveModel::AttributeMethods</code></a>.</p>
+
+<p>To use, pass attribute names (as strings or symbols). Be sure to declare <a href="ClassMethods.html#method-i-define_attribute_methods"><code>define_attribute_methods</code></a> after you define any prefix, suffix, or affix methods, or they will not hook in.</p>
+
+<pre><code>class Person
+  include ActiveModel::AttributeMethods
+
+  attr_accessor :name, :age, :address
+  attribute_method_prefix &#39;clear_&#39;
+
+  # Call to define_attribute_methods must appear after the
+  # attribute_method_prefix, attribute_method_suffix or
+  # attribute_method_affix declarations.
+  define_attribute_methods :name, :age, :address
+
+  private
+    def clear_attribute(attr)
+      send(&quot;#{attr}=&quot;, nil)
+    end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attribute_methods.rb, line 272
+      def define_attribute_methods(*attr_names)
+        ActiveSupport::CodeGenerator.batch(generated_attribute_methods, __FILE__, __LINE__) do |owner|
+          attr_names.flatten.each do |attr_name|
+            define_attribute_method(attr_name, _owner: owner)
+            aliases_by_attribute_name[attr_name.to_s].each do |aliased_name|
+              generate_alias_attribute_methods owner, aliased_name, attr_name
+            end
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/attribute_methods.rb#L272" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-undefine_attribute_methods">
+            
+              undefine_attribute_methods()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Removes all the previously dynamically defined methods from the class, including alias attribute methods.</p>
+
+<pre><code>class Person
+  include ActiveModel::AttributeMethods
+
+  attr_accessor :name
+  attribute_method_suffix &#39;_short?&#39;
+  define_attribute_method :name
+  alias_attribute :first_name, :name
+
+  private
+    def attribute_short?(attr)
+      send(attr).length &lt; 5
+    end
+end
+
+person = Person.new
+person.name = &#39;Bob&#39;
+person.first_name  # =&gt; &quot;Bob&quot;
+person.name_short? # =&gt; true
+
+Person.undefine_attribute_methods
+
+person.name_short? # =&gt; NoMethodError
+person.first_name  # =&gt; NoMethodError
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attribute_methods.rb, line 375
+      def undefine_attribute_methods
+        generated_attribute_methods.module_eval do
+          undef_method(*instance_methods)
+        end
+        attribute_method_patterns_cache.clear
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/attribute_methods.rb#L375" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

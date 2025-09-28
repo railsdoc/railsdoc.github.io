@@ -1,0 +1,260 @@
+---
+title: ActiveRecord::ConnectionAdapters::RealTransaction
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::ConnectionAdapters::RealTransaction
+            
+                <span class="parent">&lt;
+                    
+                    ActiveRecord::ConnectionAdapters::Transaction
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/connection_adapters/abstract/transaction_rb.html">activerecord/lib/active_record/connection_adapters/abstract/transaction.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveRecord::ConnectionAdapters::RealTransaction-label-Active+Record+Real+Transaction">Active Record Real Transaction</h1>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-commit">commit</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-materialize-21">materialize!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-restart">restart</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-rollback">rollback</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-commit">
+            
+              commit()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/transaction.rb, line 487
+      def commit
+        if materialized?
+          connection.commit_db_transaction
+          connection.reset_isolation_level if isolation_level
+        end
+        @state.full_commit!
+        @instrumenter.finish(:commit) if materialized?
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/transaction.rb#L487" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-materialize-21">
+            
+              materialize!()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/transaction.rb, line 450
+      def materialize!
+        if joinable?
+          if isolation_level
+            connection.begin_isolated_db_transaction(isolation_level)
+          else
+            connection.begin_db_transaction
+          end
+        else
+          connection.begin_deferred_transaction(isolation_level)
+        end
+
+        super
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/transaction.rb#L450" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-restart">
+            
+              restart()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/transaction.rb, line 464
+      def restart
+        return unless materialized?
+
+        @instrumenter.finish(:restart)
+
+        if connection.supports_restart_db_transaction?
+          @instrumenter.start
+          connection.restart_db_transaction
+        else
+          connection.rollback_db_transaction
+          materialize!
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/transaction.rb#L464" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-rollback">
+            
+              rollback()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/transaction.rb, line 478
+      def rollback
+        if materialized?
+          connection.rollback_db_transaction
+          connection.reset_isolation_level if isolation_level
+        end
+        @state.full_rollback!
+        @instrumenter.finish(:rollback) if materialized?
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/transaction.rb#L478" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

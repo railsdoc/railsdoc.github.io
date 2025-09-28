@@ -1,0 +1,337 @@
+---
+title: ActionCable::SubscriptionAdapter::PostgreSQL::Listener
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionCable::SubscriptionAdapter::PostgreSQL::Listener
+            
+                <span class="parent">&lt;
+                    
+                    SubscriberMap
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/actioncable/lib/action_cable/subscription_adapter/postgresql_rb.html">actioncable/lib/action_cable/subscription_adapter/postgresql.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-add_channel">add_channel</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-invoke_callback">invoke_callback</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-listen">listen</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-remove_channel">remove_channel</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-shutdown">shutdown</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(adapter, event_loop)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/postgresql.rb, line 75
+          def initialize(adapter, event_loop)
+            super()
+
+            @adapter = adapter
+            @event_loop = event_loop
+            @queue = Queue.new
+
+            @thread = Thread.new do
+              Thread.current.abort_on_exception = true
+              listen
+            end
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/postgresql.rb#L75" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-add_channel">
+            
+              add_channel(channel, on_success)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/postgresql.rb, line 119
+          def add_channel(channel, on_success)
+            @queue.push([:listen, channel, on_success])
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/postgresql.rb#L119" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-invoke_callback">
+            
+              invoke_callback(*)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/postgresql.rb, line 127
+          def invoke_callback(*)
+            @event_loop.post { super }
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/postgresql.rb#L127" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-listen">
+            
+              listen()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/postgresql.rb, line 88
+          def listen
+            @adapter.with_subscriptions_connection do |pg_conn|
+              catch :shutdown do
+                loop do
+                  until @queue.empty?
+                    action, channel, callback = @queue.pop(true)
+
+                    case action
+                    when :listen
+                      pg_conn.exec(&quot;LISTEN #{pg_conn.escape_identifier channel}&quot;)
+                      @event_loop.post(&amp;callback) if callback
+                    when :unlisten
+                      pg_conn.exec(&quot;UNLISTEN #{pg_conn.escape_identifier channel}&quot;)
+                    when :shutdown
+                      throw :shutdown
+                    end
+                  end
+
+                  pg_conn.wait_for_notify(1) do |chan, pid, message|
+                    broadcast(chan, message)
+                  end
+                end
+              end
+            end
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/postgresql.rb#L88" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-remove_channel">
+            
+              remove_channel(channel)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/postgresql.rb, line 123
+          def remove_channel(channel)
+            @queue.push([:unlisten, channel])
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/postgresql.rb#L123" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-shutdown">
+            
+              shutdown()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/postgresql.rb, line 114
+          def shutdown
+            @queue.push([:shutdown])
+            Thread.pass while @thread.alive?
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/postgresql.rb#L114" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,382 @@
+---
+title: ActionController::Redirecting
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionController::Redirecting
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_controller/metal/redirecting_rb.html">actionpack/lib/action_controller/metal/redirecting.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Redirecting/UnsafeRedirectError.html">ActionController::Redirecting::UnsafeRedirectError</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-redirect_back">redirect_back</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-redirect_back_or_to">redirect_back_or_to</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-redirect_to">redirect_to</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-url_from">url_from</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="UrlFor.html">
+              ActionController::UrlFor
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">ILLEGAL_HEADER_VALUE_REGEX</td>
+            <td>=</td>
+            <td class="attr-value">/[\x00-\x08\x0A-\x1F]/</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-redirect_back">
+            
+              redirect_back(fallback_location:, allow_other_host: _allow_other_host, **args)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Soft deprecated alias for <a href="Redirecting.html#method-i-redirect_back_or_to"><code>redirect_back_or_to</code></a> where the <code>fallback_location</code> location is supplied as a keyword argument instead of the first positional argument.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/redirecting.rb, line 122
+    def redirect_back(fallback_location:, allow_other_host: _allow_other_host, **args)
+      redirect_back_or_to fallback_location, allow_other_host: allow_other_host, **args
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/redirecting.rb#L122" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-redirect_back_or_to">
+            
+              redirect_back_or_to(fallback_location, allow_other_host: _allow_other_host, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Redirects the browser to the page that issued the request (the referrer) if possible, otherwise redirects to the provided default fallback location.</p>
+
+<p>The referrer information is pulled from the HTTP <code>Referer</code> (sic) header on the request. This is an optional header and its presence on the request is subject to browser security settings and user preferences. If the request is missing this header, the <code>fallback_location</code> will be used.</p>
+
+<pre><code>redirect_back_or_to({ action: &quot;show&quot;, id: 5 })
+redirect_back_or_to @post
+redirect_back_or_to &quot;http://www.rubyonrails.org&quot;
+redirect_back_or_to &quot;/images/screenshot.jpg&quot;
+redirect_back_or_to posts_url
+redirect_back_or_to proc { edit_post_url(@post) }
+redirect_back_or_to &#39;/&#39;, allow_other_host: false
+</code></pre>
+
+<h4 id="method-i-redirect_back_or_to-label-Options">Options</h4>
+<ul><li>
+<p><code>:allow_other_host</code> - Allow or disallow redirection to the host that is different to the current host, defaults to true.</p>
+</li></ul>
+
+<p>All other options that can be passed to <a href="Redirecting.html#method-i-redirect_to"><code>redirect_to</code></a> are accepted as options, and the behavior is identical.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/redirecting.rb, line 149
+    def redirect_back_or_to(fallback_location, allow_other_host: _allow_other_host, **options)
+      if request.referer &amp;&amp; (allow_other_host || _url_host_allowed?(request.referer))
+        redirect_to request.referer, allow_other_host: allow_other_host, **options
+      else
+        # The method level `allow_other_host` doesn&#39;t apply in the fallback case, omit
+        # and let the `redirect_to` handling take over.
+        redirect_to fallback_location, **options
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/redirecting.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-redirect_to">
+            
+              redirect_to(options = {}, response_options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Redirects the browser to the target specified in <code>options</code>. This parameter can be any one of:</p>
+<ul><li>
+<p><a href="../Hash.html"><code>Hash</code></a> - The URL will be generated by calling url_for with the <code>options</code>.</p>
+</li><li>
+<p><code>Record</code> - The URL will be generated by calling url_for with the <code>options</code>, which will reference a named URL for that record.</p>
+</li><li>
+<p><a href="../String.html"><code>String</code></a> starting with <code>protocol://</code> (like <code>http://</code>) or a protocol relative reference (like <code>//</code>) - Is passed straight through as the target for redirection.</p>
+</li><li>
+<p><a href="../String.html"><code>String</code></a> not containing a protocol - The current protocol and host is prepended to the string.</p>
+</li><li>
+<p><code>Proc</code> - A block that will be executed in the controller’s context. Should return any option accepted by <a href="Redirecting.html#method-i-redirect_to"><code>redirect_to</code></a>.</p>
+</li></ul>
+
+<h3 id="method-i-redirect_to-label-Examples">Examples</h3>
+
+<pre><code>redirect_to action: &quot;show&quot;, id: 5
+redirect_to @post
+redirect_to &quot;http://www.rubyonrails.org&quot;
+redirect_to &quot;/images/screenshot.jpg&quot;
+redirect_to posts_url
+redirect_to proc { edit_post_url(@post) }
+</code></pre>
+
+<p>The redirection happens as a <code>302 Found</code> header unless otherwise specified using the <code>:status</code> option:</p>
+
+<pre><code>redirect_to post_url(@post), status: :found
+redirect_to action: &#39;atom&#39;, status: :moved_permanently
+redirect_to post_url(@post), status: 301
+redirect_to action: &#39;atom&#39;, status: 302
+</code></pre>
+
+<p>The status code can either be a standard <a href="https://www.iana.org/assignments/http-status-codes">HTTP Status code</a> as an integer, or a symbol representing the downcased, underscored and symbolized description. Note that the status code must be a 3xx HTTP code, or redirection will not occur.</p>
+
+<p>If you are using XHR requests other than GET or POST and redirecting after the request then some browsers will follow the redirect using the original request method. This may lead to undesirable behavior such as a double DELETE. To work around this you can return a <code>303 See Other</code> status code which will be followed using a GET request.</p>
+
+<pre><code>redirect_to posts_url, status: :see_other
+redirect_to action: &#39;index&#39;, status: 303
+</code></pre>
+
+<p>It is also possible to assign a flash message as part of the redirection. There are two special accessors for the commonly used flash names <code>alert</code> and <code>notice</code> as well as a general purpose <code>flash</code> bucket.</p>
+
+<pre><code>redirect_to post_url(@post), alert: &quot;Watch it, mister!&quot;
+redirect_to post_url(@post), status: :found, notice: &quot;Pay attention to the road&quot;
+redirect_to post_url(@post), status: 301, flash: { updated_post_id: @post.id }
+redirect_to({ action: &#39;atom&#39; }, alert: &quot;Something serious happened&quot;)
+</code></pre>
+
+<p>Statements after <a href="Redirecting.html#method-i-redirect_to"><code>redirect_to</code></a> in our controller get executed, so <a href="Redirecting.html#method-i-redirect_to"><code>redirect_to</code></a> doesn’t stop the execution of the function. To terminate the execution of the function immediately after the <a href="Redirecting.html#method-i-redirect_to"><code>redirect_to</code></a>, use return.</p>
+
+<pre><code>redirect_to post_url(@post) and return
+</code></pre>
+
+<h3 id="method-i-redirect_to-label-Open+Redirect+protection">Open Redirect protection</h3>
+
+<p>By default, <a href="../Rails.html"><code>Rails</code></a> protects against redirecting to external hosts for your app’s safety, so called open redirects. Note: this was a new default in <a href="../Rails.html"><code>Rails</code></a> 7.0, after upgrading opt-in by uncommenting the line with <code>raise_on_open_redirects</code> in <code>config/initializers/new_framework_defaults_7_0.rb</code></p>
+
+<p>Here <a href="Redirecting.html#method-i-redirect_to"><code>redirect_to</code></a> automatically validates the potentially-unsafe URL:</p>
+
+<pre><code>redirect_to params[:redirect_url]
+</code></pre>
+
+<p>Raises <a href="Redirecting/UnsafeRedirectError.html"><code>UnsafeRedirectError</code></a> in the case of an unsafe redirect.</p>
+
+<p>To allow any external redirects pass <code>allow_other_host: true</code>, though using a user-provided param in that case is unsafe.</p>
+
+<pre><code>redirect_to &quot;https://rubyonrails.org&quot;, allow_other_host: true
+</code></pre>
+
+<p>See <a href="Redirecting.html#method-i-url_from"><code>url_from</code></a> for more information on what an internal and safe URL is, or how to fall back to an alternate redirect URL in the unsafe case.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/redirecting.rb, line 103
+    def redirect_to(options = {}, response_options = {})
+      raise ActionControllerError.new(&quot;Cannot redirect to nil!&quot;) unless options
+      raise AbstractController::DoubleRenderError if response_body
+
+      allow_other_host = response_options.delete(:allow_other_host) { _allow_other_host }
+
+      proposed_status = _extract_redirect_to_status(options, response_options)
+
+      redirect_to_location = _compute_redirect_to_location(request, options)
+      _ensure_url_is_http_header_safe(redirect_to_location)
+
+      self.location      = _enforce_open_redirect_protection(redirect_to_location, allow_other_host: allow_other_host)
+      self.response_body = &quot;&quot;
+      self.status        = proposed_status
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/redirecting.rb#L103" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-url_from">
+            
+              url_from(location)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Verifies the passed <code>location</code> is an internal URL that’s safe to redirect to and returns it, or nil if not. Useful to wrap a params provided redirect URL and fall back to an alternate URL to redirect to:</p>
+
+<pre><code>redirect_to url_from(params[:redirect_url]) || root_url
+</code></pre>
+
+<p>The <code>location</code> is considered internal, and safe, if it’s on the same host as <code>request.host</code>:</p>
+
+<pre><code># If request.host is example.com:
+url_from(&quot;https://example.com/profile&quot;) # =&gt; &quot;https://example.com/profile&quot;
+url_from(&quot;http://example.com/profile&quot;)  # =&gt; &quot;http://example.com/profile&quot;
+url_from(&quot;http://evil.com/profile&quot;)     # =&gt; nil
+</code></pre>
+
+<p>Subdomains are considered part of the host:</p>
+
+<pre><code># If request.host is on https://example.com or https://app.example.com, you&#39;d get:
+url_from(&quot;https://dev.example.com/profile&quot;) # =&gt; nil
+</code></pre>
+
+<p>NOTE: there’s a similarity with <a href="../ActionDispatch/Routing/UrlFor.html#method-i-url_for">url_for</a>, which generates an internal URL from various options from within the app, e.g. post) at <code>url_for(</code>. However, <a href="Redirecting.html#method-i-url_from"><code>url_from</code></a> is meant to take an external parameter to verify as in <code>url_from(params[:redirect_url])</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/redirecting.rb, line 203
+    def url_from(location)
+      location = location.presence
+      location if location &amp;&amp; _url_host_allowed?(location)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/redirecting.rb#L203" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

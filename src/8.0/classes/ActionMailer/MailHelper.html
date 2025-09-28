@@ -1,0 +1,311 @@
+---
+title: ActionMailer::MailHelper
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionMailer::MailHelper
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionmailer/lib/action_mailer/mail_helper_rb.html">actionmailer/lib/action_mailer/mail_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionMailer::MailHelper-label-Action+Mailer+MailHelper">Action Mailer MailHelper</h1>
+
+<p>Provides helper methods for <a href="Base.html"><code>ActionMailer::Base</code></a> that can be used for easily formatting messages, accessing mailer or message instances, and the attachments list.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-attachments">attachments</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-block_format">block_format</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-format_paragraph">format_paragraph</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-mailer">mailer</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-message">message</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-attachments">
+            
+              attachments()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Access the message attachments list.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/mail_helper.rb, line 53
+    def attachments
+      mailer.attachments
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionmailer/lib/action_mailer/mail_helper.rb#L53" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-block_format">
+            
+              block_format(text)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Take the text and format it, indented two spaces for each line, and wrapped at 72 columns:</p>
+
+<pre><code>text = &lt;&lt;-TEXT
+  This is
+  the      paragraph.
+
+  * item1 * item2
+TEXT
+
+block_format text
+# =&gt; &quot;  This is the paragraph.\n\n  * item1\n  * item2\n&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/mail_helper.rb, line 22
+    def block_format(text)
+      formatted = text.split(/\n\r?\n/).collect { |paragraph|
+        format_paragraph(paragraph)
+      }.join(&quot;\n\n&quot;)
+
+      # Make list points stand on their own line
+      output = +&quot;&quot;
+      splits = formatted.split(/(\*+|\#+)/)
+      while line = splits.shift
+        if line.start_with?(&quot;*&quot;, &quot;#&quot;) &amp;&amp; splits.first&amp;.start_with?(&quot; &quot;)
+          output.chomp!(&quot; &quot;) while output.end_with?(&quot; &quot;)
+          output &lt;&lt; &quot;  #{line} #{splits.shift.strip}\n&quot;
+        else
+          output &lt;&lt; line
+        end
+      end
+
+      output
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionmailer/lib/action_mailer/mail_helper.rb#L22" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-format_paragraph">
+            
+              format_paragraph(text, len = 72, indent = 2)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns <code>text</code> wrapped at <code>len</code> columns and indented <code>indent</code> spaces. By default column length <code>len</code> equals 72 characters and indent <code>indent</code> equal two spaces.</p>
+
+<pre><code>my_text = &#39;Here is a sample text with more than 40 characters&#39;
+
+format_paragraph(my_text, 25, 4)
+# =&gt; &quot;    Here is a sample text with\n    more than 40 characters&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/mail_helper.rb, line 65
+    def format_paragraph(text, len = 72, indent = 2)
+      sentences = [[]]
+
+      text.split.each do |word|
+        if sentences.first.present? &amp;&amp; (sentences.last + [word]).join(&quot; &quot;).length &gt; len
+          sentences &lt;&lt; [word]
+        else
+          sentences.last &lt;&lt; word
+        end
+      end
+
+      indentation = &quot; &quot; * indent
+      sentences.map! { |sentence|
+        &quot;#{indentation}#{sentence.join(&#39; &#39;)}&quot;
+      }.join &quot;\n&quot;
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionmailer/lib/action_mailer/mail_helper.rb#L65" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-mailer">
+            
+              mailer()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Access the mailer instance.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/mail_helper.rb, line 43
+    def mailer
+      @_controller
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionmailer/lib/action_mailer/mail_helper.rb#L43" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-message">
+            
+              message()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Access the message instance.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionmailer/lib/action_mailer/mail_helper.rb, line 48
+    def message
+      @_message
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionmailer/lib/action_mailer/mail_helper.rb#L48" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

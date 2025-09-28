@@ -1,0 +1,702 @@
+---
+title: ActiveRecord::Encryption::EncryptableRecord
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Encryption::EncryptableRecord
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/encryption/encryptable_record_rb.html">activerecord/lib/active_record/encryption/encryptable_record.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>This is the concern mixed in Active Record models to make them encryptable. It adds the <code>encrypts</code> attribute declaration, as well as the API to encrypt and decrypt records.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-add_length_validation_for_encrypted_columns">add_length_validation_for_encrypted_columns</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-ciphertext_for">ciphertext_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-decrypt">decrypt</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-deterministic_encrypted_attributes">deterministic_encrypted_attributes</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-encrypt">encrypt</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-encrypt_attribute">encrypt_attribute</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-encrypted_attribute-3F">encrypted_attribute?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-encrypts">encrypts</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-global_previous_schemes_for">global_previous_schemes_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-override_accessors_to_preserve_original">override_accessors_to_preserve_original</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-preserve_original_encrypted">preserve_original_encrypted</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-scheme_for">scheme_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-source_attribute_from_preserved_attribute">source_attribute_from_preserved_attribute</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-validate_column_size">validate_column_size</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">ORIGINAL_ATTRIBUTE_PREFIX</td>
+            <td>=</td>
+            <td class="attr-value">&quot;original_&quot;</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-add_length_validation_for_encrypted_columns">
+            
+              add_length_validation_for_encrypted_columns()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 132
+          def add_length_validation_for_encrypted_columns
+            encrypted_attributes&amp;.each do |attribute_name|
+              validate_column_size attribute_name
+            end
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L132" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-ciphertext_for">
+            
+              ciphertext_for(attribute_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the ciphertext for <code>attribute_name</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 157
+      def ciphertext_for(attribute_name)
+        if encrypted_attribute?(attribute_name)
+          read_attribute_before_type_cast(attribute_name)
+        else
+          read_attribute_for_database(attribute_name)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L157" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-decrypt">
+            
+              decrypt()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Decrypts all the encryptable attributes and saves the changes.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 171
+      def decrypt
+        decrypt_attributes if has_encrypted_attributes?
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L171" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-deterministic_encrypted_attributes">
+            
+              deterministic_encrypted_attributes()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the list of deterministic encryptable attributes in the model class.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 58
+        def deterministic_encrypted_attributes
+          @deterministic_encrypted_attributes ||= encrypted_attributes&amp;.find_all do |attribute_name|
+            type_for_attribute(attribute_name).deterministic?
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L58" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-encrypt">
+            
+              encrypt()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Encrypts all the encryptable attributes and saves the changes.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 166
+      def encrypt
+        encrypt_attributes if has_encrypted_attributes?
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L166" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-encrypt_attribute">
+            
+              encrypt_attribute(name, key_provider: nil, key: nil, deterministic: false, support_unencrypted_data: nil, downcase: false, ignore_case: false, previous: [], compress: true, compressor: nil, **context_properties)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 84
+          def encrypt_attribute(name, key_provider: nil, key: nil, deterministic: false, support_unencrypted_data: nil, downcase: false, ignore_case: false, previous: [], compress: true, compressor: nil, **context_properties)
+            encrypted_attributes &lt;&lt; name.to_sym
+
+            decorate_attributes([name]) do |name, cast_type|
+              scheme = scheme_for key_provider: key_provider, key: key, deterministic: deterministic, support_unencrypted_data: support_unencrypted_data, \
+                downcase: downcase, ignore_case: ignore_case, previous: previous, compress: compress, compressor: compressor, **context_properties
+
+              ActiveRecord::Encryption::EncryptedAttributeType.new(scheme: scheme, cast_type: cast_type, default: columns_hash[name.to_s]&amp;.default)
+            end
+
+            preserve_original_encrypted(name) if ignore_case
+            ActiveRecord::Encryption.encrypted_attribute_was_declared(self, name)
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L84" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-encrypted_attribute-3F">
+            
+              encrypted_attribute?(attribute_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns whether a given attribute is encrypted or not.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 146
+      def encrypted_attribute?(attribute_name)
+        name = attribute_name.to_s
+        name = self.class.attribute_aliases[name] || name
+
+        return false unless self.class.encrypted_attributes&amp;.include? name.to_sym
+
+        type = type_for_attribute(name)
+        type.encrypted? read_attribute_before_type_cast(name)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L146" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-encrypts">
+            
+              encrypts(*names, key_provider: nil, key: nil, deterministic: false, support_unencrypted_data: nil, downcase: false, ignore_case: false, previous: [], compress: true, compressor: nil, **context_properties)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Encrypts the <code>name</code> attribute.</p>
+
+<h4 id="method-i-encrypts-label-Options">Options</h4>
+<ul><li>
+<p><code>:key_provider</code> - A key provider to provide encryption and decryption keys. Defaults to <code>ActiveRecord::Encryption.key_provider</code>.</p>
+</li><li>
+<p><code>:key</code> - A password to derive the key from. It’s a shorthand for a <code>:key_provider</code> that serves derivated keys. Both options can’t be used at the same time.</p>
+</li><li>
+<p><code>:deterministic</code> - By default, encryption is not deterministic. It will use a random initialization vector for each encryption operation. This means that encrypting the same content with the same key twice will generate different ciphertexts. When set to <code>true</code>, it will generate the initialization vector based on the encrypted content. This means that the same content will generate the same ciphertexts. This enables querying encrypted text with Active Record. Deterministic encryption will use the oldest encryption scheme to encrypt new data by default. You can change this by setting <code>deterministic: { fixed: false }</code>. That will make it use the newest encryption scheme for encrypting new data.</p>
+</li><li>
+<p><code>:support_unencrypted_data</code> - If ‘config.active_record.encryption.support_unencrypted_data` is <code>true</code>, you can set this to <code>false</code> to opt out of unencrypted data support for this attribute. This is useful for scenarios where you encrypt one column, and want to disable support for unencrypted data without having to tweak the global setting.</p>
+</li><li>
+<p><code>:downcase</code> - When true, it converts the encrypted content to downcase automatically. This allows to effectively ignore case when querying data. Notice that the case is lost. Use <code>:ignore_case</code> if you are interested in preserving it.</p>
+</li><li>
+<p><code>:ignore_case</code> - When true, it behaves like <code>:downcase</code> but, it also preserves the original case in a specially designated column +original_&lt;name&gt;+. When reading the encrypted content, the version with the original case is served. But you can still execute queries that will ignore the case. This option can only be used when <code>:deterministic</code> is true.</p>
+</li><li>
+<p><code>:context_properties</code> - Additional properties that will override <a href="Context.html"><code>Context</code></a> settings when this attribute is encrypted and decrypted. E.g: <code>encryptor:</code>, <code>cipher:</code>, <code>message_serializer:</code>, etc.</p>
+</li><li>
+<p><code>:previous</code> - List of previous encryption schemes. When provided, they will be used in order when trying to read the attribute. Each entry of the list can contain the properties supported by <a href="EncryptableRecord.html#method-i-encrypts"><code>encrypts</code></a>. Also, when deterministic encryption is used, they will be used to generate additional ciphertexts to check in the queries.</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 49
+        def encrypts(*names, key_provider: nil, key: nil, deterministic: false, support_unencrypted_data: nil, downcase: false, ignore_case: false, previous: [], compress: true, compressor: nil, **context_properties)
+          self.encrypted_attributes ||= Set.new # not using :default because the instance would be shared across classes
+
+          names.each do |name|
+            encrypt_attribute name, key_provider: key_provider, key: key, deterministic: deterministic, support_unencrypted_data: support_unencrypted_data, downcase: downcase, ignore_case: ignore_case, previous: previous, compress: compress, compressor: compressor, **context_properties
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L49" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-global_previous_schemes_for">
+            
+              global_previous_schemes_for(scheme)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 78
+          def global_previous_schemes_for(scheme)
+            ActiveRecord::Encryption.config.previous_schemes.filter_map do |previous_scheme|
+              scheme.merge(previous_scheme) if scheme.compatible_with?(previous_scheme)
+            end
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L78" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-override_accessors_to_preserve_original">
+            
+              override_accessors_to_preserve_original(name, original_attribute_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 109
+          def override_accessors_to_preserve_original(name, original_attribute_name)
+            include(Module.new do
+              define_method name do
+                if ((value = super()) &amp;&amp; encrypted_attribute?(name)) || !ActiveRecord::Encryption.config.support_unencrypted_data
+                  send(original_attribute_name)
+                else
+                  value
+                end
+              end
+
+              define_method &quot;#{name}=&quot; do |value|
+                self.send &quot;#{original_attribute_name}=&quot;, value
+                super(value)
+              end
+            end)
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L109" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-preserve_original_encrypted">
+            
+              preserve_original_encrypted(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 98
+          def preserve_original_encrypted(name)
+            original_attribute_name = &quot;#{ORIGINAL_ATTRIBUTE_PREFIX}#{name}&quot;.to_sym
+
+            if !ActiveRecord::Encryption.config.support_unencrypted_data &amp;&amp; !column_names.include?(original_attribute_name.to_s)
+              raise Errors::Configuration, &quot;To use :ignore_case for &#39;#{name}&#39; you must create an additional column named &#39;#{original_attribute_name}&#39;&quot;
+            end
+
+            encrypts original_attribute_name
+            override_accessors_to_preserve_original name, original_attribute_name
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L98" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-scheme_for">
+            
+              scheme_for(key_provider: nil, key: nil, deterministic: false, support_unencrypted_data: nil, downcase: false, ignore_case: false, previous: [], **context_properties)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 70
+          def scheme_for(key_provider: nil, key: nil, deterministic: false, support_unencrypted_data: nil, downcase: false, ignore_case: false, previous: [], **context_properties)
+            ActiveRecord::Encryption::Scheme.new(key_provider: key_provider, key: key, deterministic: deterministic,
+              support_unencrypted_data: support_unencrypted_data, downcase: downcase, ignore_case: ignore_case, **context_properties).tap do |scheme|
+              scheme.previous_schemes = global_previous_schemes_for(scheme) +
+              Array.wrap(previous).collect { |scheme_config| ActiveRecord::Encryption::Scheme.new(**scheme_config) }
+            end
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L70" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-source_attribute_from_preserved_attribute">
+            
+              source_attribute_from_preserved_attribute(attribute_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Given a attribute name, it returns the name of the source attribute when it’s a preserved one.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 65
+        def source_attribute_from_preserved_attribute(attribute_name)
+          attribute_name.to_s.sub(ORIGINAL_ATTRIBUTE_PREFIX, &quot;&quot;) if attribute_name.start_with?(ORIGINAL_ATTRIBUTE_PREFIX)
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L65" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-validate_column_size">
+            
+              validate_column_size(attribute_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/encryption/encryptable_record.rb, line 138
+          def validate_column_size(attribute_name)
+            if limit = columns_hash[attribute_name.to_s]&amp;.limit
+              validates_length_of attribute_name, maximum: limit
+            end
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/encryption/encryptable_record.rb#L138" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

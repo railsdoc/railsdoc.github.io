@@ -1,0 +1,1768 @@
+---
+title: ActiveRecord::Migration
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::Migration
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration_rb.html">activerecord/lib/active_record/migration.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration/command_recorder_rb.html">activerecord/lib/active_record/migration/command_recorder.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration/compatibility_rb.html">activerecord/lib/active_record/migration/compatibility.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration/default_strategy_rb.html">activerecord/lib/active_record/migration/default_strategy.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration/execution_strategy_rb.html">activerecord/lib/active_record/migration/execution_strategy.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/migration/join_table_rb.html">activerecord/lib/active_record/migration/join_table.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/railtie_rb.html">activerecord/lib/active_record/railtie.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/schema_rb.html">activerecord/lib/active_record/schema.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveRecord::Migration-label-Active+Record+Migrations">Active Record Migrations</h1>
+
+<p>Migrations can manage the evolution of a schema used by several physical databases. It’s a solution to the common problem of adding a field to make a new feature work in your local database, but being unsure of how to push that change to other developers and to the production server. With migrations, you can describe the transformations in self-contained classes that can be checked into version control systems and executed against another database that might be one, two, or five versions behind.</p>
+
+<p>Example of a simple migration:</p>
+
+<pre><code>class AddSsl &lt; ActiveRecord::Migration[8.0]
+  def up
+    add_column :accounts, :ssl_enabled, :boolean, default: true
+  end
+
+  def down
+    remove_column :accounts, :ssl_enabled
+  end
+end
+</code></pre>
+
+<p>This migration will add a boolean flag to the accounts table and remove it if you’re backing out of the migration. It shows how all migrations have two methods <code>up</code> and <code>down</code> that describes the transformations required to implement or remove the migration. These methods can consist of both the migration specific methods like <code>add_column</code> and <code>remove_column</code>, but may also contain regular Ruby code for generating data needed for the transformations.</p>
+
+<p>Example of a more complex migration that also needs to initialize data:</p>
+
+<pre><code>class AddSystemSettings &lt; ActiveRecord::Migration[8.0]
+  def up
+    create_table :system_settings do |t|
+      t.string  :name
+      t.string  :label
+      t.text    :value
+      t.string  :type
+      t.integer :position
+    end
+
+    SystemSetting.create  name:  &#39;notice&#39;,
+                          label: &#39;Use notice?&#39;,
+                          value: 1
+  end
+
+  def down
+    drop_table :system_settings
+  end
+end
+</code></pre>
+
+<p>This migration first adds the <code>system_settings</code> table, then creates the very first row in it using the Active Record model that relies on the table. It also uses the more advanced <code>create_table</code> syntax where you can specify a complete table schema in one block call.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-Available+transformations">Available transformations</h2>
+
+<h3 id="class-ActiveRecord::Migration-label-Creation">Creation</h3>
+<ul><li>
+<p><code>create_join_table(table_1, table_2, options)</code>: Creates a join table having its name as the lexical order of the first two arguments. See <a href="ConnectionAdapters/SchemaStatements.html#method-i-create_join_table"><code>ActiveRecord::ConnectionAdapters::SchemaStatements#create_join_table</code></a> for details.</p>
+</li><li>
+<p><code>create_table(name, options)</code>: Creates a table called <code>name</code> and makes the table object available to a block that can then add columns to it, following the same format as <code>add_column</code>. See example above. The options hash is for fragments like “DEFAULT CHARSET=UTF-8” that are appended to the create table definition.</p>
+</li><li>
+<p><code>add_column(table_name, column_name, type, options)</code>: Adds a new column to the table called <code>table_name</code> named <code>column_name</code> specified to be one of the following types: <code>:string</code>, <code>:text</code>, <code>:integer</code>, <code>:float</code>, <code>:decimal</code>, <code>:datetime</code>, <code>:timestamp</code>, <code>:time</code>, <code>:date</code>, <code>:binary</code>, <code>:boolean</code>. A default value can be specified by passing an <code>options</code> hash like <code>{ default: 11 }</code>. Other options include <code>:limit</code> and <code>:null</code> (e.g. <code>{ limit: 50, null: false }</code>) – see <a href="ConnectionAdapters/TableDefinition.html#method-i-column"><code>ActiveRecord::ConnectionAdapters::TableDefinition#column</code></a> for details.</p>
+</li><li>
+<p><code>add_foreign_key(from_table, to_table, options)</code>: Adds a new foreign key. <code>from_table</code> is the table with the key column, <code>to_table</code> contains the referenced primary key.</p>
+</li><li>
+<p><code>add_index(table_name, column_names, options)</code>: Adds a new index with the name of the column. Other options include <code>:name</code>, <code>:unique</code> (e.g. <code>{ name: &#39;users_name_index&#39;, unique: true }</code>) and <code>:order</code> (e.g. <code>{ order: { name: :desc } }</code>).</p>
+</li><li>
+<p><code>add_reference(:table_name, :reference_name)</code>: Adds a new column <code>reference_name_id</code> by default an integer. See <a href="ConnectionAdapters/SchemaStatements.html#method-i-add_reference"><code>ActiveRecord::ConnectionAdapters::SchemaStatements#add_reference</code></a> for details.</p>
+</li><li>
+<p><code>add_timestamps(table_name, options)</code>: Adds timestamps (<code>created_at</code> and <code>updated_at</code>) columns to <code>table_name</code>.</p>
+</li></ul>
+
+<h3 id="class-ActiveRecord::Migration-label-Modification">Modification</h3>
+<ul><li>
+<p><code>change_column(table_name, column_name, type, options)</code>:  Changes the column to a different type using the same parameters as add_column.</p>
+</li><li>
+<p><code>change_column_default(table_name, column_name, default_or_changes)</code>: Sets a default value for <code>column_name</code> defined by <code>default_or_changes</code> on <code>table_name</code>. Passing a hash containing <code>:from</code> and <code>:to</code> as <code>default_or_changes</code> will make this change reversible in the migration.</p>
+</li><li>
+<p><code>change_column_null(table_name, column_name, null, default = nil)</code>: Sets or removes a <code>NOT NULL</code> constraint on <code>column_name</code>. The <code>null</code> flag indicates whether the value can be <code>NULL</code>. See <a href="ConnectionAdapters/SchemaStatements.html#method-i-change_column_null"><code>ActiveRecord::ConnectionAdapters::SchemaStatements#change_column_null</code></a> for details.</p>
+</li><li>
+<p><code>change_table(name, options)</code>: Allows to make column alterations to the table called <code>name</code>. It makes the table object available to a block that can then add/remove columns, indexes, or foreign keys to it.</p>
+</li><li>
+<p><code>rename_column(table_name, column_name, new_column_name)</code>: Renames a column but keeps the type and content.</p>
+</li><li>
+<p><code>rename_index(table_name, old_name, new_name)</code>: Renames an index.</p>
+</li><li>
+<p><code>rename_table(old_name, new_name)</code>: Renames the table called <code>old_name</code> to <code>new_name</code>.</p>
+</li></ul>
+
+<h3 id="class-ActiveRecord::Migration-label-Deletion">Deletion</h3>
+<ul><li>
+<p><code>drop_table(*names)</code>: Drops the given tables.</p>
+</li><li>
+<p><code>drop_join_table(table_1, table_2, options)</code>: Drops the join table specified by the given arguments.</p>
+</li><li>
+<p><code>remove_column(table_name, column_name, type, options)</code>: Removes the column named <code>column_name</code> from the table called <code>table_name</code>.</p>
+</li><li>
+<p><code>remove_columns(table_name, *column_names)</code>: Removes the given columns from the table definition.</p>
+</li><li>
+<p><code>remove_foreign_key(from_table, to_table = nil, **options)</code>: Removes the given foreign key from the table called <code>table_name</code>.</p>
+</li><li>
+<p><code>remove_index(table_name, column: column_names)</code>: Removes the index specified by <code>column_names</code>.</p>
+</li><li>
+<p><code>remove_index(table_name, name: index_name)</code>: Removes the index specified by <code>index_name</code>.</p>
+</li><li>
+<p><code>remove_reference(table_name, ref_name, options)</code>: Removes the reference(s) on <code>table_name</code> specified by <code>ref_name</code>.</p>
+</li><li>
+<p><code>remove_timestamps(table_name, options)</code>: Removes the timestamp columns (<code>created_at</code> and <code>updated_at</code>) from the table definition.</p>
+</li></ul>
+
+<h2 id="class-ActiveRecord::Migration-label-Irreversible+transformations">Irreversible transformations</h2>
+
+<p>Some transformations are destructive in a manner that cannot be reversed. Migrations of that kind should raise an <a href="IrreversibleMigration.html"><code>ActiveRecord::IrreversibleMigration</code></a> exception in their <code>down</code> method.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-Running+migrations+from+within+Rails">Running migrations from within Rails</h2>
+
+<p>The Rails package has several tools to help create and apply migrations.</p>
+
+<p>To generate a new migration, you can use</p>
+
+<pre><code>$ bin/rails generate migration MyNewMigration
+</code></pre>
+
+<p>where MyNewMigration is the name of your migration. The generator will create an empty migration file <code>timestamp_my_new_migration.rb</code> in the <code>db/migrate/</code> directory where <code>timestamp</code> is the UTC formatted date and time that the migration was generated.</p>
+
+<p>There is a special syntactic shortcut to generate migrations that add fields to a table.</p>
+
+<pre><code>$ bin/rails generate migration add_fieldname_to_tablename fieldname:string
+</code></pre>
+
+<p>This will generate the file <code>timestamp_add_fieldname_to_tablename.rb</code>, which will look like this:</p>
+
+<pre><code>class AddFieldnameToTablename &lt; ActiveRecord::Migration[8.0]
+  def change
+    add_column :tablenames, :fieldname, :string
+  end
+end
+</code></pre>
+
+<p>To run migrations against the currently configured database, use <code>bin/rails db:migrate</code>. This will update the database by running all of the pending migrations, creating the <code>schema_migrations</code> table (see “About the schema_migrations table” section below) if missing. It will also invoke the db:schema:dump command, which will update your db/schema.rb file to match the structure of your database.</p>
+
+<p>To roll the database back to a previous migration version, use <code>bin/rails db:rollback VERSION=X</code> where <code>X</code> is the version to which you wish to downgrade. Alternatively, you can also use the STEP option if you wish to rollback last few migrations. <code>bin/rails db:rollback STEP=2</code> will rollback the latest two migrations.</p>
+
+<p>If any of the migrations throw an <a href="IrreversibleMigration.html"><code>ActiveRecord::IrreversibleMigration</code></a> exception, that step will fail and you’ll have some manual work to do.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-More+examples">More examples</h2>
+
+<p>Not all migrations change the schema. Some just fix the data:</p>
+
+<pre><code>class RemoveEmptyTags &lt; ActiveRecord::Migration[8.0]
+  def up
+    Tag.all.each { |tag| tag.destroy if tag.pages.empty? }
+  end
+
+  def down
+    # not much we can do to restore deleted data
+    raise ActiveRecord::IrreversibleMigration, &quot;Can&#39;t recover the deleted tags&quot;
+  end
+end
+</code></pre>
+
+<p>Others remove columns when they migrate up instead of down:</p>
+
+<pre><code>class RemoveUnnecessaryItemAttributes &lt; ActiveRecord::Migration[8.0]
+  def up
+    remove_column :items, :incomplete_items_count
+    remove_column :items, :completed_items_count
+  end
+
+  def down
+    add_column :items, :incomplete_items_count
+    add_column :items, :completed_items_count
+  end
+end
+</code></pre>
+
+<p>And sometimes you need to do something in SQL not abstracted directly by migrations:</p>
+
+<pre><code>class MakeJoinUnique &lt; ActiveRecord::Migration[8.0]
+  def up
+    execute &quot;ALTER TABLE `pages_linked_pages` ADD UNIQUE `page_id_linked_page_id` (`page_id`,`linked_page_id`)&quot;
+  end
+
+  def down
+    execute &quot;ALTER TABLE `pages_linked_pages` DROP INDEX `page_id_linked_page_id`&quot;
+  end
+end
+</code></pre>
+
+<h2 id="class-ActiveRecord::Migration-label-Using+a+model+after+changing+its+table">Using a model after changing its table</h2>
+
+<p>Sometimes you’ll want to add a column in a migration and populate it immediately after. In that case, you’ll need to make a call to <code>Base#reset_column_information</code> in order to ensure that the model has the latest column data from after the new column was added. Example:</p>
+
+<pre><code>class AddPeopleSalary &lt; ActiveRecord::Migration[8.0]
+  def up
+    add_column :people, :salary, :integer
+    Person.reset_column_information
+    Person.all.each do |p|
+      p.update_attribute :salary, SalaryCalculator.compute(p)
+    end
+  end
+end
+</code></pre>
+
+<h2 id="class-ActiveRecord::Migration-label-Controlling+verbosity">Controlling verbosity</h2>
+
+<p>By default, migrations will describe the actions they are taking, writing them to the console as they happen, along with benchmarks describing how long each step took.</p>
+
+<p>You can quiet them down by setting <a href="Migration.html#method-c-verbose"><code>ActiveRecord::Migration.verbose = false</code></a>.</p>
+
+<p>You can also insert your own messages and benchmarks by using the <a href="Migration.html#method-i-say_with_time"><code>say_with_time</code></a> method:</p>
+
+<pre><code>def up
+  ...
+  say_with_time &quot;Updating salaries...&quot; do
+    Person.all.each do |p|
+      p.update_attribute :salary, SalaryCalculator.compute(p)
+    end
+  end
+  ...
+end
+</code></pre>
+
+<p>The phrase “Updating salaries…” would then be printed, along with the benchmark for the block when the block completes.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-Timestamped+Migrations">Timestamped Migrations</h2>
+
+<p>By default, Rails generates migrations that look like:</p>
+
+<pre><code>20080717013526_your_migration_name.rb
+</code></pre>
+
+<p>The prefix is a generation timestamp (in UTC). Timestamps should not be modified manually. To validate that migration timestamps adhere to the format Active Record expects, you can use the following configuration option:</p>
+
+<pre><code>config.active_record.validate_migration_timestamps = true
+</code></pre>
+
+<p>If you’d prefer to use numeric prefixes, you can turn timestamped migrations off by setting:</p>
+
+<pre><code>config.active_record.timestamped_migrations = false
+</code></pre>
+
+<p>In application.rb.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-Reversible+Migrations">Reversible Migrations</h2>
+
+<p>Reversible migrations are migrations that know how to go <code>down</code> for you. You simply supply the <code>up</code> logic, and the <a href="Migration.html"><code>Migration</code></a> system figures out how to execute the down commands for you.</p>
+
+<p>To define a reversible migration, define the <code>change</code> method in your migration like this:</p>
+
+<pre><code>class TenderloveMigration &lt; ActiveRecord::Migration[8.0]
+  def change
+    create_table(:horses) do |t|
+      t.column :content, :text
+      t.column :remind_at, :datetime
+    end
+  end
+end
+</code></pre>
+
+<p>This migration will create the horses table for you on the way up, and automatically figure out how to drop the table on the way down.</p>
+
+<p>Some commands cannot be reversed. If you care to define how to move up and down in these cases, you should define the <code>up</code> and <code>down</code> methods as before.</p>
+
+<p>If a command cannot be reversed, an <a href="IrreversibleMigration.html"><code>ActiveRecord::IrreversibleMigration</code></a> exception will be raised when the migration is moving down.</p>
+
+<p>For a list of commands that are reversible, please see <a href="Migration/CommandRecorder.html"><code>ActiveRecord::Migration::CommandRecorder</code></a>.</p>
+
+<h2 id="class-ActiveRecord::Migration-label-Transactional+Migrations">Transactional Migrations</h2>
+
+<p>If the database adapter supports DDL transactions, all migrations will automatically be wrapped in a transaction. There are queries that you can’t execute inside a transaction though, and for these situations you can turn the automatic transactions off.</p>
+
+<pre><code>class ChangeEnum &lt; ActiveRecord::Migration[8.0]
+  disable_ddl_transaction!
+
+  def up
+    execute &quot;ALTER TYPE model_size ADD VALUE &#39;new_value&#39;&quot;
+  end
+end
+</code></pre>
+
+<p>Remember that you can still open your own transactions, even if you are in a <a href="Migration.html"><code>Migration</code></a> with <code>self.disable_ddl_transaction!</code>.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Migration/Compatibility.html">ActiveRecord::Migration::Compatibility</a></li>
+      
+      </ul>
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Migration/CheckPending.html">ActiveRecord::Migration::CheckPending</a></li>
+      
+        <li><a href="Migration/CommandRecorder.html">ActiveRecord::Migration::CommandRecorder</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-5B-5D">[]</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-announce">announce</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-check_all_pending-21">check_all_pending!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connection">connection</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-connection_pool">connection_pool</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-copy">copy</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-current_version">current_version</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-disable_ddl_transaction-21">disable_ddl_transaction!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-down">down</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-exec_migration">exec_migration</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-execution_strategy">execution_strategy</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-load_schema_if_pending-21">load_schema_if_pending!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-method_missing">method_missing</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-migrate">migrate</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-migrate">migrate</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-next_migration_number">next_migration_number</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-proper_table_name">proper_table_name</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-reversible">reversible</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-revert">revert</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-reverting-3F">reverting?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-run">run</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-say">say</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-say_with_time">say_with_time</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-suppress_messages">suppress_messages</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-up">up</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-up_only">up_only</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-verbose">verbose</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-write">write</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>name</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>version</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-5B-5D">
+            
+              [](version)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 628
+    def self.[](version)
+      Compatibility.find(version)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L628" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-check_all_pending-21">
+            
+              check_all_pending!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Raises ActiveRecord::PendingMigrationError error if any migrations are pending for all database configurations in an environment.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 692
+      def check_all_pending!
+        pending_migrations = []
+
+        ActiveRecord::Tasks::DatabaseTasks.with_temporary_pool_for_each(env: env) do |pool|
+          if pending = pool.migration_context.open.pending_migrations
+            pending_migrations &lt;&lt; pending
+          end
+        end
+
+        migrations = pending_migrations.flatten
+
+        if migrations.any?
+          raise ActiveRecord::PendingMigrationError.new(pending_migrations: migrations)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L692" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-current_version">
+            
+              current_version()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 632
+    def self.current_version
+      ActiveRecord::VERSION::STRING.to_f
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L632" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-disable_ddl_transaction-21">
+            
+              disable_ddl_transaction!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Disable the transaction wrapping this migration. You can still create your own transactions even after calling disable_ddl_transaction!</p>
+
+<p>For more details read the <a href="Migration.html">“Transactional Migrations” section above</a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 734
+      def disable_ddl_transaction!
+        @disable_ddl_transaction = true
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L734" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-load_schema_if_pending-21">
+            
+              load_schema_if_pending!()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 708
+      def load_schema_if_pending!
+        if any_schema_needs_update?
+          load_schema!
+        end
+
+        check_pending_migrations
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L708" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-migrate">
+            
+              migrate(direction)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 726
+      def migrate(direction)
+        new.migrate direction
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L726" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(name = self.class.name, version = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 799
+    def initialize(name = self.class.name, version = nil)
+      @name       = name
+      @version    = version
+      @connection = nil
+      @pool       = nil
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L799" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-verbose">
+            
+              verbose
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Specifies if migrations will write the actions they are taking to the console as they happen, along with benchmarks describing how long each step took. Defaults to true.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 796
+    cattr_accessor :verbose
+</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L796" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-announce">
+            
+              announce(message)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1004
+    def announce(message)
+      text = &quot;#{version} #{name}: #{message}&quot;
+      length = [0, 75 - text.length].max
+      write &quot;== %s %s&quot; % [text, &quot;=&quot; * length]
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L1004" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-connection">
+            
+              connection()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1035
+    def connection
+      @connection || ActiveRecord::Tasks::DatabaseTasks.migration_connection
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L1035" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-connection_pool">
+            
+              connection_pool()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1039
+    def connection_pool
+      @pool || ActiveRecord::Tasks::DatabaseTasks.migration_connection_pool
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L1039" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-copy">
+            
+              copy(destination, sources, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1060
+    def copy(destination, sources, options = {})
+      copied = []
+
+      FileUtils.mkdir_p(destination) unless File.exist?(destination)
+      schema_migration = SchemaMigration::NullSchemaMigration.new
+      internal_metadata = InternalMetadata::NullInternalMetadata.new
+
+      destination_migrations = ActiveRecord::MigrationContext.new(destination, schema_migration, internal_metadata).migrations
+      last = destination_migrations.last
+      sources.each do |scope, path|
+        source_migrations = ActiveRecord::MigrationContext.new(path, schema_migration, internal_metadata).migrations
+
+        source_migrations.each do |migration|
+          source = File.binread(migration.filename)
+          inserted_comment = &quot;# This migration comes from #{scope} (originally #{migration.version})\n&quot;
+          magic_comments = +&quot;&quot;
+          loop do
+            # If we have a magic comment in the original migration,
+            # insert our comment after the first newline(end of the magic comment line)
+            # so the magic keep working.
+            # Note that magic comments must be at the first line(except sh-bang).
+            source.sub!(/\A(?:#.*\b(?:en)?coding:\s*\S+|#\s*frozen_string_literal:\s*(?:true|false)).*\n/) do |magic_comment|
+              magic_comments &lt;&lt; magic_comment; &quot;&quot;
+            end || break
+          end
+
+          if !magic_comments.empty? &amp;&amp; source.start_with?(&quot;\n&quot;)
+            magic_comments &lt;&lt; &quot;\n&quot;
+            source = source[1..-1]
+          end
+
+          source = &quot;#{magic_comments}#{inserted_comment}#{source}&quot;
+
+          if duplicate = destination_migrations.detect { |m| m.name == migration.name }
+            if options[:on_skip] &amp;&amp; duplicate.scope != scope.to_s
+              options[:on_skip].call(scope, migration)
+            end
+            next
+          end
+
+          migration.version = next_migration_number(last ? last.version + 1 : 0).to_i
+          new_path = File.join(destination, &quot;#{migration.version}_#{migration.name.underscore}.#{scope}.rb&quot;)
+          old_path, migration.filename = migration.filename, new_path
+          last = migration
+
+          File.binwrite(migration.filename, source)
+          copied &lt;&lt; migration
+          options[:on_copy].call(scope, migration, old_path) if options[:on_copy]
+          destination_migrations &lt;&lt; migration
+        end
+      end
+
+      copied
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L1060" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-down">
+            
+              down()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 956
+    def down
+      self.class.delegate = self
+      return unless self.class.respond_to?(:down)
+      self.class.down
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L956" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-exec_migration">
+            
+              exec_migration(conn, direction)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 984
+    def exec_migration(conn, direction)
+      @connection = conn
+      if respond_to?(:change)
+        if direction == :down
+          revert { change }
+        else
+          change
+        end
+      else
+        public_send(direction)
+      end
+    ensure
+      @connection = nil
+      @execution_strategy = nil
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L984" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-execution_strategy">
+            
+              execution_strategy()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 806
+    def execution_strategy
+      @execution_strategy ||= ActiveRecord.migration_strategy.new(self)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L806" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-method_missing">
+            
+              method_missing(method, *arguments, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1043
+    def method_missing(method, *arguments, &amp;block)
+      say_with_time &quot;#{method}(#{format_arguments(arguments)})&quot; do
+        unless connection.respond_to? :revert
+          unless arguments.empty? || [:execute, :enable_extension, :disable_extension].include?(method)
+            arguments[0] = proper_table_name(arguments.first, table_name_options)
+            if method == :rename_table ||
+              (method == :remove_foreign_key &amp;&amp; !arguments.second.is_a?(Hash))
+              arguments[1] = proper_table_name(arguments.second, table_name_options)
+            end
+          end
+        end
+        return super unless execution_strategy.respond_to?(method)
+        execution_strategy.send(method, *arguments, &amp;block)
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L1043" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-migrate">
+            
+              migrate(direction)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Execute this migration in the named direction</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 963
+    def migrate(direction)
+      return unless respond_to?(direction)
+
+      case direction
+      when :up   then announce &quot;migrating&quot;
+      when :down then announce &quot;reverting&quot;
+      end
+
+      time_elapsed = nil
+      ActiveRecord::Tasks::DatabaseTasks.migration_connection.pool.with_connection do |conn|
+        time_elapsed = ActiveSupport::Benchmark.realtime do
+          exec_migration(conn, direction)
+        end
+      end
+
+      case direction
+      when :up   then announce &quot;migrated (%.4fs)&quot; % time_elapsed; write
+      when :down then announce &quot;reverted (%.4fs)&quot; % time_elapsed; write
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L963" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-next_migration_number">
+            
+              next_migration_number(number)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Determines the version number of the next migration.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1127
+    def next_migration_number(number)
+      if ActiveRecord.timestamped_migrations
+        [Time.now.utc.strftime(&quot;%Y%m%d%H%M%S&quot;), &quot;%.14d&quot; % number].max
+      else
+        &quot;%.3d&quot; % number.to_i
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L1127" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-proper_table_name">
+            
+              proper_table_name(name, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Finds the correct table name given an Active Record object. Uses the Active Record object’s own table_name, or pre/suffix from the options passed in.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1118
+    def proper_table_name(name, options = {})
+      if name.respond_to? :table_name
+        name.table_name
+      else
+        &quot;#{options[:table_name_prefix]}#{name}#{options[:table_name_suffix]}&quot;
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L1118" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-reversible">
+            
+              reversible()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Used to specify an operation that can be run in one direction or another. Call the methods <code>up</code> and <code>down</code> of the yielded object to run a block only in one given direction. The whole block will be called in the right order within the migration.</p>
+
+<p>In the following example, the looping on users will always be done when the three columns ‘first_name’, ‘last_name’ and ‘full_name’ exist, even when migrating down:</p>
+
+<pre><code>class SplitNameMigration &lt; ActiveRecord::Migration[8.0]
+  def change
+    add_column :users, :first_name, :string
+    add_column :users, :last_name, :string
+
+    reversible do |dir|
+      User.reset_column_information
+      User.all.each do |u|
+        dir.up   { u.first_name, u.last_name = u.full_name.split(&#39; &#39;) }
+        dir.down { u.full_name = &quot;#{u.first_name} #{u.last_name}&quot; }
+        u.save
+      end
+    end
+
+    revert { add_column :users, :full_name, :string }
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 908
+    def reversible
+      helper = ReversibleBlockHelper.new(reverting?)
+      execute_block { yield helper }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L908" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-revert">
+            
+              revert(*migration_classes, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Reverses the migration commands for the given block and the given migrations.</p>
+
+<p>The following migration will remove the table ‘horses’ and create the table ‘apples’ on the way up, and the reverse on the way down.</p>
+
+<pre><code>class FixTLMigration &lt; ActiveRecord::Migration[8.0]
+  def change
+    revert do
+      create_table(:horses) do |t|
+        t.text :content
+        t.datetime :remind_at
+      end
+    end
+    create_table(:apples) do |t|
+      t.string :variety
+    end
+  end
+end
+</code></pre>
+
+<p>Or equivalently, if <code>TenderloveMigration</code> is defined as in the documentation for Migration:</p>
+
+<pre><code>require_relative &quot;20121212123456_tenderlove_migration&quot;
+
+class FixupTLMigration &lt; ActiveRecord::Migration[8.0]
+  def change
+    revert TenderloveMigration
+
+    create_table(:apples) do |t|
+      t.string :variety
+    end
+  end
+end
+</code></pre>
+
+<p>This command can be nested.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 851
+    def revert(*migration_classes, &amp;block)
+      run(*migration_classes.reverse, revert: true) unless migration_classes.empty?
+      if block_given?
+        if connection.respond_to? :revert
+          connection.revert(&amp;block)
+        else
+          recorder = command_recorder
+          @connection = recorder
+          suppress_messages do
+            connection.revert(&amp;block)
+          end
+          @connection = recorder.delegate
+          recorder.replay(self)
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L851" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-reverting-3F">
+            
+              reverting?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 868
+    def reverting?
+      connection.respond_to?(:reverting) &amp;&amp; connection.reverting
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L868" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-run">
+            
+              run(*migration_classes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Runs the given migration classes. Last argument can specify options:</p>
+<ul><li>
+<p><code>:direction</code> - Default is <code>:up</code>.</p>
+</li><li>
+<p><code>:revert</code> - Default is <code>false</code>.</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 936
+    def run(*migration_classes)
+      opts = migration_classes.extract_options!
+      dir = opts[:direction] || :up
+      dir = (dir == :down ? :up : :down) if opts[:revert]
+      if reverting?
+        # If in revert and going :up, say, we want to execute :down without reverting, so
+        revert { run(*migration_classes, direction: dir, revert: true) }
+      else
+        migration_classes.each do |migration_class|
+          migration_class.new.exec_migration(connection, dir)
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L936" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-say">
+            
+              say(message, subitem = false)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Takes a message argument and outputs it as is. A second boolean argument can be passed to specify whether to indent or not.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1012
+    def say(message, subitem = false)
+      write &quot;#{subitem ? &quot;   -&gt;&quot; : &quot;--&quot;} #{message}&quot;
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L1012" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-say_with_time">
+            
+              say_with_time(message)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Outputs text along with how long it took to run its block. If the block returns an integer it assumes it is the number of rows affected.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1018
+    def say_with_time(message)
+      say(message)
+      result = nil
+      time_elapsed = ActiveSupport::Benchmark.realtime { result = yield }
+      say &quot;%.4fs&quot; % time_elapsed, :subitem
+      say(&quot;#{result} rows&quot;, :subitem) if result.is_a?(Integer)
+      result
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L1018" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-suppress_messages">
+            
+              suppress_messages()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Takes a block as an argument and suppresses any output generated by the block.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1028
+    def suppress_messages
+      save, self.verbose = verbose, false
+      yield
+    ensure
+      self.verbose = save
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L1028" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-up">
+            
+              up()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 950
+    def up
+      self.class.delegate = self
+      return unless self.class.respond_to?(:up)
+      self.class.up
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L950" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-up_only">
+            
+              up_only(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Used to specify an operation that is only run when migrating up (for example, populating a new column with its initial values).</p>
+
+<p>In the following example, the new column <code>published</code> will be given the value <code>true</code> for all existing records.</p>
+
+<pre><code>class AddPublishedToPosts &lt; ActiveRecord::Migration[8.0]
+  def change
+    add_column :posts, :published, :boolean, default: false
+    up_only do
+      execute &quot;update posts set published = &#39;true&#39;&quot;
+    end
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 927
+    def up_only(&amp;block)
+      execute_block(&amp;block) unless reverting?
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L927" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-write">
+            
+              write(text = &quot;&quot;)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/migration.rb, line 1000
+    def write(text = &quot;&quot;)
+      puts(text) if verbose
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/migration.rb#L1000" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

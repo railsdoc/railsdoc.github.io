@@ -1,0 +1,657 @@
+---
+title: ActiveRecord::AttributeMethods::Dirty
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::AttributeMethods::Dirty
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/attribute_methods/dirty_rb.html">activerecord/lib/active_record/attribute_methods/dirty.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveRecord::AttributeMethods::Dirty-label-Active+Record+Attribute+Methods+Dirty">Active Record Attribute Methods Dirty</h1>
+
+<p>Provides a way to track changes in your Active Record models. It adds all methods from <a href="../../ActiveModel/Dirty.html"><code>ActiveModel::Dirty</code></a> and adds database-specific methods.</p>
+
+<p>A newly created <code>Person</code> object is unchanged:</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+end
+
+person = Person.create(name: &quot;Allison&quot;)
+person.changed? # =&gt; false
+</code></pre>
+
+<p>Change the name:</p>
+
+<pre><code>person.name = &#39;Alice&#39;
+person.name_in_database          # =&gt; &quot;Allison&quot;
+person.will_save_change_to_name? # =&gt; true
+person.name_change_to_be_saved   # =&gt; [&quot;Allison&quot;, &quot;Alice&quot;]
+person.changes_to_save           # =&gt; {&quot;name&quot;=&gt;[&quot;Allison&quot;, &quot;Alice&quot;]}
+</code></pre>
+
+<p>Save the changes:</p>
+
+<pre><code>person.save
+person.name_in_database        # =&gt; &quot;Alice&quot;
+person.saved_change_to_name?   # =&gt; true
+person.saved_change_to_name    # =&gt; [&quot;Allison&quot;, &quot;Alice&quot;]
+person.name_before_last_save   # =&gt; &quot;Allison&quot;
+</code></pre>
+
+<p>Similar to <a href="../../ActiveModel/Dirty.html"><code>ActiveModel::Dirty</code></a>, methods can be invoked as <code>saved_change_to_name?</code> or by passing an argument to the generic method <code>saved_change_to_attribute?(&quot;name&quot;)</code>.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-attribute_before_last_save">attribute_before_last_save</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attribute_change_to_be_saved">attribute_change_to_be_saved</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attribute_in_database">attribute_in_database</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-attributes_in_database">attributes_in_database</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-changed_attribute_names_to_save">changed_attribute_names_to_save</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-changes_to_save">changes_to_save</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-has_changes_to_save-3F">has_changes_to_save?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-reload">reload</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-saved_change_to_attribute">saved_change_to_attribute</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-saved_change_to_attribute-3F">saved_change_to_attribute?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-saved_changes">saved_changes</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-saved_changes-3F">saved_changes?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-will_save_change_to_attribute-3F">will_save_change_to_attribute?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="../../ActiveModel/Dirty.html">
+              ActiveModel::Dirty
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-attribute_before_last_save">
+            
+              attribute_before_last_save(attr_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the original value of an attribute before the last save.</p>
+
+<p>This method is useful in after callbacks to get the original value of an attribute before the save that triggered the callbacks to run. It can be invoked as <code>name_before_last_save</code> instead of <code>attribute_before_last_save(&quot;name&quot;)</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 108
+      def attribute_before_last_save(attr_name)
+        mutations_before_last_save.original_value(attr_name.to_s)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L108" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attribute_change_to_be_saved">
+            
+              attribute_change_to_be_saved(attr_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the change to an attribute that will be persisted during the next save.</p>
+
+<p>This method is useful in validations and before callbacks, to see the change to an attribute that will occur when the record is saved. It can be invoked as <code>name_change_to_be_saved</code> instead of <code>attribute_change_to_be_saved(&quot;name&quot;)</code>.</p>
+
+<p>If the attribute will change, the result will be an array containing the original value and the new value about to be saved.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 152
+      def attribute_change_to_be_saved(attr_name)
+        mutations_from_database.change_to_attribute(attr_name.to_s)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L152" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attribute_in_database">
+            
+              attribute_in_database(attr_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the value of an attribute in the database, as opposed to the in-memory value that will be persisted the next time the record is saved.</p>
+
+<p>This method is useful in validations and before callbacks, to see the original value of an attribute prior to any changes about to be saved. It can be invoked as <code>name_in_database</code> instead of <code>attribute_in_database(&quot;name&quot;)</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 164
+      def attribute_in_database(attr_name)
+        mutations_from_database.original_value(attr_name.to_s)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L164" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-attributes_in_database">
+            
+              attributes_in_database()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a hash of the attributes that will change when the record is next saved.</p>
+
+<p>The hash keys are the attribute names, and the hash values are the original attribute values in the database (as opposed to the in-memory values about to be saved).</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 191
+      def attributes_in_database
+        mutations_from_database.changed_values
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L191" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-changed_attribute_names_to_save">
+            
+              changed_attribute_names_to_save()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns an array of the names of any attributes that will change when the record is next saved.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 181
+      def changed_attribute_names_to_save
+        mutations_from_database.changed_attribute_names
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L181" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-changes_to_save">
+            
+              changes_to_save()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a hash containing all the changes that will be persisted during the next save.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 175
+      def changes_to_save
+        mutations_from_database.changes
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L175" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-has_changes_to_save-3F">
+            
+              has_changes_to_save?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Will the next call to <code>save</code> have any changes to persist?</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 169
+      def has_changes_to_save?
+        mutations_from_database.any_changes?
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L169" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-reload">
+            
+              reload(*)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p><code>reload</code> the record and clears changed attributes.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 63
+      def reload(*)
+        super.tap do
+          @mutations_before_last_save = nil
+          @mutations_from_database = nil
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L63" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-saved_change_to_attribute">
+            
+              saved_change_to_attribute(attr_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the change to an attribute during the last save. If the attribute was changed, the result will be an array containing the original value and the saved value.</p>
+
+<p>This method is useful in after callbacks, to see the change in an attribute during the save that triggered the callbacks to run. It can be invoked as <code>saved_change_to_name</code> instead of <code>saved_change_to_attribute(&quot;name&quot;)</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 98
+      def saved_change_to_attribute(attr_name)
+        mutations_before_last_save.change_to_attribute(attr_name.to_s)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L98" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-saved_change_to_attribute-3F">
+            
+              saved_change_to_attribute?(attr_name, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Did this attribute change when we last saved?</p>
+
+<p>This method is useful in after callbacks to determine if an attribute was changed during the save that triggered the callbacks to run. It can be invoked as <code>saved_change_to_name?</code> instead of <code>saved_change_to_attribute?(&quot;name&quot;)</code>.</p>
+
+<h4 id="method-i-saved_change_to_attribute-3F-label-Options">Options</h4>
+<dl class="rdoc-list label-list"><dt><code>from</code></dt>
+<dd>
+<p>When specified, this method will return false unless the original value is equal to the given value.</p>
+</dd><dt><code>to</code></dt>
+<dd>
+<p>When specified, this method will return false unless the value will be changed to the given value.</p>
+</dd></dl>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 86
+      def saved_change_to_attribute?(attr_name, **options)
+        mutations_before_last_save.changed?(attr_name.to_s, **options)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L86" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-saved_changes">
+            
+              saved_changes()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a hash containing all the changes that were just saved.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 118
+      def saved_changes
+        mutations_before_last_save.changes
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L118" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-saved_changes-3F">
+            
+              saved_changes?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Did the last call to <code>save</code> have any changes to change?</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 113
+      def saved_changes?
+        mutations_before_last_save.any_changes?
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L113" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-will_save_change_to_attribute-3F">
+            
+              will_save_change_to_attribute?(attr_name, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Will this attribute change the next time we save?</p>
+
+<p>This method is useful in validations and before callbacks to determine if the next call to <code>save</code> will change a particular attribute. It can be invoked as <code>will_save_change_to_name?</code> instead of <code>will_save_change_to_attribute?(&quot;name&quot;)</code>.</p>
+
+<h4 id="method-i-will_save_change_to_attribute-3F-label-Options">Options</h4>
+<dl class="rdoc-list label-list"><dt><code>from</code></dt>
+<dd>
+<p>When specified, this method will return false unless the original value is equal to the given value.</p>
+</dd><dt><code>to</code></dt>
+<dd>
+<p>When specified, this method will return false unless the value will be changed to the given value.</p>
+</dd></dl>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/attribute_methods/dirty.rb, line 138
+      def will_save_change_to_attribute?(attr_name, **options)
+        mutations_from_database.changed?(attr_name.to_s, **options)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/attribute_methods/dirty.rb#L138" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
