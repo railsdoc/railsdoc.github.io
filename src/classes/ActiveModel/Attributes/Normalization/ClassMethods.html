@@ -1,0 +1,190 @@
+---
+title: ActiveModel::Attributes::Normalization::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveModel::Attributes::Normalization::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/activemodel/lib/active_model/attributes/normalization_rb.html">activemodel/lib/active_model/attributes/normalization.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-normalize_value_for">normalize_value_for</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-normalizes">normalizes</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-normalize_value_for">
+            
+              normalize_value_for(name, value)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Normalizes a given <code>value</code> using normalizations declared for <code>name</code>.</p>
+
+<h4 id="method-i-normalize_value_for-label-Examples">Examples</h4>
+
+<pre><code>class User
+  include ActiveModel::Attributes
+  include ActiveModel::Attributes::Normalization
+
+  attribute :email, :string
+
+  normalizes :email, with: -&gt; email { email.strip.downcase }
+end
+
+User.normalize_value_for(:email, &quot; CRUISE-CONTROL@EXAMPLE.COM\n&quot;)
+# =&gt; &quot;cruise-control@example.com&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attributes/normalization.rb, line 134
+        def normalize_value_for(name, value)
+          type_for_attribute(name).cast(value)
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activemodel/lib/active_model/attributes/normalization.rb#L134" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-normalizes">
+            
+              normalizes(*names, with:, apply_to_nil: false)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Declares a normalization for one or more attributes. The normalization is applied when the attribute is assigned or validated.</p>
+
+<p>Because the normalization may be applied multiple times, it should be <em>idempotent</em>. In other words, applying the normalization more than once should have the same result as applying it only once.</p>
+
+<p>By default, the normalization will not be applied to <code>nil</code> values. This behavior can be changed with the <code>:apply_to_nil</code> option.</p>
+
+<h4 id="method-i-normalizes-label-Options">Options</h4>
+<ul><li>
+<p><code>:with</code> - Any callable object that accepts the attribute’s value as its sole argument, and returns it normalized.</p>
+</li><li>
+<p><code>:apply_to_nil</code> - Whether to apply the normalization to <code>nil</code> values. Defaults to <code>false</code>.</p>
+</li></ul>
+
+<h4 id="method-i-normalizes-label-Examples">Examples</h4>
+
+<pre><code>class User
+  include ActiveModel::Attributes
+  include ActiveModel::Attributes::Normalization
+
+  attribute :email, :string
+  attribute :phone, :string
+
+  normalizes :email, with: -&gt; email { email.strip.downcase }
+  normalizes :phone, with: -&gt; phone { phone.delete(&quot;^0-9&quot;).delete_prefix(&quot;1&quot;) }
+end
+
+user = User.new
+user.email =    &quot; CRUISE-CONTROL@EXAMPLE.COM\n&quot;
+user.email # =&gt; &quot;cruise-control@example.com&quot;
+
+User.normalize_value_for(:phone, &quot;+1 (555) 867-5309&quot;) # =&gt; &quot;5558675309&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attributes/normalization.rb, line 111
+        def normalizes(*names, with:, apply_to_nil: false)
+          decorate_attributes(names) do |name, cast_type|
+            NormalizedValueType.new(cast_type: cast_type, normalizer: with, normalize_nil: apply_to_nil)
+          end
+
+          self.normalized_attributes += names.map(&amp;:to_sym)
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activemodel/lib/active_model/attributes/normalization.rb#L111" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

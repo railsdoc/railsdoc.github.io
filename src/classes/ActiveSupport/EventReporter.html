@@ -1,0 +1,919 @@
+---
+title: ActiveSupport::EventReporter
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::EventReporter
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/event_reporter_rb.html">activesupport/lib/active_support/event_reporter.rb</a></li>
+            
+            <li><a href="../../files/activesupport/lib/active_support/event_reporter/test_helper_rb.html">activesupport/lib/active_support/event_reporter/test_helper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveSupport::EventReporter-label-Active+Support+Event+Reporter">Active Support Event Reporter</h1>
+
+<p><code>ActiveSupport::EventReporter</code> provides an interface for reporting structured events to subscribers.</p>
+
+<p>To report an event, you can use the <code>notify</code> method:</p>
+
+<pre><code>Rails.event.notify(&quot;user_created&quot;, { id: 123 })
+# Emits event:
+#  {
+#    name: &quot;user_created&quot;,
+#    payload: { id: 123 },
+#    timestamp: 1738964843208679035,
+#    source_location: { filepath: &quot;path/to/file.rb&quot;, lineno: 123, label: &quot;UserService#create&quot; }
+#  }
+</code></pre>
+
+<p>The <code>notify</code> API can receive either an event name and a payload hash, or an event object. Names are coerced to strings.</p>
+
+<h3 id="class-ActiveSupport::EventReporter-label-Event+Objects">Event Objects</h3>
+
+<p>If an event object is passed to the <code>notify</code> API, it will be passed through to subscribers as-is, and the name of the object’s class will be used as the event name.</p>
+
+<pre><code>class UserCreatedEvent
+  def initialize(id:, name:)
+    @id = id
+    @name = name
+  end
+
+  def serialize
+    {
+      id: @id,
+      name: @name
+    }
+  end
+end
+
+Rails.event.notify(UserCreatedEvent.new(id: 123, name: &quot;John Doe&quot;))
+# Emits event:
+#  {
+#    name: &quot;UserCreatedEvent&quot;,
+#    payload: #&lt;UserCreatedEvent:0x111&gt;,
+#    timestamp: 1738964843208679035,
+#    source_location: { filepath: &quot;path/to/file.rb&quot;, lineno: 123, label: &quot;UserService#create&quot; }
+#  }
+</code></pre>
+
+<p>An event is any Ruby object representing a schematized event. While payload hashes allow arbitrary, implicitly-structured data, event objects are intended to enforce a particular schema.</p>
+
+<p>Subscribers are responsible for serializing event objects.</p>
+
+<h3 id="class-ActiveSupport::EventReporter-label-Subscribers">Subscribers</h3>
+
+<p>Subscribers must implement the <code>emit</code> method, which will be called with the event hash.</p>
+
+<p>The event hash has the following keys:</p>
+
+<pre><code>name: String (The name of the event)
+payload: Hash, Object (The payload of the event, or the event object itself)
+tags: Hash (The tags of the event)
+context: Hash (The context of the event)
+timestamp: Float (The timestamp of the event, in nanoseconds)
+source_location: Hash (The source location of the event, containing the filepath, lineno, and label)
+</code></pre>
+
+<p>Subscribers are responsible for encoding events to their desired format before emitting them to their target destination, such as a streaming platform, a log device, or an alerting service.</p>
+
+<pre><code>class JSONEventSubscriber
+  def emit(event)
+    json_data = JSON.generate(event)
+    LogExporter.export(json_data)
+  end
+end
+
+class LogSubscriber
+  def emit(event)
+    payload = event[:payload].map { |key, value| &quot;#{key}=#{value}&quot; }.join(&quot; &quot;)
+    source_location = event[:source_location]
+    log = &quot;[#{event[:name]}] #{payload} at #{source_location[:filepath]}:#{source_location[:lineno]}&quot;
+    Rails.logger.info(log)
+  end
+end
+</code></pre>
+
+<p>Note that event objects are passed through to subscribers as-is, and may need to be serialized before being encoded:</p>
+
+<pre><code>class UserCreatedEvent
+  def initialize(id:, name:)
+    @id = id
+    @name = name
+  end
+
+  def serialize
+    {
+      id: @id,
+      name: @name
+    }
+  end
+end
+
+class LogSubscriber
+  def emit(event)
+    payload = event[:payload]
+    json_data = JSON.generate(payload.serialize)
+    LogExporter.export(json_data)
+  end
+end
+</code></pre>
+
+<h4 id="class-ActiveSupport::EventReporter-label-Filtered+Subscriptions">Filtered Subscriptions</h4>
+
+<p>Subscribers can be configured with an optional filter proc to only receive a subset of events:</p>
+
+<pre><code># Only receive events with names starting with &quot;user.&quot;
+Rails.event.subscribe(user_subscriber) { |event| event[:name].start_with?(&quot;user.&quot;) }
+
+# Only receive events with specific payload types
+Rails.event.subscribe(audit_subscriber) { |event| event[:payload].is_a?(AuditEvent) }
+</code></pre>
+
+<h3 id="class-ActiveSupport::EventReporter-label-Debug+Events">Debug Events</h3>
+
+<p>You can use the <code>debug</code> method to report an event that will only be reported if the event reporter is in debug mode:</p>
+
+<pre><code>Rails.event.debug(&quot;my_debug_event&quot;, { foo: &quot;bar&quot; })
+</code></pre>
+
+<h3 id="class-ActiveSupport::EventReporter-label-Tags">Tags</h3>
+
+<p>To add additional context to an event, separate from the event payload, you can add tags via the <code>tagged</code> method:</p>
+
+<pre><code>Rails.event.tagged(&quot;graphql&quot;) do
+  Rails.event.notify(&quot;user_created&quot;, { id: 123 })
+end
+
+# Emits event:
+#  {
+#    name: &quot;user_created&quot;,
+#    payload: { id: 123 },
+#    tags: { graphql: true },
+#    context: {},
+#    timestamp: 1738964843208679035,
+#    source_location: { filepath: &quot;path/to/file.rb&quot;, lineno: 123, label: &quot;UserService#create&quot; }
+#  }
+</code></pre>
+
+<h3 id="class-ActiveSupport::EventReporter-label-Context+Store">Context Store</h3>
+
+<p>You may want to attach metadata to every event emitted by the reporter. While tags provide domain-specific context for a series of events, context is scoped to the job / request and should be used for metadata associated with the execution context. Context can be set via the <code>set_context</code> method:</p>
+
+<pre><code>Rails.event.set_context(request_id: &quot;abcd123&quot;, user_agent: &quot;TestAgent&quot;)
+Rails.event.notify(&quot;user_created&quot;, { id: 123 })
+
+# Emits event:
+#  {
+#    name: &quot;user_created&quot;,
+#    payload: { id: 123 },
+#    tags: {},
+#    context: { request_id: &quot;abcd123&quot;, user_agent: TestAgent&quot; },
+#    timestamp: 1738964843208679035,
+#    source_location: { filepath: &quot;path/to/file.rb&quot;, lineno: 123, label: &quot;UserService#create&quot; }
+#  }
+</code></pre>
+
+<p>Context is reset automatically before and after each request.</p>
+
+<p>A custom context store can be configured via <code>config.active_support.event_reporter_context_store</code>.</p>
+
+<pre><code># config/application.rb
+config.active_support.event_reporter_context_store = CustomContextStore
+
+class CustomContextStore
+  class &lt;&lt; self
+    def context
+      # Return the context.
+    end
+
+    def set_context(context_hash)
+      # Append context_hash to the existing context store.
+    end
+
+    def clear
+      # Delete the stored context.
+    end
+  end
+end
+</code></pre>
+
+<p>The Event Reporter standardizes on symbol keys for all payload data, tags, and context store entries. <a href="../String.html"><code>String</code></a> keys are automatically converted to symbols for consistency.</p>
+
+<pre><code>Rails.event.notify(&quot;user.created&quot;, { &quot;id&quot; =&gt; 123 })
+# Emits event:
+#  {
+#    name: &quot;user.created&quot;,
+#    payload: { id: 123 },
+#  }
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-clear_context">clear_context</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-context">context</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-debug">debug</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-debug_mode-3F">debug_mode?</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-notify">notify</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-set_context">set_context</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-subscribe">subscribe</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-tagged">tagged</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-unsubscribe">unsubscribe</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-with_debug">with_debug</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [W]
+            </td>
+            <td class='attr-name'>raise_on_error</td>
+            <td class='attr-desc'><p>Sets whether to raise an error if a subscriber raises an error during event emission, or when unexpected arguments are passed to <code>notify</code>.</p></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(*subscribers, raise_on_error: false)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/event_reporter.rb, line 276
+    def initialize(*subscribers, raise_on_error: false)
+      @subscribers = []
+      subscribers.each { |subscriber| subscribe(subscriber) }
+      @debug_mode = false
+      @raise_on_error = raise_on_error
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/event_reporter.rb#L276" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-clear_context">
+            
+              clear_context()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Clears all context data.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/event_reporter.rb, line 515
+    def clear_context
+      context_store.clear
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/event_reporter.rb#L515" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-context">
+            
+              context()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the current context data.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/event_reporter.rb, line 520
+    def context
+      context_store.context
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/event_reporter.rb#L520" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-debug">
+            
+              debug(name_or_object, payload = nil, caller_depth: 1, **kwargs)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Report an event only when in debug mode. For example:</p>
+
+<pre><code>Rails.event.debug(&quot;sql.query&quot;, { sql: &quot;SELECT * FROM users&quot; })
+</code></pre>
+
+<h4 id="method-i-debug-label-Arguments">Arguments</h4>
+<ul><li>
+<p><code>:payload</code> - The event payload when using string/symbol event names.</p>
+</li><li>
+<p><code>:caller_depth</code> - The stack depth to use for source location (default: 1).</p>
+</li><li>
+<p><code>:kwargs</code> - Additional payload data when using string/symbol event names.</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/event_reporter.rb, line 425
+    def debug(name_or_object, payload = nil, caller_depth: 1, **kwargs)
+      if debug_mode?
+        if block_given?
+          notify(name_or_object, payload, caller_depth: caller_depth + 1, **kwargs.merge(yield))
+        else
+          notify(name_or_object, payload, caller_depth: caller_depth + 1, **kwargs)
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/event_reporter.rb#L425" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-debug_mode-3F">
+            
+              debug_mode?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Check if debug mode is currently enabled. Debug mode is enabled on the reporter via <code>with_debug</code>, and in local environments.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/event_reporter.rb, line 410
+    def debug_mode?
+      @debug_mode || Fiber[:event_reporter_debug_mode]
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/event_reporter.rb#L410" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-notify">
+            
+              notify(name_or_object, payload = nil, caller_depth: 1, **kwargs)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Reports an event to all registered subscribers. An event name and payload can be provided:</p>
+
+<pre><code>Rails.event.notify(&quot;user.created&quot;, { id: 123 })
+# Emits event:
+#  {
+#    name: &quot;user.created&quot;,
+#    payload: { id: 123 },
+#    tags: {},
+#    context: {},
+#    timestamp: 1738964843208679035,
+#    source_location: { filepath: &quot;path/to/file.rb&quot;, lineno: 123, label: &quot;UserService#create&quot; }
+#  }
+</code></pre>
+
+<p>Alternatively, an event object can be provided:</p>
+
+<pre><code>Rails.event.notify(UserCreatedEvent.new(id: 123))
+# Emits event:
+#  {
+#    name: &quot;UserCreatedEvent&quot;,
+#    payload: #&lt;UserCreatedEvent:0x111&gt;,
+#    tags: {},
+#    context: {},
+#    timestamp: 1738964843208679035,
+#    source_location: { filepath: &quot;path/to/file.rb&quot;, lineno: 123, label: &quot;UserService#create&quot; }
+#  }
+</code></pre>
+
+<h4 id="method-i-notify-label-Arguments">Arguments</h4>
+<ul><li>
+<p><code>:payload</code> - The event payload when using string/symbol event names.</p>
+</li><li>
+<p><code>:caller_depth</code> - The stack depth to use for source location (default: 1).</p>
+</li><li>
+<p><code>:kwargs</code> - Additional payload data when using string/symbol event names.</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/event_reporter.rb, line 353
+    def notify(name_or_object, payload = nil, caller_depth: 1, **kwargs)
+      name = resolve_name(name_or_object)
+      payload = resolve_payload(name_or_object, payload, **kwargs)
+
+      event = {
+        name: name,
+        payload: payload,
+        tags: TagStack.tags,
+        context: context_store.context,
+        timestamp: Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond),
+      }
+
+      caller_location = caller_locations(caller_depth, 1)&amp;.first
+
+      if caller_location
+        source_location = {
+          filepath: caller_location.path,
+          lineno: caller_location.lineno,
+          label: caller_location.label,
+        }
+        event[:source_location] = source_location
+      end
+
+      @subscribers.each do |subscriber_entry|
+        subscriber = subscriber_entry[:subscriber]
+        filter = subscriber_entry[:filter]
+
+        next if filter &amp;&amp; !filter.call(event)
+
+        subscriber.emit(event)
+      rescue =&gt; subscriber_error
+        if raise_on_error?
+          raise
+        else
+          ActiveSupport.error_reporter.report(subscriber_error, handled: true)
+        end
+      end
+
+      nil
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/event_reporter.rb#L353" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-set_context">
+            
+              set_context(context)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Sets context data that will be included with all events emitted by the reporter. Context data should be scoped to the job or request, and is reset automatically before and after each request and job.</p>
+
+<pre><code>Rails.event.set_context(user_agent: &quot;TestAgent&quot;)
+Rails.event.set_context(job_id: &quot;abc123&quot;)
+Rails.event.tagged(&quot;graphql&quot;) do
+  Rails.event.notify(&quot;user_created&quot;, { id: 123 })
+end
+
+# Emits event:
+#  {
+#    name: &quot;user_created&quot;,
+#    payload: { id: 123 },
+#    tags: { graphql: true },
+#    context: { user_agent: &quot;TestAgent&quot;, job_id: &quot;abc123&quot; },
+#    timestamp: 1738964843208679035
+#    source_location: { filepath: &quot;path/to/file.rb&quot;, lineno: 123, label: &quot;UserService#create&quot; }
+#  }
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/event_reporter.rb, line 510
+    def set_context(context)
+      context_store.set_context(context)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/event_reporter.rb#L510" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-subscribe">
+            
+              subscribe(subscriber, &amp;filter)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Registers a new event subscriber. The subscriber must respond to</p>
+
+<pre><code>emit(event: Hash)
+</code></pre>
+
+<p>The event hash will have the following keys:</p>
+
+<pre><code>name: String (The name of the event)
+payload: Hash, Object (The payload of the event, or the event object itself)
+tags: Hash (The tags of the event)
+context: Hash (The context of the event)
+timestamp: Float (The timestamp of the event, in nanoseconds)
+source_location: Hash (The source location of the event, containing the filepath, lineno, and label)
+</code></pre>
+
+<p>An optional filter proc can be provided to only receive a subset of events:</p>
+
+<pre><code>Rails.event.subscribe(subscriber) { |event| event[:name].start_with?(&quot;user.&quot;) }
+Rails.event.subscribe(subscriber) { |event| event[:payload].is_a?(UserEvent) }
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/event_reporter.rb, line 301
+    def subscribe(subscriber, &amp;filter)
+      unless subscriber.respond_to?(:emit)
+        raise ArgumentError, &quot;Event subscriber #{subscriber.class.name} must respond to #emit&quot;
+      end
+      @subscribers &lt;&lt; { subscriber: subscriber, filter: filter }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/event_reporter.rb#L301" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-tagged">
+            
+              tagged(*args, **kwargs, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Add tags to events to supply additional context. Tags operate in a stack-oriented manner, so all events emitted within the block inherit the same set of tags. For example:</p>
+
+<pre><code>Rails.event.tagged(&quot;graphql&quot;) do
+  Rails.event.notify(&quot;user.created&quot;, { id: 123 })
+end
+
+# Emits event:
+# {
+#    name: &quot;user.created&quot;,
+#    payload: { id: 123 },
+#    tags: { graphql: true },
+#    context: {},
+#    timestamp: 1738964843208679035,
+#    source_location: { filepath: &quot;path/to/file.rb&quot;, lineno: 123, label: &quot;UserService#create&quot; }
+#  }
+</code></pre>
+
+<p>Tags can be provided as arguments or as keyword arguments, and can be nested:</p>
+
+<pre><code>Rails.event.tagged(&quot;graphql&quot;) do
+# Other code here...
+  Rails.event.tagged(section: &quot;admin&quot;) do
+    Rails.event.notify(&quot;user.created&quot;, { id: 123 })
+  end
+end
+
+# Emits event:
+#  {
+#    name: &quot;user.created&quot;,
+#    payload: { id: 123 },
+#    tags: { section: &quot;admin&quot;, graphql: true },
+#    context: {},
+#    timestamp: 1738964843208679035,
+#    source_location: { filepath: &quot;path/to/file.rb&quot;, lineno: 123, label: &quot;UserService#create&quot; }
+#  }
+</code></pre>
+
+<p>The <code>tagged</code> API can also receive a tag object:</p>
+
+<pre><code>graphql_tag = GraphqlTag.new(operation_name: &quot;user_created&quot;, operation_type: &quot;mutation&quot;)
+Rails.event.tagged(graphql_tag) do
+  Rails.event.notify(&quot;user.created&quot;, { id: 123 })
+end
+
+# Emits event:
+#  {
+#    name: &quot;user.created&quot;,
+#    payload: { id: 123 },
+#    tags: { &quot;GraphqlTag&quot;: #&lt;GraphqlTag:0x111&gt; },
+#    context: {},
+#    timestamp: 1738964843208679035,
+#    source_location: { filepath: &quot;path/to/file.rb&quot;, lineno: 123, label: &quot;UserService#create&quot; }
+#  }
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/event_reporter.rb, line 487
+    def tagged(*args, **kwargs, &amp;block)
+      TagStack.with_tags(*args, **kwargs, &amp;block)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/event_reporter.rb#L487" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-unsubscribe">
+            
+              unsubscribe(subscriber)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Unregister an event subscriber. Accepts either a subscriber or a class.</p>
+
+<pre><code>subscriber = MyEventSubscriber.new
+Rails.event.subscribe(subscriber)
+
+Rails.event.unsubscribe(subscriber)
+# or
+Rails.event.unsubscribe(MyEventSubscriber)
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/event_reporter.rb, line 316
+    def unsubscribe(subscriber)
+      @subscribers.delete_if { |s| subscriber === s[:subscriber] }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/event_reporter.rb#L316" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-with_debug">
+            
+              with_debug()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Temporarily enables debug mode for the duration of the block. Calls to <code>debug</code> will only be reported if debug mode is enabled.</p>
+
+<pre><code>Rails.event.with_debug do
+  Rails.event.debug(&quot;sql.query&quot;, { sql: &quot;SELECT * FROM users&quot; })
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/event_reporter.rb, line 400
+    def with_debug
+      prior = Fiber[:event_reporter_debug_mode]
+      Fiber[:event_reporter_debug_mode] = true
+      yield
+    ensure
+      Fiber[:event_reporter_debug_mode] = prior
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/event_reporter.rb#L400" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

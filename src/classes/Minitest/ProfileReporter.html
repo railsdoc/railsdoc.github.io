@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -45,11 +45,19 @@ layout: default
         </li>
       
         <li>
+          <a href="#method-i-passed-3F">passed?</a>
+        </li>
+      
+        <li>
           <a href="#method-i-record">record</a>
         </li>
       
         <li>
           <a href="#method-i-report">report</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-summary">summary</a>
         </li>
       
     </ul>
@@ -64,6 +72,20 @@ layout: default
 
     
 
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>results</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
     
 
     <!-- Methods -->
@@ -94,14 +116,14 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File railties/lib/minitest/rails_plugin.rb, line 29
+              <pre><code class="ruby"># File railties/lib/minitest/rails_plugin.rb, line 31
     def initialize(io = $stdout, options = {})
       super
       @results = []
       @count = options[:profile]
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/railties/lib/minitest/rails_plugin.rb#L29" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/railties/lib/minitest/rails_plugin.rb#L31" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -111,6 +133,41 @@ layout: default
     
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
+        <div class="method">
+          <h3 id="method-i-passed-3F">
+            
+              passed?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/minitest/rails_plugin.rb, line 50
+    def passed?
+      true
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/railties/lib/minitest/rails_plugin.rb#L50" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
         <div class="method">
           <h3 id="method-i-record">
             
@@ -135,12 +192,21 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File railties/lib/minitest/rails_plugin.rb, line 35
+              <pre><code class="ruby"># File railties/lib/minitest/rails_plugin.rb, line 37
     def record(result)
-      @results &lt;&lt; result
+      if output_file = ENV[&quot;RAILTIES_OUTPUT_FILE&quot;]
+        File.open(output_file, &quot;a&quot;) do |f|
+          # Round-trip for re-serialization
+          data = JSON.parse(result.to_json)
+          data[:location] = result.location
+          f.puts(data.to_json)
+        end
+      else
+        @results &lt;&lt; result
+      end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/railties/lib/minitest/rails_plugin.rb#L35" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/railties/lib/minitest/rails_plugin.rb#L37" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -170,24 +236,49 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File railties/lib/minitest/rails_plugin.rb, line 39
+              <pre><code class="ruby"># File railties/lib/minitest/rails_plugin.rb, line 54
     def report
-      total_time = @results.sum(&amp;:time)
-
-      @results.sort! { |a, b| b.time &lt;=&gt; a.time }
-      slow_results = @results.take(@count)
-      slow_tests_total_time = slow_results.sum(&amp;:time)
-
-      ratio = (total_time == 0) ? 0.0 : (slow_tests_total_time / total_time) * 100
-
-      io.puts(&quot;\nTop %d slowest tests (%.2f seconds, %.1f%% of total time):\n&quot; % [slow_results.size, slow_tests_total_time, ratio])
-      slow_results.each do |result|
-        io.puts(&quot;  %s\n    %.4f seconds %s\n&quot; % [result.location, result.time, source_location(result)])
-      end
-      io.puts(&quot;\n&quot;)
+      # Skip if we&#39;re outputting to a file
+      return if ENV[&quot;RAILTIES_OUTPUT_FILE&quot;]
+      print_summary
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/railties/lib/minitest/rails_plugin.rb#L39" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/railties/lib/minitest/rails_plugin.rb#L54" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-summary">
+            
+              summary()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File railties/lib/minitest/rails_plugin.rb, line 60
+    def summary
+      print_summary
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/railties/lib/minitest/rails_plugin.rb#L60" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

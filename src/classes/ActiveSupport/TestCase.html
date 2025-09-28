@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -101,7 +101,19 @@ layout: default
         </li>
       
         <li>
+          <a href="#method-i-parallel_worker_id">parallel_worker_id</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-parallel_worker_id">parallel_worker_id</a>
+        </li>
+      
+        <li>
           <a href="#method-c-parallelize">parallelize</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-parallelize_before_fork">parallelize_before_fork</a>
         </li>
       
         <li>
@@ -140,6 +152,22 @@ layout: default
           
             <a href="Testing/ErrorReporterAssertions.html">
               ActiveSupport::Testing::ErrorReporterAssertions
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="Testing/EventReporterAssertions.html">
+              ActiveSupport::Testing::EventReporterAssertions
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="Testing/NotificationAssertions.html">
+              ActiveSupport::Testing::NotificationAssertions
             </a>
           
         </li>
@@ -226,7 +254,7 @@ layout: default
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L122" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L170" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -257,14 +285,52 @@ layout: default
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L128" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L176" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-parallel_worker_id">
+            
+              parallel_worker_id()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the current parallel worker ID if tests are running in parallel, nil otherwise.</p>
+
+<pre><code>ActiveSupport::TestCase.parallel_worker_id # =&gt; 2
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 34
+      def parallel_worker_id
+        @@parallel_worker_id
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
           
         </div>
         
         <div class="method">
           <h3 id="method-c-parallelize">
             
-              parallelize(workers: :number_of_processors, with: :processes, threshold: ActiveSupport.test_parallelization_threshold)
+              parallelize(workers: :number_of_processors, with: :processes, threshold: ActiveSupport.test_parallelization_threshold, parallelize_databases: ActiveSupport.parallelize_test_databases)
             
           </h3>
 
@@ -274,8 +340,8 @@ layout: default
 
 <p>Takes a <code>workers</code> argument that controls how many times the process is forked. For each process a new database will be created suffixed with the worker number.</p>
 
-<pre><code>test-database-0
-test-database-1
+<pre><code>test-database_0
+test-database_1
 </code></pre>
 
 <p>If <code>ENV[&quot;PARALLEL_WORKERS&quot;]</code> is set the workers argument will be ignored and the environment variable will be used instead. This is useful for CI environments, or other environments where you may need more workers than you do for local testing.</p>
@@ -292,6 +358,13 @@ test-database-1
 <p>The threaded parallelization uses minitest’s parallel executor directly. The processes parallelization uses a Ruby DRb server.</p>
 
 <p>Because parallelization presents an overhead, it is only enabled when the number of tests to run is above the <code>threshold</code> param. The default value is 50, and it’s configurable via <code>config.active_support.test_parallelization_threshold</code>.</p>
+
+<p>If you want to skip <a href="../Rails.html"><code>Rails</code></a> default creation of one database per process in favor of writing your own implementation, you can set <code>parallelize_databases</code>, or configure it via <code>config.active_support.parallelize_test_databases</code>.</p>
+
+<pre><code>parallelize(workers: :number_of_processors, parallelize_databases: false)
+</code></pre>
+
+<p>Note that your test suite may deadlock if you attempt to use only one database with multiple processes.</p>
             </div>
           
 
@@ -306,15 +379,67 @@ test-database-1
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 81
-      def parallelize(workers: :number_of_processors, with: :processes, threshold: ActiveSupport.test_parallelization_threshold)
-        workers = Concurrent.processor_count if workers == :number_of_processors
-        workers = ENV[&quot;PARALLEL_WORKERS&quot;].to_i if ENV[&quot;PARALLEL_WORKERS&quot;]
+              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 107
+      def parallelize(workers: :number_of_processors, with: :processes, threshold: ActiveSupport.test_parallelization_threshold, parallelize_databases: ActiveSupport.parallelize_test_databases)
+        case
+        when ENV[&quot;PARALLEL_WORKERS&quot;]
+          workers = ENV[&quot;PARALLEL_WORKERS&quot;].to_i
+        when workers == :number_of_processors
+          workers = (Concurrent.available_processor_count || Concurrent.processor_count).floor
+        end
+
+        if with == :processes
+          ActiveSupport.parallelize_test_databases = parallelize_databases
+        end
 
         Minitest.parallel_executor = ActiveSupport::Testing::ParallelizeExecutor.new(size: workers, with: with, threshold: threshold)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L81" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L107" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-parallelize_before_fork">
+            
+              parallelize_before_fork(&amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Before fork hook for parallel testing. This can be used to run anything before the processes are forked.</p>
+
+<p>In your <code>test_helper.rb</code> add the following:</p>
+
+<pre><code>class ActiveSupport::TestCase
+  parallelize_before_fork do
+    # run this before fork
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 132
+      def parallelize_before_fork(&amp;block)
+        ActiveSupport::Testing::Parallelization.before_fork_hook(&amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L132" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -329,7 +454,7 @@ test-database-1
 
           
             <div class="description">
-              <p>Set up hook for parallel testing. This can be used if you have multiple databases or any behavior that needs to be run after the process is forked but before the tests run.</p>
+              <p>Setup hook for parallel testing. This can be used if you have multiple databases or any behavior that needs to be run after the process is forked but before the tests run.</p>
 
 <p>Note: this feature is not available with the threaded parallelization.</p>
 
@@ -355,12 +480,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 101
+              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 149
       def parallelize_setup(&amp;block)
         ActiveSupport::Testing::Parallelization.after_fork_hook(&amp;block)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L101" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -401,12 +526,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 118
+              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 166
       def parallelize_teardown(&amp;block)
         ActiveSupport::Testing::Parallelization.run_cleanup_hook(&amp;block)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L118" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L166" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -441,12 +566,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 44
+              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 61
       def test_order
         ActiveSupport.test_order ||= :random
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L44" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L61" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -490,12 +615,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 34
+              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 51
       def test_order=(new_order)
         ActiveSupport.test_order = new_order
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L51" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -525,7 +650,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L233" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L288" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -549,7 +674,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L156" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L211" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -573,7 +698,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L167" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L222" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -597,7 +722,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L178" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L233" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -621,7 +746,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L189" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L244" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -645,7 +770,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L200" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L255" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -669,7 +794,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L211" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L266" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -693,7 +818,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L222" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L277" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -717,7 +842,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L244" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L299" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -741,7 +866,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L255" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L310" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -765,7 +890,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L266" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L321" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -789,7 +914,7 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L277" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L332" target="_blank" class="github_url">🔎 See on GitHub</a>
           
         </div>
         
@@ -813,7 +938,42 @@ end
 
           
           
-            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/test_case.rb#L288" target="_blank" class="github_url">🔎 See on GitHub</a>
+            <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L343" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-parallel_worker_id">
+            
+              parallel_worker_id()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the current parallel worker ID if tests are running in parallel</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/test_case.rb, line 193
+    def parallel_worker_id
+      self.class.parallel_worker_id
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/test_case.rb#L193" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
           
         </div>
         

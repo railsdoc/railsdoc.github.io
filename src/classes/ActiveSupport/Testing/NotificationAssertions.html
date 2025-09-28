@@ -1,0 +1,274 @@
+---
+title: ActiveSupport::Testing::NotificationAssertions
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Testing::NotificationAssertions
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/testing/notification_assertions_rb.html">activesupport/lib/active_support/testing/notification_assertions.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-assert_no_notifications">assert_no_notifications</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_notification">assert_notification</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_notifications_count">assert_notifications_count</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-capture_notifications">capture_notifications</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-assert_no_notifications">
+            
+              assert_no_notifications(pattern = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Assert no notifications were emitted for a given <code>pattern</code>.</p>
+
+<p>You can assert no notifications were emitted by passing a pattern, which accepts either a string or regexp, and a block. While the block is executed, if no matching notifications are emitted, the assertion will pass.</p>
+
+<pre><code>assert_no_notifications(&quot;post.submitted&quot;) do
+  post.destroy # =&gt; emits non-matching notification
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/notification_assertions.rb, line 66
+      def assert_no_notifications(pattern = nil, &amp;block)
+        notifications = capture_notifications(pattern, &amp;block)
+        error_message = if pattern
+          &quot;Expected no notifications for #{pattern} but found #{notifications.size}&quot;
+        else
+          &quot;Expected no notifications but found #{notifications.size}&quot;
+        end
+        assert_empty(notifications, error_message)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/notification_assertions.rb#L66" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_notification">
+            
+              assert_notification(pattern, payload = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Assert a notification was emitted with a given <code>pattern</code> and optional <code>payload</code>.</p>
+
+<p>You can assert that a notification was emitted by passing a pattern, which accepts either a string or regexp, an optional payload, and a block. While the block is executed, if a matching notification is emitted, the assertion will pass and the notification will be returned.</p>
+
+<p>Note that the payload is matched as a subset, meaning that the notification must contain at least the specified keys and values, but may contain additional ones.</p>
+
+<pre><code>assert_notification(&quot;post.submitted&quot;, title: &quot;Cool Post&quot;) do
+  post.submit(title: &quot;Cool Post&quot;, body: &quot;Cool Body&quot;) # =&gt; emits matching notification
+end
+</code></pre>
+
+<p>Using the returned notification, you can make more customized assertions.</p>
+
+<pre><code>notification = assert_notification(&quot;post.submitted&quot;, title: &quot;Cool Post&quot;) do
+  ActiveSupport::Notifications.instrument(&quot;post.submitted&quot;, title: &quot;Cool Post&quot;, body: Body.new(&quot;Cool Body&quot;))
+end
+
+assert_instance_of(Body, notification.payload[:body])
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/notification_assertions.rb, line 28
+      def assert_notification(pattern, payload = nil, &amp;block)
+        notifications = capture_notifications(pattern, &amp;block)
+        assert_not_empty(notifications, &quot;No #{pattern} notifications were found&quot;)
+
+        return notifications.first if payload.nil?
+
+        notification = notifications.find { |notification| notification.payload.slice(*payload.keys) == payload }
+        assert_not_nil(notification, &quot;No #{pattern} notification with payload #{payload} was found&quot;)
+
+        notification
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/notification_assertions.rb#L28" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_notifications_count">
+            
+              assert_notifications_count(pattern, count, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Assert the number of notifications emitted with a given <code>pattern</code>.</p>
+
+<p>You can assert the number of notifications emitted by passing a pattern, which accepts either a string or regexp, a count, and a block. While the block is executed, the number of matching notifications emitted will be counted. After the block’s execution completes, the assertion will pass if the count matches.</p>
+
+<pre><code>assert_notifications_count(&quot;post.submitted&quot;, 1) do
+  post.submit(title: &quot;Cool Post&quot;) # =&gt; emits matching notification
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/notification_assertions.rb, line 51
+      def assert_notifications_count(pattern, count, &amp;block)
+        actual_count = capture_notifications(pattern, &amp;block).count
+        assert_equal(count, actual_count, &quot;Expected #{count} instead of #{actual_count} notifications for #{pattern}&quot;)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/notification_assertions.rb#L51" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-capture_notifications">
+            
+              capture_notifications(pattern = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Capture emitted notifications, optionally filtered by a <code>pattern</code>.</p>
+
+<p>You can capture emitted notifications, optionally filtered by a pattern, which accepts either a string or regexp, and a block.</p>
+
+<pre><code>notifications = capture_notifications(&quot;post.submitted&quot;) do
+  post.submit(title: &quot;Cool Post&quot;) # =&gt; emits matching notification
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/notification_assertions.rb, line 85
+      def capture_notifications(pattern = nil, &amp;block)
+        notifications = []
+        ActiveSupport::Notifications.subscribed(-&gt;(n) { notifications &lt;&lt; n }, pattern, &amp;block)
+        notifications
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/notification_assertions.rb#L85" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

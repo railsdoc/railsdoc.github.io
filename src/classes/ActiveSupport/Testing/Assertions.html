@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -115,10 +115,21 @@ end
 end
 </code></pre>
 
-<p>The keyword arguments <code>:from</code> and <code>:to</code> can be given to specify the expected initial value and the expected value after the block was executed.</p>
+<p>The keyword arguments <code>:from</code> and <code>:to</code> can be given to specify the expected initial value and the expected value after the block was executed. The comparison is done using case equality (===), which means you can specify patterns or classes:</p>
 
-<pre><code>assert_changes :@object, from: nil, to: :foo do
+<pre><code># Exact value match
+assert_changes :@object, from: nil, to: :foo do
   @object = :foo
+end
+
+# Case equality
+assert_changes -&gt; { user.token }, to: /\w{32}/ do
+  user.generate_token
+end
+
+# Type check
+assert_changes -&gt; { current_error }, from: nil, to: RuntimeError do
+  raise &quot;Oops&quot;
 end
 </code></pre>
 
@@ -142,7 +153,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/testing/assertions.rb, line 195
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/assertions.rb, line 211
       def assert_changes(expression, message = nil, from: UNTRACKED, to: UNTRACKED, &amp;block)
         exp = expression.respond_to?(:call) ? expression : -&gt; { eval(expression.to_s, block.binding) }
 
@@ -181,7 +192,7 @@ end
         retval
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/testing/assertions.rb#L195" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/assertions.rb#L211" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -217,27 +228,31 @@ end
 end
 </code></pre>
 
-<p>An array of expressions can also be passed in and evaluated.</p>
+<p>An array of expressions can be passed in and evaluated.</p>
 
 <pre><code>assert_difference [ &#39;Article.count&#39;, &#39;Post.count&#39; ], 2 do
   post :create, params: { article: {...} }
 end
 </code></pre>
 
-<p>A hash of expressions/numeric differences can also be passed in and evaluated.</p>
+<p>A hash of expressions/numeric differences can be passed in and evaluated.</p>
 
-<pre><code>assert_difference -&gt;{ Article.count } =&gt; 1, -&gt;{ Notification.count } =&gt; 2 do
+<pre><code>assert_difference({ &#39;Article.count&#39; =&gt; 1, &#39;Notification.count&#39; =&gt; 2 }) do
   post :create, params: { article: {...} }
 end
 </code></pre>
 
-<p>A lambda or a list of lambdas can be passed in and evaluated:</p>
+<p>A lambda, a list of lambdas or a hash of lambdas/numeric differences can be passed in and evaluated:</p>
 
 <pre><code>assert_difference -&gt;{ Article.count }, 2 do
   post :create, params: { article: {...} }
 end
 
 assert_difference [-&gt;{ Article.count }, -&gt;{ Post.count }], 2 do
+  post :create, params: { article: {...} }
+end
+
+assert_difference -&gt;{ Article.count } =&gt; 1, -&gt;{ Notification.count } =&gt; 2 do
   post :create, params: { article: {...} }
 end
 </code></pre>
@@ -262,7 +277,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/testing/assertions.rb, line 101
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/assertions.rb, line 105
       def assert_difference(expression, *args, &amp;block)
         expressions =
           if expression.is_a?(Hash)
@@ -295,7 +310,7 @@ end
         retval
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/testing/assertions.rb#L101" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/assertions.rb#L105" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -317,10 +332,21 @@ end
 end
 </code></pre>
 
-<p>Provide the optional keyword argument <code>:from</code> to specify the expected initial value.</p>
+<p>Provide the optional keyword argument <code>:from</code> to specify the expected initial value. The comparison is done using case equality (===), which means you can specify patterns or classes:</p>
 
-<pre><code>assert_no_changes -&gt; { Status.all_good? }, from: true do
+<pre><code># Exact value match
+assert_no_changes -&gt; { Status.all_good? }, from: true do
   post :create, params: { status: { ok: true } }
+end
+
+# Case equality
+assert_no_changes -&gt; { user.token }, from: /\w{32}/ do
+  user.touch
+end
+
+# Type check
+assert_no_changes -&gt; { current_error }, from: RuntimeError do
+  retry_operation
 end
 </code></pre>
 
@@ -344,7 +370,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/testing/assertions.rb, line 252
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/assertions.rb, line 280
       def assert_no_changes(expression, message = nil, from: UNTRACKED, &amp;block)
         exp = expression.respond_to?(:call) ? expression : -&gt; { eval(expression.to_s, block.binding) }
 
@@ -378,7 +404,7 @@ end
         retval
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/testing/assertions.rb#L252" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/assertions.rb#L280" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -434,12 +460,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/testing/assertions.rb, line 157
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/assertions.rb, line 161
       def assert_no_difference(expression, message = nil, &amp;block)
         assert_difference expression, 0, message, &amp;block
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/testing/assertions.rb#L157" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/assertions.rb#L161" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -485,7 +511,7 @@ assert_not &#39;foo&#39;  # =&gt; Expected &quot;foo&quot; to be nil or false
         assert !object, message
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/testing/assertions.rb#L21" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/assertions.rb#L21" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -529,7 +555,7 @@ end
         raise Minitest::UnexpectedError.new(error)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/testing/assertions.rb#L48" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/assertions.rb#L48" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -600,7 +626,7 @@ end
         error
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/testing/assertions.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/assertions.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

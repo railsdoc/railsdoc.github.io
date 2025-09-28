@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -72,7 +72,7 @@ layout: default
         <div class="method">
           <h3 id="method-i-find_signed">
             
-              find_signed(signed_id, purpose: nil)
+              find_signed(signed_id, purpose: nil, on_rotation: nil)
             
           </h3>
 
@@ -110,16 +110,17 @@ User.find_signed signed_id, purpose: :password_reset # =&gt; User.first
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 52
-      def find_signed(signed_id, purpose: nil)
+              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 68
+      def find_signed(signed_id, purpose: nil, on_rotation: nil)
         raise UnknownPrimaryKey.new(self) if primary_key.nil?
 
-        if id = signed_id_verifier.verified(signed_id, purpose: combine_signed_id_purposes(purpose))
+        options = { on_rotation: on_rotation }.compact
+        if id = signed_id_verifier.verified(signed_id, purpose: combine_signed_id_purposes(purpose), **options)
           find_by primary_key =&gt; id
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/signed_id.rb#L52" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/signed_id.rb#L68" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -128,7 +129,7 @@ User.find_signed signed_id, purpose: :password_reset # =&gt; User.first
         <div class="method">
           <h3 id="method-i-find_signed-21">
             
-              find_signed!(signed_id, purpose: nil)
+              find_signed!(signed_id, purpose: nil, on_rotation: nil)
             
           </h3>
 
@@ -158,14 +159,15 @@ User.find_signed! signed_id # =&gt; ActiveRecord::RecordNotFound
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 72
-      def find_signed!(signed_id, purpose: nil)
-        if id = signed_id_verifier.verify(signed_id, purpose: combine_signed_id_purposes(purpose))
+              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 89
+      def find_signed!(signed_id, purpose: nil, on_rotation: nil)
+        options = { on_rotation: on_rotation }.compact
+        if id = signed_id_verifier.verify(signed_id, purpose: combine_signed_id_purposes(purpose), **options)
           find(id)
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/signed_id.rb#L72" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/signed_id.rb#L89" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -180,7 +182,7 @@ User.find_signed! signed_id # =&gt; ActiveRecord::RecordNotFound
 
           
             <div class="description">
-              <p>The verifier instance that all signed ids are generated and verified from. By default, it’ll be initialized with the class-level <code>signed_id_verifier_secret</code>, which within <a href="../../Rails.html"><code>Rails</code></a> comes from <a href="../../Rails/Application.html#method-i-key_generator">Rails.application.key_generator</a>. By default, it’s SHA256 for the digest and JSON for the serialization.</p>
+              
             </div>
           
 
@@ -195,21 +197,31 @@ User.find_signed! signed_id # =&gt; ActiveRecord::RecordNotFound
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 82
+              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 96
       def signed_id_verifier
-        @signed_id_verifier ||= begin
-          secret = signed_id_verifier_secret
-          secret = secret.call if secret.respond_to?(:call)
+        if signed_id_verifier_secret
+          @signed_id_verifier ||= begin
+            secret = signed_id_verifier_secret
+            secret = secret.call if secret.respond_to?(:call)
 
-          if secret.nil?
-            raise ArgumentError, &quot;You must set ActiveRecord::Base.signed_id_verifier_secret to use signed ids&quot;
-          else
+            if secret.nil?
+              raise ArgumentError, &quot;You must set ActiveRecord::Base.signed_id_verifier_secret to use signed IDs&quot;
+            end
+
             ActiveSupport::MessageVerifier.new secret, digest: &quot;SHA256&quot;, serializer: JSON, url_safe: true
           end
+        else
+          return _signed_id_verifier if _signed_id_verifier
+
+          if ActiveRecord.message_verifiers.nil?
+            raise &quot;You must set ActiveRecord.message_verifiers to use signed IDs&quot;
+          end
+
+          ActiveRecord.message_verifiers[&quot;active_record/signed_id&quot;]
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/signed_id.rb#L82" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/signed_id.rb#L96" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -239,12 +251,16 @@ User.find_signed! signed_id # =&gt; ActiveRecord::RecordNotFound
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 98
+              <pre><code class="ruby"># File activerecord/lib/active_record/signed_id.rb, line 122
       def signed_id_verifier=(verifier)
-        @signed_id_verifier = verifier
+        if signed_id_verifier_secret
+          @signed_id_verifier = verifier
+        else
+          self._signed_id_verifier = verifier
+        end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/signed_id.rb#L98" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/signed_id.rb#L122" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

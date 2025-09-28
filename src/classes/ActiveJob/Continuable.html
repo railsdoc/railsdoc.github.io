@@ -1,0 +1,183 @@
+---
+title: ActiveJob::Continuable
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveJob::Continuable
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activejob/lib/active_job/continuable_rb.html">activejob/lib/active_job/continuable.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveJob::Continuable-label-Active+Job+Continuable">Active Job <a href="Continuable.html"><code>Continuable</code></a></h1>
+
+<p>The <a href="Continuable.html"><code>Continuable</code></a> module provides the ability to track the progress of your jobs, and continue from where they left off if interrupted.</p>
+
+<p>Mix <a href="Continuable.html"><code>ActiveJob::Continuable</code></a> into your job to enable continuations.</p>
+
+<p>See <a href="Continuation.html"><code>ActiveJob::Continuation</code></a> for usage.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-step">step</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>resumptions</td>
+            <td class='attr-desc'><p>The number of times the job has been resumed.</p></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(...)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/continuable.rb, line 23
+      def initialize(...)
+        super(...)
+        self.resumptions = 0
+        self.continuation = Continuation.new(self, {})
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activejob/lib/active_job/continuable.rb#L23" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-step">
+            
+              step(step_name, start: nil, isolated: false, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Start a new continuation step</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/continuable.rb, line 36
+    def step(step_name, start: nil, isolated: false, &amp;block)
+      unless block_given?
+        step_method = method(step_name)
+
+        raise ArgumentError, &quot;Step method &#39;#{step_name}&#39; must accept 0 or 1 arguments&quot; if step_method.arity &gt; 1
+
+        if step_method.parameters.any? { |type, name| type == :key || type == :keyreq }
+          raise ArgumentError, &quot;Step method &#39;#{step_name}&#39; must not accept keyword arguments&quot;
+        end
+
+        block = step_method.arity == 0 ? -&gt; (_) { step_method.call } : step_method
+      end
+      checkpoint! if continuation.advanced?
+      continuation.step(step_name, start: start, isolated: isolated, &amp;block)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activejob/lib/active_job/continuable.rb#L36" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

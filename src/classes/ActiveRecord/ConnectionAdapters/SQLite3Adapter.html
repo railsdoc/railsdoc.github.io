@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -29,14 +29,24 @@ layout: default
   
     <div class="description">
       
-<h1 id="class-ActiveRecord::ConnectionAdapters::SQLite3Adapter-label-Active+Record+SQLite3+Adapter">Active Record <a href="SQLite3.html"><code>SQLite3</code></a> Adapter</h1>
+<h1 id="class-ActiveRecord::ConnectionAdapters::SQLite3Adapter-label-Active+Record+SQLite3+Adapter">Active Record SQLite3 Adapter</h1>
 
-<p>The <a href="SQLite3.html"><code>SQLite3</code></a> adapter works with the sqlite3-ruby drivers (available as gem from <a href="https://rubygems.org/gems/sqlite3">rubygems.org/gems/sqlite3</a>).</p>
+<p>The SQLite3 adapter works with the <a href="https://sparklemotion.github.io/sqlite3-ruby/">sqlite3</a> driver.</p>
 
 <h4 id="class-ActiveRecord::ConnectionAdapters::SQLite3Adapter-label-Options">Options</h4>
 <ul><li>
-<p><code>:database</code> - Path to the database file.</p>
+<p><code>:database</code> (<a href="../../String.html"><code>String</code></a>): Filesystem path to the database file.</p>
+</li><li>
+<p><code>:statement_limit</code> (<a href="../../Integer.html"><code>Integer</code></a>): Maximum number of prepared statements to cache per database connection. (default: 1000)</p>
+</li><li>
+<p><code>:timeout</code> (<a href="../../Integer.html"><code>Integer</code></a>): Timeout in milliseconds to use when waiting for a lock. (default: no wait)</p>
+</li><li>
+<p><code>:strict</code> (Boolean): Enable or disable strict mode. When enabled, this will <a href="https://www.sqlite.org/quirks.html#double_quoted_string_literals_are_accepted">disallow double-quoted string literals in SQL statements</a>. (default: see <a href="SQLite3Adapter.html#method-c-strict_strings_by_default"><code>strict_strings_by_default</code></a>)</p>
+</li><li>
+<p><code>:extensions</code> (<a href="../../Array.html"><code>Array</code></a>): (<strong>requires sqlite3 v2.4.0</strong>) Each entry specifies a sqlite extension to load for this database. The entry may be a filesystem path, or the name of a class that responds to <code>.to_path</code> to provide the filesystem path for the extension. See <a href="https://sparklemotion.github.io/sqlite3-ruby/SQLite3/Database.html#class-SQLite3::Database-label-SQLite+Extensions">sqlite3-ruby documentation</a> for more information.</p>
 </li></ul>
+
+<p>There may be other options available specific to the <a href="SQLite3.html"><code>SQLite3</code></a> driver. Please read the documentation for <a href="https://sparklemotion.github.io/sqlite3-ruby/SQLite3/Database.html#method-c-new">SQLite3::Database.new</a></p>
 
     </div>
   
@@ -378,18 +388,18 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 44
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 60
         def dbconsole(config, options = {})
           args = []
 
           args &lt;&lt; &quot;-#{options[:mode]}&quot; if options[:mode]
           args &lt;&lt; &quot;-header&quot; if options[:header]
-          args &lt;&lt; File.expand_path(config.database, Rails.respond_to?(:root) ? Rails.root : nil)
+          args &lt;&lt; File.expand_path(config.database, defined?(Rails.root) ? Rails.root : nil)
 
           find_cmd_and_exec(ActiveRecord.database_cli[:sqlite], *args)
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L44" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L60" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -419,7 +429,7 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 102
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 129
       def initialize(...)
         super
 
@@ -443,17 +453,22 @@ json:         { name: &quot;json&quot; },
           end
         end
 
-        @last_affected_rows = nil
         @previous_read_uncommitted = nil
         @config[:strict] = ConnectionAdapters::SQLite3Adapter.strict_strings_by_default unless @config.key?(:strict)
+
+        extensions = @config.fetch(:extensions, []).map do |extension|
+          extension.safe_constantize || extension
+        end
+
         @connection_parameters = @config.merge(
           database: @config[:database].to_s,
           results_as_hash: true,
           default_transaction_mode: :immediate,
+          extensions: extensions
         )
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L102" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L129" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -483,7 +498,7 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 34
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 50
         def new_client(config)
           ::SQLite3::Database.new(config[:database].to_s, config)
         rescue Errno::ENOENT =&gt; error
@@ -494,7 +509,7 @@ json:         { name: &quot;json&quot; },
           end
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L50" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -509,10 +524,14 @@ json:         { name: &quot;json&quot; },
 
           
             <div class="description">
-              <p>Configure the <a href="SQLite3Adapter.html"><code>SQLite3Adapter</code></a> to be used in a strict strings mode. This will disable double-quoted string literals, because otherwise typos can silently go unnoticed. For example, it is possible to create an index for a non existing column. If you wish to enable this mode you can add the following line to your application.rb file:</p>
+              <p>Configure the <a href="SQLite3Adapter.html"><code>SQLite3Adapter</code></a> to be used in a “strict strings” mode. When enabled, this will <a href="https://www.sqlite.org/quirks.html#double_quoted_string_literals_are_accepted">disallow double-quoted string literals in SQL statements</a>, which may prevent some typographical errors like creating an index for a non-existent column. The default is <code>false</code>.</p>
+
+<p>If you wish to enable this mode you can add the following line to your application.rb file:</p>
 
 <pre><code>config.active_record.sqlite3_adapter_strict_strings_by_default = true
 </code></pre>
+
+<p>This can also be configured on individual databases by setting the <code>strict:</code> option.</p>
             </div>
           
 
@@ -527,11 +546,11 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 67
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 94
       class_attribute :strict_strings_by_default, default: false
 </code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L67" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L94" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -565,7 +584,7 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 210
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 242
       def active?
         if connected?
           verified!
@@ -573,7 +592,7 @@ json:         { name: &quot;json&quot; },
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L210" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L242" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -603,7 +622,7 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 397
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 425
       def add_timestamps(table_name, **options)
         options[:null] = false if options[:null].nil?
 
@@ -617,7 +636,7 @@ json:         { name: &quot;json&quot; },
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L397" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L425" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -647,12 +666,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 206
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 238
       def connected?
         !(@raw_connection.nil? || @raw_connection.closed?)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L206" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L238" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -687,12 +706,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 313
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 341
       def create_virtual_table(table_name, module_name, values)
         exec_query &quot;CREATE VIRTUAL TABLE IF NOT EXISTS #{table_name} USING #{module_name} (#{values.join(&quot;, &quot;)})&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L313" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L341" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -722,12 +741,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 135
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 167
       def database_exists?
         @config[:database] == &quot;:memory:&quot; || File.exist?(@config[:database].to_s)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L135" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L167" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -757,7 +776,7 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 221
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 253
       def disconnect!
         super
 
@@ -765,7 +784,7 @@ json:         { name: &quot;json&quot; },
         @raw_connection = nil
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L221" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L253" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -797,12 +816,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 322
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 350
       def drop_virtual_table(table_name, module_name, values, **options)
         drop_table(table_name)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L322" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L350" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -832,12 +851,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 237
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 265
       def encoding
         any_raw_connection.encoding.to_s
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L237" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L265" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -867,7 +886,7 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 417
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 445
       def foreign_keys(table_name)
         # SQLite returns 1 row for each column of composite foreign keys.
         fk_info = internal_exec_query(&quot;PRAGMA foreign_key_list(#{quote(table_name)})&quot;, &quot;SCHEMA&quot;)
@@ -904,7 +923,7 @@ json:         { name: &quot;json&quot; },
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L417" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L445" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -939,7 +958,7 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 330
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 358
       def rename_table(table_name, new_name, **options)
         validate_table_length!(new_name) unless options[:_uses_legacy_table_name]
         schema_cache.clear_data_source_cache!(table_name.to_s)
@@ -948,7 +967,7 @@ json:         { name: &quot;json&quot; },
         rename_table_indexes(table_name, new_name, **options)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L330" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L358" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -978,12 +997,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 159
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 191
       def requires_reloading?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L159" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L191" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1013,12 +1032,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 167
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 199
       def supports_check_constraints?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L167" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L199" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1048,12 +1067,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 183
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 215
       def supports_common_table_expressions?
-        database_version &gt;= &quot;3.8.3&quot;
+        true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L183" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L215" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1083,12 +1102,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 198
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 230
       def supports_concurrent_connections?
         !@memory_database
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L198" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L230" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1118,12 +1137,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 175
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 207
       def supports_datetime_with_precision?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L175" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L207" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1153,12 +1172,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 139
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 171
       def supports_ddl_transactions?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L139" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L171" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1188,12 +1207,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 249
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 277
       def supports_deferrable_constraints?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L249" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L277" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1223,12 +1242,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 241
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 269
       def supports_explain?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L241" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L269" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1258,12 +1277,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 155
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 187
       def supports_expression_index?
-        database_version &gt;= &quot;3.9.0&quot;
+        true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L155" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L187" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1293,12 +1312,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 163
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 195
       def supports_foreign_keys?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L163" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L195" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1328,12 +1347,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 228
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 260
       def supports_index_sort_order?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L228" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L260" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1392,12 +1411,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 191
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 223
       def supports_insert_on_conflict?
         database_version &gt;= &quot;3.24.0&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L191" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L223" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1477,12 +1496,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 187
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 219
       def supports_insert_returning?
         database_version &gt;= &quot;3.35.0&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L187" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L219" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1512,12 +1531,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 179
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 211
       def supports_json?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L179" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L211" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1547,12 +1566,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 245
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 273
       def supports_lazy_transactions?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L245" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L273" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1582,12 +1601,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 151
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 183
       def supports_partial_index?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L151" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L183" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1617,12 +1636,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 143
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 175
       def supports_savepoints?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L143" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L175" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1652,12 +1671,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 147
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 179
       def supports_transaction_isolation?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L147" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L179" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1687,12 +1706,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 171
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 203
       def supports_views?
         true
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L171" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L203" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1722,12 +1741,12 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 202
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 234
       def supports_virtual_columns?
         database_version &gt;= &quot;3.31.0&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L202" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L234" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1757,7 +1776,7 @@ json:         { name: &quot;json&quot; },
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 297
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb, line 325
       def virtual_tables
         query = &lt;&lt;~SQL
           SELECT name, sql FROM sqlite_master WHERE sql LIKE &#39;CREATE VIRTUAL %&#39;;
@@ -1770,7 +1789,7 @@ json:         { name: &quot;json&quot; },
         end.to_a
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L297" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/sqlite3_adapter.rb#L325" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

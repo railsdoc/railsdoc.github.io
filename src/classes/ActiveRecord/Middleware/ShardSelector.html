@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -33,21 +33,32 @@ layout: default
 
 <p>The <a href="ShardSelector.html"><code>ShardSelector</code></a> <a href="../Middleware.html"><code>Middleware</code></a> provides a framework for automatically swapping shards. Rails provides a basic framework to determine which shard to switch to and allows for applications to write custom strategies for swapping if needed.</p>
 
-<p>The <a href="ShardSelector.html"><code>ShardSelector</code></a> takes a set of options (currently only <code>lock</code> is supported) that can be used by the middleware to alter behavior. <code>lock</code> is true by default and will prohibit the request from switching shards once inside the block. If <code>lock</code> is false, then shard swapping will be allowed. For tenant based sharding, <code>lock</code> should always be true to prevent application code from mistakenly switching between tenants.</p>
+<h2 id="class-ActiveRecord::Middleware::ShardSelector-label-Setup">Setup</h2>
 
-<p>Options can be set in the config:</p>
+<p>Applications must provide a resolver that will provide application-specific logic for selecting the appropriate shard. Setting <code>config.active_record.shard_resolver</code> will cause <a href="../../Rails.html"><code>Rails</code></a> to add <a href="ShardSelector.html"><code>ShardSelector</code></a> to the default middleware stack.</p>
 
-<pre><code>config.active_record.shard_selector = { lock: true }
+<p>The resolver, along with any configuration options, can be set in the application configuration using an initializer like so:</p>
+
+<pre><code>Rails.application.configure do
+  config.active_record.shard_selector = { lock: false, class_name: &quot;AnimalsRecord&quot; }
+  config.active_record.shard_resolver = -&gt;(request) {
+    subdomain = request.subdomain
+    tenant = Tenant.find_by_subdomain!(subdomain)
+    tenant.shard
+  }
+end
 </code></pre>
 
-<p>Applications must also provide the code for the resolver as it depends on application specific models. An example resolver would look like this:</p>
+<h2 id="class-ActiveRecord::Middleware::ShardSelector-label-Configuration">Configuration</h2>
 
-<pre><code>config.active_record.shard_resolver = -&gt;(request) {
-  subdomain = request.subdomain
-  tenant = Tenant.find_by_subdomain!(subdomain)
-  tenant.shard
-}
-</code></pre>
+<p>The behavior of <a href="ShardSelector.html"><code>ShardSelector</code></a> can be altered through some configuration options.</p>
+<dl class="rdoc-list label-list"><dt><code>lock:</code></dt>
+<dd>
+<p><code>lock</code> is true by default and will prohibit the request from switching shards once inside the block. If <code>lock</code> is false, then shard switching will be allowed. For tenant based sharding, <code>lock</code> should always be true to prevent application code from mistakenly switching between tenants.</p>
+</dd><dt><code>class_name:</code></dt>
+<dd>
+<p><code>class_name</code> is the name of the abstract connection class to switch. By default, the <a href="ShardSelector.html"><code>ShardSelector</code></a> will use <a href="../Base.html"><code>ActiveRecord::Base</code></a>, but if the application has multiple databases, then this option should be set to the name of the sharded database’s abstract connection class.</p>
+</dd></dl>
 
     </div>
   
@@ -136,14 +147,14 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/middleware/shard_selector.rb, line 32
+              <pre><code class="ruby"># File activerecord/lib/active_record/middleware/shard_selector.rb, line 47
       def initialize(app, resolver, options = {})
         @app = app
         @resolver = resolver
         @options = options
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/middleware/shard_selector.rb#L32" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/middleware/shard_selector.rb#L47" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -177,7 +188,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/middleware/shard_selector.rb, line 40
+              <pre><code class="ruby"># File activerecord/lib/active_record/middleware/shard_selector.rb, line 55
       def call(env)
         request = ActionDispatch::Request.new(env)
 
@@ -188,7 +199,7 @@ layout: default
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/middleware/shard_selector.rb#L40" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/middleware/shard_selector.rb#L55" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

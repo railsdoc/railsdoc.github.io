@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -48,6 +48,10 @@ layout: default
       
         <li>
           <a href="#method-c-encode">encode</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-json_encoder-3D">json_encoder=</a>
         </li>
       
         <li>
@@ -96,6 +100,44 @@ layout: default
     
 
     
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>escape_html_entities_in_json</td>
+            <td class='attr-desc'><p>If true, encode &gt;, &lt;, &amp; as escaped unicode sequences (e.g. &gt; as u003e) as a safety measure.</p></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>json_encoder</td>
+            <td class='attr-desc'><p>Sets the encoder used by Rails to encode Ruby objects into <a href="JSON.html"><code>JSON</code></a> strings in +Object#to_json+ and <code>ActiveSupport::JSON.encode</code>.</p></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>time_precision</td>
+            <td class='attr-desc'><p>Sets the precision of encoded time values. Defaults to 3 (equivalent to millisecond precision)</p></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>use_standard_json_time_format</td>
+            <td class='attr-desc'><p>If true, use ISO 8601 format for dates and times. Otherwise, fall back to the Active Support legacy format.</p></td>
+          </tr>
+        
+      </table>
+    
 
     <!-- Methods -->
     
@@ -104,7 +146,7 @@ layout: default
         <div class="method">
           <h3 id="method-c-decode">
             
-              decode(json)
+              decode(json, options = {})
             
           </h3>
 
@@ -136,8 +178,8 @@ ActiveSupport::JSON.decode(&quot;2.39&quot;)
               </summary>
 
               <pre><code class="ruby"># File activesupport/lib/active_support/json/decoding.rb, line 24
-      def decode(json)
-        data = ::JSON.parse(json, quirks_mode: true)
+      def decode(json, options = {})
+        data = ::JSON.parse(json, options)
 
         if ActiveSupport.parse_json_times
           convert_dates_from(data)
@@ -146,7 +188,7 @@ ActiveSupport::JSON.decode(&quot;2.39&quot;)
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/json/decoding.rb#L24" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/json/decoding.rb#L24" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -192,7 +234,7 @@ ActiveSupport::JSON.decode(&quot;2.39&quot;)
 # =&gt; &quot;{\&quot;team\&quot;:\&quot;rails\&quot;,\&quot;players\&quot;:\&quot;36\&quot;}&quot;
 </code></pre>
 
-<p>Generates <a href="JSON.html"><code>JSON</code></a> that is safe to include in JavaScript as it escapes U+2028 (Line Separator) and U+2029 (Paragraph Separator):</p>
+<p>By default, it generates <a href="JSON.html"><code>JSON</code></a> that is safe to include in JavaScript, as it escapes U+2028 (Line Separator) and U+2029 (Paragraph Separator):</p>
 
 <pre><code>ActiveSupport::JSON.encode({ key: &quot;\u2028&quot; })
 # =&gt; &quot;{\&quot;key\&quot;:\&quot;\\u2028\&quot;}&quot;
@@ -204,10 +246,16 @@ ActiveSupport::JSON.decode(&quot;2.39&quot;)
 # =&gt; &quot;{\&quot;key\&quot;:\&quot;\\u003c\\u003e\\u0026\&quot;}&quot;
 </code></pre>
 
-<p>This can be changed with the <code>escape_html_entities</code> option, or the global escape_html_entities_in_json configuration option.</p>
+<p>This behavior can be changed with the <code>escape_html_entities</code> option, or the global <a href="JSON.html#attribute-c-escape_html_entities_in_json"><code>escape_html_entities_in_json</code></a> configuration option.</p>
 
 <pre><code>ActiveSupport::JSON.encode({ key: &quot;&lt;&gt;&amp;&quot; }, escape_html_entities: false)
 # =&gt; &quot;{\&quot;key\&quot;:\&quot;&lt;&gt;&amp;\&quot;}&quot;
+</code></pre>
+
+<p>For performance reasons, you can set the <code>escape</code> option to false, which will skip all escaping:</p>
+
+<pre><code>ActiveSupport::JSON.encode({ key: &quot;\u2028&lt;&gt;&amp;&quot; }, escape: false)
+# =&gt; &quot;{\&quot;key\&quot;:\&quot;\u2028&lt;&gt;&amp;\&quot;}&quot;
 </code></pre>
             </div>
           
@@ -227,12 +275,52 @@ ActiveSupport::JSON.decode(&quot;2.39&quot;)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/json/encoding.rb, line 40
+              <pre><code class="ruby"># File activesupport/lib/active_support/json/encoding.rb, line 46
       def encode(value, options = nil)
-        Encoding.json_encoder.new(options).encode(value)
+        if options.nil? || options.empty?
+          Encoding.encode_without_options(value)
+        else
+          Encoding.json_encoder.new(options).encode(value)
+        end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/json/encoding.rb#L40" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/json/encoding.rb#L46" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-json_encoder-3D">
+            
+              json_encoder=(encoder)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/json/encoding.rb, line 206
+        def json_encoder=(encoder)
+          @json_encoder = encoder
+          @encoder_without_options = encoder.new
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/json/encoding.rb#L206" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -241,7 +329,7 @@ ActiveSupport::JSON.decode(&quot;2.39&quot;)
         <div class="method">
           <h3 id="method-c-load">
             
-              load(json)
+              load(json, options = {})
             
           </h3>
 
@@ -299,7 +387,7 @@ end
         ::JSON::ParserError
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/json/decoding.rb#L45" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/json/decoding.rb#L45" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

@@ -1,0 +1,181 @@
+---
+title: ActiveModel::Attributes::Normalization
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveModel::Attributes::Normalization
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activemodel/lib/active_model/attributes/normalization_rb.html">activemodel/lib/active_model/attributes/normalization.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Normalization/ClassMethods.html">ActiveModel::Attributes::Normalization::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-normalize_attribute">normalize_attribute</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="../Dirty.html">
+              ActiveModel::Dirty
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="../Validations/Callbacks.html">
+              ActiveModel::Validations::Callbacks
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-normalize_attribute">
+            
+              normalize_attribute(name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Normalizes a specified attribute using its declared normalizations.</p>
+
+<h4 id="method-i-normalize_attribute-label-Examples">Examples</h4>
+
+<pre><code>class User
+  include ActiveModel::Attributes
+  include ActiveModel::Attributes::Normalization
+
+  attribute :email, :string
+
+  normalizes :email, with: -&gt; email { email.strip.downcase }
+end
+
+legacy_user = User.load_from_legacy_data(...)
+legacy_user.email # =&gt; &quot; CRUISE-CONTROL@EXAMPLE.COM\n&quot;
+legacy_user.normalize_attribute(:email)
+legacy_user.email # =&gt; &quot;cruise-control@example.com&quot;
+</code></pre>
+
+<h4 id="method-i-normalize_attribute-label-Behavior+with+Active+Record">Behavior with Active Record</h4>
+
+<p>To prevent confusion, normalization will not be applied when the attribute is fetched from the database. This means that if a record was persisted before the normalization was declared, the record’s attribute will not be normalized until either it is assigned a new value, or it is explicitly migrated via <a href="Normalization.html#method-i-normalize_attribute"><code>Normalization#normalize_attribute</code></a>.</p>
+
+<p>Be aware that if your app was created before <a href="../../Rails.html"><code>Rails</code></a> 7.1, and your app marshals instances of the targeted model (for example, when caching), then you should set <a href="../../ActiveRecord.html#method-c-marshalling_format_version"><code>ActiveRecord.marshalling_format_version</code></a> to <code>7.1</code> or higher via either <code>config.load_defaults 7.1</code> or <code>config.active_record.marshalling_format_version = 7.1</code>. Otherwise, <code>Marshal</code> may attempt to serialize the normalization <code>Proc</code> and raise <code>TypeError</code>.</p>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  normalizes :email, with: -&gt; email { email.strip.downcase }
+  normalizes :phone, with: -&gt; phone { phone.delete(&quot;^0-9&quot;).delete_prefix(&quot;1&quot;) }
+end
+
+user = User.create(email: &quot; CRUISE-CONTROL@EXAMPLE.COM\n&quot;)
+user.email                  # =&gt; &quot;cruise-control@example.com&quot;
+
+user = User.find_by(email: &quot;\tCRUISE-CONTROL@EXAMPLE.COM &quot;)
+user.email                  # =&gt; &quot;cruise-control@example.com&quot;
+user.email_before_type_cast # =&gt; &quot;cruise-control@example.com&quot;
+
+User.where(email: &quot;\tCRUISE-CONTROL@EXAMPLE.COM &quot;).count         # =&gt; 1
+User.where([&quot;email = ?&quot;, &quot;\tCRUISE-CONTROL@EXAMPLE.COM &quot;]).count # =&gt; 0
+
+User.exists?(email: &quot;\tCRUISE-CONTROL@EXAMPLE.COM &quot;)         # =&gt; true
+User.exists?([&quot;email = ?&quot;, &quot;\tCRUISE-CONTROL@EXAMPLE.COM &quot;]) # =&gt; false
+
+User.normalize_value_for(:phone, &quot;+1 (555) 867-5309&quot;) # =&gt; &quot;5558675309&quot;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activemodel/lib/active_model/attributes/normalization.rb, line 70
+      def normalize_attribute(name)
+        # Treat the value as a new, unnormalized value.
+        send(:&quot;#{name}=&quot;, send(name))
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activemodel/lib/active_model/attributes/normalization.rb#L70" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
