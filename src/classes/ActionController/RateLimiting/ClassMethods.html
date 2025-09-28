@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -72,9 +72,11 @@ layout: default
 
 <p>Rate limits are by default unique to the ip address making the request, but you can provide your own identity function by passing a callable in the <code>by:</code> parameter. It’s evaluated within the context of the controller processing the request.</p>
 
-<p>Requests that exceed the rate limit are refused with a <code>429 Too Many Requests</code> response. You can specialize this by passing a callable in the <code>with:</code> parameter. It’s evaluated within the context of the controller processing the request.</p>
+<p>By default, rate limits are scoped to the controller’s path. If you want to share rate limits across multiple controllers, you can provide your own scope, by passing value in the <code>scope:</code> parameter.</p>
 
-<p>Rate limiting relies on a backing <a href="../../ActiveSupport/Cache.html"><code>ActiveSupport::Cache</code></a> store and defaults to <code>config.action_controller.cache_store</code>, which itself defaults to the global <code>config.cache_store</code>. If you don’t want to store rate limits in the same datastore as your general caches, you can pass a custom store in the <code>store</code> parameter.</p>
+<p>Requests that exceed the rate limit will raise an <code>ActionController::TooManyRequests</code> error. By default, Action Dispatch will rescue from the error and refuse the request with a <code>429 Too Many Requests</code> response. You can specialize this by passing a callable in the <code>with:</code> parameter. It’s evaluated within the context of the controller processing the request.</p>
+
+<p>Rate limiting relies on a backing <code>ActiveSupport::Cache</code> store and defaults to <code>config.action_controller.cache_store</code>, which itself defaults to the global <code>config.cache_store</code>. If you don’t want to store rate limits in the same datastore as your general caches, you can pass a custom store in the <code>store</code> parameter.</p>
 
 <p>If you want to use multiple rate limits per controller, you need to give each of them an explicit name via the <code>name:</code> option.</p>
 
@@ -92,6 +94,7 @@ end
 class APIController &lt; ApplicationController
   RATE_LIMIT_STORE = ActiveSupport::Cache::RedisCacheStore.new(url: ENV[&quot;REDIS_URL&quot;])
   rate_limit to: 10, within: 3.minutes, store: RATE_LIMIT_STORE
+  rate_limit to: 100, within: 5.minutes, scope: :api_global
 end
 
 class SessionsController &lt; ApplicationController
@@ -113,12 +116,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/rate_limiting.rb, line 55
-      def rate_limit(to:, within:, by: -&gt; { request.remote_ip }, with: -&gt; { head :too_many_requests }, store: cache_store, name: nil, **options)
-        before_action -&gt; { rate_limiting(to: to, within: within, by: by, with: with, store: store, name: name) }, **options
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/rate_limiting.rb, line 61
+      def rate_limit(to:, within:, by: -&gt; { request.remote_ip }, with: -&gt; { raise TooManyRequests }, store: cache_store, name: nil, scope: nil, **options)
+        before_action -&gt; { rate_limiting(to: to, within: within, by: by, with: with, store: store, name: name, scope: scope || controller_path) }, **options
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/rate_limiting.rb#L55" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actionpack/lib/action_controller/metal/rate_limiting.rb#L61" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

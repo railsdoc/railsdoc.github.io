@@ -1,0 +1,377 @@
+---
+title: ActiveRecord::ConnectionAdapters::ConnectionPool::Queue
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::ConnectionAdapters::ConnectionPool::Queue
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue_rb.html">activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveRecord::ConnectionAdapters::ConnectionPool::Queue-label-Active+Record+Connection+Pool+Queue">Active Record Connection Pool Queue</h1>
+
+<p>Threadsafe, fair, LIFO queue.  Meant to be used by <a href="../ConnectionPool.html"><code>ConnectionPool</code></a> with which it shares a Monitor.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-add">add</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-any_waiting-3F">any_waiting?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-clear">clear</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete">delete</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-num_waiting">num_waiting</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-poll">poll</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(lock = Monitor.new)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb, line 13
+        def initialize(lock = Monitor.new)
+          @lock = lock
+          @cond = @lock.new_cond
+          @num_waiting = 0
+          @queue = []
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb#L13" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-add">
+            
+              add(element)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Add <code>element</code> to the queue.  Never blocks.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb, line 36
+        def add(element)
+          synchronize do
+            @queue.push element
+            @cond.signal
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb#L36" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-any_waiting-3F">
+            
+              any_waiting?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Test if any threads are currently waiting on the queue.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb, line 21
+        def any_waiting?
+          synchronize do
+            @num_waiting &gt; 0
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb#L21" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-clear">
+            
+              clear()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Remove all elements from the queue.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb, line 51
+        def clear
+          synchronize do
+            @queue.clear
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb#L51" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete">
+            
+              delete(element)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>If <code>element</code> is in the queue, remove and return it, or <code>nil</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb, line 44
+        def delete(element)
+          synchronize do
+            @queue.delete(element)
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb#L44" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-num_waiting">
+            
+              num_waiting()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the number of threads currently waiting on this queue.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb, line 29
+        def num_waiting
+          synchronize do
+            @num_waiting
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb#L29" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-poll">
+            
+              poll(timeout = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Remove the head of the queue.</p>
+
+<p>If <code>timeout</code> is not given, remove and return the head of the queue if the number of available elements is strictly greater than the number of threads currently waiting (that is, don’t jump ahead in line).  Otherwise, return <code>nil</code>.</p>
+
+<p>If <code>timeout</code> is given, block if there is no element available, waiting up to <code>timeout</code> seconds for an element to become available.</p>
+
+<p>Raises:</p>
+<ul><li>
+<p><a href="../../ConnectionTimeoutError.html"><code>ActiveRecord::ConnectionTimeoutError</code></a> if <code>timeout</code> is given and no element</p>
+</li></ul>
+
+<p>becomes available within <code>timeout</code> seconds,</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb, line 71
+        def poll(timeout = nil)
+          synchronize { internal_poll(timeout) }
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/queue.rb#L71" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

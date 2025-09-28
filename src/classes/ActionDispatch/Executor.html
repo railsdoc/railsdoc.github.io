@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -95,7 +95,7 @@ layout: default
       @app, @executor = app, executor
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/middleware/executor.rb#L9" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actionpack/lib/action_dispatch/middleware/executor.rb#L9" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -132,6 +132,10 @@ layout: default
               <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/executor.rb, line 13
     def call(env)
       state = @executor.run!(reset: true)
+      if response_finished = env[&quot;rack.response_finished&quot;]
+        response_finished &lt;&lt; proc { state.complete! }
+      end
+
       begin
         response = @app.call(env)
 
@@ -140,7 +144,11 @@ layout: default
           @executor.error_reporter.report(error, handled: false, source: &quot;application.action_dispatch&quot;)
         end
 
-        returned = response &lt;&lt; ::Rack::BodyProxy.new(response.pop) { state.complete! }
+        unless response_finished
+          response &lt;&lt; ::Rack::BodyProxy.new(response.pop) { state.complete! }
+        end
+        returned = true
+        response
       rescue Exception =&gt; error
         request = ActionDispatch::Request.new env
         backtrace_cleaner = request.get_header(&quot;action_dispatch.backtrace_cleaner&quot;)
@@ -148,11 +156,13 @@ layout: default
         @executor.error_reporter.report(wrapper.unwrapped_exception, handled: false, source: &quot;application.action_dispatch&quot;)
         raise
       ensure
-        state.complete! unless returned
+        if !returned &amp;&amp; !response_finished
+          state.complete!
+        end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/middleware/executor.rb#L13" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actionpack/lib/action_dispatch/middleware/executor.rb#L13" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

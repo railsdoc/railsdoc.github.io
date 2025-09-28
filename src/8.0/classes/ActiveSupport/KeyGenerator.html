@@ -1,0 +1,245 @@
+---
+title: ActiveSupport::KeyGenerator
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::KeyGenerator
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/key_generator_rb.html">activesupport/lib/active_support/key_generator.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveSupport::KeyGenerator-label-Key+Generator">Key Generator</h1>
+
+<p><a href="KeyGenerator.html"><code>KeyGenerator</code></a> is a simple wrapper around OpenSSL’s implementation of PBKDF2. It can be used to derive a number of keys for various purposes from a given secret. This lets Rails applications have a single secure secret, but avoid reusing that key in multiple incompatible contexts.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-generate_key">generate_key</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-hash_digest_class">hash_digest_class</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-hash_digest_class-3D">hash_digest_class=</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-hash_digest_class">
+            
+              hash_digest_class()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/key_generator.rb, line 23
+      def hash_digest_class
+        @hash_digest_class ||= OpenSSL::Digest::SHA1
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/key_generator.rb#L23" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-hash_digest_class-3D">
+            
+              hash_digest_class=(klass)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/key_generator.rb, line 15
+      def hash_digest_class=(klass)
+        if klass.kind_of?(Class) &amp;&amp; klass &lt; OpenSSL::Digest
+          @hash_digest_class = klass
+        else
+          raise ArgumentError, &quot;#{klass} is expected to be an OpenSSL::Digest subclass&quot;
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/key_generator.rb#L15" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(secret, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/key_generator.rb, line 28
+    def initialize(secret, options = {})
+      @secret = secret
+      # The default iterations are higher than required for our key derivation uses
+      # on the off chance someone uses this for password storage
+      @iterations = options[:iterations] || 2**16
+      # Also allow configuration here so people can use this to build a rotation
+      # scheme when switching the digest class.
+      @hash_digest_class = options[:hash_digest_class] || self.class.hash_digest_class
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/key_generator.rb#L28" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-generate_key">
+            
+              generate_key(salt, key_size = 64)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a derived key suitable for use.  The default <code>key_size</code> is chosen to be compatible with the default settings of <a href="MessageVerifier.html"><code>ActiveSupport::MessageVerifier</code></a>. i.e. <code>OpenSSL::Digest::SHA1#block_length</code></p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/key_generator.rb, line 41
+    def generate_key(salt, key_size = 64)
+      OpenSSL::PKCS5.pbkdf2_hmac(@secret, salt, @iterations, key_size, @hash_digest_class.new)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/key_generator.rb#L41" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

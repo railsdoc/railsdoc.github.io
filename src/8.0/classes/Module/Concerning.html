@@ -1,0 +1,265 @@
+---
+title: Module::Concerning
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            Module::Concerning
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/core_ext/module/concerning_rb.html">activesupport/lib/active_support/core_ext/module/concerning.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h2 id="module-Module::Concerning-label-Bite-sized+separation+of+concerns">Bite-sized separation of concerns</h2>
+
+<p>We often find ourselves with a medium-sized chunk of behavior that we’d like to extract, but only mix in to a single class.</p>
+
+<p>Extracting a plain old Ruby object to encapsulate it and collaborate or delegate to the original object is often a good choice, but when there’s no additional state to encapsulate or we’re making DSL-style declarations about the parent class, introducing new collaborators can obfuscate rather than simplify.</p>
+
+<p>The typical route is to just dump everything in a monolithic class, perhaps with a comment, as a least-bad alternative. Using modules in separate files means tedious sifting to get a big-picture view.</p>
+
+<h2 id="module-Module::Concerning-label-Dissatisfying+ways+to+separate+small+concerns">Dissatisfying ways to separate small concerns</h2>
+
+<h3 id="module-Module::Concerning-label-Using+comments-3A">Using comments:</h3>
+
+<pre><code>class Todo &lt; ApplicationRecord
+  # Other todo implementation
+  # ...
+
+  ## Event tracking
+  has_many :events
+
+  before_create :track_creation
+
+  private
+    def track_creation
+      # ...
+    end
+end
+</code></pre>
+
+<h3 id="module-Module::Concerning-label-With+an+inline+module-3A">With an inline module:</h3>
+
+<p>Noisy syntax.</p>
+
+<pre><code>class Todo &lt; ApplicationRecord
+  # Other todo implementation
+  # ...
+
+  module EventTracking
+    extend ActiveSupport::Concern
+
+    included do
+      has_many :events
+      before_create :track_creation
+    end
+
+    private
+      def track_creation
+        # ...
+      end
+  end
+  include EventTracking
+end
+</code></pre>
+
+<h3 id="module-Module::Concerning-label-Mix-in+noise+exiled+to+its+own+file-3A">Mix-in noise exiled to its own file:</h3>
+
+<p>Once our chunk of behavior starts pushing the scroll-to-understand-it boundary, we give in and move it to a separate file. At this size, the increased overhead can be a reasonable tradeoff even if it reduces our at-a-glance perception of how things work.</p>
+
+<pre><code>class Todo &lt; ApplicationRecord
+  # Other todo implementation
+  # ...
+
+  include TodoEventTracking
+end
+</code></pre>
+
+<h2 id="module-Module::Concerning-label-Introducing+Module-23concerning">Introducing <a href="Concerning.html#method-i-concerning"><code>Module#concerning</code></a></h2>
+
+<p>By quieting the mix-in noise, we arrive at a natural, low-ceremony way to separate bite-sized concerns.</p>
+
+<pre><code>class Todo &lt; ApplicationRecord
+  # Other todo implementation
+  # ...
+
+  concerning :EventTracking do
+    included do
+      has_many :events
+      before_create :track_creation
+    end
+
+    private
+      def track_creation
+        # ...
+      end
+  end
+end
+
+Todo.ancestors
+# =&gt; [Todo, Todo::EventTracking, ApplicationRecord, Object]
+</code></pre>
+
+<p>This small step has some wonderful ripple effects. We can</p>
+<ul><li>
+<p>grok the behavior of our class in one glance,</p>
+</li><li>
+<p>clean up monolithic junk-drawer classes by separating their concerns, and</p>
+</li><li>
+<p>stop leaning on protected/private for crude “this is internal stuff” modularity.</p>
+</li></ul>
+
+<h3 id="module-Module::Concerning-label-Prepending+concerning">Prepending concerning</h3>
+
+<p><code>concerning</code> supports a <code>prepend: true</code> argument which will <code>prepend</code> the concern instead of using <code>include</code> for it.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-concern">concern</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-concerning">concerning</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-concern">
+            
+              concern(topic, &amp;module_definition)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>A low-cruft shortcut to define a concern.</p>
+
+<pre><code>concern :EventTracking do
+  ...
+end
+</code></pre>
+
+<p>is equivalent to</p>
+
+<pre><code>module EventTracking
+  extend ActiveSupport::Concern
+
+  ...
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/module/concerning.rb, line 132
+    def concern(topic, &amp;module_definition)
+      const_set topic, Module.new {
+        extend ::ActiveSupport::Concern
+        module_eval(&amp;module_definition)
+      }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/core_ext/module/concerning.rb#L132" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-concerning">
+            
+              concerning(topic, prepend: false, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Define a new concern and mix it in.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/module/concerning.rb, line 114
+    def concerning(topic, prepend: false, &amp;block)
+      method = prepend ? :prepend : :include
+      __send__(method, concern(topic, &amp;block))
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/core_ext/module/concerning.rb#L114" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

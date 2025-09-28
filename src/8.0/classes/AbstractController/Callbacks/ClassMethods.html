@@ -1,0 +1,523 @@
+---
+title: AbstractController::Callbacks::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            AbstractController::Callbacks::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionpack/lib/abstract_controller/callbacks_rb.html">actionpack/lib/abstract_controller/callbacks.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-_insert_callbacks">_insert_callbacks</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-_normalize_callback_options">_normalize_callback_options</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-after_action">after_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-append_after_action">append_after_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-append_around_action">append_around_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-append_before_action">append_before_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-around_action">around_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-before_action">before_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-prepend_after_action">prepend_after_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-prepend_around_action">prepend_around_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-prepend_before_action">prepend_before_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-skip_after_action">skip_after_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-skip_around_action">skip_around_action</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-skip_before_action">skip_before_action</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-_insert_callbacks">
+            
+              _insert_callbacks(callbacks, block = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Take callback names and an optional callback proc, normalize them, then call the block with each callback. This allows us to abstract the normalization across several methods that use it.</p>
+
+<h4 id="method-i-_insert_callbacks-label-Parameters">Parameters</h4>
+<ul><li>
+<p><code>callbacks</code> - An array of callbacks, with an optional options hash as the last parameter.</p>
+</li><li>
+<p><code>block</code> - A proc that should be added to the callbacks.</p>
+</li></ul>
+
+<h4 id="method-i-_insert_callbacks-label-Block+Parameters">Block Parameters</h4>
+<ul><li>
+<p><code>name</code> - The callback to be added.</p>
+</li><li>
+<p><code>options</code> - A hash of options to be used when adding the callback.</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/abstract_controller/callbacks.rb, line 120
+      def _insert_callbacks(callbacks, block = nil)
+        options = callbacks.extract_options!
+        callbacks.push(block) if block
+        options[:filters] = callbacks
+        _normalize_callback_options(options)
+        options.delete(:filters)
+        callbacks.each do |callback|
+          yield callback, options
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L120" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-_normalize_callback_options">
+            
+              _normalize_callback_options(options)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>If <code>:only</code> or <code>:except</code> are used, convert the options into the <code>:if</code> and <code>:unless</code> options of <a href="../../ActiveSupport/Callbacks.html"><code>ActiveSupport::Callbacks</code></a>.</p>
+
+<p>The basic idea is that <code>:only =&gt; :index</code> gets converted to <code>:if =&gt; proc {|c| c.action_name == &quot;index&quot; }</code>.</p>
+
+<p>Note that <code>:only</code> has priority over <code>:if</code> in case they are used together.</p>
+
+<pre><code>only: :index, if: -&gt; { true } # the :if option will be ignored.
+</code></pre>
+
+<p>Note that <code>:if</code> has priority over <code>:except</code> in case they are used together.</p>
+
+<pre><code>except: :index, if: -&gt; { true } # the :except option will be ignored.
+</code></pre>
+
+<h4 id="method-i-_normalize_callback_options-label-Options">Options</h4>
+<ul><li>
+<p><code>only</code> - The callback should be run only for this action.</p>
+</li><li>
+<p><code>except</code> - The callback should be run for all actions except this action.</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/abstract_controller/callbacks.rb, line 93
+      def _normalize_callback_options(options)
+        _normalize_callback_option(options, :only, :if)
+        _normalize_callback_option(options, :except, :unless)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L93" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-after_action">
+            
+              after_action(names, block)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Append a callback after actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L173" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-append_after_action">
+            
+              append_after_action(names, block)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Append a callback after actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L194" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-append_around_action">
+            
+              append_around_action(names, block)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Append a callback around actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details. set up <a href="ClassMethods.html#method-i-before_action"><code>before_action</code></a>, <a href="ClassMethods.html#method-i-prepend_before_action"><code>prepend_before_action</code></a>, <a href="ClassMethods.html#method-i-skip_before_action"><code>skip_before_action</code></a>, etc. for each of before, after, and around.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L223" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-append_before_action">
+            
+              append_before_action(names, block)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Append a callback before actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details.</p>
+
+<p>If the callback renders or redirects, the action will not run. If there are additional callbacks scheduled to run after that callback, they are also cancelled.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L162" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-around_action">
+            
+              around_action(names, block)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Append a callback around actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L201" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-before_action">
+            
+              before_action(names, block)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Append a callback before actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details.</p>
+
+<p>If the callback renders or redirects, the action will not run. If there are additional callbacks scheduled to run after that callback, they are also cancelled.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L132" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-prepend_after_action">
+            
+              prepend_after_action(names, block)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Prepend a callback after actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L180" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-prepend_around_action">
+            
+              prepend_around_action(names, block)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Prepend a callback around actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L208" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-prepend_before_action">
+            
+              prepend_before_action(names, block)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Prepend a callback before actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details.</p>
+
+<p>If the callback renders or redirects, the action will not run. If there are additional callbacks scheduled to run after that callback, they are also cancelled.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L143" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-skip_after_action">
+            
+              skip_after_action(names)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Skip a callback after actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L187" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-skip_around_action">
+            
+              skip_around_action(names)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Skip a callback around actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L216" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-skip_before_action">
+            
+              skip_before_action(names)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Skip a callback before actions. See <a href="ClassMethods.html#method-i-_insert_callbacks"><code>_insert_callbacks</code></a> for parameter details.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/abstract_controller/callbacks.rb#L155" target="_blank" class="github_url">🔎 See on GitHub</a>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

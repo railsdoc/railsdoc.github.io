@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -33,7 +33,7 @@ layout: default
       
 <h1 id="class-ActiveSupport::ErrorReporter-label-Active+Support+Error+Reporter">Active Support Error Reporter</h1>
 
-<p><a href="ErrorReporter.html"><code>ActiveSupport::ErrorReporter</code></a> is a common interface for error reporting services.</p>
+<p><code>ActiveSupport::ErrorReporter</code> is a common interface for error reporting services.</p>
 
 <p>To rescue and report any unhandled error, you can use the <a href="ErrorReporter.html#method-i-handle"><code>handle</code></a> method:</p>
 
@@ -83,6 +83,10 @@ end
   
     <h2 id="methods">Methods</h2>
     <ul>
+      
+        <li>
+          <a href="#method-i-add_middleware">add_middleware</a>
+        </li>
       
         <li>
           <a href="#method-i-disable">disable</a>
@@ -223,9 +227,10 @@ end
       @subscribers = subscribers.flatten
       @logger = logger
       @debug_mode = false
+      @context_middlewares = ErrorContextMiddlewareStack.new
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/error_reporter.rb#L35" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/error_reporter.rb#L35" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -235,6 +240,48 @@ end
     
       <h2 id="instance-public-methods">Instance Public methods</h2>
       
+        <div class="method">
+          <h3 id="method-i-add_middleware">
+            
+              add_middleware(middleware)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Add a middleware to modify the error context before it is sent to subscribers.</p>
+
+<p>Middleware is added to a stack of callables run on an error’s execution context before passing to subscribers. Allows creation of entries in error context that are shared by all subscribers.</p>
+
+<p>A context middleware receives the same parameters as <a href="ErrorReporter.html#method-i-report"><code>report</code></a>. It must return a hash - the middleware stack returns the hash after it has run through all middlewares. A middleware can mutate or replace the hash.</p>
+
+<pre><code>Rails.error.add_middleware(-&gt; (error, context) { context.merge({ foo: :bar }) })
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 218
+    def add_middleware(middleware)
+      @context_middlewares.use(middleware)
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/error_reporter.rb#L218" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
         <div class="method">
           <h3 id="method-i-disable">
             
@@ -261,7 +308,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 185
+              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 186
     def disable(subscriber)
       disabled_subscribers = (ActiveSupport::IsolatedExecutionState[self] ||= [])
       disabled_subscribers &lt;&lt; subscriber
@@ -272,7 +319,7 @@ end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/error_reporter.rb#L185" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/error_reporter.rb#L186" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -334,7 +381,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 78
+              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 79
     def handle(*error_classes, severity: :warning, context: {}, fallback: nil, source: DEFAULT_SOURCE)
       error_classes = DEFAULT_RESCUE if error_classes.empty?
       yield
@@ -343,7 +390,7 @@ end
       fallback.call if fallback
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/error_reporter.rb#L78" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/error_reporter.rb#L79" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -398,7 +445,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 114
+              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 115
     def record(*error_classes, severity: :error, context: {}, source: DEFAULT_SOURCE)
       error_classes = DEFAULT_RESCUE if error_classes.empty?
       yield
@@ -407,7 +454,7 @@ end
       raise
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/error_reporter.rb#L114" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/error_reporter.rb#L115" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -447,16 +494,25 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 216
+              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 233
     def report(error, handled: true, severity: handled ? :warning : :error, context: {}, source: DEFAULT_SOURCE)
       return if error.instance_variable_defined?(:@__rails_error_reported)
+      raise ArgumentError, &quot;Reported error must be an Exception, got: #{error.inspect}&quot; unless error.is_a?(Exception)
+
       ensure_backtrace(error)
 
       unless SEVERITIES.include?(severity)
         raise ArgumentError, &quot;severity must be one of #{SEVERITIES.map(&amp;:inspect).join(&quot;, &quot;)}, got: #{severity.inspect}&quot;
       end
 
-      full_context = ActiveSupport::ExecutionContext.to_h.merge(context)
+      full_context = @context_middlewares.execute(
+        error,
+        context: ActiveSupport::ExecutionContext.to_h.merge(context || {}),
+        handled:,
+        severity:,
+        source:
+      )
+
       disabled_subscribers = ActiveSupport::IsolatedExecutionState[self]
       @subscribers.each do |subscriber|
         unless disabled_subscribers&amp;.any? { |s| s === subscriber }
@@ -483,7 +539,7 @@ end
       nil
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/error_reporter.rb#L216" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/error_reporter.rb#L233" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -516,12 +572,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 201
+              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 202
     def set_context(...)
       ActiveSupport::ExecutionContext.set(...)
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/error_reporter.rb#L201" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/error_reporter.rb#L202" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -556,7 +612,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 161
+              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 162
     def subscribe(subscriber)
       unless subscriber.respond_to?(:report)
         raise ArgumentError, &quot;Error subscribers must respond to #report&quot;
@@ -564,7 +620,7 @@ end
       @subscribers &lt;&lt; subscriber
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/error_reporter.rb#L161" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/error_reporter.rb#L162" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -613,7 +669,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 145
+              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 146
     def unexpected(error, severity: :warning, context: {}, source: DEFAULT_SOURCE)
       error = RuntimeError.new(error) if error.is_a?(String)
 
@@ -625,7 +681,7 @@ end
       end
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/error_reporter.rb#L145" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/error_reporter.rb#L146" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -663,12 +719,12 @@ Rails.error.unsubscribe(MyErrorSubscriber)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 176
+              <pre><code class="ruby"># File activesupport/lib/active_support/error_reporter.rb, line 177
     def unsubscribe(subscriber)
       @subscribers.delete_if { |s| subscriber === s }
     end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/error_reporter.rb#L176" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/error_reporter.rb#L177" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

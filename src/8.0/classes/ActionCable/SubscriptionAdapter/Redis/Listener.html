@@ -1,0 +1,398 @@
+---
+title: ActionCable::SubscriptionAdapter::Redis::Listener
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionCable::SubscriptionAdapter::Redis::Listener
+            
+                <span class="parent">&lt;
+                    
+                    SubscriberMap
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/actioncable/lib/action_cable/subscription_adapter/redis_rb.html">actioncable/lib/action_cable/subscription_adapter/redis.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Listener/SubscribedClient.html">ActionCable::SubscriptionAdapter::Redis::Listener::SubscribedClient</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-add_channel">add_channel</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-invoke_callback">invoke_callback</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-listen">listen</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-remove_channel">remove_channel</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-shutdown">shutdown</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">CONNECTION_ERRORS</td>
+            <td>=</td>
+            <td class="attr-value">[::Redis::BaseConnectionError].freeze</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(adapter, config_options, event_loop)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 68
+          def initialize(adapter, config_options, event_loop)
+            super()
+
+            @adapter = adapter
+            @event_loop = event_loop
+
+            @subscribe_callbacks = Hash.new { |h, k| h[k] = [] }
+            @subscription_lock = Mutex.new
+
+            @reconnect_attempt = 0
+            # Use the same config as used by Redis conn
+            @reconnect_attempts = config_options.fetch(:reconnect_attempts, 1)
+            @reconnect_attempts = Array.new(@reconnect_attempts, 0) if @reconnect_attempts.is_a?(Integer)
+
+            @subscribed_client = nil
+
+            @when_connected = []
+
+            @thread = nil
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/redis.rb#L68" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-add_channel">
+            
+              add_channel(channel, on_success)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 141
+          def add_channel(channel, on_success)
+            @subscription_lock.synchronize do
+              ensure_listener_running
+              @subscribe_callbacks[channel] &lt;&lt; on_success
+              when_connected { @subscribed_client.subscribe(channel) }
+            end
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/redis.rb#L141" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-invoke_callback">
+            
+              invoke_callback(*)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 155
+          def invoke_callback(*)
+            @event_loop.post { super }
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/redis.rb#L155" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-listen">
+            
+              listen(conn)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 89
+          def listen(conn)
+            conn.without_reconnect do
+              original_client = extract_subscribed_client(conn)
+
+              conn.subscribe(&quot;_action_cable_internal&quot;) do |on|
+                on.subscribe do |chan, count|
+                  @subscription_lock.synchronize do
+                    if count == 1
+                      @reconnect_attempt = 0
+                      @subscribed_client = original_client
+
+                      until @when_connected.empty?
+                        @when_connected.shift.call
+                      end
+                    end
+
+                    if callbacks = @subscribe_callbacks[chan]
+                      next_callback = callbacks.shift
+                      @event_loop.post(&amp;next_callback) if next_callback
+                      @subscribe_callbacks.delete(chan) if callbacks.empty?
+                    end
+                  end
+                end
+
+                on.message do |chan, message|
+                  broadcast(chan, message)
+                end
+
+                on.unsubscribe do |chan, count|
+                  if count == 0
+                    @subscription_lock.synchronize do
+                      @subscribed_client = nil
+                    end
+                  end
+                end
+              end
+            end
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/redis.rb#L89" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-remove_channel">
+            
+              remove_channel(channel)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 149
+          def remove_channel(channel)
+            @subscription_lock.synchronize do
+              when_connected { @subscribed_client.unsubscribe(channel) }
+            end
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/redis.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-shutdown">
+            
+              shutdown()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 128
+          def shutdown
+            @subscription_lock.synchronize do
+              return if @thread.nil?
+
+              when_connected do
+                @subscribed_client.unsubscribe
+                @subscribed_client = nil
+              end
+            end
+
+            Thread.pass while @thread.alive?
+          end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/subscription_adapter/redis.rb#L128" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

@@ -1,0 +1,229 @@
+---
+title: ActiveStorage::FixtureSet
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveStorage::FixtureSet
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activestorage/lib/active_storage/fixture_set_rb.html">activestorage/lib/active_storage/fixture_set.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveStorage::FixtureSet-label-Active+Storage+FixtureSet">Active Storage FixtureSet</h1>
+
+<p>Fixtures are a way of organizing data that you want to test against; in short, sample data.</p>
+
+<p>To learn more about fixtures, read the <a href="../ActiveRecord/FixtureSet.html"><code>ActiveRecord::FixtureSet</code></a> documentation.</p>
+
+<h3 id="class-ActiveStorage::FixtureSet-label-YAML">YAML</h3>
+
+<p>Like other Active Record-backed models, <a href="Attachment.html"><code>ActiveStorage::Attachment</code></a> and <a href="Blob.html"><code>ActiveStorage::Blob</code></a> records inherit from <a href="../ActiveRecord/Base.html"><code>ActiveRecord::Base</code></a> instances and therefore can be populated by fixtures.</p>
+
+<p>Consider a hypothetical <code>Article</code> model class, its related fixture data, as well as fixture data for related <a href="Attachment.html"><code>ActiveStorage::Attachment</code></a> and <a href="Blob.html"><code>ActiveStorage::Blob</code></a> records:</p>
+
+<pre><code># app/models/article.rb
+class Article &lt; ApplicationRecord
+  has_one_attached :thumbnail
+end
+</code></pre>
+
+<p></p>
+
+<pre><code># fixtures/active_storage/blobs.yml
+first_thumbnail_blob: &lt;%= ActiveStorage::FixtureSet.blob filename: &quot;first.png&quot; %&gt;
+</code></pre>
+
+<p></p>
+
+<pre><code># fixtures/active_storage/attachments.yml
+first_thumbnail_attachment:
+  name: thumbnail
+  record: first (Article)
+  blob: first_thumbnail_blob
+</code></pre>
+
+<p>When processed, Active Record will insert database records for each fixture entry and will ensure the Active Storage relationship is intact.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-blob">blob</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-prepare">prepare</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="../ActiveSupport/Testing/FileFixtures.html">
+              ActiveSupport::Testing::FileFixtures
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="../ActiveRecord/SecureToken.html">
+              ActiveRecord::SecureToken
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-blob">
+            
+              blob(filename:, **attributes)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Generate a YAML-encoded representation of an <a href="Blob.html"><code>ActiveStorage::Blob</code></a> instance’s attributes, resolve the file relative to the directory mentioned by <a href="../ActiveSupport/Testing/FileFixtures.html#method-i-file_fixture"><code>ActiveSupport::Testing::FileFixtures.file_fixture</code></a>, and upload the file to the <a href="Service.html"><code>Service</code></a></p>
+
+<h4 id="method-c-blob-label-Examples">Examples</h4>
+
+<pre><code># tests/fixtures/active_storage/blobs.yml
+second_thumbnail_blob: &lt;%= ActiveStorage::FixtureSet.blob(
+  filename: &quot;second.svg&quot;,
+) %&gt;
+
+third_thumbnail_blob: &lt;%= ActiveStorage::FixtureSet.blob(
+  filename: &quot;third.svg&quot;,
+  content_type: &quot;image/svg+xml&quot;,
+  service_name: &quot;public&quot;
+) %&gt;
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/fixture_set.rb, line 66
+    def self.blob(filename:, **attributes)
+      new.prepare Blob.new(filename: filename, key: generate_unique_secure_token), **attributes
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/fixture_set.rb#L66" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-prepare">
+            
+              prepare(instance, **attributes)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/fixture_set.rb, line 70
+    def prepare(instance, **attributes)
+      io = file_fixture(instance.filename.to_s).open
+      instance.unfurl(io)
+      instance.assign_attributes(attributes)
+      instance.upload_without_unfurling(io)
+
+      instance.attributes.transform_values { |value| value.is_a?(Hash) ? value.to_json : value }.compact.to_json
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/fixture_set.rb#L70" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

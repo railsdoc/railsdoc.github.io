@@ -1,0 +1,308 @@
+---
+title: ActiveRecord::Scoping::Named::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Scoping::Named::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/activerecord/lib/active_record/scoping/named_rb.html">activerecord/lib/active_record/scoping/named.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-all">all</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-default_scoped">default_scoped</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-scope">scope</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-all">
+            
+              all(all_queries: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns an <a href="../../Relation.html"><code>ActiveRecord::Relation</code></a> scope object.</p>
+
+<pre><code>posts = Post.all
+posts.size # Fires &quot;select count(*) from  posts&quot; and returns the count
+posts.each {|p| puts p.name } # Fires &quot;select * from posts&quot; and loads post objects
+
+fruits = Fruit.all
+fruits = fruits.where(color: &#39;red&#39;) if options[:red_only]
+fruits = fruits.limit(10) if limited?
+</code></pre>
+
+<p>You can define a scope that applies to all finders using <a href="../Default/ClassMethods.html#method-i-default_scope">default_scope</a>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/scoping/named.rb, line 22
+        def all(all_queries: nil)
+          scope = current_scope
+
+          if scope
+            if self == scope.model
+              scope.clone
+            else
+              relation.merge!(scope)
+            end
+          else
+            default_scoped(all_queries: all_queries)
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/scoping/named.rb#L22" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-default_scoped">
+            
+              default_scoped(scope = relation, all_queries: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns a scope for the model with default scopes.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/scoping/named.rb, line 45
+        def default_scoped(scope = relation, all_queries: nil)
+          build_default_scope(scope, all_queries: all_queries) || scope
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/scoping/named.rb#L45" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-scope">
+            
+              scope(name, body, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Adds a class method for retrieving and querying objects. The method is intended to return an <a href="../../Relation.html"><code>ActiveRecord::Relation</code></a> object, which is composable with other scopes. If it returns <code>nil</code> or <code>false</code>, an <a href="ClassMethods.html#method-i-all">all</a> scope is returned instead.</p>
+
+<p>A scope represents a narrowing of a database query, such as <code>where(color: :red).select(&#39;shirts.*&#39;).includes(:washing_instructions)</code>.</p>
+
+<pre><code>class Shirt &lt; ActiveRecord::Base
+  scope :red, -&gt; { where(color: &#39;red&#39;) }
+  scope :dry_clean_only, -&gt; { joins(:washing_instructions).where(&#39;washing_instructions.dry_clean_only = ?&#39;, true) }
+end
+</code></pre>
+
+<p>The above calls to <a href="ClassMethods.html#method-i-scope"><code>scope</code></a> define class methods <code>Shirt.red</code> and <code>Shirt.dry_clean_only</code>. <code>Shirt.red</code>, in effect, represents the query <code>Shirt.where(color: &#39;red&#39;)</code>.</p>
+
+<p>Note that this is simply ‘syntactic sugar’ for defining an actual class method:</p>
+
+<pre><code>class Shirt &lt; ActiveRecord::Base
+  def self.red
+    where(color: &#39;red&#39;)
+  end
+end
+</code></pre>
+
+<p>Unlike <code>Shirt.find(...)</code>, however, the object returned by <code>Shirt.red</code> is not an <a href="../../../Array.html"><code>Array</code></a> but an <a href="../../Relation.html"><code>ActiveRecord::Relation</code></a>, which is composable with other scopes; it resembles the association object constructed by a <a href="../../Associations/ClassMethods.html#method-i-has_many">has_many</a> declaration. For instance, you can invoke <code>Shirt.red.first</code>, <code>Shirt.red.count</code>, <code>Shirt.red.where(size: &#39;small&#39;)</code>. Also, just as with the association objects, named scopes act like an <a href="../../../Array.html"><code>Array</code></a>, implementing <a href="../../../Enumerable.html"><code>Enumerable</code></a>; <code>Shirt.red.each(&amp;block)</code>, <code>Shirt.red.first</code>, and <code>Shirt.red.inject(memo, &amp;block)</code> all behave as if <code>Shirt.red</code> really was an array.</p>
+
+<p>These named scopes are composable. For instance, <code>Shirt.red.dry_clean_only</code> will produce all shirts that are both red and dry clean only. Nested finds and calculations also work with these compositions: <code>Shirt.red.dry_clean_only.count</code> returns the number of garments for which these criteria obtain. Similarly with <code>Shirt.red.dry_clean_only.average(:thread_count)</code>.</p>
+
+<p>All scopes are available as class methods on the <a href="../../Base.html"><code>ActiveRecord::Base</code></a> descendant upon which the scopes were defined. But they are also available to <a href="../../Associations/ClassMethods.html#method-i-has_many">has_many</a> associations. If,</p>
+
+<pre><code>class Person &lt; ActiveRecord::Base
+  has_many :shirts
+end
+</code></pre>
+
+<p>then <code>elton.shirts.red.dry_clean_only</code> will return all of Elton’s red, dry clean only shirts.</p>
+
+<p>Named scopes can also have extensions, just as with <a href="../../Associations/ClassMethods.html#method-i-has_many">has_many</a> declarations:</p>
+
+<pre><code>class Shirt &lt; ActiveRecord::Base
+  scope :red, -&gt; { where(color: &#39;red&#39;) } do
+    def dom_id
+      &#39;red_shirts&#39;
+    end
+  end
+end
+</code></pre>
+
+<p>Scopes can also be used while creating/building a record.</p>
+
+<pre><code>class Article &lt; ActiveRecord::Base
+  scope :published, -&gt; { where(published: true) }
+end
+
+Article.published.new.published    # =&gt; true
+Article.published.create.published # =&gt; true
+</code></pre>
+
+<p>Class methods on your model are automatically available on scopes. Assuming the following setup:</p>
+
+<pre><code>class Article &lt; ActiveRecord::Base
+  scope :published, -&gt; { where(published: true) }
+  scope :featured, -&gt; { where(featured: true) }
+
+  def self.latest_article
+    order(&#39;published_at desc&#39;).first
+  end
+
+  def self.titles
+    pluck(:title)
+  end
+end
+</code></pre>
+
+<p>We are able to call the methods like this:</p>
+
+<pre><code>Article.published.featured.latest_article
+Article.featured.titles
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/scoping/named.rb, line 154
+        def scope(name, body, &amp;block)
+          unless body.respond_to?(:call)
+            raise ArgumentError, &quot;The scope body needs to be callable.&quot;
+          end
+
+          if dangerous_class_method?(name)
+            raise ArgumentError, &quot;You tried to define a scope named \&quot;#{name}\&quot; &quot; \
+              &quot;on the model \&quot;#{self.name}\&quot;, but Active Record already defined &quot; \
+              &quot;a class method with the same name.&quot;
+          end
+
+          if method_defined_within?(name, Relation)
+            raise ArgumentError, &quot;You tried to define a scope named \&quot;#{name}\&quot; &quot; \
+              &quot;on the model \&quot;#{self.name}\&quot;, but ActiveRecord::Relation already defined &quot; \
+              &quot;an instance method with the same name.&quot;
+          end
+
+          extension = Module.new(&amp;block) if block
+
+          if body.respond_to?(:to_proc)
+            singleton_class.define_method(name) do |*args|
+              scope = all._exec_scope(*args, &amp;body)
+              scope = scope.extending(extension) if extension
+              scope
+            end
+          else
+            singleton_class.define_method(name) do |*args|
+              scope = body.call(*args) || all
+              scope = scope.extending(extension) if extension
+              scope
+            end
+          end
+          singleton_class.send(:ruby2_keywords, name)
+
+          generate_relation_method(name)
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/scoping/named.rb#L154" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

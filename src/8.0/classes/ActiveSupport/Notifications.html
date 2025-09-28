@@ -1,0 +1,584 @@
+---
+title: ActiveSupport::Notifications
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Notifications
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/notifications_rb.html">activesupport/lib/active_support/notifications.rb</a></li>
+            
+            <li><a href="../../files/activesupport/lib/active_support/notifications/fanout_rb.html">activesupport/lib/active_support/notifications/fanout.rb</a></li>
+            
+            <li><a href="../../files/activesupport/lib/active_support/notifications/instrumenter_rb.html">activesupport/lib/active_support/notifications/instrumenter.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveSupport::Notifications-label-Notifications">Notifications</h1>
+
+<p><a href="Notifications.html"><code>ActiveSupport::Notifications</code></a> provides an instrumentation API for Ruby.</p>
+
+<h2 id="module-ActiveSupport::Notifications-label-Instrumenters">Instrumenters</h2>
+
+<p>To instrument an event you just need to do:</p>
+
+<pre><code>ActiveSupport::Notifications.instrument(&#39;render&#39;, extra: :information) do
+  render plain: &#39;Foo&#39;
+end
+</code></pre>
+
+<p>That first executes the block and then notifies all subscribers once done.</p>
+
+<p>In the example above <code>render</code> is the name of the event, and the rest is called the <em>payload</em>. The payload is a mechanism that allows instrumenters to pass extra information to subscribers. Payloads consist of a hash whose contents are arbitrary and generally depend on the event.</p>
+
+<h2 id="module-ActiveSupport::Notifications-label-Subscribers">Subscribers</h2>
+
+<p>You can consume those events and the information they provide by registering a subscriber.</p>
+
+<pre><code>ActiveSupport::Notifications.subscribe(&#39;render&#39;) do |event|
+  event.name          # =&gt; &quot;render&quot;
+  event.duration      # =&gt; 10 (in milliseconds)
+  event.payload       # =&gt; { extra: :information }
+  event.allocations   # =&gt; 1826 (objects)
+end
+</code></pre>
+
+<p><a href="Notifications/Event.html"><code>Event</code></a> objects record CPU time and allocations. If you don’t need this it’s also possible to pass a block that accepts five arguments:</p>
+
+<pre><code>ActiveSupport::Notifications.subscribe(&#39;render&#39;) do |name, start, finish, id, payload|
+  name    # =&gt; String, name of the event (such as &#39;render&#39; from above)
+  start   # =&gt; Time, when the instrumented block started execution
+  finish  # =&gt; Time, when the instrumented block ended execution
+  id      # =&gt; String, unique ID for the instrumenter that fired the event
+  payload # =&gt; Hash, the payload
+end
+</code></pre>
+
+<p>Here, the <code>start</code> and <code>finish</code> values represent wall-clock time. If you are concerned about accuracy, you can register a monotonic subscriber.</p>
+
+<pre><code>ActiveSupport::Notifications.monotonic_subscribe(&#39;render&#39;) do |name, start, finish, id, payload|
+  name    # =&gt; String, name of the event (such as &#39;render&#39; from above)
+  start   # =&gt; Float, monotonic time when the instrumented block started execution
+  finish  # =&gt; Float, monotonic time when the instrumented block ended execution
+  id      # =&gt; String, unique ID for the instrumenter that fired the event
+  payload # =&gt; Hash, the payload
+end
+</code></pre>
+
+<p>For instance, let’s store all “render” events in an array:</p>
+
+<pre><code>events = []
+
+ActiveSupport::Notifications.subscribe(&#39;render&#39;) do |event|
+  events &lt;&lt; event
+end
+</code></pre>
+
+<p>That code returns right away, you are just subscribing to “render” events. The block is saved and will be called whenever someone instruments “render”:</p>
+
+<pre><code>ActiveSupport::Notifications.instrument(&#39;render&#39;, extra: :information) do
+  render plain: &#39;Foo&#39;
+end
+
+event = events.first
+event.name          # =&gt; &quot;render&quot;
+event.duration      # =&gt; 10 (in milliseconds)
+event.payload       # =&gt; { extra: :information }
+event.allocations   # =&gt; 1826 (objects)
+</code></pre>
+
+<p>If an exception happens during that particular instrumentation the payload will have a key <code>:exception</code> with an array of two elements as value: a string with the name of the exception class, and the exception message. The <code>:exception_object</code> key of the payload will have the exception itself as the value:</p>
+
+<pre><code>event.payload[:exception]         # =&gt; [&quot;ArgumentError&quot;, &quot;Invalid value&quot;]
+event.payload[:exception_object]  # =&gt; #&lt;ArgumentError: Invalid value&gt;
+</code></pre>
+
+<p>As the earlier example depicts, the class <a href="Notifications/Event.html"><code>ActiveSupport::Notifications::Event</code></a> is able to take the arguments as they come and provide an object-oriented interface to that data.</p>
+
+<p>It is also possible to pass an object which responds to <code>call</code> method as the second parameter to the <code>subscribe</code> method instead of a block:</p>
+
+<pre><code>module ActionController
+  class PageRequest
+    def call(name, started, finished, unique_id, payload)
+      Rails.logger.debug [&#39;notification:&#39;, name, started, finished, unique_id, payload].join(&#39; &#39;)
+    end
+  end
+end
+
+ActiveSupport::Notifications.subscribe(&#39;process_action.action_controller&#39;, ActionController::PageRequest.new)
+</code></pre>
+
+<p>resulting in the following output within the logs including a hash with the payload:</p>
+
+<pre><code>notification: process_action.action_controller 2012-04-13 01:08:35 +0300 2012-04-13 01:08:35 +0300 af358ed7fab884532ec7 {
+   controller: &quot;Devise::SessionsController&quot;,
+   action: &quot;new&quot;,
+   params: {&quot;action&quot;=&gt;&quot;new&quot;, &quot;controller&quot;=&gt;&quot;devise/sessions&quot;},
+   format: :html,
+   method: &quot;GET&quot;,
+   path: &quot;/login/sign_in&quot;,
+   status: 200,
+   view_runtime: 279.3080806732178,
+   db_runtime: 40.053
+ }
+</code></pre>
+
+<p>You can also subscribe to all events whose name matches a certain regexp:</p>
+
+<pre><code>ActiveSupport::Notifications.subscribe(/render/) do |*args|
+  ...
+end
+</code></pre>
+
+<p>and even pass no argument to <code>subscribe</code>, in which case you are subscribing to all events.</p>
+
+<h2 id="module-ActiveSupport::Notifications-label-Temporary+Subscriptions">Temporary Subscriptions</h2>
+
+<p>Sometimes you do not want to subscribe to an event for the entire life of the application. There are two ways to unsubscribe.</p>
+
+<p>WARNING: The instrumentation framework is designed for long-running subscribers, use this feature sparingly because it wipes some internal caches and that has a negative impact on performance.</p>
+
+<h3 id="module-ActiveSupport::Notifications-label-Subscribe+While+a+Block+Runs">Subscribe While a Block Runs</h3>
+
+<p>You can subscribe to some event temporarily while some block runs. For example, in</p>
+
+<pre><code>callback = lambda {|event| ... }
+ActiveSupport::Notifications.subscribed(callback, &quot;sql.active_record&quot;) do
+  ...
+end
+</code></pre>
+
+<p>the callback will be called for all “sql.active_record” events instrumented during the execution of the block. The callback is unsubscribed automatically after that.</p>
+
+<p>To record <code>started</code> and <code>finished</code> values with monotonic time, specify the optional <code>:monotonic</code> option to the <code>subscribed</code> method. The <code>:monotonic</code> option is set to <code>false</code> by default.</p>
+
+<pre><code>callback = lambda {|name, started, finished, unique_id, payload| ... }
+ActiveSupport::Notifications.subscribed(callback, &quot;sql.active_record&quot;, monotonic: true) do
+  ...
+end
+</code></pre>
+
+<h3 id="module-ActiveSupport::Notifications-label-Manual+Unsubscription">Manual Unsubscription</h3>
+
+<p>The <code>subscribe</code> method returns a subscriber object:</p>
+
+<pre><code>subscriber = ActiveSupport::Notifications.subscribe(&quot;render&quot;) do |event|
+  ...
+end
+</code></pre>
+
+<p>To prevent that block from being called anymore, just unsubscribe passing that reference:</p>
+
+<pre><code>ActiveSupport::Notifications.unsubscribe(subscriber)
+</code></pre>
+
+<p>You can also unsubscribe by passing the name of the subscriber object. Note that this will unsubscribe all subscriptions with the given name:</p>
+
+<pre><code>ActiveSupport::Notifications.unsubscribe(&quot;render&quot;)
+</code></pre>
+
+<p>Subscribers using a regexp or other pattern-matching object will remain subscribed to all events that match their original pattern, unless those events match a string passed to <code>unsubscribe</code>:</p>
+
+<pre><code>subscriber = ActiveSupport::Notifications.subscribe(/render/) { }
+ActiveSupport::Notifications.unsubscribe(&#39;render_template.action_view&#39;)
+subscriber.matches?(&#39;render_template.action_view&#39;) # =&gt; false
+subscriber.matches?(&#39;render_partial.action_view&#39;) # =&gt; true
+</code></pre>
+
+<h2 id="module-ActiveSupport::Notifications-label-Default+Queue">Default Queue</h2>
+
+<p><a href="Notifications.html"><code>Notifications</code></a> ships with a queue implementation that consumes and publishes events to all log subscribers. You can use any queue implementation you want.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+
+    
+      <h3 id="class">Class</h3>
+      <ul>
+      
+        <li><a href="Notifications/Event.html">ActiveSupport::Notifications::Event</a></li>
+      
+        <li><a href="Notifications/Fanout.html">ActiveSupport::Notifications::Fanout</a></li>
+      
+        <li><a href="Notifications/InstrumentationSubscriberError.html">ActiveSupport::Notifications::InstrumentationSubscriberError</a></li>
+      
+        <li><a href="Notifications/Instrumenter.html">ActiveSupport::Notifications::Instrumenter</a></li>
+      
+      </ul>
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-instrument">instrument</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-instrumenter">instrumenter</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-monotonic_subscribe">monotonic_subscribe</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-publish">publish</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-subscribe">subscribe</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-subscribed">subscribed</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-unsubscribe">unsubscribe</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>notifier</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-instrument">
+            
+              instrument(name, payload = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications.rb, line 208
+      def instrument(name, payload = {})
+        if notifier.listening?(name)
+          instrumenter.instrument(name, payload) { yield payload if block_given? }
+        else
+          yield payload if block_given?
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/notifications.rb#L208" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-instrumenter">
+            
+              instrumenter()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications.rb, line 269
+      def instrumenter
+        registry[notifier] ||= Instrumenter.new(notifier)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/notifications.rb#L269" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-monotonic_subscribe">
+            
+              monotonic_subscribe(pattern = nil, callback = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Performs the same functionality as subscribe, but the <code>start</code> and <code>finish</code> block arguments are in monotonic time instead of wall-clock time. Monotonic time will not jump forward or backward (due to NTP or Daylights Savings). Use <a href="Notifications.html#method-c-monotonic_subscribe"><code>monotonic_subscribe</code></a> when accuracy of time duration is important. For example, computing elapsed time between two events.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications.rb, line 254
+      def monotonic_subscribe(pattern = nil, callback = nil, &amp;block)
+        notifier.subscribe(pattern, callback, monotonic: true, &amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/notifications.rb#L254" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-publish">
+            
+              publish(name, *args)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications.rb, line 200
+      def publish(name, *args)
+        notifier.publish(name, *args)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/notifications.rb#L200" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-subscribe">
+            
+              subscribe(pattern = nil, callback = nil, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Subscribe to a given event name with the passed <code>block</code>.</p>
+
+<p>You can subscribe to events by passing a <a href="../String.html"><code>String</code></a> to match exact event names, or by passing a <a href="../Regexp.html"><code>Regexp</code></a> to match all events that match a pattern.</p>
+
+<p>If the block passed to the method only takes one argument, it will yield an <a href="Notifications/Event.html"><code>Event</code></a> object to the block:</p>
+
+<pre><code>ActiveSupport::Notifications.subscribe(/render/) do |event|
+  @event = event
+end
+</code></pre>
+
+<p>Otherwise the <code>block</code> will receive five arguments with information about the event:</p>
+
+<pre><code>ActiveSupport::Notifications.subscribe(&#39;render&#39;) do |name, start, finish, id, payload|
+  name    # =&gt; String, name of the event (such as &#39;render&#39; from above)
+  start   # =&gt; Time, when the instrumented block started execution
+  finish  # =&gt; Time, when the instrumented block ended execution
+  id      # =&gt; String, unique ID for the instrumenter that fired the event
+  payload # =&gt; Hash, the payload
+end
+</code></pre>
+
+<p>Raises an error if invalid event name type is passed:</p>
+
+<pre><code>ActiveSupport::Notifications.subscribe(:render) {|event| ...}
+#=&gt; ArgumentError (pattern must be specified as a String, Regexp or empty)
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications.rb, line 244
+      def subscribe(pattern = nil, callback = nil, &amp;block)
+        notifier.subscribe(pattern, callback, monotonic: false, &amp;block)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/notifications.rb#L244" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-subscribed">
+            
+              subscribed(callback, pattern = nil, monotonic: false, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications.rb, line 258
+      def subscribed(callback, pattern = nil, monotonic: false, &amp;block)
+        subscriber = notifier.subscribe(pattern, callback, monotonic: monotonic)
+        yield
+      ensure
+        unsubscribe(subscriber)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/notifications.rb#L258" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-c-unsubscribe">
+            
+              unsubscribe(subscriber_or_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/notifications.rb, line 265
+      def unsubscribe(subscriber_or_name)
+        notifier.unsubscribe(subscriber_or_name)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/notifications.rb#L265" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+    
+  
+</div>
+
+    </div>
+</div>

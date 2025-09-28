@@ -1,0 +1,673 @@
+---
+title: ActionController::HttpAuthentication::Digest
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionController::HttpAuthentication::Digest
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actionpack/lib/action_controller/metal/http_authentication_rb.html">actionpack/lib/action_controller/metal/http_authentication.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActionController::HttpAuthentication::Digest-label-HTTP+Digest+authentication">HTTP <a href="Digest.html"><code>Digest</code></a> authentication</h1>
+
+<h3 id="module-ActionController::HttpAuthentication::Digest-label-Simple+Digest+example">Simple <a href="Digest.html"><code>Digest</code></a> example</h3>
+
+<pre><code>require &quot;openssl&quot;
+class PostsController &lt; ApplicationController
+  REALM = &quot;SuperSecret&quot;
+  USERS = {&quot;dhh&quot; =&gt; &quot;secret&quot;, #plain text password
+           &quot;dap&quot; =&gt; OpenSSL::Digest::MD5.hexdigest([&quot;dap&quot;,REALM,&quot;secret&quot;].join(&quot;:&quot;))}  #ha1 digest password
+
+  before_action :authenticate, except: [:index]
+
+  def index
+    render plain: &quot;Everyone can see me!&quot;
+  end
+
+  def edit
+    render plain: &quot;I&#39;m only accessible if you know the password&quot;
+  end
+
+  private
+    def authenticate
+      authenticate_or_request_with_http_digest(REALM) do |username|
+        USERS[username]
+      end
+    end
+end
+</code></pre>
+
+<h3 id="module-ActionController::HttpAuthentication::Digest-label-Notes">Notes</h3>
+
+<p>The <code>authenticate_or_request_with_http_digest</code> block must return the user’s password or the ha1 digest hash so the framework can appropriately hash to check the user’s credentials. Returning <code>nil</code> will cause authentication to fail.</p>
+
+<p>Storing the ha1 hash: MD5(username:realm:password), is better than storing a plain password. If the password file or database is compromised, the attacker would be able to use the ha1 hash to authenticate as the user at this <code>realm</code>, but would not have the user’s password to try using at other sites.</p>
+
+<p>In rare instances, web servers or front proxies strip authorization headers before they reach your application. You can debug this situation by logging all environment variables, and check for HTTP_AUTHORIZATION, amongst others.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Digest/ControllerMethods.html">ActionController::HttpAuthentication::Digest::ControllerMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-authenticate">authenticate</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-authentication_header">authentication_header</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-authentication_request">authentication_request</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-decode_credentials">decode_credentials</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-decode_credentials_header">decode_credentials_header</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-encode_credentials">encode_credentials</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-expected_response">expected_response</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-ha1">ha1</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-nonce">nonce</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-opaque">opaque</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-secret_token">secret_token</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-validate_digest_response">validate_digest_response</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-validate_nonce">validate_nonce</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-authenticate">
+            
+              authenticate(request, realm, &amp;password_procedure)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns true on a valid response, false otherwise.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 215
+      def authenticate(request, realm, &amp;password_procedure)
+        request.authorization &amp;&amp; validate_digest_response(request, realm, &amp;password_procedure)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L215" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-authentication_header">
+            
+              authentication_header(controller, realm)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 274
+      def authentication_header(controller, realm)
+        secret_key = secret_token(controller.request)
+        nonce = self.nonce(secret_key)
+        opaque = opaque(secret_key)
+        controller.headers[&quot;WWW-Authenticate&quot;] = %(Digest realm=&quot;#{realm}&quot;, qop=&quot;auth&quot;, algorithm=MD5, nonce=&quot;#{nonce}&quot;, opaque=&quot;#{opaque}&quot;)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L274" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-authentication_request">
+            
+              authentication_request(controller, realm, message = nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 281
+      def authentication_request(controller, realm, message = nil)
+        message ||= &quot;HTTP Digest: Access denied.\n&quot;
+        authentication_header(controller, realm)
+        controller.status = 401
+        controller.response_body = message
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L281" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-decode_credentials">
+            
+              decode_credentials(header)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 267
+      def decode_credentials(header)
+        ActiveSupport::HashWithIndifferentAccess[header.to_s.gsub(/^Digest\s+/, &quot;&quot;).split(&quot;,&quot;).map do |pair|
+          key, value = pair.split(&quot;=&quot;, 2)
+          [key.strip, value.to_s.gsub(/^&quot;|&quot;$/, &quot;&quot;).delete(&quot;&#39;&quot;)]
+        end]
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L267" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-decode_credentials_header">
+            
+              decode_credentials_header(request)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 263
+      def decode_credentials_header(request)
+        decode_credentials(request.authorization)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L263" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-encode_credentials">
+            
+              encode_credentials(http_method, credentials, password, password_is_ha1)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 258
+      def encode_credentials(http_method, credentials, password, password_is_ha1)
+        credentials[:response] = expected_response(http_method, credentials[:uri], credentials, password, password_is_ha1)
+        &quot;Digest &quot; + credentials.sort_by { |x| x[0].to_s }.map { |v| &quot;#{v[0]}=&#39;#{v[1]}&#39;&quot; }.join(&quot;, &quot;)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L258" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-expected_response">
+            
+              expected_response(http_method, uri, credentials, password, password_is_ha1 = true)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the expected response for a request of <code>http_method</code> to <code>uri</code> with the decoded <code>credentials</code> and the expected <code>password</code> Optional parameter <code>password_is_ha1</code> is set to <code>true</code> by default, since best practice is to store ha1 digest instead of a plain-text password.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 248
+      def expected_response(http_method, uri, credentials, password, password_is_ha1 = true)
+        ha1 = password_is_ha1 ? password : ha1(credentials, password)
+        ha2 = OpenSSL::Digest::MD5.hexdigest([http_method.to_s.upcase, uri].join(&quot;:&quot;))
+        OpenSSL::Digest::MD5.hexdigest([ha1, credentials[:nonce], credentials[:nc], credentials[:cnonce], credentials[:qop], ha2].join(&quot;:&quot;))
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L248" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-ha1">
+            
+              ha1(credentials, password)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 254
+      def ha1(credentials, password)
+        OpenSSL::Digest::MD5.hexdigest([credentials[:username], credentials[:realm], password].join(&quot;:&quot;))
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L254" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-nonce">
+            
+              nonce(secret_key, time = Time.now)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Uses an MD5 digest based on time to generate a value to be used only once.</p>
+
+<p>A server-specified data string which should be uniquely generated each time a 401 response is made. It is recommended that this string be base64 or hexadecimal data. Specifically, since the string is passed in the header lines as a quoted string, the double-quote character is not allowed.</p>
+
+<p>The contents of the nonce are implementation dependent. The quality of the implementation depends on a good choice. A nonce might, for example, be constructed as the base 64 encoding of</p>
+
+<pre><code>time-stamp H(time-stamp &quot;:&quot; ETag &quot;:&quot; private-key)
+</code></pre>
+
+<p>where time-stamp is a server-generated time or other non-repeating value, ETag is the value of the HTTP ETag header associated with the requested entity, and private-key is data known only to the server. With a nonce of this form a server would recalculate the hash portion after receiving the client authentication header and reject the request if it did not match the nonce from that header or if the time-stamp value is not recent enough. In this way the server can limit the time of the nonce’s validity. The inclusion of the ETag prevents a replay request for an updated version of the resource. (Note: including the IP address of the client in the nonce would appear to offer the server the ability to limit the reuse of the nonce to the same client that originally got it. However, that would break proxy farms, where requests from a single user often go through different proxies in the farm. Also, IP address spoofing is not that hard.)</p>
+
+<p>An implementation might choose not to accept a previously used nonce or a previously used digest, in order to protect against a replay attack. Or, an implementation might choose to use one-time nonces or digests for POST, PUT, or PATCH requests, and a time-stamp for GET requests. For more details on the issues involved see Section 4 of this document.</p>
+
+<p>The nonce is opaque to the client. Composed of <a href="../../Time.html"><code>Time</code></a>, and hash of <a href="../../Time.html"><code>Time</code></a> with secret key from the <a href="../../Rails.html"><code>Rails</code></a> session secret generated upon creation of project. Ensures the time cannot be modified by client.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 330
+      def nonce(secret_key, time = Time.now)
+        t = time.to_i
+        hashed = [t, secret_key]
+        digest = OpenSSL::Digest::MD5.hexdigest(hashed.join(&quot;:&quot;))
+        ::Base64.strict_encode64(&quot;#{t}:#{digest}&quot;)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L330" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-opaque">
+            
+              opaque(secret_key)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Opaque based on digest of secret key</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 348
+      def opaque(secret_key)
+        OpenSSL::Digest::MD5.hexdigest(secret_key)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L348" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-secret_token">
+            
+              secret_token(request)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 288
+      def secret_token(request)
+        key_generator  = request.key_generator
+        http_auth_salt = request.http_auth_salt
+        key_generator.generate_key(http_auth_salt)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L288" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-validate_digest_response">
+            
+              validate_digest_response(request, realm, &amp;password_procedure)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns false unless the request credentials response value matches the expected value. First try the password as a ha1 digest password. If this fails, then try it as a plain text password.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 222
+      def validate_digest_response(request, realm, &amp;password_procedure)
+        secret_key  = secret_token(request)
+        credentials = decode_credentials_header(request)
+        valid_nonce = validate_nonce(secret_key, request, credentials[:nonce])
+
+        if valid_nonce &amp;&amp; realm == credentials[:realm] &amp;&amp; opaque(secret_key) == credentials[:opaque]
+          password = password_procedure.call(credentials[:username])
+          return false unless password
+
+          method = request.get_header(&quot;rack.methodoverride.original_method&quot;) || request.get_header(&quot;REQUEST_METHOD&quot;)
+          uri    = credentials[:uri]
+
+          [true, false].any? do |trailing_question_mark|
+            [true, false].any? do |password_is_ha1|
+              _uri = trailing_question_mark ? uri + &quot;?&quot; : uri
+              expected = expected_response(method, _uri, credentials, password, password_is_ha1)
+              expected == credentials[:response]
+            end
+          end
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L222" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-validate_nonce">
+            
+              validate_nonce(secret_key, request, value, seconds_to_timeout = 5 * 60)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Might want a shorter timeout depending on whether the request is a PATCH, PUT, or POST, and if the client is a browser or web service. Can be much shorter if the Stale directive is implemented. This would allow a user to use new nonce without prompting the user again for their username and password.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_controller/metal/http_authentication.rb, line 341
+      def validate_nonce(secret_key, request, value, seconds_to_timeout = 5 * 60)
+        return false if value.nil?
+        t = ::Base64.decode64(value).split(&quot;:&quot;).first.to_i
+        nonce(secret_key, t) == value &amp;&amp; (t - Time.now.to_i).abs &lt;= seconds_to_timeout
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_controller/metal/http_authentication.rb#L341" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

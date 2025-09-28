@@ -1,0 +1,254 @@
+---
+title: ActiveRecord::Store
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Store
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/store_rb.html">activerecord/lib/active_record/store.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/type/json_rb.html">activerecord/lib/active_record/type/json.rb</a></li>
+            
+            <li><a href="../../files/activerecord/lib/active_record/type/serialized_rb.html">activerecord/lib/active_record/type/serialized.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="module-ActiveRecord::Store-label-Active+Record+Store">Active Record Store</h1>
+
+<p><a href="Store.html"><code>Store</code></a> gives you a thin wrapper around serialize for the purpose of storing hashes in a single column. It’s like a simple key/value store baked into your record when you don’t care about being able to query that store outside the context of a single record.</p>
+
+<p>You can then declare accessors to this store that are then accessible just like any other attribute of the model. This is very helpful for easily exposing store keys to a form or elsewhere that’s already built around just accessing attributes on the model.</p>
+
+<p>Every accessor comes with dirty tracking methods (<code>key_changed?</code>, <code>key_was</code> and <code>key_change</code>) and methods to access the changes made during the last save (<code>saved_change_to_key?</code>, <code>saved_change_to_key</code> and <code>key_before_last_save</code>).</p>
+
+<p>NOTE: There is no <code>key_will_change!</code> method for accessors, use <code>store_will_change!</code> instead.</p>
+
+<p>Make sure that you declare the database column used for the serialized store as a text, so there’s plenty of room.</p>
+
+<p>You can set custom coder to encode/decode your serialized attributes to/from different formats. JSON, YAML, Marshal are supported out of the box. Generally it can be any wrapper that provides <code>load</code> and <code>dump</code>.</p>
+
+<p>NOTE: If you are using structured database data types (e.g. PostgreSQL <code>hstore</code>/<code>json</code>, MySQL 5.7+ <code>json</code>, or SQLite 3.38+ <code>json</code>) there is no need for the serialization provided by <a href="Store/ClassMethods.html#method-i-store">.store</a>. Simply use <a href="Store/ClassMethods.html#method-i-store_accessor">.store_accessor</a> instead to generate the accessor methods. Be aware that these columns use a string keyed hash and do not allow access using a symbol.</p>
+
+<p>NOTE: The default validations with the exception of <code>uniqueness</code> will work. For example, if you want to check for <code>uniqueness</code> with <code>hstore</code> you will need to use a custom validation to handle it.</p>
+
+<p>Examples:</p>
+
+<pre><code>class User &lt; ActiveRecord::Base
+  store :settings, accessors: [ :color, :homepage ], coder: JSON
+  store :parent, accessors: [ :name ], coder: JSON, prefix: true
+  store :spouse, accessors: [ :name ], coder: JSON, prefix: :partner
+  store :settings, accessors: [ :two_factor_auth ], suffix: true
+  store :settings, accessors: [ :login_retry ], suffix: :config
+end
+
+u = User.new(color: &#39;black&#39;, homepage: &#39;37signals.com&#39;, parent_name: &#39;Mary&#39;, partner_name: &#39;Lily&#39;)
+u.color                          # Accessor stored attribute
+u.parent_name                    # Accessor stored attribute with prefix
+u.partner_name                   # Accessor stored attribute with custom prefix
+u.two_factor_auth_settings       # Accessor stored attribute with suffix
+u.login_retry_config             # Accessor stored attribute with custom suffix
+u.settings[:country] = &#39;Denmark&#39; # Any attribute, even if not specified with an accessor
+
+# There is no difference between strings and symbols for accessing custom attributes
+u.settings[:country]  # =&gt; &#39;Denmark&#39;
+u.settings[&#39;country&#39;] # =&gt; &#39;Denmark&#39;
+
+# Dirty tracking
+u.color = &#39;green&#39;
+u.color_changed? # =&gt; true
+u.color_was # =&gt; &#39;black&#39;
+u.color_change # =&gt; [&#39;black&#39;, &#39;green&#39;]
+
+# Add additional accessors to an existing store through store_accessor
+class SuperUser &lt; User
+  store_accessor :settings, :privileges, :servants
+  store_accessor :parent, :birthday, prefix: true
+  store_accessor :settings, :secret_question, suffix: :config
+end
+</code></pre>
+
+<p>The stored attribute names can be retrieved using <a href="Store/ClassMethods.html#method-i-stored_attributes">.stored_attributes</a>.</p>
+
+<pre><code>User.stored_attributes[:settings] # =&gt; [:color, :homepage, :two_factor_auth, :login_retry]
+</code></pre>
+
+<h2 id="module-ActiveRecord::Store-label-Overwriting+default+accessors">Overwriting default accessors</h2>
+
+<p>All stored values are automatically available through accessors on the Active Record object, but sometimes you want to specialize this behavior. This can be done by overwriting the default accessors (using the same name as the attribute) and calling <code>super</code> to actually change things.</p>
+
+<pre><code>class Song &lt; ActiveRecord::Base
+  # Uses a stored integer to hold the volume adjustment of the song
+  store :settings, accessors: [:volume_adjustment]
+
+  def volume_adjustment=(decibels)
+    super(decibels.to_i)
+  end
+
+  def volume_adjustment
+    super.to_i
+  end
+end
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+    <h2 id="namespace">Namespace</h2>
+
+    
+      <h3 id="module">Module</h3>
+      <ul>
+      
+        <li><a href="Store/ClassMethods.html">ActiveRecord::Store::ClassMethods</a></li>
+      
+      </ul>
+    
+
+    
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-read_store_attribute">read_store_attribute</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-write_store_attribute">write_store_attribute</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>local_stored_attributes</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-private-methods">Instance Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-read_store_attribute">
+            
+              read_store_attribute(store_attribute, key)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/store.rb, line 209
+      def read_store_attribute(store_attribute, key) # :doc:
+        accessor = store_accessor_for(store_attribute)
+        accessor.read(self, store_attribute, key)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/store.rb#L209" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-write_store_attribute">
+            
+              write_store_attribute(store_attribute, key, value)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/store.rb, line 214
+      def write_store_attribute(store_attribute, key, value) # :doc:
+        accessor = store_accessor_for(store_attribute)
+        accessor.write(self, store_attribute, key, value)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/store.rb#L214" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

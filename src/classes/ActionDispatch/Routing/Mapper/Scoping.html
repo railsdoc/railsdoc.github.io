@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -210,12 +210,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 1034
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 1176
         def constraints(constraints = {}, &amp;block)
           scope(constraints: constraints, &amp;block)
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/routing/mapper.rb#L1034" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actionpack/lib/action_dispatch/routing/mapper.rb#L1176" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -250,7 +250,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 916
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 1052
         def controller(controller)
           @scope = @scope.new(controller: controller)
           yield
@@ -258,7 +258,7 @@ end
           @scope = @scope.parent
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/routing/mapper.rb#L916" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actionpack/lib/action_dispatch/routing/mapper.rb#L1052" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -295,7 +295,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 1045
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 1187
         def defaults(defaults = {})
           @scope = @scope.new(defaults: merge_defaults_scope(@scope[:defaults], defaults))
           yield
@@ -303,7 +303,7 @@ end
           @scope = @scope.parent
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/routing/mapper.rb#L1045" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actionpack/lib/action_dispatch/routing/mapper.rb#L1187" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -312,7 +312,7 @@ end
         <div class="method">
           <h3 id="method-i-namespace">
             
-              namespace(path, options = {}, &amp;block)
+              namespace(name, deprecated_options = nil, as: DEFAULT, path: DEFAULT, shallow_path: DEFAULT, shallow_prefix: DEFAULT, **options, &amp;block)
             
           </h3>
 
@@ -340,7 +340,7 @@ edit_admin_post GET       /admin/posts/:id/edit(.:format) admin/posts#edit
 
 <p>The <code>:path</code>, <code>:as</code>, <code>:module</code>, <code>:shallow_path</code>, and <code>:shallow_prefix</code> options all default to the name of the namespace.</p>
 
-<p>For options, see <a href="Base.html#method-i-match"><code>Base#match</code></a>. For <code>:shallow_path</code> option, see <a href="Resources.html#method-i-resources"><code>Resources#resources</code></a>.</p>
+<p>For options, see <code>Base#match</code>. For <code>:shallow_path</code> option, see <code>Resources#resources</code>.</p>
 
 <pre><code># accessible through /sekret/posts rather than /admin/posts
 namespace :admin, path: &quot;sekret&quot; do
@@ -371,23 +371,29 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 961
-        def namespace(path, options = {}, &amp;block)
-          path = path.to_s
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 1097
+        def namespace(name, deprecated_options = nil, as: DEFAULT, path: DEFAULT, shallow_path: DEFAULT, shallow_prefix: DEFAULT, **options, &amp;block)
+          if deprecated_options.is_a?(Hash)
+            as = assign_deprecated_option(deprecated_options, :as, :namespace) if deprecated_options.key?(:as)
+            path ||= assign_deprecated_option(deprecated_options, :path, :namespace)  if deprecated_options.key?(:path)
+            shallow_path ||= assign_deprecated_option(deprecated_options, :shallow_path, :namespace) if deprecated_options.key?(:shallow_path)
+            shallow_prefix ||= assign_deprecated_option(deprecated_options, :shallow_prefix, :namespace)  if deprecated_options.key?(:shallow_prefix)
+            assign_deprecated_options(deprecated_options, options, :namespace)
+          end
 
-          defaults = {
-            module:         path,
-            as:             options.fetch(:as, path),
-            shallow_path:   options.fetch(:path, path),
-            shallow_prefix: options.fetch(:as, path)
-          }
+          name = name.to_s
+          options[:module] ||= name
+          as = name if as == DEFAULT
+          path = name if path == DEFAULT
+          shallow_path = path if shallow_path == DEFAULT
+          shallow_prefix = as if shallow_prefix == DEFAULT
 
-          path_scope(options.delete(:path) { path }) do
-            scope(defaults.merge!(options), &amp;block)
+          path_scope(path) do
+            scope(**options, as:, shallow_path:, shallow_prefix:, &amp;block)
           end
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/routing/mapper.rb#L961" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actionpack/lib/action_dispatch/routing/mapper.rb#L1097" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -396,7 +402,7 @@ end
         <div class="method">
           <h3 id="method-i-scope">
             
-              scope(*args)
+              scope(*args, only: nil, except: nil, **options)
             
           </h3>
 
@@ -415,7 +421,7 @@ end
 
 <h3 id="method-i-scope-label-Options">Options</h3>
 
-<p>Takes same options as <a href="Base.html#method-i-match"><code>Base#match</code></a> and <a href="Resources.html#method-i-resources"><code>Resources#resources</code></a>.</p>
+<p>Takes same options as <code>Base#match</code> and <code>Resources#resources</code>.</p>
 
 <pre><code># route /posts (without the prefix /admin) to Admin::PostsController
 scope module: &quot;admin&quot; do
@@ -446,9 +452,14 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 857
-        def scope(*args)
-          options = args.extract_options!.dup
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 989
+        def scope(*args, only: nil, except: nil, **options)
+          if args.grep(Hash).any? &amp;&amp; (deprecated_options = args.extract_options!)
+            only ||= assign_deprecated_option(deprecated_options, :only, :scope)
+            only ||= assign_deprecated_option(deprecated_options, :except, :scope)
+            assign_deprecated_options(deprecated_options, options, :scope)
+          end
+
           scope = {}
 
           options[:path] = args.flatten.join(&quot;/&quot;) if args.any?
@@ -469,9 +480,8 @@ end
             block, options[:constraints] = options[:constraints], {}
           end
 
-          if options.key?(:only) || options.key?(:except)
-            scope[:action_options] = { only: options.delete(:only),
-                                       except: options.delete(:except) }
+          if only || except
+            scope[:action_options] = { only:, except: }
           end
 
           if options.key? :anchor
@@ -499,7 +509,7 @@ end
           @scope = @scope.parent
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/routing/mapper.rb#L857" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actionpack/lib/action_dispatch/routing/mapper.rb#L989" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

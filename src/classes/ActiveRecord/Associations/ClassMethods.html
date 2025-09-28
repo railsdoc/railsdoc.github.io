@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -66,7 +66,7 @@ project.categories.destroy(category1)
 
 <h3 id="module-ActiveRecord::Associations::ClassMethods-label-A+word+of+warning">A word of warning</h3>
 
-<p>Don’t create associations that have the same name as <a href="../Core.html">instance methods</a> of <a href="../Base.html"><code>ActiveRecord::Base</code></a>. Since the association adds a method with that name to its model, using an association with the same name as one provided by <a href="../Base.html"><code>ActiveRecord::Base</code></a> will override the method inherited through <a href="../Base.html"><code>ActiveRecord::Base</code></a> and will break things. For instance, <code>attributes</code> and <code>connection</code> would be bad choices for association names, because those names already exist in the list of <a href="../Base.html"><code>ActiveRecord::Base</code></a> instance methods.</p>
+<p>Don’t create associations that have the same name as <a href="../Core.html">instance methods</a> of <code>ActiveRecord::Base</code>. Since the association adds a method with that name to its model, using an association with the same name as one provided by <code>ActiveRecord::Base</code> will override the method inherited through <code>ActiveRecord::Base</code> and will break things. For instance, <code>attributes</code> and <code>connection</code> would be bad choices for association names, because those names already exist in the list of <code>ActiveRecord::Base</code> instance methods.</p>
 
 <h2 id="module-ActiveRecord::Associations::ClassMethods-label-Auto-generated+methods">Auto-generated methods</h2>
 
@@ -239,7 +239,7 @@ CREATE TABLE accounts (
 </li><li>
 <p>If either of these saves fail (due to one of the objects being invalid), an <a href="../RecordNotSaved.html"><code>ActiveRecord::RecordNotSaved</code></a> exception is raised and the assignment is cancelled.</p>
 </li><li>
-<p>If you wish to assign an object to a <a href="ClassMethods.html#method-i-has_one"><code>has_one</code></a> association without saving it, use the build_association method (documented below). The object being replaced will still be saved to update its foreign key.</p>
+<p>If you wish to assign an object to a <a href="ClassMethods.html#method-i-has_one"><code>has_one</code></a> association without saving it, use the <code>#build_association</code> method (documented below). The object being replaced will still be saved to update its foreign key.</p>
 </li><li>
 <p>Assigning an object to a <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a> association does not save the object, since the foreign key field belongs on the parent. It does not save the parent either.</p>
 </li></ul>
@@ -259,7 +259,7 @@ CREATE TABLE accounts (
 
 <h2 id="module-ActiveRecord::Associations::ClassMethods-label-Customizing+the+query">Customizing the query</h2>
 
-<p>Associations are built from <a href="../Relation.html"><code>Relation</code></a> objects, and you can use the <a href="../Relation.html"><code>Relation</code></a> syntax to customize them. For example, to add a condition:</p>
+<p>Associations are built from <code>Relation</code> objects, and you can use the <a href="../Relation.html"><code>Relation</code></a> syntax to customize them. For example, to add a condition:</p>
 
 <pre><code>class Blog &lt; ActiveRecord::Base
   has_many :published_posts, -&gt; { where(published: true) }, class_name: &#39;Post&#39;
@@ -846,6 +846,79 @@ Author.find(1).destroy # =&gt; Will destroy all of the author&#39;s posts, too
 
 <p>With <a href="ClassMethods.html#method-i-has_and_belongs_to_many"><code>has_and_belongs_to_many</code></a> and <a href="ClassMethods.html#method-i-has_many"><code>has_many</code></a> <code>:through</code>, if you want to delete the associated records themselves, you can always do something along the lines of <code>person.tasks.each(&amp;:destroy)</code>.</p>
 
+<h2 id="module-ActiveRecord::Associations::ClassMethods-label-Deprecated+Associations">Deprecated <a href="../Associations.html"><code>Associations</code></a></h2>
+
+<p><a href="../Associations.html"><code>Associations</code></a> can be marked as deprecated by passing <code>deprecated: true</code>:</p>
+
+<pre><code>has_many :posts, deprecated: true
+</code></pre>
+
+<p>When a deprecated association is used, a warning is issued using the Active Record logger, though more options are available via configuration.</p>
+
+<p>The message includes some context that helps understand the deprecated usage:</p>
+
+<pre><code>The association Author#posts is deprecated, the method post_ids was invoked (...)
+The association Author#posts is deprecated, referenced in query to preload records (...)
+</code></pre>
+
+<p>The dots in the examples above would have the application-level spot where usage occurred, to help locate what triggered the warning. That location is computed using the Active Record backtrace cleaner.</p>
+
+<h3 id="module-ActiveRecord::Associations::ClassMethods-label-What+is+considered+to+be+usage-3F">What is considered to be usage?</h3>
+<ul><li>
+<p>Invocation of any association methods like <code>posts</code>, <code>posts=</code>, etc.</p>
+</li><li>
+<p>If the association accepts nested attributes, assignment to those attributes.</p>
+</li><li>
+<p>If the association is a through association and some of its nested associations are deprecated, you’ll get warnings for them whenever the top-level through is used. This is so regardless of whether the through itself is deprecated.</p>
+</li><li>
+<p>Execution of queries that refer to the association. Think execution of <code>eager_load(:posts)</code>, <code>joins(author: :posts)</code>, etc.</p>
+</li><li>
+<p>If the association has a <code>:dependent</code> option, destroying the associated record issues warnings (because that has a side-effect that would not happen if the association was removed).</p>
+</li><li>
+<p>If the association has a <code>:touch</code> option, saving or destroying the record issues a warning (because that has a side-effect that would not happen if the association was removed).</p>
+</li></ul>
+
+<h3 id="module-ActiveRecord::Associations::ClassMethods-label-Things+that+do+NOT+issue+warnings">Things that do NOT issue warnings</h3>
+
+<p>The rationale behind most of the following edge cases is that Active Record accesses associations lazily, when used. Before that, the reference to the association is basically just a Ruby symbol.</p>
+<ul><li>
+<p>If <code>posts</code> is deprecated, <code>has_many :comments, through: :posts</code> does not warn. Usage of the <code>comments</code> association reports usage of <code>posts</code>, as we explained above, but the definition of the <code>has_many</code> itself does not.</p>
+</li><li>
+<p>Similarly, <code>accepts_nested_attributes_for :posts</code> does not warn. Assignment to the posts attributes warns, as explained above, but the <code>accepts_nested_attributes_for</code> call itself does not.</p>
+</li><li>
+<p>Same if an association declares to be inverse of a deprecated one, the macro itself does not warn.</p>
+</li><li>
+<p>In the same line, the declaration <code>validates_associated :posts</code> does not warn by itself, though access is reported when the validation runs.</p>
+</li><li>
+<p><a href="../Relation.html"><code>Relation</code></a> query methods like <code>Author.includes(:posts)</code> do not warn by themselves. At that point, that is a relation that internally stores a symbol for later use. As explained in the previous section, you get a warning when/if the query is executed.</p>
+</li><li>
+<p>Access to the reflection object of the association as in <code>Author.reflect_on_association(:posts)</code> or <code>Author.reflect_on_all_associations</code> does not warn.</p>
+</li></ul>
+
+<h3 id="module-ActiveRecord::Associations::ClassMethods-label-Configuration">Configuration</h3>
+
+<p>Reporting deprecated usage can be configured:</p>
+
+<pre><code>config.active_record.deprecated_associations_options = { ... }
+</code></pre>
+
+<p>If present, this has to be a hash with keys <code>:mode</code> and/or <code>:backtrace</code>.</p>
+
+<h4 id="module-ActiveRecord::Associations::ClassMethods-label-Mode">Mode</h4>
+<ul><li>
+<p>In <code>:warn</code> mode, usage issues a warning that includes the application-level place where the access happened, if any. This is the default mode.</p>
+</li><li>
+<p>In <code>:raise</code> mode, usage raises an <a href="../DeprecatedAssociationError.html"><code>ActiveRecord::DeprecatedAssociationError</code></a> with a similar message and a clean backtrace in the exception object.</p>
+</li><li>
+<p>In <code>:notify</code> mode, a <code>deprecated_association.active_record</code> Active Support notification is published. The event payload has the association reflection (<code>:reflection</code>), the application-level location (<code>:location</code>) where the access happened (a Thread::Backtrace::Location object, or <code>nil</code>), and a deprecation message (<code>:message</code>).</p>
+</li></ul>
+
+<h4 id="module-ActiveRecord::Associations::ClassMethods-label-Backtrace">Backtrace</h4>
+
+<p>If <code>:backtrace</code> is true, warnings include a clean backtrace in the message and notifications have a <code>:backtrace</code> key in the payload with an array of clean Thread::Backtrace::Location objects. Exceptions always get a clean stack trace set.</p>
+
+<p>Clean backtraces are computed using the Active Record backtrace cleaner. In <a href="../../Rails.html"><code>Rails</code></a> applications, that is by the default the same as <code>Rails.backtrace_cleaner</code>.</p>
+
 <h2 id="module-ActiveRecord::Associations::ClassMethods-label-Type+safety+with+ActiveRecord-3A-3AAssociationTypeMismatch">Type safety with <a href="../AssociationTypeMismatch.html"><code>ActiveRecord::AssociationTypeMismatch</code></a></h2>
 
 <p>If you attempt to assign an object to an association that doesn’t match the inferred or specified <code>:class_name</code>, you’ll get an <a href="../AssociationTypeMismatch.html"><code>ActiveRecord::AssociationTypeMismatch</code></a>.</p>
@@ -986,7 +1059,7 @@ belongs_to :level, -&gt;(game) { where(&quot;game_level &gt; ?&quot;, game.curre
 <p>The declaration can also include an <code>options</code> hash to specialize the behavior of the association.</p>
 <dl class="rdoc-list label-list"><dt><code>:class_name</code></dt>
 <dd>
-<p>Specify the class name of the association. Use it only if that name can’t be inferred from the association name. So <code>belongs_to :author</code> will by default be linked to the Author class, but if the real class name is Person, you’ll have to specify it with this option.</p>
+<p>Specify the class name of the association. Use it only if that name can’t be inferred from the association name. So <code>belongs_to :author</code> will by default be linked to the Author class, but if the real class name is Person, you’ll have to specify it with this option. <code>:class_name</code> is not supported in polymorphic associations, since in that case the class name of the associated record is stored in the type column.</p>
 </dd><dt><code>:foreign_key</code></dt>
 <dd>
 <p>Specify the foreign key used for the association. By default this is guessed to be the name of the association with an “_id” suffix. So a class that defines a <code>belongs_to :person</code> association will use “person_id” as the default <code>:foreign_key</code>. Similarly, <code>belongs_to :favorite_person, class_name: &quot;Person&quot;</code> will use a foreign key of “favorite_person_id”.</p>
@@ -1043,6 +1116,9 @@ belongs_to :level, -&gt;(game) { where(&quot;game_level &gt; ?&quot;, game.curre
 </dd><dt><code>:query_constraints</code></dt>
 <dd>
 <p>Serves as a composite foreign key. Defines the list of columns to be used to query the associated object. This is an optional option. By default <a href="../../Rails.html"><code>Rails</code></a> will attempt to derive the value automatically. When the value is set the <a href="../../Array.html"><code>Array</code></a> size must match associated model’s primary key or <code>query_constraints</code> size.</p>
+</dd><dt><code>:deprecated</code></dt>
+<dd>
+<p>If true, marks the association as deprecated. Usage of deprecated associations is reported. Please, check the class documentation above for details.</p>
 </dd></dl>
 
 <p>Option examples:</p>
@@ -1076,13 +1152,13 @@ belongs_to :note, query_constraints: [:organization_id, :note_id]
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1689
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1824
         def belongs_to(name, scope = nil, **options)
           reflection = Builder::BelongsTo.build(self, name, scope, options)
-          Reflection.add_reflection self, name, reflection
+          Reflection.add_reflection(self, name, reflection)
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/associations.rb#L1689" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/associations.rb#L1824" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1101,7 +1177,7 @@ belongs_to :note, query_constraints: [:organization_id, :note_id]
 
 <p>The join table should not have a primary key or a model associated with it. You must manually generate the join table with a migration such as this:</p>
 
-<pre><code>class CreateDevelopersProjectsJoinTable &lt; ActiveRecord::Migration[8.0]
+<pre><code>class CreateDevelopersProjectsJoinTable &lt; ActiveRecord::Migration[8.1]
   def change
     create_join_table :developers, :projects
   end
@@ -1243,6 +1319,9 @@ end
 </dd><dt><code>:strict_loading</code></dt>
 <dd>
 <p>Enforces strict loading every time an associated record is loaded through this association.</p>
+</dd><dt><code>:deprecated</code></dt>
+<dd>
+<p>If true, marks the association as deprecated. Usage of deprecated associations is reported. Please, check the class documentation above for details.</p>
 </dd></dl>
 
 <p>Option examples:</p>
@@ -1268,21 +1347,21 @@ has_and_belongs_to_many :categories, strict_loading: true
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1870
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 2008
         def has_and_belongs_to_many(name, scope = nil, **options, &amp;extension)
           habtm_reflection = ActiveRecord::Reflection::HasAndBelongsToManyReflection.new(name, scope, options, self)
 
-          builder = Builder::HasAndBelongsToMany.new name, self, options
+          builder = Builder::HasAndBelongsToMany.new(name, self, options)
 
           join_model = builder.through_model
 
-          const_set join_model.name, join_model
-          private_constant join_model.name
+          const_set(join_model.name, join_model)
+          private_constant(join_model.name)
 
-          middle_reflection = builder.middle_reflection join_model
+          middle_reflection = builder.middle_reflection(join_model)
 
-          Builder::HasMany.define_callbacks self, middle_reflection
-          Reflection.add_reflection self, middle_reflection.name, middle_reflection
+          Builder::HasMany.define_callbacks(self, middle_reflection)
+          Reflection.add_reflection(self, middle_reflection.name, middle_reflection)
           middle_reflection.parent_reflection = habtm_reflection
 
           include Module.new {
@@ -1299,15 +1378,15 @@ has_and_belongs_to_many :categories, strict_loading: true
           hm_options[:through] = middle_reflection.name
           hm_options[:source] = join_model.right_reflection.name
 
-          [:before_add, :after_add, :before_remove, :after_remove, :autosave, :validate, :join_table, :class_name, :extend, :strict_loading].each do |k|
-            hm_options[k] = options[k] if options.key? k
+          [:before_add, :after_add, :before_remove, :after_remove, :autosave, :validate, :join_table, :class_name, :extend, :strict_loading, :deprecated].each do |k|
+            hm_options[k] = options[k] if options.key?(k)
           end
 
           has_many name, scope, **hm_options, &amp;extension
           _reflections[name].parent_reflection = habtm_reflection
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/associations.rb#L1870" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/associations.rb#L2008" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1481,14 +1560,16 @@ end
 <p>Specifies a polymorphic interface (See <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a>).</p>
 </dd><dt><code>:through</code></dt>
 <dd>
-<p>Specifies an association through which to perform the query. This can be any other type of association, including other <code>:through</code> associations. Options for <code>:class_name</code>, <code>:primary_key</code> and <code>:foreign_key</code> are ignored, as the association uses the source reflection.</p>
+<p>Specifies an association through which to perform the query.</p>
+
+<p>This can be any other type of association, including other <code>:through</code> associations, but it cannot be a polymorphic association. Options for <code>:class_name</code>, <code>:primary_key</code> and <code>:foreign_key</code> are ignored, as the association uses the source reflection.</p>
 
 <p>If the association on the join model is a <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a>, the collection can be modified and the records on the <code>:through</code> model will be automatically created and removed as appropriate. Otherwise, the collection is read-only, so you should manipulate the <code>:through</code> association directly.</p>
 
 <p>If you are going to modify the association (rather than just read from it), then it is a good idea to set the <code>:inverse_of</code> option on the source association on the join model. This allows associated records to be built which will automatically create the appropriate join model records when they are saved. See <a href="ClassMethods.html#module-ActiveRecord::Associations::ClassMethods-label-Association+Join+Models">Association Join Models</a> and <a href="ClassMethods.html#module-ActiveRecord::Associations::ClassMethods-label-Setting+Inverses">Setting Inverses</a> for more detail.</p>
 </dd><dt><code>:disable_joins</code></dt>
 <dd>
-<p>Specifies whether joins should be skipped for an association. If set to true, two or more queries will be generated. Note that in some cases, if order or limit is applied, it will be done in-memory due to database limitations. This option is only applicable on <code>has_many :through</code> associations as <a href="ClassMethods.html#method-i-has_many"><code>has_many</code></a> alone do not perform a join.</p>
+<p>Specifies whether joins should be skipped for an association. If set to true, two or more queries will be generated. Note that in some cases, if order or limit is applied, it will be done in-memory due to database limitations. This option is only applicable on <code>has_many :through</code> associations as <code>has_many</code> alone do not perform a join.</p>
 </dd><dt><code>:source</code></dt>
 <dd>
 <p>Specifies the source association name used by <a href="ClassMethods.html#method-i-has_many"><code>has_many</code></a> <code>:through</code> queries. Only use it if the name cannot be inferred from the association. <code>has_many :subscribers, through: :subscriptions</code> will look for either <code>:subscribers</code> or <code>:subscriber</code> on Subscription, unless a <code>:source</code> is given.</p>
@@ -1533,6 +1614,9 @@ end
 </dd><dt>:after_remove</dt>
 <dd>
 <p>Defines an <a href="ClassMethods.html#module-ActiveRecord::Associations::ClassMethods-label-Association+callbacks">association callback</a> that gets triggered <strong>after an object is removed</strong> from the association collection.</p>
+</dd><dt><code>:deprecated</code></dt>
+<dd>
+<p>If true, marks the association as deprecated. Usage of deprecated associations is reported. Please, check the class documentation above for details.</p>
 </dd></dl>
 
 <p>Option examples:</p>
@@ -1564,13 +1648,13 @@ has_many :comments, index_errors: :nested_attributes_order
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1302
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1427
         def has_many(name, scope = nil, **options, &amp;extension)
           reflection = Builder::HasMany.build(self, name, scope, options, &amp;extension)
-          Reflection.add_reflection self, name, reflection
+          Reflection.add_reflection(self, name, reflection)
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/associations.rb#L1302" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/associations.rb#L1427" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1689,14 +1773,16 @@ has_one :latest_post, -&gt;(blog) { where(&quot;created_at &gt; ?&quot;, blog.en
 <p>Specifies a polymorphic interface (See <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a>).</p>
 </dd><dt><code>:through</code></dt>
 <dd>
-<p>Specifies a Join Model through which to perform the query. Options for <code>:class_name</code>, <code>:primary_key</code>, and <code>:foreign_key</code> are ignored, as the association uses the source reflection. You can only use a <code>:through</code> query through a <a href="ClassMethods.html#method-i-has_one"><code>has_one</code></a> or <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a> association on the join model.</p>
+<p>Specifies an association through which to perform the query.</p>
+
+<p>The through association must be a <code>has_one</code>, <code>has_one :through</code>, or non-polymorphic <code>belongs_to</code>. That is, a non-polymorphic singular association. Options for <code>:class_name</code>, <code>:primary_key</code>, and <code>:foreign_key</code> are ignored, as the association uses the source reflection. You can only use a <code>:through</code> query through a <a href="ClassMethods.html#method-i-has_one"><code>has_one</code></a> or <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a> association on the join model.</p>
 
 <p>If the association on the join model is a <a href="ClassMethods.html#method-i-belongs_to"><code>belongs_to</code></a>, the collection can be modified and the records on the <code>:through</code> model will be automatically created and removed as appropriate. Otherwise, the collection is read-only, so you should manipulate the <code>:through</code> association directly.</p>
 
 <p>If you are going to modify the association (rather than just read from it), then it is a good idea to set the <code>:inverse_of</code> option on the source association on the join model. This allows associated records to be built which will automatically create the appropriate join model records when they are saved. See <a href="ClassMethods.html#module-ActiveRecord::Associations::ClassMethods-label-Association+Join+Models">Association Join Models</a> and <a href="ClassMethods.html#module-ActiveRecord::Associations::ClassMethods-label-Setting+Inverses">Setting Inverses</a> for more detail.</p>
 </dd><dt><code>:disable_joins</code></dt>
 <dd>
-<p>Specifies whether joins should be skipped for an association. If set to true, two or more queries will be generated. Note that in some cases, if order or limit is applied, it will be done in-memory due to database limitations. This option is only applicable on <code>has_one :through</code> associations as <a href="ClassMethods.html#method-i-has_one"><code>has_one</code></a> alone does not perform a join.</p>
+<p>Specifies whether joins should be skipped for an association. If set to true, two or more queries will be generated. Note that in some cases, if order or limit is applied, it will be done in-memory due to database limitations. This option is only applicable on <code>has_one :through</code> associations as <code>has_one</code> alone does not perform a join.</p>
 </dd><dt><code>:source</code></dt>
 <dd>
 <p>Specifies the source association name used by <a href="ClassMethods.html#method-i-has_one"><code>has_one</code></a> <code>:through</code> queries. Only use it if the name cannot be inferred from the association. <code>has_one :favorite, through: :favorites</code> will look for a <code>:favorite</code> on Favorite, unless a <code>:source</code> is given.</p>
@@ -1731,6 +1817,9 @@ has_one :latest_post, -&gt;(blog) { where(&quot;created_at &gt; ?&quot;, blog.en
 </dd><dt><code>:query_constraints</code></dt>
 <dd>
 <p>Serves as a composite foreign key. Defines the list of columns to be used to query the associated object. This is an optional option. By default <a href="../../Rails.html"><code>Rails</code></a> will attempt to derive the value automatically. When the value is set the <a href="../../Array.html"><code>Array</code></a> size must match associated model’s primary key or <code>query_constraints</code> size.</p>
+</dd><dt><code>:deprecated</code></dt>
+<dd>
+<p>If true, marks the association as deprecated. Usage of deprecated associations is reported. Please, check the class documentation above for details.</p>
 </dd></dl>
 
 <p>Option examples:</p>
@@ -1738,7 +1827,7 @@ has_one :latest_post, -&gt;(blog) { where(&quot;created_at &gt; ?&quot;, blog.en
 <pre><code>has_one :credit_card, dependent: :destroy  # destroys the associated credit card
 has_one :credit_card, dependent: :nullify  # updates the associated records foreign
                                               # key value to NULL rather than destroying it
-has_one :last_comment, -&gt; { order(&#39;posted_on&#39;) }, class_name: &quot;Comment&quot;
+has_one :last_comment, -&gt; { order(&#39;posted_on desc&#39;) }, class_name: &quot;Comment&quot;
 has_one :project_manager, -&gt; { where(role: &#39;project_manager&#39;) }, class_name: &quot;Person&quot;
 has_one :attachment, as: :attachable
 has_one :boss, -&gt; { readonly }
@@ -1763,13 +1852,13 @@ has_one :employment_record_book, query_constraints: [:organization_id, :employee
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1498
+              <pre><code class="ruby"># File activerecord/lib/active_record/associations.rb, line 1628
         def has_one(name, scope = nil, **options)
           reflection = Builder::HasOne.build(self, name, scope, options)
-          Reflection.add_reflection self, name, reflection
+          Reflection.add_reflection(self, name, reflection)
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/associations.rb#L1498" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/associations.rb#L1628" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

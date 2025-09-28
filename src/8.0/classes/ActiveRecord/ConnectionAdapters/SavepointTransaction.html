@@ -1,0 +1,329 @@
+---
+title: ActiveRecord::ConnectionAdapters::SavepointTransaction
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::ConnectionAdapters::SavepointTransaction
+            
+                <span class="parent">&lt;
+                    
+                    ActiveRecord::ConnectionAdapters::Transaction
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/connection_adapters/abstract/transaction_rb.html">activerecord/lib/active_record/connection_adapters/abstract/transaction.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveRecord::ConnectionAdapters::SavepointTransaction-label-Active+Record+Savepoint+Transaction">Active Record Savepoint Transaction</h1>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-commit">commit</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-full_rollback-3F">full_rollback?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-materialize-21">materialize!</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-restart">restart</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-rollback">rollback</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(connection, savepoint_name, parent_transaction, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/transaction.rb, line 405
+      def initialize(connection, savepoint_name, parent_transaction, **options)
+        super(connection, **options)
+
+        parent_transaction.state.add_child(@state)
+
+        if isolation_level
+          raise ActiveRecord::TransactionIsolationError, &quot;cannot set transaction isolation in a nested transaction&quot;
+        end
+
+        @savepoint_name = savepoint_name
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/transaction.rb#L405" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-commit">
+            
+              commit()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/transaction.rb, line 439
+      def commit
+        connection.release_savepoint(savepoint_name) if materialized?
+        @state.commit!
+        @instrumenter.finish(:commit) if materialized?
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/transaction.rb#L439" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-full_rollback-3F">
+            
+              full_rollback?()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/transaction.rb, line 445
+      def full_rollback?; false; end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/transaction.rb#L445" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-materialize-21">
+            
+              materialize!()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/transaction.rb, line 417
+      def materialize!
+        connection.create_savepoint(savepoint_name)
+        super
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/transaction.rb#L417" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-restart">
+            
+              restart()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/transaction.rb, line 422
+      def restart
+        return unless materialized?
+
+        @instrumenter.finish(:restart)
+        @instrumenter.start
+
+        connection.rollback_to_savepoint(savepoint_name)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/transaction.rb#L422" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-rollback">
+            
+              rollback()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/transaction.rb, line 431
+      def rollback
+        unless @state.invalidated?
+          connection.rollback_to_savepoint(savepoint_name) if materialized? &amp;&amp; connection.active?
+        end
+        @state.rollback!
+        @instrumenter.finish(:rollback) if materialized?
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/transaction.rb#L431" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

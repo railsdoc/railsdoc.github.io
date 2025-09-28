@@ -1,0 +1,200 @@
+---
+title: ActiveRecord::LogSubscriber
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::LogSubscriber
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../ActiveSupport/LogSubscriber.html">ActiveSupport::LogSubscriber</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activerecord/lib/active_record/log_subscriber_rb.html">activerecord/lib/active_record/log_subscriber.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-sql">sql</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-strict_loading_violation">strict_loading_violation</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">IGNORE_PAYLOAD_NAMES</td>
+            <td>=</td>
+            <td class="attr-value">[&quot;SCHEMA&quot;, &quot;EXPLAIN&quot;]</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-sql">
+            
+              sql(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/log_subscriber.rb, line 18
+    def sql(event)
+      payload = event.payload
+
+      return if IGNORE_PAYLOAD_NAMES.include?(payload[:name])
+
+      name = if payload[:async]
+        &quot;ASYNC #{payload[:name]} (#{payload[:lock_wait].round(1)}ms) (db time #{event.duration.round(1)}ms)&quot;
+      else
+        &quot;#{payload[:name]} (#{event.duration.round(1)}ms)&quot;
+      end
+      name  = &quot;CACHE #{name}&quot; if payload[:cached]
+      sql   = payload[:sql]
+      binds = nil
+
+      if payload[:binds]&amp;.any?
+        casted_params = type_casted_binds(payload[:type_casted_binds])
+
+        binds = []
+        payload[:binds].each_with_index do |attr, i|
+          attribute_name = if attr.respond_to?(:name)
+            attr.name
+          elsif attr.respond_to?(:[]) &amp;&amp; attr[i].respond_to?(:name)
+            attr[i].name
+          else
+            nil
+          end
+
+          filtered_params = filter(attribute_name, casted_params[i])
+
+          binds &lt;&lt; render_bind(attr, filtered_params)
+        end
+        binds = binds.inspect
+        binds.prepend(&quot;  &quot;)
+      end
+
+      name = colorize_payload_name(name, payload[:name])
+      sql  = color(sql, sql_color(sql), bold: true) if colorize_logging
+
+      debug &quot;  #{name}  #{sql}#{binds}&quot;
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/log_subscriber.rb#L18" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-strict_loading_violation">
+            
+              strict_loading_violation(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/log_subscriber.rb, line 9
+    def strict_loading_violation(event)
+      debug do
+        owner = event.payload[:owner]
+        reflection = event.payload[:reflection]
+        color(reflection.strict_loading_violation_message(owner), RED)
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/log_subscriber.rb#L9" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

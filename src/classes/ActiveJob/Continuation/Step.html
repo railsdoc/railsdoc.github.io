@@ -1,0 +1,434 @@
+---
+title: ActiveJob::Continuation::Step
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveJob::Continuation::Step
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activejob/lib/active_job/continuation/step_rb.html">activejob/lib/active_job/continuation/step.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveJob::Continuation::Step-label-Active+Job+Continuation+Step">Active Job <a href="../Continuation.html"><code>Continuation</code></a> <a href="Step.html"><code>Step</code></a></h1>
+
+<p>Represents a step within a continuable job.</p>
+
+<p>When a step is completed, it is recorded in the job’s continuation state. If the job is interrupted, it will be resumed from after the last completed step.</p>
+
+<p>Steps also have an optional cursor that can be used to track progress within the step. If a job is interrupted during a step, the cursor will be saved and passed back when the job is resumed.</p>
+
+<p>It is the responsibility of the code in the step to use the cursor correctly to resume from where it left off.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-advance-21">advance!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-advanced-3F">advanced?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-checkpoint-21">checkpoint!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-description">description</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-resumed-3F">resumed?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-set-21">set!</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-to_a">to_a</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>cursor</td>
+            <td class='attr-desc'><p>The cursor for the step.</p></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>name</td>
+            <td class='attr-desc'><p>The name of the step.</p></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(name, cursor, job:, resumed:)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/continuation/step.rb, line 25
+      def initialize(name, cursor, job:, resumed:)
+        @name = name.to_sym
+        @initial_cursor = cursor
+        @cursor = cursor
+        @resumed = resumed
+        @job = job
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activejob/lib/active_job/continuation/step.rb#L25" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-advance-21">
+            
+              advance!(from: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Advance the cursor from the current or supplied value</p>
+
+<p>The cursor will be advanced by calling the <code>succ</code> method on the cursor. An <a href="UnadvanceableCursorError.html"><code>UnadvanceableCursorError</code></a> error will be raised if the cursor does not implement <code>succ</code>.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/continuation/step.rb, line 49
+      def advance!(from: nil)
+        from = cursor if from.nil?
+
+        begin
+          to = from.succ
+        rescue NoMethodError
+          raise UnadvanceableCursorError, &quot;Cursor class &#39;#{from.class}&#39; does not implement &#39;succ&#39;&quot;
+        end
+
+        set! to
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activejob/lib/active_job/continuation/step.rb#L49" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-advanced-3F">
+            
+              advanced?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Has the cursor been advanced during this job execution?</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/continuation/step.rb, line 67
+      def advanced?
+        initial_cursor != cursor
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activejob/lib/active_job/continuation/step.rb#L67" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-checkpoint-21">
+            
+              checkpoint!()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Check if the job should be interrupted, and if so raise an <a href="Interrupt.html"><code>Interrupt</code></a> exception. The job will be requeued for retry.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/continuation/step.rb, line 35
+      def checkpoint!
+        job.checkpoint!
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activejob/lib/active_job/continuation/step.rb#L35" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-description">
+            
+              description()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/continuation/step.rb, line 75
+      def description
+        &quot;at &#39;#{name}&#39;, cursor &#39;#{cursor.inspect}&#39;&quot;
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activejob/lib/active_job/continuation/step.rb#L75" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-resumed-3F">
+            
+              resumed?()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Has this step been resumed from a previous job execution?</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/continuation/step.rb, line 62
+      def resumed?
+        @resumed
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activejob/lib/active_job/continuation/step.rb#L62" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-set-21">
+            
+              set!(cursor)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Set the cursor and interrupt the job if necessary.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/continuation/step.rb, line 40
+      def set!(cursor)
+        @cursor = cursor
+        checkpoint!
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activejob/lib/active_job/continuation/step.rb#L40" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-to_a">
+            
+              to_a()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activejob/lib/active_job/continuation/step.rb, line 71
+      def to_a
+        [ name.to_s, cursor ]
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activejob/lib/active_job/continuation/step.rb#L71" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

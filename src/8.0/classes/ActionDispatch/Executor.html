@@ -1,0 +1,167 @@
+---
+title: ActionDispatch::Executor
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionDispatch::Executor
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/actionpack/lib/action_dispatch/middleware/executor_rb.html">actionpack/lib/action_dispatch/middleware/executor.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-call">call</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(app, executor)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/executor.rb, line 9
+    def initialize(app, executor)
+      @app, @executor = app, executor
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/middleware/executor.rb#L9" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-call">
+            
+              call(env)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/middleware/executor.rb, line 13
+    def call(env)
+      state = @executor.run!(reset: true)
+      begin
+        response = @app.call(env)
+
+        if env[&quot;action_dispatch.report_exception&quot;]
+          error = env[&quot;action_dispatch.exception&quot;]
+          @executor.error_reporter.report(error, handled: false, source: &quot;application.action_dispatch&quot;)
+        end
+
+        returned = response &lt;&lt; ::Rack::BodyProxy.new(response.pop) { state.complete! }
+      rescue Exception =&gt; error
+        request = ActionDispatch::Request.new env
+        backtrace_cleaner = request.get_header(&quot;action_dispatch.backtrace_cleaner&quot;)
+        wrapper = ExceptionWrapper.new(backtrace_cleaner, error)
+        @executor.error_reporter.report(wrapper.unwrapped_exception, handled: false, source: &quot;application.action_dispatch&quot;)
+        raise
+      ensure
+        state.complete! unless returned
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/middleware/executor.rb#L13" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

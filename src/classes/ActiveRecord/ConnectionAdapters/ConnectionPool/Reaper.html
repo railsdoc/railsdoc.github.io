@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -31,9 +31,21 @@ layout: default
       
 <h1 id="class-ActiveRecord::ConnectionAdapters::ConnectionPool::Reaper-label-Active+Record+Connection+Pool+Reaper">Active Record Connection Pool Reaper</h1>
 
-<p>Every <code>frequency</code> seconds, the reaper will call <code>reap</code> and <code>flush</code> on <code>pool</code>. A reaper instantiated with a zero frequency will never reap the connection pool.</p>
+<p>The reaper is a singleton that exists in the background of the process and is responsible for general maintenance of all the connection pools.</p>
 
-<p>Configure the frequency by setting <code>reaping_frequency</code> in your database YAML file (default 60 seconds).</p>
+<p>It will reclaim connections that are leased to now-dead threads, ensuring that a bad thread can’t leak a pool slot forever. By definition, this involves touching currently-leased connections, but that is safe because the owning thread is known to be dead.</p>
+
+<p>Beyond that, it manages the health of available / unleased connections:</p>
+
+<pre><code>* retiring connections that have been idle[1] for too long
+* creating occasional activity on inactive[1] connections
+* keeping the pool prepopulated up to its minimum size
+* proactively connecting to the target database from any pooled
+  connections that had lazily deferred that step
+* resetting or replacing connections that are known to be broken
+</code></pre>
+
+<p>[1]: “idle” and “inactive” here distinguish between connections that have not been requested by the application in a while (idle) and those that have not spoken to their remote server in a while (inactive). The former is a desirable opportunity to reduce our connection count (‘idle_timeout`); the latter is a risk that the server or a firewall may drop a connection we still anticipate using (avoided by `keepalive`).</p>
 
     </div>
   
@@ -122,13 +134,13 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool/reaper.rb, line 19
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool/reaper.rb, line 36
         def initialize(pool, frequency)
           @pool      = pool
           @frequency = frequency
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/reaper.rb#L19" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/reaper.rb#L36" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -162,13 +174,13 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool/reaper.rb, line 71
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/connection_pool/reaper.rb, line 110
         def run
           return unless frequency &amp;&amp; frequency &gt; 0
           self.class.register_pool(pool, frequency)
         end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/reaper.rb#L71" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/connection_pool/reaper.rb#L110" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

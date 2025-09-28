@@ -1,0 +1,237 @@
+---
+title: ActiveSupport::Testing::Deprecation
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Testing::Deprecation
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/testing/deprecation_rb.html">activesupport/lib/active_support/testing/deprecation.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-assert_deprecated">assert_deprecated</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_not_deprecated">assert_not_deprecated</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-collect_deprecations">collect_deprecations</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-assert_deprecated">
+            
+              assert_deprecated(deprecator, &block)<br />assert_deprecated(match, deprecator, &block)
+
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that a matching deprecation warning was emitted by the given deprecator during the execution of the yielded block.</p>
+
+<pre><code>assert_deprecated(/foo/, CustomDeprecator) do
+  CustomDeprecator.warn &quot;foo should no longer be used&quot;
+end
+</code></pre>
+
+<p>The <code>match</code> object may be a <a href="../../Regexp.html"><code>Regexp</code></a>, or <a href="../../String.html"><code>String</code></a> appearing in the message.</p>
+
+<pre><code>assert_deprecated(&#39;foo&#39;, CustomDeprecator) do
+  CustomDeprecator.warn &quot;foo should no longer be used&quot;
+end
+</code></pre>
+
+<p>If the <code>match</code> is omitted (or explicitly <code>nil</code>), any deprecation warning will match.</p>
+
+<pre><code>assert_deprecated(CustomDeprecator) do
+  CustomDeprecator.warn &quot;foo should no longer be used&quot;
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/deprecation.rb, line 30
+      def assert_deprecated(match = nil, deprecator = nil, &amp;block)
+        match, deprecator = nil, match if match.is_a?(ActiveSupport::Deprecation)
+
+        unless deprecator
+          raise ArgumentError, &quot;No deprecator given&quot;
+        end
+
+        result, warnings = collect_deprecations(deprecator, &amp;block)
+        assert !warnings.empty?, &quot;Expected a deprecation warning within the block but received none&quot;
+        if match
+          match = Regexp.new(Regexp.escape(match)) unless match.is_a?(Regexp)
+          assert warnings.any? { |w| match.match?(w) }, &quot;No deprecation warning matched #{match}: #{warnings.join(&#39;, &#39;)}&quot;
+        end
+        result
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/testing/deprecation.rb#L30" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_not_deprecated">
+            
+              assert_not_deprecated(deprecator, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that no deprecation warnings are emitted by the given deprecator during the execution of the yielded block.</p>
+
+<pre><code>assert_not_deprecated(CustomDeprecator) do
+  CustomDeprecator.warn &quot;message&quot; # fails assertion
+end
+
+assert_not_deprecated(ActiveSupport::Deprecation.new) do
+  CustomDeprecator.warn &quot;message&quot; # passes assertion, different deprecator
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/deprecation.rb, line 55
+      def assert_not_deprecated(deprecator, &amp;block)
+        result, deprecations = collect_deprecations(deprecator, &amp;block)
+        assert deprecations.empty?, &quot;Expected no deprecation warning within the block but received #{deprecations.size}: \n  #{deprecations * &quot;\n  &quot;}&quot;
+        result
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/testing/deprecation.rb#L55" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-collect_deprecations">
+            
+              collect_deprecations(deprecator)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Returns the return value of the block and an array of all the deprecation warnings emitted by the given <code>deprecator</code> during the execution of the yielded block.</p>
+
+<pre><code>collect_deprecations(CustomDeprecator) do
+  CustomDeprecator.warn &quot;message&quot;
+  ActiveSupport::Deprecation.new.warn &quot;other message&quot;
+  :result
+end # =&gt; [:result, [&quot;message&quot;]]
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/deprecation.rb, line 69
+      def collect_deprecations(deprecator)
+        old_behavior = deprecator.behavior
+        deprecations = []
+        deprecator.behavior = Proc.new do |message, callstack|
+          deprecations &lt;&lt; message
+        end
+        result = yield
+        [result, deprecations]
+      ensure
+        deprecator.behavior = old_behavior
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activesupport/lib/active_support/testing/deprecation.rb#L69" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

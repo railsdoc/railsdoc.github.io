@@ -1,0 +1,551 @@
+---
+title: ActionCable::Connection::Base
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActionCable::Connection::Base
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/actioncable/lib/action_cable/connection/base_rb.html">actioncable/lib/action_cable/connection/base.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActionCable::Connection::Base-label-Action+Cable+Connection+Base">Action Cable <a href="../Connection.html"><code>Connection</code></a> <a href="Base.html"><code>Base</code></a></h1>
+
+<p>For every WebSocket connection the Action Cable server accepts, a <a href="../Connection.html"><code>Connection</code></a> object will be instantiated. This instance becomes the parent of all of the channel subscriptions that are created from there on. Incoming messages are then routed to these channel subscriptions based on an identifier sent by the Action Cable consumer. The <a href="../Connection.html"><code>Connection</code></a> itself does not deal with any specific application logic beyond authentication and authorization.</p>
+
+<p>Here’s a basic example:</p>
+
+<pre><code>module ApplicationCable
+  class Connection &lt; ActionCable::Connection::Base
+    identified_by :current_user
+
+    def connect
+      self.current_user = find_verified_user
+      logger.add_tags current_user.name
+    end
+
+    def disconnect
+      # Any cleanup work needed when the cable connection is cut.
+    end
+
+    private
+      def find_verified_user
+        User.find_by_identity(cookies.encrypted[:identity_id]) ||
+          reject_unauthorized_connection
+      end
+  end
+end
+</code></pre>
+
+<p>First, we declare that this connection can be identified by its current_user. This allows us to later be able to find all connections established for that current_user (and potentially disconnect them). You can declare as many identification indexes as you like. Declaring an identification means that an attr_accessor is automatically set for that key.</p>
+
+<p>Second, we rely on the fact that the WebSocket connection is established with the cookies from the domain being sent along. This makes it easy to use signed cookies that were set when logging in via a web interface to authorize the WebSocket connection.</p>
+
+<p>Finally, we add a tag to the connection-specific logger with the name of the current user to easily distinguish their messages in the log.</p>
+
+<p>Pretty simple, eh?</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-beat">beat</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-close">close</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-cookies">cookies</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-handle_channel_command">handle_channel_command</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-request">request</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-send_async">send_async</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-statistics">statistics</a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <!-- Includes -->
+    <h2 id="included-modules">Included Modules</h2>
+    <ul>
+      
+        <li>
+          
+            <a href="Identification.html">
+              ActionCable::Connection::Identification
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="InternalChannel.html">
+              ActionCable::Connection::InternalChannel
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="Authorization.html">
+              ActionCable::Connection::Authorization
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="Callbacks.html">
+              ActionCable::Connection::Callbacks
+            </a>
+          
+        </li>
+      
+        <li>
+          
+            <a href="../../ActiveSupport/Rescuable.html">
+              ActiveSupport::Rescuable
+            </a>
+          
+        </li>
+      
+    </ul>
+  
+
+  
+    
+
+    
+
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>env</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>logger</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>protocol</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>server</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>subscriptions</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>worker_pool</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(server, env, coder: ActiveSupport::JSON)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/connection/base.rb, line 67
+      def initialize(server, env, coder: ActiveSupport::JSON)
+        @server, @env, @coder = server, env, coder
+
+        @worker_pool = server.worker_pool
+        @logger = new_tagged_logger
+
+        @websocket      = ActionCable::Connection::WebSocket.new(env, self, event_loop)
+        @subscriptions  = ActionCable::Connection::Subscriptions.new(self)
+        @message_buffer = ActionCable::Connection::MessageBuffer.new(self)
+
+        @_internal_subscriptions = nil
+        @started_at = Time.now
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/connection/base.rb#L67" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-beat">
+            
+              beat()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/connection/base.rb, line 147
+      def beat
+        transmit type: ActionCable::INTERNAL[:message_types][:ping], message: Time.now.to_i
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/connection/base.rb#L147" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-close">
+            
+              close(reason: nil, reconnect: true)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Close the WebSocket connection.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/connection/base.rb, line 120
+      def close(reason: nil, reconnect: true)
+        transmit(
+          type: ActionCable::INTERNAL[:message_types][:disconnect],
+          reason: reason,
+          reconnect: reconnect
+        )
+        websocket.close
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/connection/base.rb#L120" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-handle_channel_command">
+            
+              handle_channel_command(payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/connection/base.rb, line 109
+      def handle_channel_command(payload)
+        run_callbacks :command do
+          subscriptions.execute_command payload
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/connection/base.rb#L109" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-send_async">
+            
+              send_async(method, *arguments)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Invoke a method on the connection asynchronously through the pool of thread workers.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/connection/base.rb, line 131
+      def send_async(method, *arguments)
+        worker_pool.async_invoke(self, method, *arguments)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/connection/base.rb#L131" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-statistics">
+            
+              statistics()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Return a basic hash of statistics for the connection keyed with <code>identifier</code>, <code>started_at</code>, <code>subscriptions</code>, and <code>request_id</code>. This can be returned by a health check against the connection.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/connection/base.rb, line 138
+      def statistics
+        {
+          identifier: connection_identifier,
+          started_at: @started_at,
+          subscriptions: subscriptions.identifiers,
+          request_id: @env[&quot;action_dispatch.request_id&quot;]
+        }
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/connection/base.rb#L138" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+      <h2 id="instance-private-methods">Instance Private methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-cookies">
+            
+              cookies()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>The cookies of the request that initiated the WebSocket connection. Useful for performing authorization checks.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/connection/base.rb, line 187
+        def cookies # :doc:
+          request.cookie_jar
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/connection/base.rb#L187" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-request">
+            
+              request()
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>The request that initiated the WebSocket connection is available here. This gives access to the environment, cookies, etc.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actioncable/lib/action_cable/connection/base.rb, line 178
+        def request # :doc:
+          @request ||= begin
+            environment = Rails.application.env_config.merge(env) if defined?(Rails.application) &amp;&amp; Rails.application
+            ActionDispatch::Request.new(environment || env)
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actioncable/lib/action_cable/connection/base.rb#L178" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

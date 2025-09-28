@@ -1,0 +1,514 @@
+---
+title: ActionDispatch::Routing::Mapper::Scoping
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActionDispatch::Routing::Mapper::Scoping
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../../files/actionpack/lib/action_dispatch/routing/mapper_rb.html">actionpack/lib/action_dispatch/routing/mapper.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>You may wish to organize groups of controllers under a namespace. Most commonly, you might group a number of administrative controllers under an <code>admin</code> namespace. You would place these controllers under the <code>app/controllers/admin</code> directory, and you can group them together in your router:</p>
+
+<pre><code>namespace &quot;admin&quot; do
+  resources :posts, :comments
+end
+</code></pre>
+
+<p>This will create a number of routes for each of the posts and comments controller. For <code>Admin::PostsController</code>, <a href="../../../Rails.html"><code>Rails</code></a> will create:</p>
+
+<pre><code>GET       /admin/posts
+GET       /admin/posts/new
+POST      /admin/posts
+GET       /admin/posts/1
+GET       /admin/posts/1/edit
+PATCH/PUT /admin/posts/1
+DELETE    /admin/posts/1
+</code></pre>
+
+<p>If you want to route /posts (without the prefix /admin) to <code>Admin::PostsController</code>, you could use</p>
+
+<pre><code>scope module: &quot;admin&quot; do
+  resources :posts
+end
+</code></pre>
+
+<p>or, for a single case</p>
+
+<pre><code>resources :posts, module: &quot;admin&quot;
+</code></pre>
+
+<p>If you want to route /admin/posts to <code>PostsController</code> (without the <code>Admin::</code> module prefix), you could use</p>
+
+<pre><code>scope &quot;/admin&quot; do
+  resources :posts
+end
+</code></pre>
+
+<p>or, for a single case</p>
+
+<pre><code>resources :posts, path: &quot;/admin/posts&quot;
+</code></pre>
+
+<p>In each of these cases, the named routes remain the same as if you did not use scope. In the last case, the following paths map to <code>PostsController</code>:</p>
+
+<pre><code>GET       /admin/posts
+GET       /admin/posts/new
+POST      /admin/posts
+GET       /admin/posts/1
+GET       /admin/posts/1/edit
+PATCH/PUT /admin/posts/1
+DELETE    /admin/posts/1
+</code></pre>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-constraints">constraints</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-controller">controller</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-defaults">defaults</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-namespace">namespace</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-scope">scope</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-constraints">
+            
+              constraints(constraints = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <h3 id="method-i-constraints-label-Parameter+Restriction">Parameter Restriction</h3>
+
+<p>Allows you to constrain the nested routes based on a set of rules. For instance, in order to change the routes to allow for a dot character in the <code>id</code> parameter:</p>
+
+<pre><code>constraints(id: /\d+\.\d+/) do
+  resources :posts
+end
+</code></pre>
+
+<p>Now routes such as <code>/posts/1</code> will no longer be valid, but <code>/posts/1.1</code> will be. The <code>id</code> parameter must match the constraint passed in for this example.</p>
+
+<p>You may use this to also restrict other parameters:</p>
+
+<pre><code>resources :posts do
+  constraints(post_id: /\d+\.\d+/) do
+    resources :comments
+  end
+end
+</code></pre>
+
+<h3 id="method-i-constraints-label-Restricting+based+on+IP">Restricting based on IP</h3>
+
+<p>Routes can also be constrained to an IP or a certain range of IP addresses:</p>
+
+<pre><code>constraints(ip: /192\.168\.\d+\.\d+/) do
+  resources :posts
+end
+</code></pre>
+
+<p>Any user connecting from the 192.168.* range will be able to see this resource, where as any user connecting outside of this range will be told there is no such route.</p>
+
+<h3 id="method-i-constraints-label-Dynamic+request+matching">Dynamic request matching</h3>
+
+<p>Requests to routes can be constrained based on specific criteria:</p>
+
+<pre><code>constraints(-&gt; (req) { /iPhone/.match?(req.env[&quot;HTTP_USER_AGENT&quot;]) }) do
+  resources :iphones
+end
+</code></pre>
+
+<p>You are able to move this logic out into a class if it is too complex for routes. This class must have a <code>matches?</code> method defined on it which either returns <code>true</code> if the user should be given access to that route, or <code>false</code> if the user should not.</p>
+
+<pre><code>class Iphone
+  def self.matches?(request)
+    /iPhone/.match?(request.env[&quot;HTTP_USER_AGENT&quot;])
+  end
+end
+</code></pre>
+
+<p>An expected place for this code would be <code>lib/constraints</code>.</p>
+
+<p>This class is then used like this:</p>
+
+<pre><code>constraints(Iphone) do
+  resources :iphones
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 1034
+        def constraints(constraints = {}, &amp;block)
+          scope(constraints: constraints, &amp;block)
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/routing/mapper.rb#L1034" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-controller">
+            
+              controller(controller)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Scopes routes to a specific controller</p>
+
+<pre><code>controller &quot;food&quot; do
+  match &quot;bacon&quot;, action: :bacon, via: :get
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 916
+        def controller(controller)
+          @scope = @scope.new(controller: controller)
+          yield
+        ensure
+          @scope = @scope.parent
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/routing/mapper.rb#L916" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-defaults">
+            
+              defaults(defaults = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Allows you to set default parameters for a route, such as this:</p>
+
+<pre><code>defaults id: &#39;home&#39; do
+  match &#39;scoped_pages/(:id)&#39;, to: &#39;pages#show&#39;
+end
+</code></pre>
+
+<p>Using this, the <code>:id</code> parameter here will default to ‘home’.</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 1045
+        def defaults(defaults = {})
+          @scope = @scope.new(defaults: merge_defaults_scope(@scope[:defaults], defaults))
+          yield
+        ensure
+          @scope = @scope.parent
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/routing/mapper.rb#L1045" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-namespace">
+            
+              namespace(path, options = {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Scopes routes to a specific namespace. For example:</p>
+
+<pre><code>namespace :admin do
+  resources :posts
+end
+</code></pre>
+
+<p>This generates the following routes:</p>
+
+<pre><code>    admin_posts GET       /admin/posts(.:format)          admin/posts#index
+    admin_posts POST      /admin/posts(.:format)          admin/posts#create
+ new_admin_post GET       /admin/posts/new(.:format)      admin/posts#new
+edit_admin_post GET       /admin/posts/:id/edit(.:format) admin/posts#edit
+     admin_post GET       /admin/posts/:id(.:format)      admin/posts#show
+     admin_post PATCH/PUT /admin/posts/:id(.:format)      admin/posts#update
+     admin_post DELETE    /admin/posts/:id(.:format)      admin/posts#destroy
+</code></pre>
+
+<h3 id="method-i-namespace-label-Options">Options</h3>
+
+<p>The <code>:path</code>, <code>:as</code>, <code>:module</code>, <code>:shallow_path</code>, and <code>:shallow_prefix</code> options all default to the name of the namespace.</p>
+
+<p>For options, see <a href="Base.html#method-i-match"><code>Base#match</code></a>. For <code>:shallow_path</code> option, see <a href="Resources.html#method-i-resources"><code>Resources#resources</code></a>.</p>
+
+<pre><code># accessible through /sekret/posts rather than /admin/posts
+namespace :admin, path: &quot;sekret&quot; do
+  resources :posts
+end
+
+# maps to Sekret::PostsController rather than Admin::PostsController
+namespace :admin, module: &quot;sekret&quot; do
+  resources :posts
+end
+
+# generates sekret_posts_path rather than admin_posts_path
+namespace :admin, as: &quot;sekret&quot; do
+  resources :posts
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 961
+        def namespace(path, options = {}, &amp;block)
+          path = path.to_s
+
+          defaults = {
+            module:         path,
+            as:             options.fetch(:as, path),
+            shallow_path:   options.fetch(:path, path),
+            shallow_prefix: options.fetch(:as, path)
+          }
+
+          path_scope(options.delete(:path) { path }) do
+            scope(defaults.merge!(options), &amp;block)
+          end
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/routing/mapper.rb#L961" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-scope">
+            
+              scope(*args)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Scopes a set of routes to the given default options.</p>
+
+<p>Take the following route definition as an example:</p>
+
+<pre><code>scope path: &quot;:account_id&quot;, as: &quot;account&quot; do
+  resources :projects
+end
+</code></pre>
+
+<p>This generates helpers such as <code>account_projects_path</code>, just like <code>resources</code> does. The difference here being that the routes generated are like /:account_id/projects, rather than /accounts/:account_id/projects.</p>
+
+<h3 id="method-i-scope-label-Options">Options</h3>
+
+<p>Takes same options as <a href="Base.html#method-i-match"><code>Base#match</code></a> and <a href="Resources.html#method-i-resources"><code>Resources#resources</code></a>.</p>
+
+<pre><code># route /posts (without the prefix /admin) to Admin::PostsController
+scope module: &quot;admin&quot; do
+  resources :posts
+end
+
+# prefix the posts resource&#39;s requests with &#39;/admin&#39;
+scope path: &quot;/admin&quot; do
+  resources :posts
+end
+
+# prefix the routing helper name: sekret_posts_path instead of posts_path
+scope as: &quot;sekret&quot; do
+  resources :posts
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File actionpack/lib/action_dispatch/routing/mapper.rb, line 857
+        def scope(*args)
+          options = args.extract_options!.dup
+          scope = {}
+
+          options[:path] = args.flatten.join(&quot;/&quot;) if args.any?
+          options[:constraints] ||= {}
+
+          unless nested_scope?
+            options[:shallow_path] ||= options[:path] if options.key?(:path)
+            options[:shallow_prefix] ||= options[:as] if options.key?(:as)
+          end
+
+          if options[:constraints].is_a?(Hash)
+            defaults = options[:constraints].select do |k, v|
+              URL_OPTIONS.include?(k) &amp;&amp; (v.is_a?(String) || v.is_a?(Integer))
+            end
+
+            options[:defaults] = defaults.merge(options[:defaults] || {})
+          else
+            block, options[:constraints] = options[:constraints], {}
+          end
+
+          if options.key?(:only) || options.key?(:except)
+            scope[:action_options] = { only: options.delete(:only),
+                                       except: options.delete(:except) }
+          end
+
+          if options.key? :anchor
+            raise ArgumentError, &quot;anchor is ignored unless passed to `match`&quot;
+          end
+
+          @scope.options.each do |option|
+            if option == :blocks
+              value = block
+            elsif option == :options
+              value = options
+            else
+              value = options.delete(option) { POISON }
+            end
+
+            unless POISON == value
+              scope[option] = send(&quot;merge_#{option}_scope&quot;, @scope[option], value)
+            end
+          end
+
+          @scope = @scope.new scope
+          yield
+          self
+        ensure
+          @scope = @scope.parent
+        end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/actionpack/lib/action_dispatch/routing/mapper.rb#L857" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

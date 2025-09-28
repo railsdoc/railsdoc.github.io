@@ -1,0 +1,260 @@
+---
+title: ActiveRecord::Store::ClassMethods
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveRecord::Store::ClassMethods
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/store_rb.html">activerecord/lib/active_record/store.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-store">store</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-store_accessor">store_accessor</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-stored_attributes">stored_attributes</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-store">
+            
+              store(store_attribute, options = {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/store.rb, line 106
+      def store(store_attribute, options = {})
+        coder = build_column_serializer(store_attribute, options[:coder], Object, options[:yaml])
+        serialize store_attribute, coder: IndifferentCoder.new(store_attribute, coder)
+        store_accessor(store_attribute, options[:accessors], **options.slice(:prefix, :suffix)) if options.has_key? :accessors
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/store.rb#L106" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-store_accessor">
+            
+              store_accessor(store_attribute, *keys, prefix: nil, suffix: nil)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/store.rb, line 112
+      def store_accessor(store_attribute, *keys, prefix: nil, suffix: nil)
+        keys = keys.flatten
+
+        accessor_prefix =
+          case prefix
+          when String, Symbol
+            &quot;#{prefix}_&quot;
+          when TrueClass
+            &quot;#{store_attribute}_&quot;
+          else
+            &quot;&quot;
+          end
+        accessor_suffix =
+          case suffix
+          when String, Symbol
+            &quot;_#{suffix}&quot;
+          when TrueClass
+            &quot;_#{store_attribute}&quot;
+          else
+            &quot;&quot;
+          end
+
+        _store_accessors_module.module_eval do
+          keys.each do |key|
+            accessor_key = &quot;#{accessor_prefix}#{key}#{accessor_suffix}&quot;
+
+            define_method(&quot;#{accessor_key}=&quot;) do |value|
+              write_store_attribute(store_attribute, key, value)
+            end
+
+            define_method(accessor_key) do
+              read_store_attribute(store_attribute, key)
+            end
+
+            define_method(&quot;#{accessor_key}_changed?&quot;) do
+              return false unless attribute_changed?(store_attribute)
+              prev_store, new_store = changes[store_attribute]
+              prev_store&amp;.dig(key) != new_store&amp;.dig(key)
+            end
+
+            define_method(&quot;#{accessor_key}_change&quot;) do
+              return unless attribute_changed?(store_attribute)
+              prev_store, new_store = changes[store_attribute]
+              [prev_store&amp;.dig(key), new_store&amp;.dig(key)]
+            end
+
+            define_method(&quot;#{accessor_key}_was&quot;) do
+              return unless attribute_changed?(store_attribute)
+              prev_store, _new_store = changes[store_attribute]
+              prev_store&amp;.dig(key)
+            end
+
+            define_method(&quot;saved_change_to_#{accessor_key}?&quot;) do
+              return false unless saved_change_to_attribute?(store_attribute)
+              prev_store, new_store = saved_changes[store_attribute]
+              prev_store&amp;.dig(key) != new_store&amp;.dig(key)
+            end
+
+            define_method(&quot;saved_change_to_#{accessor_key}&quot;) do
+              return unless saved_change_to_attribute?(store_attribute)
+              prev_store, new_store = saved_changes[store_attribute]
+              [prev_store&amp;.dig(key), new_store&amp;.dig(key)]
+            end
+
+            define_method(&quot;#{accessor_key}_before_last_save&quot;) do
+              return unless saved_change_to_attribute?(store_attribute)
+              prev_store, _new_store = saved_changes[store_attribute]
+              prev_store&amp;.dig(key)
+            end
+          end
+        end
+
+        # assign new store attribute and create new hash to ensure that each class in the hierarchy
+        # has its own hash of stored attributes.
+        self.local_stored_attributes ||= {}
+        self.local_stored_attributes[store_attribute] ||= []
+        self.local_stored_attributes[store_attribute] |= keys
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/store.rb#L112" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-stored_attributes">
+            
+              stored_attributes()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/store.rb, line 199
+      def stored_attributes
+        parent = superclass.respond_to?(:stored_attributes) ? superclass.stored_attributes : {}
+        if local_stored_attributes
+          parent.merge!(local_stored_attributes) { |k, a, b| a | b }
+        end
+        parent
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/store.rb#L199" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

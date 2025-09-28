@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -85,6 +85,19 @@ layout: default
     
 
     
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">JSON_ENCODER</td>
+            <td>=</td>
+            <td class="attr-value">ActiveSupport::JSON::Encoding.json_encoder.new(escape: false)</td>
+          </tr>
+          
+        
+      </table>
+    
 
     
 
@@ -117,12 +130,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/type/json.rb, line 25
+              <pre><code class="ruby"># File activerecord/lib/active_record/type/json.rb, line 38
       def accessor
         ActiveRecord::Store::StringKeyedHashAccessor
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/type/json.rb#L25" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/type/json.rb#L38" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -152,12 +165,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/type/json.rb, line 21
+              <pre><code class="ruby"># File activerecord/lib/active_record/type/json.rb, line 34
       def changed_in_place?(raw_old_value, new_value)
         deserialize(raw_old_value) != new_value
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/type/json.rb#L21" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/type/json.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -187,13 +200,22 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/type/json.rb, line 12
+              <pre><code class="ruby"># File activerecord/lib/active_record/type/json.rb, line 14
       def deserialize(value)
         return value unless value.is_a?(::String)
-        ActiveSupport::JSON.decode(value) rescue nil
+        begin
+          ActiveSupport::JSON.decode(value)
+        rescue JSON::ParserError =&gt; e
+          # NOTE: This may hide json with duplicate keys. We don&#39;t really want to just ignore it
+          # but it&#39;s the best we can do in order to still allow updating columns that somehow already
+          # contain invalid json from some other source.
+          # See https://github.com/rails/rails/pull/55536
+          ActiveSupport.error_reporter.report(e, source: &quot;application.active_record&quot;)
+          nil
+        end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/type/json.rb#L12" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/type/json.rb#L14" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -223,12 +245,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/type/json.rb, line 17
+              <pre><code class="ruby"># File activerecord/lib/active_record/type/json.rb, line 30
       def serialize(value)
-        ActiveSupport::JSON.encode(value) unless value.nil?
+        JSON_ENCODER.encode(value) unless value.nil?
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/type/json.rb#L17" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/type/json.rb#L30" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -258,12 +280,12 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/type/json.rb, line 8
+              <pre><code class="ruby"># File activerecord/lib/active_record/type/json.rb, line 10
       def type
         :json
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/type/json.rb#L8" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/type/json.rb#L10" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

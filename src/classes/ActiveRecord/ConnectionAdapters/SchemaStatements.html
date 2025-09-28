@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -127,11 +127,19 @@ layout: default
         </li>
       
         <li>
+          <a href="#method-i-disable_index">disable_index</a>
+        </li>
+      
+        <li>
           <a href="#method-i-drop_join_table">drop_join_table</a>
         </li>
       
         <li>
           <a href="#method-i-drop_table">drop_table</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-enable_index">enable_index</a>
         </li>
       
         <li>
@@ -334,7 +342,7 @@ layout: default
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1296
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1326
       def add_check_constraint(table_name, expression, if_not_exists: false, **options)
         return unless supports_check_constraints?
 
@@ -347,7 +355,7 @@ layout: default
         execute schema_creation.accept(at)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1296" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1326" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -450,7 +458,7 @@ add_column(:shapes, :triangle, &#39;polygon&#39;, if_not_exists: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 639
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 655
       def add_column(table_name, column_name, type, **options)
         add_column_def = build_add_column_definition(table_name, column_name, type, **options)
         return unless add_column_def
@@ -458,7 +466,7 @@ add_column(:shapes, :triangle, &#39;polygon&#39;, if_not_exists: true)
         execute schema_creation.accept(add_column_def)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L639" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L655" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -564,19 +572,20 @@ add_foreign_key :orders, :carts, primary_key: [:shop_id, :user_id]
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1176
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1205
       def add_foreign_key(from_table, to_table, **options)
         return unless use_foreign_keys?
-        return if options[:if_not_exists] == true &amp;&amp; foreign_key_exists?(from_table, to_table, **options.slice(:column))
 
         options = foreign_key_options(from_table, to_table, options)
+        return if options[:if_not_exists] == true &amp;&amp; foreign_key_exists?(from_table, to_table, **options.slice(:column, :primary_key))
+
         at = create_alter_table from_table
         at.add_foreign_key to_table, options
 
         execute schema_creation.accept(at)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1176" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1205" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -760,6 +769,20 @@ add_index(:developers, :name, algorithm: :inplace)
 <p>Concurrently adding an index is not supported in a transaction.</p>
 
 <p>For more information see the <a href="../Migration.html">“Transactional Migrations” section</a>.</p>
+
+<h6 id="method-i-add_index-label-Creating+an+index+that+is+not+used+by+queries">Creating an index that is not used by queries</h6>
+
+<pre><code>add_index(:developers, :name, enabled: false)
+</code></pre>
+
+<p>generates:</p>
+
+<pre><code>CREATE INDEX index_developers_on_name ON developers (name) INVISIBLE -- MySQL
+
+CREATE INDEX index_developers_on_name ON developers (name) IGNORED -- MariaDB
+</code></pre>
+
+<p>Note: only supported by <a href="MySQL.html"><code>MySQL</code></a> version 8.0.0 and greater, and MariaDB version 10.6.0 and greater.</p>
             </div>
           
 
@@ -774,13 +797,13 @@ add_index(:developers, :name, algorithm: :inplace)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 918
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 947
       def add_index(table_name, column_name, **options)
         create_index = build_create_index_definition(table_name, column_name, **options)
         execute schema_creation.accept(create_index)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L918" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L947" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -867,12 +890,12 @@ add_index(:developers, :name, algorithm: :inplace)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1066
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1095
       def add_reference(table_name, ref_name, **options)
         ReferenceDefinition.new(ref_name, **options).add(table_name, self)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1066" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1095" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -905,13 +928,13 @@ add_index(:developers, :name, algorithm: :inplace)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1462
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1492
       def add_timestamps(table_name, **options)
         fragments = add_timestamps_for_alter(table_name, **options)
         execute &quot;ALTER TABLE #{quote_table_name(table_name)} #{fragments.join(&#39;, &#39;)}&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1462" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1492" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -941,7 +964,7 @@ add_index(:developers, :name, algorithm: :inplace)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1367
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1397
       def assume_migrated_upto_version(version)
         version = version.to_i
         sm_table = quote_table_name(pool.schema_migration.table_name)
@@ -963,7 +986,7 @@ add_index(:developers, :name, algorithm: :inplace)
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1367" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1397" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -993,7 +1016,7 @@ add_index(:developers, :name, algorithm: :inplace)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 336
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 337
       def build_create_table_definition(table_name, id: :primary_key, primary_key: nil, force: nil, **options)
         table_definition = create_table_definition(table_name, **options.extract!(*valid_table_definition_options, :_skip_validate_options))
         table_definition.set_primary_key(table_name, id, primary_key, **options.extract!(*valid_primary_key_options, :_skip_validate_options))
@@ -1003,7 +1026,7 @@ add_index(:developers, :name, algorithm: :inplace)
         table_definition
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L336" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L337" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1037,12 +1060,12 @@ change_column(:accounts, :description, :text)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 714
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 730
       def change_column(table_name, column_name, type, **options)
         raise NotImplementedError, &quot;change_column is not implemented&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L714" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L730" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1077,12 +1100,12 @@ change_column(:accounts, :description, :text)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1540
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1570
       def change_column_comment(table_name, column_name, comment_or_changes)
         raise NotImplementedError, &quot;#{self.class} does not support changing column comments&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1540" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1570" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1126,12 +1149,12 @@ change_column_default(:accounts, :authorized, 1)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 732
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 748
       def change_column_default(table_name, column_name, default_or_changes)
         raise NotImplementedError, &quot;change_column_default is not implemented&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L732" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L748" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1175,12 +1198,12 @@ change_column_default(:accounts, :authorized, 1)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 761
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 777
       def change_column_null(table_name, column_name, null, default = nil)
         raise NotImplementedError, &quot;change_column_null is not implemented&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L761" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L777" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1300,7 +1323,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 513
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 529
       def change_table(table_name, base = self, **options)
         if supports_bulk_alter? &amp;&amp; options[:bulk]
           recorder = ActiveRecord::Migration::CommandRecorder.new(self)
@@ -1311,7 +1334,7 @@ end
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L513" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L529" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1346,12 +1369,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1530
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1560
       def change_table_comment(table_name, comment_or_changes)
         raise NotImplementedError, &quot;#{self.class} does not support changing table comments&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1530" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1560" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1384,7 +1407,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1344
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1374
       def check_constraint_exists?(table_name, **options)
         if !options.key?(:name) &amp;&amp; !options.key?(:expression)
           raise ArgumentError, &quot;At least one of :name or :expression must be supplied&quot;
@@ -1392,7 +1415,7 @@ end
         check_constraint_for(table_name, **options).present?
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1344" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1374" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1422,12 +1445,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1276
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1306
       def check_constraints(table_name)
         raise NotImplementedError
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1276" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1306" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1473,7 +1496,7 @@ column_exists?(:suppliers, :tax, :decimal, precision: 8, scale: 2)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 132
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 133
       def column_exists?(table_name, column_name, type = nil, **options)
         column_name = column_name.to_s
         checks = []
@@ -1486,7 +1509,7 @@ column_exists?(:suppliers, :tax, :decimal, precision: 8, scale: 2)
         columns(table_name).any? { |c| checks.all? { |check| check[c] } }
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L132" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L133" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1516,7 +1539,7 @@ column_exists?(:suppliers, :tax, :decimal, precision: 8, scale: 2)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 107
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 108
       def columns(table_name)
         table_name = table_name.to_s
         definitions = column_definitions(table_name)
@@ -1525,7 +1548,7 @@ column_exists?(:suppliers, :tax, :decimal, precision: 8, scale: 2)
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L107" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L108" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1555,13 +1578,12 @@ create_join_table(&#39;papers&#39;, &#39;paper_boxes&#39;)
 create_join_table(&#39;music_artists&#39;, &#39;music_records&#39;)
 </code></pre>
 
+<p>See <a href="SchemaStatements.html#method-i-add_reference">connection.add_reference</a> for details of the options you can use in <code>column_options</code>. <code>column_options</code> will be applied to both columns.</p>
+
 <p>You can pass an <code>options</code> hash which can include the following keys:</p>
 <dl class="rdoc-list label-list"><dt><code>:table_name</code></dt>
 <dd>
 <p>Sets the table name, overriding the default.</p>
-</dd><dt><code>:column_options</code></dt>
-<dd>
-<p>Any extra options you want appended to the columns definition.</p>
 </dd><dt><code>:options</code></dt>
 <dd>
 <p>Any extra options you want appended to the table definition.</p>
@@ -1579,6 +1601,21 @@ create_join_table(&#39;music_artists&#39;, &#39;music_records&#39;)
   t.index :product_id
   t.index :category_id
 end
+</code></pre>
+
+<h6 id="method-i-create_join_table-label-Add+foreign+keys+with+delete+cascade">Add foreign keys with delete cascade</h6>
+
+<pre><code>create_join_table(:assemblies, :parts, column_options: { foreign_key: { on_delete: :cascade } })
+</code></pre>
+
+<p>generates:</p>
+
+<pre><code>CREATE TABLE assemblies_parts (
+  assembly_id bigint NOT NULL,
+  part_id bigint NOT NULL,
+  CONSTRAINT fk_rails_0d8a572d89 FOREIGN KEY (&quot;assembly_id&quot;) REFERENCES &quot;assemblies&quot; (&quot;id&quot;) ON DELETE CASCADE,
+  CONSTRAINT fk_rails_ec7b48402b FOREIGN KEY (&quot;part_id&quot;) REFERENCES &quot;parts&quot; (&quot;id&quot;) ON DELETE CASCADE
+)
 </code></pre>
 
 <h6 id="method-i-create_join_table-label-Add+a+backend+specific+option+to+the+generated+SQL+-28MySQL-29">Add a backend specific option to the generated SQL (<a href="MySQL.html"><code>MySQL</code></a>)</h6>
@@ -1607,7 +1644,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 392
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 408
       def create_join_table(table_1, table_2, column_options: {}, **options)
         join_table_name = find_join_table_name(table_1, table_2, options)
 
@@ -1622,7 +1659,7 @@ end
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L392" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L408" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1806,7 +1843,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 296
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 297
       def create_table(table_name, id: :primary_key, primary_key: nil, force: nil, **options, &amp;block)
         validate_create_table_options!(options)
         validate_table_length!(table_name) unless options[:_uses_legacy_table_name]
@@ -1844,7 +1881,7 @@ end
         result
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L296" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L297" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1877,14 +1914,14 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 44
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 45
       def data_source_exists?(name)
         query_values(data_source_sql(name), &quot;SCHEMA&quot;).any? if name.present?
       rescue NotImplementedError
         data_sources.include?(name.to_s)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L44" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L45" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1914,14 +1951,52 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 34
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 35
       def data_sources
         query_values(data_source_sql, &quot;SCHEMA&quot;)
       rescue NotImplementedError
         tables | views
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L34" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L35" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-disable_index">
+            
+              disable_index(table_name, index_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Prevents an index from being used by queries.</p>
+
+<pre><code>disable_index(:users, :email)
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1584
+      def disable_index(table_name, index_name)
+        raise NotImplementedError, &quot;#{self.class} does not support disabling indexes&quot;
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1584" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1953,13 +2028,13 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 430
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 446
       def drop_join_table(table_1, table_2, **options)
         join_table_name = find_join_table_name(table_1, table_2, options)
         drop_table(join_table_name, **options)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L430" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L446" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -1998,7 +2073,7 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 543
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 559
       def drop_table(*table_names, **options)
         table_names.each do |table_name|
           schema_cache.clear_data_source_cache!(table_name.to_s)
@@ -2006,7 +2081,45 @@ end
         end
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L543" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L559" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-enable_index">
+            
+              enable_index(table_name, index_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Enables an index to be used by queries.</p>
+
+<pre><code>enable_index(:users, :email)
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1577
+      def enable_index(table_name, index_name)
+        raise NotImplementedError, &quot;#{self.class} does not support enabling indexes&quot;
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1577" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2046,12 +2159,12 @@ foreign_key_exists?(:accounts, name: &quot;special_fk_name&quot;)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1240
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1270
       def foreign_key_exists?(from_table, to_table = nil, **options)
         foreign_key_for(from_table, to_table: to_table, **options).present?
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1240" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1270" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2081,12 +2194,12 @@ foreign_key_exists?(:accounts, name: &quot;special_fk_name&quot;)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1106
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1135
       def foreign_keys(table_name)
         raise NotImplementedError, &quot;foreign_keys is not implemented&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1106" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1135" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2095,7 +2208,7 @@ foreign_key_exists?(:accounts, name: &quot;special_fk_name&quot;)
         <div class="method">
           <h3 id="method-i-index_exists-3F">
             
-              index_exists?(table_name, column_name, **options)
+              index_exists?(table_name, column_name = nil, **options)
             
           </h3>
 
@@ -2132,12 +2245,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 102
-      def index_exists?(table_name, column_name, **options)
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 103
+      def index_exists?(table_name, column_name = nil, **options)
         indexes(table_name).any? { |i| i.defined_for?(column_name, **options) }
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L102" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L103" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2167,13 +2280,13 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1014
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1043
       def index_name_exists?(table_name, index_name)
         index_name = index_name.to_s
         indexes(table_name).detect { |i| i.name == index_name }
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1014" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1043" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2203,12 +2316,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 81
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 82
       def indexes(table_name)
         raise NotImplementedError, &quot;#indexes is not implemented&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L81" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L82" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2238,12 +2351,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1596
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1640
       def max_index_name_size
         62
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1596" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1640" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2273,12 +2386,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 14
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 15
       def native_database_types
         {}
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L14" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L15" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2308,12 +2421,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1520
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1550
       def options_include_default?(options)
         options.include?(:default) &amp;&amp; !(options[:null] == false &amp;&amp; options[:default].nil?)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1520" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1550" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2343,14 +2456,14 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 145
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 146
       def primary_key(table_name)
         pk = primary_keys(table_name)
         pk = pk.first unless pk.size &gt; 1
         pk
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L145" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L146" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2415,7 +2528,7 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1327
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1357
       def remove_check_constraint(table_name, expression = nil, if_exists: false, **options)
         return unless supports_check_constraints?
 
@@ -2429,7 +2542,7 @@ index_exists?(:suppliers, :company_id, valid: true)
         execute schema_creation.accept(at)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1327" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1357" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2469,14 +2582,14 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 702
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 718
       def remove_column(table_name, column_name, type = nil, **options)
         return if options[:if_exists] == true &amp;&amp; !column_exists?(table_name, column_name)
 
         execute &quot;ALTER TABLE #{quote_table_name(table_name)} #{remove_column_for_alter(table_name, column_name, type, **options)}&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L702" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L718" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2514,7 +2627,7 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 678
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 694
       def remove_columns(table_name, *column_names, type: nil, **options)
         if column_names.empty?
           raise ArgumentError.new(&quot;You must specify at least one column name. Example: remove_columns(:people, :first_name)&quot;)
@@ -2524,7 +2637,7 @@ index_exists?(:suppliers, :company_id, valid: true)
         execute &quot;ALTER TABLE #{quote_table_name(table_name)} #{remove_column_fragments.join(&#39;, &#39;)}&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L678" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L694" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2585,10 +2698,10 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1217
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1247
       def remove_foreign_key(from_table, to_table = nil, **options)
         return unless use_foreign_keys?
-        return if options.delete(:if_exists) == true &amp;&amp; !foreign_key_exists?(from_table, to_table)
+        return if options.delete(:if_exists) == true &amp;&amp; !foreign_key_exists?(from_table, to_table, **options.slice(:column))
 
         fk_name_to_delete = foreign_key_for!(from_table, to_table: to_table, **options).name
 
@@ -2598,7 +2711,7 @@ index_exists?(:suppliers, :company_id, valid: true)
         execute schema_creation.accept(at)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1217" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1247" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2669,7 +2782,7 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 969
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 998
       def remove_index(table_name, column_name = nil, **options)
         return if options[:if_exists] &amp;&amp; !index_exists?(table_name, column_name, **options)
 
@@ -2678,7 +2791,7 @@ index_exists?(:suppliers, :company_id, valid: true)
         execute &quot;DROP INDEX #{quote_column_name(index_name)} ON #{quote_table_name(table_name)}&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L969" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L998" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2727,7 +2840,7 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1085
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1114
       def remove_reference(table_name, ref_name, foreign_key: false, polymorphic: false, **options)
         conditional_options = options.slice(:if_exists, :if_not_exists)
 
@@ -2746,7 +2859,7 @@ index_exists?(:suppliers, :company_id, valid: true)
         remove_column(table_name, &quot;#{ref_name}_type&quot;, **conditional_options) if polymorphic
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1085" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1114" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2779,12 +2892,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1471
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1501
       def remove_timestamps(table_name, **options)
         remove_columns table_name, :updated_at, :created_at
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1471" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1501" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2817,12 +2930,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 769
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 785
       def rename_column(table_name, column_name, new_column_name)
         raise NotImplementedError, &quot;rename_column is not implemented&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L769" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L785" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2857,7 +2970,7 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 983
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1012
       def rename_index(table_name, old_name, new_name)
         old_name = old_name.to_s
         new_name = new_name.to_s
@@ -2870,7 +2983,7 @@ index_exists?(:suppliers, :company_id, valid: true)
         remove_index(table_name, name: old_name)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L983" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1012" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2903,12 +3016,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 527
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 543
       def rename_table(table_name, new_name, **)
         raise NotImplementedError, &quot;rename_table is not implemented&quot;
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L527" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L543" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2938,12 +3051,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 28
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 29
       def table_alias_for(table_name)
         table_name[0...table_alias_length].tr(&quot;.&quot;, &quot;_&quot;)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L28" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L29" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -2973,12 +3086,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 23
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 24
       def table_comment(table_name)
         nil
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L23" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L24" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -3011,14 +3124,14 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 59
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 60
       def table_exists?(table_name)
         query_values(data_source_sql(table_name, type: &quot;BASE TABLE&quot;), &quot;SCHEMA&quot;).any? if table_name.present?
       rescue NotImplementedError
         tables.include?(table_name.to_s)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L59" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L60" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -3048,12 +3161,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 18
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 19
       def table_options(table_name)
         nil
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L18" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L19" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -3083,12 +3196,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 51
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 52
       def tables
         query_values(data_source_sql(type: &quot;BASE TABLE&quot;), &quot;SCHEMA&quot;)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L51" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L52" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -3118,12 +3231,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1548
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 1592
       def use_foreign_keys?
         supports_foreign_keys? &amp;&amp; foreign_keys_enabled?
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1548" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L1592" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -3156,14 +3269,14 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 74
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 75
       def view_exists?(view_name)
         query_values(data_source_sql(view_name, type: &quot;VIEW&quot;), &quot;SCHEMA&quot;).any? if view_name.present?
       rescue NotImplementedError
         views.include?(view_name.to_s)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L74" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L75" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -3193,12 +3306,12 @@ index_exists?(:suppliers, :company_id, valid: true)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 66
+              <pre><code class="ruby"># File activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb, line 67
       def views
         query_values(data_source_sql(type: &quot;VIEW&quot;), &quot;SCHEMA&quot;)
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L66" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/connection_adapters/abstract/schema_statements.rb#L67" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

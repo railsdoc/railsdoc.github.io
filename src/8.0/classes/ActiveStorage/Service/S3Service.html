@@ -1,0 +1,590 @@
+---
+title: ActiveStorage::Service::S3Service
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.0.3</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveStorage::Service::S3Service
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../Service.html">ActiveStorage::Service</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activestorage/lib/active_storage/service/s3_service_rb.html">activestorage/lib/active_storage/service/s3_service.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveStorage::Service::S3Service-label-Active+Storage+S3+Service">Active Storage S3 Service</h1>
+
+<p>Wraps the Amazon Simple Storage <a href="../Service.html"><code>Service</code></a> (S3) as an Active Storage service. See <a href="../Service.html"><code>ActiveStorage::Service</code></a> for the generic API documentation that applies to all services.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-compose">compose</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete">delete</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-delete_prefixed">delete_prefixed</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-download">download</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-download_chunk">download_chunk</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-exist-3F">exist?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-headers_for_direct_upload">headers_for_direct_upload</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-upload">upload</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-url_for_direct_upload">url_for_direct_upload</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">MAXIMUM_UPLOAD_PARTS_COUNT</td>
+            <td>=</td>
+            <td class="attr-value">10000</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MINIMUM_UPLOAD_PART_SIZE</td>
+            <td>=</td>
+            <td class="attr-value">5.megabytes</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+      <!-- Section attributes -->
+      <h2 id="attributes">Attributes</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>bucket</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>client</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>multipart_upload_threshold</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
+              [R]
+            </td>
+            <td class='attr-name'>upload_options</td>
+            <td class='attr-desc'></td>
+          </tr>
+        
+      </table>
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new(bucket:, upload: {}, public: false, **options)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 17
+    def initialize(bucket:, upload: {}, public: false, **options)
+      @client = Aws::S3::Resource.new(**options)
+      @transfer_manager = Aws::S3::TransferManager.new(client: @client.client) if defined?(Aws::S3::TransferManager)
+      @bucket = @client.bucket(bucket)
+
+      @multipart_upload_threshold = upload.delete(:multipart_threshold) || 100.megabytes
+      @public = public
+
+      @upload_options = upload
+      @upload_options[:acl] = &quot;public-read&quot; if public?
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L17" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-compose">
+            
+              compose(source_keys, destination_key, filename: nil, content_type: nil, disposition: nil, custom_metadata: {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 101
+    def compose(source_keys, destination_key, filename: nil, content_type: nil, disposition: nil, custom_metadata: {})
+      content_disposition = content_disposition_with(type: disposition, filename: filename) if disposition &amp;&amp; filename
+
+      upload_stream(
+        key: destination_key,
+        content_type: content_type,
+        content_disposition: content_disposition,
+        part_size: MINIMUM_UPLOAD_PART_SIZE,
+        metadata: custom_metadata,
+        **upload_options
+      ) do |out|
+        source_keys.each do |source_key|
+          stream(source_key) do |chunk|
+            IO.copy_stream(StringIO.new(chunk), out)
+          end
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L101" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete">
+            
+              delete(key)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 63
+    def delete(key)
+      instrument :delete, key: key do
+        object_for(key).delete
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L63" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-delete_prefixed">
+            
+              delete_prefixed(prefix)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 69
+    def delete_prefixed(prefix)
+      instrument :delete_prefixed, prefix: prefix do
+        bucket.objects(prefix: prefix).batch_delete!
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L69" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-download">
+            
+              download(key, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 41
+    def download(key, &amp;block)
+      if block_given?
+        instrument :streaming_download, key: key do
+          stream(key, &amp;block)
+        end
+      else
+        instrument :download, key: key do
+          object_for(key).get.body.string.force_encoding(Encoding::BINARY)
+        rescue Aws::S3::Errors::NoSuchKey
+          raise ActiveStorage::FileNotFoundError
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L41" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-download_chunk">
+            
+              download_chunk(key, range)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 55
+    def download_chunk(key, range)
+      instrument :download_chunk, key: key, range: range do
+        object_for(key).get(range: &quot;bytes=#{range.begin}-#{range.exclude_end? ? range.end - 1 : range.end}&quot;).body.string.force_encoding(Encoding::BINARY)
+      rescue Aws::S3::Errors::NoSuchKey
+        raise ActiveStorage::FileNotFoundError
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L55" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-exist-3F">
+            
+              exist?(key)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 75
+    def exist?(key)
+      instrument :exist, key: key do |payload|
+        answer = object_for(key).exists?
+        payload[:exist] = answer
+        answer
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L75" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-headers_for_direct_upload">
+            
+              headers_for_direct_upload(key, content_type:, checksum:, filename: nil, disposition: nil, custom_metadata: {}, **)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 95
+    def headers_for_direct_upload(key, content_type:, checksum:, filename: nil, disposition: nil, custom_metadata: {}, **)
+      content_disposition = content_disposition_with(type: disposition, filename: filename) if filename
+
+      { &quot;Content-Type&quot; =&gt; content_type, &quot;Content-MD5&quot; =&gt; checksum, &quot;Content-Disposition&quot; =&gt; content_disposition, **custom_metadata_headers(custom_metadata) }
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L95" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-upload">
+            
+              upload(key, io, checksum: nil, filename: nil, content_type: nil, disposition: nil, custom_metadata: {}, **)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 29
+    def upload(key, io, checksum: nil, filename: nil, content_type: nil, disposition: nil, custom_metadata: {}, **)
+      instrument :upload, key: key, checksum: checksum do
+        content_disposition = content_disposition_with(filename: filename, type: disposition) if disposition &amp;&amp; filename
+
+        if io.size &lt; multipart_upload_threshold
+          upload_with_single_part key, io, checksum: checksum, content_type: content_type, content_disposition: content_disposition, custom_metadata: custom_metadata
+        else
+          upload_with_multipart key, io, content_type: content_type, content_disposition: content_disposition, custom_metadata: custom_metadata
+        end
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L29" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-url_for_direct_upload">
+            
+              url_for_direct_upload(key, expires_in:, content_type:, content_length:, checksum:, custom_metadata: {})
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activestorage/lib/active_storage/service/s3_service.rb, line 83
+    def url_for_direct_upload(key, expires_in:, content_type:, content_length:, checksum:, custom_metadata: {})
+      instrument :url, key: key do |payload|
+        generated_url = object_for(key).presigned_url :put, expires_in: expires_in.to_i,
+          content_type: content_type, content_length: content_length, content_md5: checksum,
+          metadata: custom_metadata, whitelist_headers: [&quot;content-length&quot;], **upload_options
+
+        payload[:url] = generated_url
+
+        generated_url
+      end
+    end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activestorage/lib/active_storage/service/s3_service.rb#L83" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

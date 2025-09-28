@@ -1,0 +1,304 @@
+---
+title: ActiveSupport::Testing::EventReporterAssertions
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
+        
+        <div class="type">Module</div>
+        <h1>
+            ActiveSupport::Testing::EventReporterAssertions
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activesupport/lib/active_support/testing/event_reporter_assertions_rb.html">activesupport/lib/active_support/testing/event_reporter_assertions.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<p>Provides test helpers for asserting on <a href="../EventReporter.html"><code>ActiveSupport::EventReporter</code></a> events.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-assert_event_reported">assert_event_reported</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_events_reported">assert_events_reported</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-assert_no_event_reported">assert_no_event_reported</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+
+    
+
+    <!-- Methods -->
+    
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-assert_event_reported">
+            
+              assert_event_reported(name, payload: nil, tags: {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that the block causes an event with the given name to be reported to <code>Rails.event</code>.</p>
+
+<p>Passes if the evaluated code in the yielded block reports a matching event.</p>
+
+<pre><code>assert_event_reported(&quot;user.created&quot;) do
+  Rails.event.notify(&quot;user.created&quot;, { id: 123 })
+end
+</code></pre>
+
+<p>To test further details about the reported event, you can specify payload and tag matchers.</p>
+
+<pre><code>assert_event_reported(&quot;user.created&quot;,
+  payload: { id: 123, name: &quot;John Doe&quot; },
+  tags: { request_id: /[0-9]+/ }
+) do
+  Rails.event.tagged(request_id: &quot;123&quot;) do
+    Rails.event.notify(&quot;user.created&quot;, { id: 123, name: &quot;John Doe&quot; })
+  end
+end
+</code></pre>
+
+<p>The matchers support partial matching - only the specified keys need to match.</p>
+
+<pre><code>assert_event_reported(&quot;user.created&quot;, payload: { id: 123 }) do
+  Rails.event.notify(&quot;user.created&quot;, { id: 123, name: &quot;John Doe&quot; })
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/event_reporter_assertions.rb, line 142
+      def assert_event_reported(name, payload: nil, tags: {}, &amp;block)
+        events = EventCollector.record(&amp;block)
+
+        if events.empty?
+          flunk(&quot;Expected an event to be reported, but there were no events reported.&quot;)
+        elsif (event = events.find { |event| event.matches?(name, payload, tags) })
+          assert(true)
+          event.event_data
+        else
+          message = &quot;Expected an event to be reported matching:\n  &quot; \
+            &quot;name: #{name}\n  &quot; \
+            &quot;payload: #{payload.inspect}\n  &quot; \
+            &quot;tags: #{tags.inspect}\n&quot; \
+            &quot;but none of the #{events.size} reported events matched:\n  &quot; \
+            &quot;#{events.map(&amp;:inspect).join(&quot;\n  &quot;)}&quot;
+          flunk(message)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/event_reporter_assertions.rb#L142" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_events_reported">
+            
+              assert_events_reported(expected_events, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that the provided events were reported, regardless of order.</p>
+
+<pre><code>assert_events_reported([
+  { name: &quot;user.created&quot;, payload: { id: 123 } },
+  { name: &quot;email.sent&quot;, payload: { to: &quot;user@example.com&quot; } }
+]) do
+  create_user_and_send_welcome_email
+end
+</code></pre>
+
+<p>Supports the same payload and tag matching as <code>assert_event_reported</code>.</p>
+
+<pre><code>assert_events_reported([
+  {
+    name: &quot;process.started&quot;,
+    payload: { id: 123 },
+    tags: { request_id: /[0-9]+/ }
+  },
+  { name: &quot;process.completed&quot; }
+]) do
+  Rails.event.tagged(request_id: &quot;456&quot;) do
+    start_and_complete_process(123)
+  end
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/event_reporter_assertions.rb, line 184
+      def assert_events_reported(expected_events, &amp;block)
+        events = EventCollector.record(&amp;block)
+
+        if events.empty? &amp;&amp; expected_events.size &gt; 0
+          flunk(&quot;Expected #{expected_events.size} events to be reported, but there were no events reported.&quot;)
+        end
+
+        events_copy = events.dup
+
+        expected_events.each do |expected_event|
+          name = expected_event[:name]
+          payload = expected_event[:payload] || {}
+          tags = expected_event[:tags] || {}
+
+          matching_event_index = events_copy.find_index { |event| event.matches?(name, payload, tags) }
+
+          if matching_event_index
+            events_copy.delete_at(matching_event_index)
+          else
+            message = &quot;Expected an event to be reported matching:\n  &quot; \
+              &quot;name: #{name.inspect}\n  &quot; \
+              &quot;payload: #{payload.inspect}\n  &quot; \
+              &quot;tags: #{tags.inspect}\n&quot; \
+              &quot;but none of the #{events.size} reported events matched:\n  &quot; \
+              &quot;#{events.map(&amp;:inspect).join(&quot;\n  &quot;)}&quot;
+            flunk(message)
+          end
+        end
+
+        assert(true)
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/event_reporter_assertions.rb#L184" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-assert_no_event_reported">
+            
+              assert_no_event_reported(name = nil, payload: {}, tags: {}, &amp;block)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Asserts that the block does not cause an event to be reported to <code>Rails.event</code>.</p>
+
+<p>If no name is provided, passes if evaluated code in the yielded block reports no events.</p>
+
+<pre><code>assert_no_event_reported do
+  service_that_does_not_report_events.perform
+end
+</code></pre>
+
+<p>If a name is provided, passes if evaluated code in the yielded block reports no events with that name.</p>
+
+<pre><code>assert_no_event_reported(&quot;user.created&quot;) do
+  service_that_does_not_report_events.perform
+end
+</code></pre>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/testing/event_reporter_assertions.rb, line 101
+      def assert_no_event_reported(name = nil, payload: {}, tags: {}, &amp;block)
+        events = EventCollector.record(&amp;block)
+
+        if name.nil?
+          assert_predicate(events, :empty?)
+        else
+          matching_event = events.find { |event| event.matches?(name, payload, tags) }
+          if matching_event
+            message = &quot;Expected no &#39;#{name}&#39; event to be reported, but found:\n  &quot; \
+              &quot;#{matching_event.inspect}&quot;
+            flunk(message)
+          end
+          assert(true)
+        end
+      end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/testing/event_reporter_assertions.rb#L101" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

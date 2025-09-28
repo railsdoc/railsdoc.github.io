@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.0.3</span><br />
+            <span>Ruby on Rails 8.1.0.beta1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -110,6 +110,14 @@ end
       
         <li>
           
+            <a href="Helpers/Immutable.html">
+              ActiveModel::Type::Helpers::Immutable
+            </a>
+          
+        </li>
+      
+        <li>
+          
             <a href="Helpers/Numeric.html">
               ActiveModel::Type::Helpers::Numeric
             </a>
@@ -174,13 +182,14 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/type/integer.rb, line 51
+              <pre><code class="ruby"># File activemodel/lib/active_model/type/integer.rb, line 52
       def initialize(**)
         super
-        @range = min_value...max_value
+        @max = max_value
+        @min = min_value
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/type/integer.rb#L51" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activemodel/lib/active_model/type/integer.rb#L52" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -214,13 +223,13 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/type/integer.rb, line 60
+              <pre><code class="ruby"># File activemodel/lib/active_model/type/integer.rb, line 62
       def deserialize(value)
         return if value.blank?
         value.to_i
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/type/integer.rb#L60" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activemodel/lib/active_model/type/integer.rb#L62" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -250,16 +259,15 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/type/integer.rb, line 74
+              <pre><code class="ruby"># File activemodel/lib/active_model/type/integer.rb, line 96
       def serializable?(value)
         cast_value = cast(value)
-        in_range?(cast_value) || begin
-          yield cast_value if block_given?
-          false
-        end
+        return true unless out_of_range?(cast_value)
+        yield cast_value if block_given?
+        false
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/type/integer.rb#L74" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activemodel/lib/active_model/type/integer.rb#L96" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -289,13 +297,29 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/type/integer.rb, line 65
+              <pre><code class="ruby"># File activemodel/lib/active_model/type/integer.rb, line 67
       def serialize(value)
-        return if value.is_a?(::String) &amp;&amp; non_numeric_string?(value)
-        ensure_in_range(super)
+        case value
+        when ::Integer
+          # noop
+        when ::String
+          int = value.to_i
+          if int.zero? &amp;&amp; value != &quot;0&quot;
+            return if non_numeric_string?(value)
+          end
+          value = int
+        else
+          value = super
+        end
+
+        if out_of_range?(value)
+          raise ActiveModel::RangeError, &quot;#{value} is out of range for #{self.class} with limit #{_limit} bytes&quot;
+        end
+
+        value
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/type/integer.rb#L65" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activemodel/lib/active_model/type/integer.rb#L67" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -325,12 +349,12 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/type/integer.rb, line 56
+              <pre><code class="ruby"># File activemodel/lib/active_model/type/integer.rb, line 58
       def type
         :integer
       end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/529f933fc8b13114d308dd0752f76a9e293c8537/activemodel/lib/active_model/type/integer.rb#L56" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activemodel/lib/active_model/type/integer.rb#L58" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
