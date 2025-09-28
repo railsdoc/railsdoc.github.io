@@ -1,8 +1,9 @@
-$(() => {
-  // anchor-js
+document.addEventListener('DOMContentLoaded', () => {
   anchors.options.visible = 'always';
   anchors.add();
+});
 
+$(() => {
   // highlight.js
   hljs.configure({
     languages: ['ruby', 'html', 'bash', 'sql']
