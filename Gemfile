@@ -3,7 +3,7 @@ source 'https://rubygems.org'
 gem 'jekyll'
 
 gem 'csv'
-gem 'nokogiri', '1.15.6'
+gem 'nokogiri', '1.18.10'
 gem 'rake'
 gem 'webrick'
 
