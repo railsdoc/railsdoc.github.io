@@ -8,7 +8,7 @@ gem 'rake'
 gem 'webrick'
 
 group :jekyll_plugins do
-  gem 'faraday', '~> 2.8.1' # For Ruby v2.x
+  gem 'faraday', '~> 2.14.0' # For Ruby v2.x
   gem 'github-pages'
   gem 'jekyll-include-cache'
   gem 'jekyll-toc'
