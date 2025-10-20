@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.1.0.beta1</span><br />
+            <span>Ruby on Rails 8.1.0.rc1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -111,7 +111,7 @@ Base.setting                # =&gt; true
 
 <p>In the above case as long as Subclass does not assign a value to setting by performing <code>Subclass.setting = <em>something</em></code>, <code>Subclass.setting</code> would read value assigned to parent class. Once Subclass assigns a value then the value assigned by Subclass would be returned.</p>
 
-<p>This matches normal Ruby method inheritance: think of writing an attribute on a subclass as overriding the reader method. However, you need to be aware when using <code>class_attribute</code> with mutable structures as <code>Array</code> or <code>Hash</code>. In such cases, you don’t want to do changes in place. Instead use setters:</p>
+<p>This matches normal Ruby method inheritance: think of writing an attribute on a subclass as overriding the reader method. However, you need to be aware when using <a href="Class.html#method-i-class_attribute"><code>class_attribute</code></a> with mutable structures as <a href="Array.html"><code>Array</code></a> or <a href="Hash.html"><code>Hash</code></a>. In such cases, you don’t want to do changes in place. Instead use setters:</p>
 
 <pre><code>Base.setting = []
 Base.setting                # =&gt; []
@@ -176,57 +176,59 @@ object.setting?         # =&gt; NoMethodError
               </summary>
 
               <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/class/attribute.rb, line 86
-  def class_attribute(*attrs, instance_accessor: true,
-    instance_reader: instance_accessor, instance_writer: instance_accessor, instance_predicate: true, default: nil
-  )
-    class_methods, methods = [], []
-    attrs.each do |name|
-      unless name.is_a?(Symbol) || name.is_a?(String)
-        raise TypeError, &quot;#{name.inspect} is not a symbol nor a string&quot;
-      end
-
-      name = name.to_sym
-      namespaced_name = :&quot;__class_attr_#{name}&quot;
-      ::ActiveSupport::ClassAttribute.redefine(self, name, namespaced_name, default)
-
-      delegators = [
-        &quot;def #{name}; #{namespaced_name}; end&quot;,
-        &quot;def #{name}=(value); self.#{namespaced_name} = value; end&quot;,
-      ]
-
-      class_methods.concat(delegators)
-      if singleton_class?
-        methods.concat(delegators)
-      else
-        methods &lt;&lt; &lt;&lt;~RUBY if instance_reader
-          silence_redefinition_of_method def #{name}
-            if defined?(@#{name})
-              @#{name}
-            else
-              self.class.#{name}
-            end
-          end
-        RUBY
-      end
-
-      methods &lt;&lt; &lt;&lt;~RUBY if instance_writer
-        silence_redefinition_of_method(:#{name}=)
-        attr_writer :#{name}
-      RUBY
-
-      if instance_predicate
-        class_methods &lt;&lt; &quot;silence_redefinition_of_method def #{name}?; !!self.#{name}; end&quot;
-        if instance_reader
-          methods &lt;&lt; &quot;silence_redefinition_of_method def #{name}?; !!self.#{name}; end&quot;
-        end
-      end
+def class_attribute(*attrs, instance_accessor: true,
+  instance_reader: instance_accessor, instance_writer: instance_accessor, instance_predicate: true, default: nil
+)
+  class_methods, methods = [], []
+  attrs.each do |name|
+    unless name.is_a?(Symbol) || name.is_a?(String)
+      raise TypeError, &quot;#{name.inspect} is not a symbol nor a string&quot;
     end
 
-    location = caller_locations(1, 1).first
-    class_eval([&quot;class &lt;&lt; self&quot;, *class_methods, &quot;end&quot;, *methods].join(&quot;;&quot;).tr(&quot;\n&quot;, &quot;;&quot;), location.path, location.lineno)
-  end</code></pre>
+    name = name.to_sym
+    namespaced_name = :&quot;__class_attr_#{name}&quot;
+    ::ActiveSupport::ClassAttribute.redefine(self, name, namespaced_name, default)
+
+    class_methods &lt;&lt; &quot;def #{name}; #{namespaced_name}; end&quot;
+    class_methods &lt;&lt; &quot;def #{name}=(value); self.#{namespaced_name} = value; end&quot;
+
+    if singleton_class?
+      methods &lt;&lt; &lt;&lt;~RUBY if instance_reader
+        silence_redefinition_of_method(:#{name})
+        def #{name}
+          self.singleton_class.#{name}
+        end
+      RUBY
+    else
+      methods &lt;&lt; &lt;&lt;~RUBY if instance_reader
+        silence_redefinition_of_method def #{name}
+          if defined?(@#{name})
+            @#{name}
+          else
+            self.class.#{name}
+          end
+        end
+      RUBY
+    end
+
+    methods &lt;&lt; &lt;&lt;~RUBY if instance_writer
+      silence_redefinition_of_method(:#{name}=)
+      attr_writer :#{name}
+    RUBY
+
+    if instance_predicate
+      class_methods &lt;&lt; &quot;silence_redefinition_of_method def #{name}?; !!self.#{name}; end&quot;
+      if instance_reader
+        methods &lt;&lt; &quot;silence_redefinition_of_method def #{name}?; !!self.#{name}; end&quot;
+      end
+    end
+  end
+
+  location = caller_locations(1, 1).first
+  class_eval([&quot;class &lt;&lt; self&quot;, *class_methods, &quot;end&quot;, *methods].join(&quot;;&quot;).tr(&quot;\n&quot;, &quot;;&quot;), location.path, location.lineno)
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/core_ext/class/attribute.rb#L86" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/core_ext/class/attribute.rb#L86" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -270,11 +272,11 @@ C.descendants # =&gt; [B, A, D]
               </summary>
 
               <pre><code class="ruby"># File activesupport/lib/active_support/core_ext/class/subclasses.rb, line 19
-  def descendants
-    subclasses.concat(subclasses.flat_map(&amp;:descendants))
-  end</code></pre>
+def descendants
+  subclasses.concat(subclasses.flat_map(&amp;:descendants))
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/core_ext/class/subclasses.rb#L19" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/core_ext/class/subclasses.rb#L19" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

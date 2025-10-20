@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.1.0.beta1</span><br />
+            <span>Ruby on Rails 8.1.0.rc1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -133,28 +133,28 @@ layout: default
               </summary>
 
               <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 68
-          def initialize(adapter, config_options, event_loop)
-            super()
+def initialize(adapter, config_options, event_loop)
+  super()
 
-            @adapter = adapter
-            @event_loop = event_loop
+  @adapter = adapter
+  @event_loop = event_loop
 
-            @subscribe_callbacks = Hash.new { |h, k| h[k] = [] }
-            @subscription_lock = Mutex.new
+  @subscribe_callbacks = Hash.new { |h, k| h[k] = [] }
+  @subscription_lock = Mutex.new
 
-            @reconnect_attempt = 0
-            # Use the same config as used by Redis conn
-            @reconnect_attempts = config_options.fetch(:reconnect_attempts, 1)
-            @reconnect_attempts = Array.new(@reconnect_attempts, 0) if @reconnect_attempts.is_a?(Integer)
+  @reconnect_attempt = 0
+  # Use the same config as used by Redis conn
+  @reconnect_attempts = config_options.fetch(:reconnect_attempts, 1)
+  @reconnect_attempts = Array.new(@reconnect_attempts, 0) if @reconnect_attempts.is_a?(Integer)
 
-            @subscribed_client = nil
+  @subscribed_client = nil
 
-            @when_connected = []
+  @when_connected = []
 
-            @thread = nil
-          end</code></pre>
+  @thread = nil
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actioncable/lib/action_cable/subscription_adapter/redis.rb#L68" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actioncable/lib/action_cable/subscription_adapter/redis.rb#L68" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -189,15 +189,15 @@ layout: default
               </summary>
 
               <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 141
-          def add_channel(channel, on_success)
-            @subscription_lock.synchronize do
-              ensure_listener_running
-              @subscribe_callbacks[channel] &lt;&lt; on_success
-              when_connected { @subscribed_client.subscribe(channel) }
-            end
-          end</code></pre>
+def add_channel(channel, on_success)
+  @subscription_lock.synchronize do
+    ensure_listener_running
+    @subscribe_callbacks[channel] &lt;&lt; on_success
+    when_connected { @subscribed_client.subscribe(channel) }
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actioncable/lib/action_cable/subscription_adapter/redis.rb#L141" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actioncable/lib/action_cable/subscription_adapter/redis.rb#L141" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -228,11 +228,11 @@ layout: default
               </summary>
 
               <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 155
-          def invoke_callback(*)
-            @event_loop.post { super }
-          end</code></pre>
+def invoke_callback(*)
+  @event_loop.post { super }
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actioncable/lib/action_cable/subscription_adapter/redis.rb#L155" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actioncable/lib/action_cable/subscription_adapter/redis.rb#L155" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -263,46 +263,46 @@ layout: default
               </summary>
 
               <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 89
-          def listen(conn)
-            conn.without_reconnect do
-              original_client = extract_subscribed_client(conn)
+def listen(conn)
+  conn.without_reconnect do
+    original_client = extract_subscribed_client(conn)
 
-              conn.subscribe(&quot;_action_cable_internal&quot;) do |on|
-                on.subscribe do |chan, count|
-                  @subscription_lock.synchronize do
-                    if count == 1
-                      @reconnect_attempt = 0
-                      @subscribed_client = original_client
+    conn.subscribe(&quot;_action_cable_internal&quot;) do |on|
+      on.subscribe do |chan, count|
+        @subscription_lock.synchronize do
+          if count == 1
+            @reconnect_attempt = 0
+            @subscribed_client = original_client
 
-                      until @when_connected.empty?
-                        @when_connected.shift.call
-                      end
-                    end
-
-                    if callbacks = @subscribe_callbacks[chan]
-                      next_callback = callbacks.shift
-                      @event_loop.post(&amp;next_callback) if next_callback
-                      @subscribe_callbacks.delete(chan) if callbacks.empty?
-                    end
-                  end
-                end
-
-                on.message do |chan, message|
-                  broadcast(chan, message)
-                end
-
-                on.unsubscribe do |chan, count|
-                  if count == 0
-                    @subscription_lock.synchronize do
-                      @subscribed_client = nil
-                    end
-                  end
-                end
-              end
+            until @when_connected.empty?
+              @when_connected.shift.call
             end
-          end</code></pre>
+          end
+
+          if callbacks = @subscribe_callbacks[chan]
+            next_callback = callbacks.shift
+            @event_loop.post(&amp;next_callback) if next_callback
+            @subscribe_callbacks.delete(chan) if callbacks.empty?
+          end
+        end
+      end
+
+      on.message do |chan, message|
+        broadcast(chan, message)
+      end
+
+      on.unsubscribe do |chan, count|
+        if count == 0
+          @subscription_lock.synchronize do
+            @subscribed_client = nil
+          end
+        end
+      end
+    end
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actioncable/lib/action_cable/subscription_adapter/redis.rb#L89" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actioncable/lib/action_cable/subscription_adapter/redis.rb#L89" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -333,13 +333,13 @@ layout: default
               </summary>
 
               <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 149
-          def remove_channel(channel)
-            @subscription_lock.synchronize do
-              when_connected { @subscribed_client.unsubscribe(channel) }
-            end
-          end</code></pre>
+def remove_channel(channel)
+  @subscription_lock.synchronize do
+    when_connected { @subscribed_client.unsubscribe(channel) }
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actioncable/lib/action_cable/subscription_adapter/redis.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actioncable/lib/action_cable/subscription_adapter/redis.rb#L149" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -370,20 +370,20 @@ layout: default
               </summary>
 
               <pre><code class="ruby"># File actioncable/lib/action_cable/subscription_adapter/redis.rb, line 128
-          def shutdown
-            @subscription_lock.synchronize do
-              return if @thread.nil?
+def shutdown
+  @subscription_lock.synchronize do
+    return if @thread.nil?
 
-              when_connected do
-                @subscribed_client.unsubscribe
-                @subscribed_client = nil
-              end
-            end
+    when_connected do
+      @subscribed_client.unsubscribe
+      @subscribed_client = nil
+    end
+  end
 
-            Thread.pass while @thread.alive?
-          end</code></pre>
+  Thread.pass while @thread.alive?
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actioncable/lib/action_cable/subscription_adapter/redis.rb#L128" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actioncable/lib/action_cable/subscription_adapter/redis.rb#L128" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

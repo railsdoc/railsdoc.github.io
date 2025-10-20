@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.1.0.beta1</span><br />
+            <span>Ruby on Rails 8.1.0.rc1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -97,9 +97,14 @@ layout: default
 
 <p>All of the above validations can be omitted by passing <code>validations: false</code> as an argument. This allows complete customizability of validation behavior.</p>
 
-<p>Finally, a password reset token that’s valid for 15 minutes after issue is automatically configured when <code>reset_token</code> is set to true (which it is by default) and the object responds to <code>generates_token_for</code> (which Active Records do).</p>
+<p>A password reset token (valid for 15 minutes by default) is automatically configured when <code>reset_token</code> is set to true (which it is by default) and the object responds to <code>generates_token_for</code> (which Active Records do).</p>
 
-<p>To use <code>has_secure_password</code>, add bcrypt (~&gt; 3.1.7) to your Gemfile:</p>
+<p>Finally, the reset token expiry can be customized by passing a hash to <a href="ClassMethods.html#method-i-has_secure_password"><code>has_secure_password</code></a>:</p>
+
+<pre><code>has_secure_password reset_token: { expires_in: 1.hour }
+</code></pre>
+
+<p>To use <a href="ClassMethods.html#method-i-has_secure_password"><code>has_secure_password</code></a>, add bcrypt (~&gt; 3.1.7) to your Gemfile:</p>
 
 <pre><code>gem &quot;bcrypt&quot;, &quot;~&gt; 3.1.7&quot;
 </code></pre>
@@ -187,73 +192,78 @@ User.find_by_password_reset_token!(token)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activemodel/lib/active_model/secure_password.rb, line 116
-      def has_secure_password(attribute = :password, validations: true, reset_token: true)
-        # Load bcrypt gem only when has_secure_password is used.
-        # This is to avoid ActiveModel (and by extension the entire framework)
-        # being dependent on a binary library.
-        begin
-          require &quot;bcrypt&quot;
-        rescue LoadError
-          warn &quot;You don&#39;t have bcrypt installed in your application. Please add it to your Gemfile and run bundle install.&quot;
-          raise
+              <pre><code class="ruby"># File activemodel/lib/active_model/secure_password.rb, line 123
+def has_secure_password(attribute = :password, validations: true, reset_token: true)
+  # Load bcrypt gem only when has_secure_password is used.
+  # This is to avoid ActiveModel (and by extension the entire framework)
+  # being dependent on a binary library.
+  begin
+    require &quot;bcrypt&quot;
+  rescue LoadError
+    warn &quot;You don&#39;t have bcrypt installed in your application. Please add it to your Gemfile and run bundle install.&quot;
+    raise
+  end
+
+  include InstanceMethodsOnActivation.new(attribute, reset_token: reset_token)
+
+  if validations
+    include ActiveModel::Validations
+
+    # This ensures the model has a password by checking whether the password_digest
+    # is present, so that this works with both new and existing records. However,
+    # when there is an error, the message is added to the password attribute instead
+    # so that the error message will make sense to the end-user.
+    validate do |record|
+      record.errors.add(attribute, :blank) unless record.public_send(&quot;#{attribute}_digest&quot;).present?
+    end
+
+    validate do |record|
+      if challenge = record.public_send(:&quot;#{attribute}_challenge&quot;)
+        digest_was = record.public_send(:&quot;#{attribute}_digest_was&quot;) if record.respond_to?(:&quot;#{attribute}_digest_was&quot;)
+
+        unless digest_was.present? &amp;&amp; BCrypt::Password.new(digest_was).is_password?(challenge)
+          record.errors.add(:&quot;#{attribute}_challenge&quot;)
         end
+      end
+    end
 
-        include InstanceMethodsOnActivation.new(attribute, reset_token: reset_token)
+    # Validates that the password does not exceed the maximum allowed bytes for BCrypt (72 bytes).
+    validate do |record|
+      password_value = record.public_send(attribute)
+      if password_value.present? &amp;&amp; password_value.bytesize &gt; ActiveModel::SecurePassword::MAX_PASSWORD_LENGTH_ALLOWED
+        record.errors.add(attribute, :password_too_long)
+      end
+    end
 
-        if validations
-          include ActiveModel::Validations
+    validates_confirmation_of attribute, allow_nil: true
+  end
 
-          # This ensures the model has a password by checking whether the password_digest
-          # is present, so that this works with both new and existing records. However,
-          # when there is an error, the message is added to the password attribute instead
-          # so that the error message will make sense to the end-user.
-          validate do |record|
-            record.errors.add(attribute, :blank) unless record.public_send(&quot;#{attribute}_digest&quot;).present?
-          end
+  # Only generate tokens for records that are capable of doing so (Active Records, not vanilla Active Models)
+  if reset_token &amp;&amp; respond_to?(:generates_token_for)
+    reset_token_expires_in = reset_token.is_a?(Hash) ? reset_token[:expires_in] : DEFAULT_RESET_TOKEN_EXPIRES_IN
 
-          validate do |record|
-            if challenge = record.public_send(:&quot;#{attribute}_challenge&quot;)
-              digest_was = record.public_send(:&quot;#{attribute}_digest_was&quot;) if record.respond_to?(:&quot;#{attribute}_digest_was&quot;)
+    silence_redefinition_of_method(:&quot;#{attribute}_reset_token_expires_in&quot;)
+    define_method(:&quot;#{attribute}_reset_token_expires_in&quot;) { reset_token_expires_in }
 
-              unless digest_was.present? &amp;&amp; BCrypt::Password.new(digest_was).is_password?(challenge)
-                record.errors.add(:&quot;#{attribute}_challenge&quot;)
-              end
-            end
-          end
+    generates_token_for :&quot;#{attribute}_reset&quot;, expires_in: reset_token_expires_in do
+      public_send(:&quot;#{attribute}_salt&quot;)&amp;.last(10)
+    end
 
-          # Validates that the password does not exceed the maximum allowed bytes for BCrypt (72 bytes).
-          validate do |record|
-            password_value = record.public_send(attribute)
-            if password_value.present? &amp;&amp; password_value.bytesize &gt; ActiveModel::SecurePassword::MAX_PASSWORD_LENGTH_ALLOWED
-              record.errors.add(attribute, :password_too_long)
-            end
-          end
+    class_eval &lt;&lt;-RUBY, __FILE__, __LINE__ + 1
+      silence_redefinition_of_method :find_by_#{attribute}_reset_token
+      def self.find_by_#{attribute}_reset_token(token)
+        find_by_token_for(:#{attribute}_reset, token)
+      end
 
-          validates_confirmation_of attribute, allow_nil: true
-        end
-
-        # Only generate tokens for records that are capable of doing so (Active Records, not vanilla Active Models)
-        if reset_token &amp;&amp; respond_to?(:generates_token_for)
-          generates_token_for :&quot;#{attribute}_reset&quot;, expires_in: 15.minutes do
-            public_send(:&quot;#{attribute}_salt&quot;)&amp;.last(10)
-          end
-
-          class_eval &lt;&lt;-RUBY, __FILE__, __LINE__ + 1
-            silence_redefinition_of_method :find_by_#{attribute}_reset_token
-            def self.find_by_#{attribute}_reset_token(token)
-              find_by_token_for(:#{attribute}_reset, token)
-            end
-
-            silence_redefinition_of_method :find_by_#{attribute}_reset_token!
-            def self.find_by_#{attribute}_reset_token!(token)
-              find_by_token_for!(:#{attribute}_reset, token)
-            end
-          RUBY
-        end
-      end</code></pre>
+      silence_redefinition_of_method :find_by_#{attribute}_reset_token!
+      def self.find_by_#{attribute}_reset_token!(token)
+        find_by_token_for!(:#{attribute}_reset, token)
+      end
+    RUBY
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activemodel/lib/active_model/secure_password.rb#L116" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activemodel/lib/active_model/secure_password.rb#L123" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

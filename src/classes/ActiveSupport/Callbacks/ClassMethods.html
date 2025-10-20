@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.1.0.beta1</span><br />
+            <span>Ruby on Rails 8.1.0.rc1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -140,9 +140,9 @@ end
 
 <h5 id="method-i-define_callbacks-label-Notes">Notes</h5>
 
-<p><code>names</code> passed to <code>define_callbacks</code> must not end with <code>!</code>, <code>?</code> or <code>=</code>.</p>
+<p><code>names</code> passed to <a href="ClassMethods.html#method-i-define_callbacks"><code>define_callbacks</code></a> must not end with <code>!</code>, <code>?</code> or <code>=</code>.</p>
 
-<p>Calling <code>define_callbacks</code> multiple times with the same <code>names</code> will overwrite previous callbacks registered with <a href="ClassMethods.html#method-i-set_callback"><code>set_callback</code></a>.</p>
+<p>Calling <a href="ClassMethods.html#method-i-define_callbacks"><code>define_callbacks</code></a> multiple times with the same <code>names</code> will overwrite previous callbacks registered with <a href="ClassMethods.html#method-i-set_callback"><code>set_callback</code></a>.</p>
             </div>
           
 
@@ -157,38 +157,43 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 901
-        def define_callbacks(*names)
-          options = names.extract_options!
+              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 903
+def define_callbacks(*names)
+  options = names.extract_options!
 
-          names.each do |name|
-            name = name.to_sym
+  names.each do |name|
+    name = name.to_sym
 
-            ([self] + self.descendants).each do |target|
-              target.set_callbacks name, CallbackChain.new(name, options)
-            end
+    module_eval &lt;&lt;-RUBY, __FILE__, __LINE__ + 1
+      def _run_#{name}_callbacks
+        yield if block_given?
+      end
+      silence_redefinition_of_method(:_run_#{name}_callbacks)
 
-            module_eval &lt;&lt;-RUBY, __FILE__, __LINE__ + 1
-              def _run_#{name}_callbacks(&amp;block)
-                run_callbacks #{name.inspect}, &amp;block
-              end
+      def _run_#{name}_callbacks!(&amp;block)
+        run_callbacks #{name.inspect}, &amp;block
+      end
 
-              def self._#{name}_callbacks
-                get_callbacks(#{name.inspect})
-              end
+      def self._#{name}_callbacks
+        get_callbacks(#{name.inspect})
+      end
 
-              def self._#{name}_callbacks=(value)
-                set_callbacks(#{name.inspect}, value)
-              end
+      def self._#{name}_callbacks=(value)
+        set_callbacks(#{name.inspect}, value)
+      end
 
-              def _#{name}_callbacks
-                __callbacks[#{name.inspect}]
-              end
-            RUBY
-          end
-        end</code></pre>
+      def _#{name}_callbacks
+        __callbacks[#{name.inspect}]
+      end
+    RUBY
+
+    ([self] + self.descendants).each do |target|
+      target.set_callbacks name, CallbackChain.new(name, options)
+    end
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/callbacks.rb#L901" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/callbacks.rb#L903" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -218,20 +223,20 @@ end
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 811
-        def reset_callbacks(name)
-          callbacks = get_callbacks name
+              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 813
+def reset_callbacks(name)
+  callbacks = get_callbacks name
 
-          self.descendants.each do |target|
-            chain = target.get_callbacks(name).dup
-            callbacks.each { |c| chain.delete(c) }
-            target.set_callbacks name, chain
-          end
+  self.descendants.each do |target|
+    chain = target.get_callbacks(name).dup
+    callbacks.each { |c| chain.delete(c) }
+    target.set_callbacks name, chain
+  end
 
-          set_callbacks(name, callbacks.dup.clear)
-        end</code></pre>
+  set_callbacks(name, callbacks.dup.clear)
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/callbacks.rb#L811" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/callbacks.rb#L813" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -292,22 +297,22 @@ set_callback :save, :around, -&gt;(r, block) { stuff; result = block.call; stuff
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 737
-        def set_callback(name, *filter_list, &amp;block)
-          type, filters, options = normalize_callback_params(filter_list, block)
+              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 739
+def set_callback(name, *filter_list, &amp;block)
+  type, filters, options = normalize_callback_params(filter_list, block)
 
-          self_chain = get_callbacks name
-          mapped = filters.map do |filter|
-            Callback.build(self_chain, filter, type, options)
-          end
+  self_chain = get_callbacks name
+  mapped = filters.map do |filter|
+    Callback.build(self_chain, filter, type, options)
+  end
 
-          __update_callbacks(name) do |target, chain|
-            options[:prepend] ? chain.prepend(*mapped) : chain.append(*mapped)
-            target.set_callbacks name, chain
-          end
-        end</code></pre>
+  __update_callbacks(name) do |target, chain|
+    options[:prepend] ? chain.prepend(*mapped) : chain.append(*mapped)
+    target.set_callbacks name, chain
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/callbacks.rb#L737" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/callbacks.rb#L739" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -324,7 +329,7 @@ set_callback :save, :around, -&gt;(r, block) { stuff; result = block.call; stuff
             <div class="description">
               <p>Skip a previously set callback. Like <a href="ClassMethods.html#method-i-set_callback"><code>set_callback</code></a>, <code>:if</code> or <code>:unless</code> options may be passed in order to control when the callback is skipped.</p>
 
-<p>Note: this example uses <code>PersonRecord</code> and <code>#saving_message</code>, which you can see defined <a href="../Callbacks.html">here</a></p>
+<p>Note: this example uses <code>PersonRecord</code> and saving_message, which you can see defined <a href="../Callbacks.html">here</a></p>
 
 <pre><code>class Writer &lt; PersonRecord
   attr_accessor :age
@@ -374,32 +379,32 @@ saved
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 786
-        def skip_callback(name, *filter_list, &amp;block)
-          type, filters, options = normalize_callback_params(filter_list, block)
+              <pre><code class="ruby"># File activesupport/lib/active_support/callbacks.rb, line 788
+def skip_callback(name, *filter_list, &amp;block)
+  type, filters, options = normalize_callback_params(filter_list, block)
 
-          options[:raise] = true unless options.key?(:raise)
+  options[:raise] = true unless options.key?(:raise)
 
-          __update_callbacks(name) do |target, chain|
-            filters.each do |filter|
-              callback = chain.find { |c| c.matches?(type, filter) }
+  __update_callbacks(name) do |target, chain|
+    filters.each do |filter|
+      callback = chain.find { |c| c.matches?(type, filter) }
 
-              if !callback &amp;&amp; options[:raise]
-                raise ArgumentError, &quot;#{type.to_s.capitalize} #{name} callback #{filter.inspect} has not been defined&quot;
-              end
+      if !callback &amp;&amp; options[:raise]
+        raise ArgumentError, &quot;#{type.to_s.capitalize} #{name} callback #{filter.inspect} has not been defined&quot;
+      end
 
-              if callback &amp;&amp; (options.key?(:if) || options.key?(:unless))
-                new_callback = callback.merge_conditional_options(chain, if_option: options[:if], unless_option: options[:unless])
-                chain.insert(chain.index(callback), new_callback)
-              end
+      if callback &amp;&amp; (options.key?(:if) || options.key?(:unless))
+        new_callback = callback.merge_conditional_options(chain, if_option: options[:if], unless_option: options[:unless])
+        chain.insert(chain.index(callback), new_callback)
+      end
 
-              chain.delete(callback)
-            end
-            target.set_callbacks name, chain
-          end
-        end</code></pre>
+      chain.delete(callback)
+    end
+    target.set_callbacks name, chain
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/callbacks.rb#L786" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/callbacks.rb#L788" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

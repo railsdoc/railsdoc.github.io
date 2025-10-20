@@ -1,0 +1,324 @@
+---
+title: ActiveSupport::StructuredEventSubscriber
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.1.0.rc1</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveSupport::StructuredEventSubscriber
+            
+                <span class="parent">&lt;
+                    
+                    Subscriber
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../files/activesupport/lib/active_support/structured_event_subscriber_rb.html">activesupport/lib/active_support/structured_event_subscriber.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+    <div class="description">
+      
+<h1 id="class-ActiveSupport::StructuredEventSubscriber-label-Active+Support+Structured+Event+Subscriber">Active Support Structured Event Subscriber</h1>
+
+<p><a href="StructuredEventSubscriber.html"><code>ActiveSupport::StructuredEventSubscriber</code></a> consumes <a href="Notifications.html"><code>ActiveSupport::Notifications</code></a> in order to emit structured events via <a href="../Rails.html#method-c-event"><code>Rails.event</code></a>.</p>
+
+<p>An example would be the Action Controller structured event subscriber, responsible for emitting request processing events:</p>
+
+<pre><code>module ActionController
+  class StructuredEventSubscriber &lt; ActiveSupport::StructuredEventSubscriber
+    attach_to :action_controller
+
+    def start_processing(event)
+      emit_event(&quot;controller.request_started&quot;,
+        controller: event.payload[:controller],
+        action: event.payload[:action],
+        format: event.payload[:format]
+      )
+    end
+  end
+end
+</code></pre>
+
+<p>After configured, whenever a <code>&quot;start_processing.action_controller&quot;</code> notification is published, it will properly dispatch the event (<a href="Notifications/Event.html"><code>ActiveSupport::Notifications::Event</code></a>) to the <code>start_processing</code> method. The subscriber can then emit a structured event via the <a href="StructuredEventSubscriber.html#method-i-emit_event"><code>emit_event</code></a> method.</p>
+
+    </div>
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-i-call">call</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-emit_debug_event">emit_debug_event</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-emit_event">emit_event</a>
+        </li>
+      
+        <li>
+          <a href="#method-c-new">new</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-silenced-3F">silenced?</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">DEBUG_CHECK</td>
+            <td>=</td>
+            <td class="attr-value">proc { !ActiveSupport.event_reporter.debug_mode? }</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-new">
+            
+              new()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/structured_event_subscriber.rb, line 56
+def initialize
+  super
+  @silenced_events = {}
+end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/structured_event_subscriber.rb#L56" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-call">
+            
+              call(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/structured_event_subscriber.rb, line 88
+def call(event)
+  super
+rescue =&gt; e
+  handle_event_error(event.name, e)
+end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/structured_event_subscriber.rb#L88" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-emit_debug_event">
+            
+              emit_debug_event(name, payload = nil, caller_depth: 1, **kwargs)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Like <a href="StructuredEventSubscriber.html#method-i-emit_event"><code>emit_event</code></a>, but only emits when the event reporter is in debug mode</p>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/structured_event_subscriber.rb, line 82
+def emit_debug_event(name, payload = nil, caller_depth: 1, **kwargs)
+  ActiveSupport.event_reporter.debug(name, payload, caller_depth: caller_depth + 1, **kwargs)
+rescue =&gt; e
+  handle_event_error(name, e)
+end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/structured_event_subscriber.rb#L82" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-emit_event">
+            
+              emit_event(name, payload = nil, caller_depth: 1, **kwargs)
+            
+          </h3>
+
+          
+            <div class="description">
+              <p>Emit a structured event via <a href="../Rails.html#method-c-event"><code>Rails.event</code></a>.notify.</p>
+
+<h4 id="method-i-emit_event-label-Arguments">Arguments</h4>
+<ul><li>
+<p><code>name</code> - The event name as a string or symbol</p>
+</li><li>
+<p><code>payload</code> - The event payload as a hash or object</p>
+</li><li>
+<p><code>caller_depth</code> - Stack depth for source location (default: 1)</p>
+</li><li>
+<p><code>kwargs</code> - Additional payload data merged with the payload hash</p>
+</li></ul>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/structured_event_subscriber.rb, line 75
+def emit_event(name, payload = nil, caller_depth: 1, **kwargs)
+  ActiveSupport.event_reporter.notify(name, payload, caller_depth: caller_depth + 1, **kwargs)
+rescue =&gt; e
+  handle_event_error(name, e)
+end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/structured_event_subscriber.rb#L75" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-silenced-3F">
+            
+              silenced?(event)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activesupport/lib/active_support/structured_event_subscriber.rb, line 61
+def silenced?(event)
+  ActiveSupport.event_reporter.subscribers.none? || @silenced_events[event]&amp;.call
+end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/structured_event_subscriber.rb#L61" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>

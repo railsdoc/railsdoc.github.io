@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.1.0.beta1</span><br />
+            <span>Ruby on Rails 8.1.0.rc1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -152,26 +152,26 @@ Before using this method, please consider if Arel.sql would be better for your u
               </summary>
 
               <pre><code class="ruby"># File activerecord/lib/active_record/sanitization.rb, line 166
-      def sanitize_sql_array(ary)
-        statement, *values = ary
-        if values.first.is_a?(Hash) &amp;&amp; /:\w+/.match?(statement)
-          with_connection do |c|
-            replace_named_bind_variables(c, statement, values.first)
-          end
-        elsif statement.include?(&quot;?&quot;)
-          with_connection do |c|
-            replace_bind_variables(c, statement, values)
-          end
-        elsif statement.blank?
-          statement
-        else
-          with_connection do |c|
-            statement % values.collect { |value| c.quote_string(value.to_s) }
-          end
-        end
-      end</code></pre>
+def sanitize_sql_array(ary)
+  statement, *values = ary
+  if values.first.is_a?(Hash) &amp;&amp; /:\w+/.match?(statement)
+    with_connection do |c|
+      replace_named_bind_variables(c, statement, values.first)
+    end
+  elsif statement.include?(&quot;?&quot;)
+    with_connection do |c|
+      replace_bind_variables(c, statement, values)
+    end
+  elsif statement.blank?
+    statement
+  else
+    with_connection do |c|
+      statement % values.collect { |value| c.quote_string(value.to_s) }
+    end
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/sanitization.rb#L166" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/sanitization.rb#L166" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -224,15 +224,15 @@ Post.sanitize_sql_for_assignment({ name: nil, group_id: 4 })
               </summary>
 
               <pre><code class="ruby"># File activerecord/lib/active_record/sanitization.rb, line 68
-      def sanitize_sql_for_assignment(assignments, default_table_name = table_name)
-        case assignments
-        when Array; sanitize_sql_array(assignments)
-        when Hash;  sanitize_sql_hash_for_assignment(assignments, default_table_name)
-        else        assignments
-        end
-      end</code></pre>
+def sanitize_sql_for_assignment(assignments, default_table_name = table_name)
+  case assignments
+  when Array; sanitize_sql_array(assignments)
+  when Hash;  sanitize_sql_hash_for_assignment(assignments, default_table_name)
+  else        assignments
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/sanitization.rb#L68" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/sanitization.rb#L68" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -289,16 +289,16 @@ sanitize_sql_for_conditions([&quot;name=&#39;%s&#39; and group_id=&#39;%s&#39;&q
               </summary>
 
               <pre><code class="ruby"># File activerecord/lib/active_record/sanitization.rb, line 33
-      def sanitize_sql_for_conditions(condition)
-        return nil if condition.blank?
+def sanitize_sql_for_conditions(condition)
+  return nil if condition.blank?
 
-        case condition
-        when Array; sanitize_sql_array(condition)
-        else        condition
-        end
-      end</code></pre>
+  case condition
+  when Array; sanitize_sql_array(condition)
+  else        condition
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/sanitization.rb#L33" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/sanitization.rb#L33" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -336,26 +336,26 @@ sanitize_sql_for_order(&quot;id ASC&quot;)
               </summary>
 
               <pre><code class="ruby"># File activerecord/lib/active_record/sanitization.rb, line 84
-      def sanitize_sql_for_order(condition)
-        if condition.is_a?(Array) &amp;&amp; condition.first.to_s.include?(&quot;?&quot;)
-          disallow_raw_sql!(
-            [condition.first],
-            permit: adapter_class.column_name_with_order_matcher
-          )
+def sanitize_sql_for_order(condition)
+  if condition.is_a?(Array) &amp;&amp; condition.first.to_s.include?(&quot;?&quot;)
+    disallow_raw_sql!(
+      [condition.first],
+      permit: adapter_class.column_name_with_order_matcher
+    )
 
-          # Ensure we aren&#39;t dealing with a subclass of String that might
-          # override methods we use (e.g. Arel::Nodes::SqlLiteral).
-          if condition.first.kind_of?(String) &amp;&amp; !condition.first.instance_of?(String)
-            condition = [String.new(condition.first), *condition[1..-1]]
-          end
+    # Ensure we aren&#39;t dealing with a subclass of String that might
+    # override methods we use (e.g. Arel::Nodes::SqlLiteral).
+    if condition.first.kind_of?(String) &amp;&amp; !condition.first.instance_of?(String)
+      condition = [String.new(condition.first), *condition[1..-1]]
+    end
 
-          Arel.sql(sanitize_sql_array(condition))
-        else
-          condition
-        end
-      end</code></pre>
+    Arel.sql(sanitize_sql_array(condition))
+  else
+    condition
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/sanitization.rb#L84" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/sanitization.rb#L84" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -390,17 +390,17 @@ sanitize_sql_for_order(&quot;id ASC&quot;)
               </summary>
 
               <pre><code class="ruby"># File activerecord/lib/active_record/sanitization.rb, line 107
-      def sanitize_sql_hash_for_assignment(attrs, table)
-        with_connection do |c|
-          attrs.map do |attr, value|
-            type = type_for_attribute(attr)
-            value = type.serialize(type.cast(value))
-            &quot;#{c.quote_table_name_for_assignment(table, attr)} = #{c.quote(value)}&quot;
-          end.join(&quot;, &quot;)
-        end
-      end</code></pre>
+def sanitize_sql_hash_for_assignment(attrs, table)
+  with_connection do |c|
+    attrs.map do |attr, value|
+      type = type_for_attribute(attr)
+      value = type.serialize(type.cast(value))
+      &quot;#{c.quote_table_name_for_assignment(table, attr)} = #{c.quote(value)}&quot;
+    end.join(&quot;, &quot;)
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/sanitization.rb#L107" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/sanitization.rb#L107" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -444,15 +444,15 @@ sanitize_sql_like(&quot;snake_cased_string&quot;, &quot;!&quot;)
               </summary>
 
               <pre><code class="ruby"># File activerecord/lib/active_record/sanitization.rb, line 132
-      def sanitize_sql_like(string, escape_character = &quot;\\&quot;)
-        if string.include?(escape_character) &amp;&amp; escape_character != &quot;%&quot; &amp;&amp; escape_character != &quot;_&quot;
-          string = string.gsub(escape_character, &#39;\0\0&#39;)
-        end
+def sanitize_sql_like(string, escape_character = &quot;\\&quot;)
+  if string.include?(escape_character) &amp;&amp; escape_character != &quot;%&quot; &amp;&amp; escape_character != &quot;_&quot;
+    string = string.gsub(escape_character, &#39;\0\0&#39;)
+  end
 
-        string.gsub(/(?=[%_])/, escape_character)
-      end</code></pre>
+  string.gsub(/(?=[%_])/, escape_character)
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/sanitization.rb#L132" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/sanitization.rb#L132" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

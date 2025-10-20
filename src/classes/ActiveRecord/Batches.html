@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.1.0.beta1</span><br />
+            <span>Ruby on Rails 8.1.0.rc1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -196,21 +196,21 @@ end
               </summary>
 
               <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 85
-    def find_each(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER, &amp;block)
-      if block_given?
-        find_in_batches(start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do |records|
-          records.each(&amp;block)
-        end
-      else
-        enum_for(:find_each, start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do
-          relation = self
-          cursor = Array(cursor)
-          apply_limits(relation, cursor, start, finish, build_batch_orders(cursor, order)).size
-        end
-      end
-    end</code></pre>
+def find_each(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER, &amp;block)
+  if block_given?
+    find_in_batches(start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do |records|
+      records.each(&amp;block)
+    end
+  else
+    enum_for(:find_each, start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do
+      relation = self
+      cursor = Array(cursor)
+      apply_limits(relation, cursor, start, finish, build_batch_orders(cursor, order)).size
+    end
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/relation/batches.rb#L85" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/relation/batches.rb#L85" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -297,22 +297,22 @@ end
               </summary>
 
               <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 161
-    def find_in_batches(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER)
-      relation = self
-      unless block_given?
-        return to_enum(:find_in_batches, start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do
-          cursor = Array(cursor)
-          total = apply_limits(relation, cursor, start, finish, build_batch_orders(cursor, order)).size
-          (total - 1).div(batch_size) + 1
-        end
-      end
+def find_in_batches(start: nil, finish: nil, batch_size: 1000, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER)
+  relation = self
+  unless block_given?
+    return to_enum(:find_in_batches, start: start, finish: finish, batch_size: batch_size, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do
+      cursor = Array(cursor)
+      total = apply_limits(relation, cursor, start, finish, build_batch_orders(cursor, order)).size
+      (total - 1).div(batch_size) + 1
+    end
+  end
 
-      in_batches(of: batch_size, start: start, finish: finish, load: true, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do |batch|
-        yield batch.to_a
-      end
-    end</code></pre>
+  in_batches(of: batch_size, start: start, finish: finish, load: true, error_on_ignore: error_on_ignore, cursor: cursor, order: order) do |batch|
+    yield batch.to_a
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/relation/batches.rb#L161" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/relation/batches.rb#L161" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -420,52 +420,52 @@ end
               </summary>
 
               <pre><code class="ruby"># File activerecord/lib/active_record/relation/batches.rb, line 259
-    def in_batches(of: 1000, start: nil, finish: nil, load: false, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER, use_ranges: nil, &amp;block)
-      cursor = Array(cursor).map(&amp;:to_s)
-      ensure_valid_options_for_batching!(cursor, start, finish, order)
+def in_batches(of: 1000, start: nil, finish: nil, load: false, error_on_ignore: nil, cursor: primary_key, order: DEFAULT_ORDER, use_ranges: nil, &amp;block)
+  cursor = Array(cursor).map(&amp;:to_s)
+  ensure_valid_options_for_batching!(cursor, start, finish, order)
 
-      if arel.orders.present?
-        act_on_ignored_order(error_on_ignore)
-      end
+  if arel.orders.present?
+    act_on_ignored_order(error_on_ignore)
+  end
 
-      unless block
-        return BatchEnumerator.new(of: of, start: start, finish: finish, relation: self, cursor: cursor, order: order, use_ranges: use_ranges)
-      end
+  unless block
+    return BatchEnumerator.new(of: of, start: start, finish: finish, relation: self, cursor: cursor, order: order, use_ranges: use_ranges)
+  end
 
-      batch_limit = of
+  batch_limit = of
 
-      if limit_value
-        remaining   = limit_value
-        batch_limit = remaining if remaining &lt; batch_limit
-      end
+  if limit_value
+    remaining   = limit_value
+    batch_limit = remaining if remaining &lt; batch_limit
+  end
 
-      if self.loaded?
-        batch_on_loaded_relation(
-          relation: self,
-          start: start,
-          finish: finish,
-          cursor: cursor,
-          order: order,
-          batch_limit: batch_limit,
-          &amp;block
-        )
-      else
-        batch_on_unloaded_relation(
-          relation: self,
-          start: start,
-          finish: finish,
-          load: load,
-          cursor: cursor,
-          order: order,
-          use_ranges: use_ranges,
-          remaining: remaining,
-          batch_limit: batch_limit,
-          &amp;block
-        )
-      end
-    end</code></pre>
+  if self.loaded?
+    batch_on_loaded_relation(
+      relation: self,
+      start: start,
+      finish: finish,
+      cursor: cursor,
+      order: order,
+      batch_limit: batch_limit,
+      &amp;block
+    )
+  else
+    batch_on_unloaded_relation(
+      relation: self,
+      start: start,
+      finish: finish,
+      load: load,
+      cursor: cursor,
+      order: order,
+      use_ranges: use_ranges,
+      remaining: remaining,
+      batch_limit: batch_limit,
+      &amp;block
+    )
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activerecord/lib/active_record/relation/batches.rb#L259" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/relation/batches.rb#L259" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

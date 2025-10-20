@@ -1,0 +1,311 @@
+---
+title: ActiveRecord::ExplainRegistry::Subscriber
+layout: default
+---
+<div class="main">
+    <div class="banner">
+        
+            <span>Ruby on Rails 8.1.0.rc1</span><br />
+        
+        <div class="type">Class</div>
+        <h1>
+            ActiveRecord::ExplainRegistry::Subscriber
+            
+                <span class="parent">&lt;
+                    
+                    <a href="../../Object.html">Object</a>
+                    
+                </span>
+            
+        </h1>
+        <ul class="files">
+            
+            <li><a href="../../../files/activerecord/lib/active_record/explain_registry_rb.html">activerecord/lib/active_record/explain_registry.rb</a></li>
+            
+        </ul>
+    </div>
+    <div id="bodyContent">
+        <div id="content">
+  
+
+  
+
+  
+  
+
+
+  
+
+  
+    <h2 id="methods">Methods</h2>
+    <ul>
+      
+        <li>
+          <a href="#method-c-ensure_subscribed">ensure_subscribed</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-finish">finish</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-ignore_payload-3F">ignore_payload?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-silenced-3F">silenced?</a>
+        </li>
+      
+        <li>
+          <a href="#method-i-start">start</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    
+
+    
+
+    
+      <!-- Section constants -->
+      <h2 id="constants">Constants</h2>
+      <table border='0' cellpadding='5'>
+        
+          <tr valign='top'>
+            <td class="attr-name">EXPLAINED_SQLS</td>
+            <td>=</td>
+            <td class="attr-value">/\A\s*(\/\*.*\*\/)?\s*(with|select|update|delete|insert)\b/i</td>
+          </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">IGNORED_PAYLOADS</td>
+            <td>=</td>
+            <td class="attr-value">%w(SCHEMA EXPLAIN)</td>
+          </tr>
+          
+            <tr valign='top'>
+              <td>&nbsp;</td>
+              <td colspan="2" class="attr-desc"><p>SCHEMA queries cannot be EXPLAINed, also we do not want to run EXPLAIN on our own EXPLAINs no matter how loopingly beautiful that would be.</p>
+
+<p>On the other hand, we want to monitor the performance of our real database queries, not the performance of the access to the query cache.</p></td>
+            </tr>
+          
+        
+          <tr valign='top'>
+            <td class="attr-name">MUTEX</td>
+            <td>=</td>
+            <td class="attr-value">Mutex.new</td>
+          </tr>
+          
+        
+      </table>
+    
+
+    
+
+    <!-- Methods -->
+    
+      <h2 id="class-public-methods">Class Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-c-ensure_subscribed">
+            
+              ensure_subscribed()
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/explain_registry.rb, line 16
+def ensure_subscribed
+  return if @subscribed
+  MUTEX.synchronize do
+    return if @subscribed
+
+    ActiveSupport::Notifications.subscribe(&quot;sql.active_record&quot;, new)
+    @subscribed = true
+  end
+end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/explain_registry.rb#L16" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+      <h2 id="instance-public-methods">Instance Public methods</h2>
+      
+        <div class="method">
+          <h3 id="method-i-finish">
+            
+              finish(name, id, payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/explain_registry.rb, line 31
+def finish(name, id, payload)
+  if ExplainRegistry.collect? &amp;&amp; !ignore_payload?(payload)
+    ExplainRegistry.queries &lt;&lt; payload.values_at(:sql, :binds)
+  end
+end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/explain_registry.rb#L31" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-ignore_payload-3F">
+            
+              ignore_payload?(payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/explain_registry.rb, line 48
+def ignore_payload?(payload)
+  payload[:exception] ||
+    payload[:cached] ||
+    IGNORED_PAYLOADS.include?(payload[:name]) ||
+    !payload[:sql].match?(EXPLAINED_SQLS)
+end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/explain_registry.rb#L48" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-silenced-3F">
+            
+              silenced?(_name)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/explain_registry.rb, line 37
+def silenced?(_name)
+  !ExplainRegistry.collect?
+end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/explain_registry.rb#L37" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+        <div class="method">
+          <h3 id="method-i-start">
+            
+              start(name, id, payload)
+            
+          </h3>
+
+          
+            <div class="description">
+              
+            </div>
+          
+
+          
+
+          
+
+          
+          
+            <details class="method__source">
+              <summary>
+                <span class="label">📝 Source code</span>
+              </summary>
+
+              <pre><code class="ruby"># File activerecord/lib/active_record/explain_registry.rb, line 27
+def start(name, id, payload)
+  # unused
+end</code></pre>
+              
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activerecord/lib/active_record/explain_registry.rb#L27" target="_blank" class="github_url">🔎 See on GitHub</a>
+              
+            </details>
+          
+        </div>
+        
+      
+    
+  
+</div>
+
+    </div>
+</div>
