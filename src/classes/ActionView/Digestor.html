@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.1.0.beta1</span><br />
+            <span>Ruby on Rails 8.1.0.rc1</span><br />
         
         <div class="type">Class</div>
         <h1>
@@ -125,29 +125,29 @@ layout: default
               </summary>
 
               <pre><code class="ruby"># File actionview/lib/action_view/digestor.rb, line 16
-      def digest(name:, format: nil, finder:, dependencies: nil)
-        if dependencies.nil? || dependencies.empty?
-          cache_key = &quot;#{name}.#{format}&quot;
-        else
-          dependencies_suffix = dependencies.flatten.tap(&amp;:compact!).join(&quot;.&quot;)
-          cache_key = &quot;#{name}.#{format}.#{dependencies_suffix}&quot;
-        end
+def digest(name:, format: nil, finder:, dependencies: nil)
+  if dependencies.nil? || dependencies.empty?
+    cache_key = &quot;#{name}.#{format}&quot;
+  else
+    dependencies_suffix = dependencies.flatten.tap(&amp;:compact!).join(&quot;.&quot;)
+    cache_key = &quot;#{name}.#{format}.#{dependencies_suffix}&quot;
+  end
 
-        # this is a correctly done double-checked locking idiom
-        # (Concurrent::Map&#39;s lookups have volatile semantics)
-        finder.digest_cache[cache_key] || @@digest_mutex.synchronize do
-          finder.digest_cache.fetch(cache_key) do # re-check under lock
-            path = TemplatePath.parse(name)
-            root = tree(path.to_s, finder, path.partial?)
-            dependencies.each do |injected_dep|
-              root.children &lt;&lt; Injected.new(injected_dep, nil, nil)
-            end if dependencies
-            finder.digest_cache[cache_key] = root.digest(finder)
-          end
-        end
-      end</code></pre>
+  # this is a correctly done double-checked locking idiom
+  # (Concurrent::Map&#39;s lookups have volatile semantics)
+  finder.digest_cache[cache_key] || @@digest_mutex.synchronize do
+    finder.digest_cache.fetch(cache_key) do # re-check under lock
+      path = TemplatePath.parse(name)
+      root = tree(path.to_s, finder, path.partial?)
+      dependencies.each do |injected_dep|
+        root.children &lt;&lt; Injected.new(injected_dep, nil, nil)
+      end if dependencies
+      finder.digest_cache[cache_key] = root.digest(finder)
+    end
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actionview/lib/action_view/digestor.rb#L16" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actionview/lib/action_view/digestor.rb#L16" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -178,11 +178,11 @@ layout: default
               </summary>
 
               <pre><code class="ruby"># File actionview/lib/action_view/digestor.rb, line 38
-      def logger
-        ActionView::Base.logger || NullLogger
-      end</code></pre>
+def logger
+  ActionView::Base.logger || NullLogger
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actionview/lib/action_view/digestor.rb#L38" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actionview/lib/action_view/digestor.rb#L38" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -213,34 +213,34 @@ layout: default
               </summary>
 
               <pre><code class="ruby"># File actionview/lib/action_view/digestor.rb, line 43
-      def tree(name, finder, partial = false, seen = {})
-        logical_name = name.gsub(%r|/_|, &quot;/&quot;)
-        interpolated = name.include?(&quot;#&quot;)
+def tree(name, finder, partial = false, seen = {})
+  logical_name = name.gsub(%r|/_|, &quot;/&quot;)
+  interpolated = name.include?(&quot;#&quot;)
 
-        path = TemplatePath.parse(name)
+  path = TemplatePath.parse(name)
 
-        if !interpolated &amp;&amp; (template = find_template(finder, path.name, [path.prefix], partial, []))
-          if node = seen[template.identifier] # handle cycles in the tree
-            node
-          else
-            node = seen[template.identifier] = Node.create(name, logical_name, template, partial)
+  if !interpolated &amp;&amp; (template = find_template(finder, path.name, [path.prefix], partial, []))
+    if node = seen[template.identifier] # handle cycles in the tree
+      node
+    else
+      node = seen[template.identifier] = Node.create(name, logical_name, template, partial)
 
-            deps = DependencyTracker.find_dependencies(name, template, finder.view_paths)
-            deps.uniq { |n| n.gsub(%r|/_|, &quot;/&quot;) }.each do |dep_file|
-              node.children &lt;&lt; tree(dep_file, finder, true, seen)
-            end
-            node
-          end
-        else
-          unless interpolated # Dynamic template partial names can never be tracked
-            logger.error &quot;  Couldn&#39;t find template for digesting: #{name}&quot;
-          end
+      deps = DependencyTracker.find_dependencies(name, template, finder.view_paths)
+      deps.uniq { |n| n.gsub(%r|/_|, &quot;/&quot;) }.each do |dep_file|
+        node.children &lt;&lt; tree(dep_file, finder, true, seen)
+      end
+      node
+    end
+  else
+    unless interpolated # Dynamic template partial names can never be tracked
+      logger.error &quot;  Couldn&#39;t find template for digesting: #{name}&quot;
+    end
 
-          seen[name] ||= Missing.new(name, logical_name, nil)
-        end
-      end</code></pre>
+    seen[name] ||= Missing.new(name, logical_name, nil)
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actionview/lib/action_view/digestor.rb#L43" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actionview/lib/action_view/digestor.rb#L43" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

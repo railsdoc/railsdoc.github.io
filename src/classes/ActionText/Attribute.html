@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.1.0.beta1</span><br />
+            <span>Ruby on Rails 8.1.0.rc1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -97,14 +97,14 @@ Message.all.with_all_rich_text # Loads all rich text associations.
 
 <h4 id="method-i-has_rich_text-label-Options">Options</h4>
 <ul><li>
-<p><code>:encrypted</code> - Pass true to encrypt the rich text attribute. The encryption will be non-deterministic. See <code>ActiveRecord::Encryption::EncryptableRecord.encrypts</code>. Default: false.</p>
+<p><code>:encrypted</code> - Pass true to encrypt the rich text attribute. The encryption will be non-deterministic. See <a href="../ActiveRecord/Encryption/EncryptableRecord.html#method-i-encrypts"><code>ActiveRecord::Encryption::EncryptableRecord.encrypts</code></a>. Default: false.</p>
 </li><li>
 <p><code>:strict_loading</code> - Pass true to force strict loading. When omitted, <code>strict_loading:</code> will be set to the value of the <code>strict_loading_by_default</code> class attribute (false by default).</p>
 </li><li>
 <p><code>:store_if_blank</code> - Pass false to not create <a href="RichText.html"><code>RichText</code></a> records with empty values, if a blank value is provided. Default: true.</p>
 </li></ul>
 
-<p>Note: Action Text relies on polymorphic associations, which in turn store class names in the database. When renaming classes that use <code>has_rich_text</code>, make sure to also update the class names in the <code>action_text_rich_texts.record_type</code> polymorphic type column of the corresponding rows.</p>
+<p>Note: Action Text relies on polymorphic associations, which in turn store class names in the database. When renaming classes that use <a href="Attribute.html#method-i-has_rich_text"><code>has_rich_text</code></a>, make sure to also update the class names in the <code>action_text_rich_texts.record_type</code> polymorphic type column of the corresponding rows.</p>
             </div>
           
 
@@ -120,48 +120,48 @@ Message.all.with_all_rich_text # Loads all rich text associations.
               </summary>
 
               <pre><code class="ruby"># File actiontext/lib/action_text/attribute.rb, line 53
-      def has_rich_text(name, encrypted: false, strict_loading: strict_loading_by_default, store_if_blank: true)
-        class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
-          def #{name}
-            rich_text_#{name} || build_rich_text_#{name}
-          end
+def has_rich_text(name, encrypted: false, strict_loading: strict_loading_by_default, store_if_blank: true)
+  class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+    def #{name}
+      rich_text_#{name} || build_rich_text_#{name}
+    end
 
-          def #{name}?
-            rich_text_#{name}.present?
-          end
-        CODE
+    def #{name}?
+      rich_text_#{name}.present?
+    end
+  CODE
 
-        if store_if_blank
-          class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
-            def #{name}=(body)
-              self.#{name}.body = body
-            end
-          CODE
+  if store_if_blank
+    class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+      def #{name}=(body)
+        self.#{name}.body = body
+      end
+    CODE
+  else
+    class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
+      def #{name}=(body)
+        if body.present?
+          self.#{name}.body = body
         else
-          class_eval &lt;&lt;-CODE, __FILE__, __LINE__ + 1
-            def #{name}=(body)
-              if body.present?
-                self.#{name}.body = body
-              else
-                if #{name}?
-                  self.#{name}.body = body
-                  self.#{name}.mark_for_destruction
-                end
-              end
-            end
-          CODE
+          if #{name}?
+            self.#{name}.body = body
+            self.#{name}.mark_for_destruction
+          end
         end
+      end
+    CODE
+  end
 
-        rich_text_class_name = encrypted ? &quot;ActionText::EncryptedRichText&quot; : &quot;ActionText::RichText&quot;
-        has_one :&quot;rich_text_#{name}&quot;, -&gt; { where(name: name) },
-          class_name: rich_text_class_name, as: :record, inverse_of: :record, autosave: true, dependent: :destroy,
-          strict_loading: strict_loading
+  rich_text_class_name = encrypted ? &quot;ActionText::EncryptedRichText&quot; : &quot;ActionText::RichText&quot;
+  has_one :&quot;rich_text_#{name}&quot;, -&gt; { where(name: name) },
+    class_name: rich_text_class_name, as: :record, inverse_of: :record, autosave: true, dependent: :destroy,
+    strict_loading: strict_loading
 
-        scope :&quot;with_rich_text_#{name}&quot;, -&gt; { includes(&quot;rich_text_#{name}&quot;) }
-        scope :&quot;with_rich_text_#{name}_and_embeds&quot;, -&gt; { includes(&quot;rich_text_#{name}&quot;: { embeds_attachments: :blob }) }
-      end</code></pre>
+  scope :&quot;with_rich_text_#{name}&quot;, -&gt; { includes(&quot;rich_text_#{name}&quot;) }
+  scope :&quot;with_rich_text_#{name}_and_embeds&quot;, -&gt; { includes(&quot;rich_text_#{name}&quot;: { embeds_attachments: :blob }) }
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actiontext/lib/action_text/attribute.rb#L53" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actiontext/lib/action_text/attribute.rb#L53" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -192,11 +192,11 @@ Message.all.with_all_rich_text # Loads all rich text associations.
               </summary>
 
               <pre><code class="ruby"># File actiontext/lib/action_text/attribute.rb, line 100
-      def rich_text_association_names
-        reflect_on_all_associations(:has_one).collect(&amp;:name).select { |n| n.start_with?(&quot;rich_text_&quot;) }
-      end</code></pre>
+def rich_text_association_names
+  reflect_on_all_associations(:has_one).collect(&amp;:name).select { |n| n.start_with?(&quot;rich_text_&quot;) }
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actiontext/lib/action_text/attribute.rb#L100" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actiontext/lib/action_text/attribute.rb#L100" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -227,11 +227,11 @@ Message.all.with_all_rich_text # Loads all rich text associations.
               </summary>
 
               <pre><code class="ruby"># File actiontext/lib/action_text/attribute.rb, line 95
-      def with_all_rich_text
-        includes(rich_text_association_names)
-      end</code></pre>
+def with_all_rich_text
+  includes(rich_text_association_names)
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/actiontext/lib/action_text/attribute.rb#L95" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/actiontext/lib/action_text/attribute.rb#L95" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           

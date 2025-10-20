@@ -5,7 +5,7 @@ layout: default
 <div class="main">
     <div class="banner">
         
-            <span>Ruby on Rails 8.1.0.beta1</span><br />
+            <span>Ruby on Rails 8.1.0.rc1</span><br />
         
         <div class="type">Module</div>
         <h1>
@@ -114,10 +114,18 @@ layout: default
         
           <tr valign='top'>
             <td class='attr-rw'>
+              [RW]
+            </td>
+            <td class='attr-name'>escape_js_separators_in_json</td>
+            <td class='attr-desc'><p>If true, encode LINE SEPARATOR (U+2028) and PARAGRAPH SEPARATOR (U+2029) as escaped unicode sequences (‘u2028’ and ‘u2029’). Historically these characters were not valid inside JavaScript strings but that changed in ECMAScript 2019. As such it’s no longer a concern in modern browsers: <a href="https://caniuse.com/mdn-javascript_builtins_json_json_superset">caniuse.com/mdn-javascript_builtins_json_json_superset</a>.</p></td>
+          </tr>
+        
+          <tr valign='top'>
+            <td class='attr-rw'>
               [R]
             </td>
             <td class='attr-name'>json_encoder</td>
-            <td class='attr-desc'><p>Sets the encoder used by Rails to encode Ruby objects into <a href="JSON.html"><code>JSON</code></a> strings in +Object#to_json+ and <code>ActiveSupport::JSON.encode</code>.</p></td>
+            <td class='attr-desc'><p>Sets the encoder used by Rails to encode Ruby objects into <a href="JSON.html"><code>JSON</code></a> strings in +Object#to_json+ and <a href="JSON.html#method-c-encode"><code>ActiveSupport::JSON.encode</code></a>.</p></td>
           </tr>
         
           <tr valign='top'>
@@ -178,17 +186,17 @@ ActiveSupport::JSON.decode(&quot;2.39&quot;)
               </summary>
 
               <pre><code class="ruby"># File activesupport/lib/active_support/json/decoding.rb, line 24
-      def decode(json, options = {})
-        data = ::JSON.parse(json, options)
+def decode(json, options = {})
+  data = ::JSON.parse(json, options)
 
-        if ActiveSupport.parse_json_times
-          convert_dates_from(data)
-        else
-          data
-        end
-      end</code></pre>
+  if ActiveSupport.parse_json_times
+    convert_dates_from(data)
+  else
+    data
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/json/decoding.rb#L24" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/json/decoding.rb#L24" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -275,16 +283,18 @@ ActiveSupport::JSON.decode(&quot;2.39&quot;)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/json/encoding.rb, line 46
-      def encode(value, options = nil)
-        if options.nil? || options.empty?
-          Encoding.encode_without_options(value)
-        else
-          Encoding.json_encoder.new(options).encode(value)
-        end
-      end</code></pre>
+              <pre><code class="ruby"># File activesupport/lib/active_support/json/encoding.rb, line 47
+def encode(value, options = nil)
+  if options.nil? || options.empty?
+    Encoding.encode_without_options(value)
+  elsif options == { escape: false }.freeze
+    Encoding.encode_without_escape(value)
+  else
+    Encoding.json_encoder.new(options).encode(value)
+  end
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/json/encoding.rb#L46" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/json/encoding.rb#L47" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -314,13 +324,14 @@ ActiveSupport::JSON.decode(&quot;2.39&quot;)
                 <span class="label">📝 Source code</span>
               </summary>
 
-              <pre><code class="ruby"># File activesupport/lib/active_support/json/encoding.rb, line 206
-        def json_encoder=(encoder)
-          @json_encoder = encoder
-          @encoder_without_options = encoder.new
-        end</code></pre>
+              <pre><code class="ruby"># File activesupport/lib/active_support/json/encoding.rb, line 229
+def json_encoder=(encoder)
+  @json_encoder = encoder
+  @encoder_without_options = encoder.new
+  @encoder_without_escape = encoder.new(escape: false)
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/json/encoding.rb#L206" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/json/encoding.rb#L229" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
@@ -383,11 +394,11 @@ end
               </summary>
 
               <pre><code class="ruby"># File activesupport/lib/active_support/json/decoding.rb, line 45
-      def parse_error
-        ::JSON::ParserError
-      end</code></pre>
+def parse_error
+  ::JSON::ParserError
+end</code></pre>
               
-                <a href="https://github.com/rails/rails/blob/80827ca7ff33ca3026f2c74fe8249ccc6f513318/activesupport/lib/active_support/json/decoding.rb#L45" target="_blank" class="github_url">🔎 See on GitHub</a>
+                <a href="https://github.com/rails/rails/blob/4720fe9c00605d6ad2d50904e98a4d5522ffbce2/activesupport/lib/active_support/json/decoding.rb#L45" target="_blank" class="github_url">🔎 See on GitHub</a>
               
             </details>
           
