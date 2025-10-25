@@ -1,16 +1,16 @@
-document.addEventListener('DOMContentLoaded', () => {
-  anchors.options.visible = 'always';
+document.addEventListener("DOMContentLoaded", () => {
+  anchors.options = { visible: "always" };
   anchors.add();
 });
 
 $(() => {
   // highlight.js
   hljs.configure({
-    languages: ['ruby', 'html', 'bash', 'sql']
+    languages: ["ruby", "html", "bash", "sql"],
   });
   hljs.highlightAll();
 
-  $("#navigation").load(`${config.rootPath}navigation.html`, function() {
+  $("#navigation").load(`${config.rootPath}navigation.html`, () => {
     $(".sidebar-sticky .icon").on("click", function (e) {
       e.preventDefault();
       $(this).siblings("ul").toggle();
@@ -18,7 +18,7 @@ $(() => {
     });
     $(`.sidebar-content a[href='${window.location.pathname}']`)
       .attr("class", "active-link")
-      .parents('ul')
+      .parents("ul")
       .show();
-  })
+  });
 });
