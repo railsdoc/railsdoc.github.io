@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   anchors.options.visible = 'always';
-  anchors.add();
+  anchors.add('h3');
 });
 
 $(() => {
