@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 $(() => {
-  // highlight.js
+  // highlight.js configuration
   hljs.configure({
     languages: ["ruby", "html", "bash", "sql"],
   });
