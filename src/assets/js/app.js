@@ -1,10 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
   anchors.options = { visible: "always" };
   anchors.add();
+
+  window.addEventListener("hashchange", openDetailsForHash);
+  openDetailsForHash();
 });
 
 $(() => {
-  // highlight.js
+  // highlight.js configuration
   hljs.configure({
     languages: ["ruby", "html", "bash", "sql"],
   });
@@ -22,3 +25,17 @@ $(() => {
       .show();
   });
 });
+
+// Open details that is at the same level as the target of the hash
+function openDetailsForHash() {
+  const hash = window.location.hash;
+  if (!hash) return;
+  const target = document.querySelector(hash);
+  if (!target) return;
+
+  const siblingDetails = target.closest("div.method")?.querySelector("details");
+  if (siblingDetails) {
+    siblingDetails.open = true;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
