@@ -10,6 +10,19 @@ $(() => {
   });
   hljs.highlightAll();
 
+  // Open details that is at the same level as the target of the hash
+  window.addEventListener("hashchange", () => {
+    const target = document.querySelector(window.location.hash);
+    if (!target) return;
+
+    const siblingDetails = target
+      .closest("div.method")
+      ?.querySelector("details");
+    if (siblingDetails) {
+      siblingDetails.open = true;
+    }
+  });
+
   $("#navigation").load(`${config.rootPath}navigation.html`, () => {
     $(".sidebar-sticky .icon").on("click", function (e) {
       e.preventDefault();
