@@ -8,7 +8,7 @@ This repository builds the RailsDoc Jekyll site. Hand-maintained site code lives
 
 - `git submodule update --init`: initialize the Rails source after cloning.
 - `bundle install`: install Jekyll and Rake dependencies.
-- `bundle exec jekyll server`: serve `src/` locally with rebuilds.
+- `bundle exec jekyll serve`: serve `src/` locally with rebuilds.
 - `bundle exec jekyll build`: perform the fast site build used by deployment and basic CI checks.
 - `rake build`: regenerate documentation for `_config.yml`'s `default_rails_version`, then build the site.
 - `rake 'build_multi[7.1,7.2]'`: regenerate selected historical versions. Quote this command in shells that interpret brackets.
