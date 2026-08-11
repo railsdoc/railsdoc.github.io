@@ -33,12 +33,14 @@ Read the current version from `_config.yml:5` (`default_rails_version`).
   `rake 'build_multi[<old-minor>]'`), and a new row in `.github/workflows/ci.yml`'s
   `doc-build-others` matrix. Explain this to the user rather than attempting it.
 
-## 2. Pre-flight the tag before the expensive build
+## 2. Optionally confirm the tag exists
 
-`switch_rails` (`Rakefile`) does `git fetch` then `git switch refs/tags/v<version>` — but
-it only runs *inside* `rake build`, after which `bundle install` and a full `rake rdoc`
-regeneration (several minutes) will have already happened even if the tag is bad. Check
-the tag resolves first:
+`rake build` depends on the `switch_default_rails` task, which runs `switch_rails`
+(`git fetch` + `git switch refs/tags/v<version>`) as a prerequisite *before* the build
+task's own actions. So a missing tag already fails fast — Rake aborts at the switch step,
+before the expensive `bundle install` + `rake rdoc` regeneration in `generate_rails_rdoc`
+ever runs. No separate gate is required. If you want to confirm the tag ahead of time
+anyway (e.g. to fail with a clearer message), check manually:
 
 ```sh
 git -C rails fetch --tags
@@ -148,5 +150,6 @@ Generate Rails v<version> docs.
   one is prefixed in the reference PR.
 - Trying to clean up the `rails/` submodule's dirty worktree after `rake build` — leave it;
   see step 5.
-- Running the full `rake build` before confirming the target tag exists — see step 2.
+- Assuming a bad tag wastes the full `rake build` run — it doesn't; `switch_default_rails`
+  fails fast before the expensive regeneration starts (see step 2).
 - Treating a minor-series bump (`8.1` → `8.2`) the same as a patch bump — see step 1.
