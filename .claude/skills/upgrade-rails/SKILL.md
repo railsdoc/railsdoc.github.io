@@ -76,8 +76,9 @@ rake build
 
 This switches the `rails` submodule to the new tag, swaps in the `toshimaru/sdoc` fork,
 regenerates rdoc, copies output into `src/`, and finishes with `bundle exec jekyll build`
-— so the Jekyll build is already validated once this completes. Uses Ruby 3.4 per
-`mise.toml`. This is the long step.
+— so the Jekyll build is already validated once this completes. Use the Ruby version this
+repo targets (currently 3.4, see `ruby-version` in `.github/workflows/ci.yml`). This is
+the long step.
 
 ## 5. Commit the submodule pointer — mind the dirty worktree
 
